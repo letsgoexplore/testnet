@@ -1,0 +1,59 @@
+\usepackage[ff,sets,adversary,advantage,keys,primitives,operators,lambda,logic,notions]{cryptocode}
+\usepackage{boxedminipage}
+\usepackage{comment}
+\usepackage[utf8x]{inputenc}
+\usepackage{subcaption} % for double figures
+\usepackage{bm} % for bold math symbols
+\usepackage{float}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{xspace}
+\usepackage{url}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage[capitalise]{cleveref}
+\usepackage{enumitem} % used to reduce indent of {itemize}
+
+\colorlet{party}{Brown}
+\colorlet{randomness}{Maroon}
+\colorlet{protocol}{Black}
+\colorlet{string}{BlueViolet}
+\colorlet{entry}{NavyBlue}
+\colorlet{public}{OliveGreen}
+\colorlet{private}{Plum}
+
+% comments
+\newcommand{\fanz}[1]{\textsf{\color{red}{[[Fan: #1]]}}}
+
+
+% protocol boxes
+\newcommand{\stringlitt}[1]{\textcolor{string}{\text{``#1''}}}
+\newcommand{\msgok}{\stringlitt{ok}}
+\newcommand{\msgsched}{\stringlitt{sched}}
+\newcommand{\msgproof}{\stringlitt{proof}}
+\newcommand{\msgack}{\stringlitt{ack}}
+\newcommand{\msgfinP}{\stringlitt{proverFinished}}
+\newcommand{\msgfinS}{\stringlitt{serverFinished}}
+\newcommand{\timeout}{\ensuremath{\mathsf{timeout}}}
+
+\newcommand{\onrecv}{\textcolor{entry}{\bf On receiving}\xspace}
+\newcommand{\oninit}{\textcolor{entry}{\bf On initialization}\xspace}
+
+\renewcommand{\pccomment}[1]{\text{\textcolor{gray}{\scriptsize // #1}}}
+\newcommand{\protocol}[3][\columnwidth]{
+  \begin{boxedminipage}[t]{#1}
+    \begin{center}\textbf{#2}\end{center}
+
+    \procedure[mode=text, codesize=\small]{}{
+      #3
+    }
+  \end{boxedminipage}
+}
+
+\newcommand{\etal}{\textit{et al.}\xspace}
+
+\newcommand{\enclavekey}{\pk_{\text{TEE}}}
+\newcommand{\signed}[2]{\ensuremath{\langle{#1}\rangle_{#2}}}
+\newcommand{\aux}{\mathsf{aux}}
+\newcommand{\ticket}{\mathcal{T}}
+\newcommand{\usermessage}{\mathcal{M}}

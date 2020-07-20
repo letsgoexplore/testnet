@@ -1,0 +1,76 @@
+\documentclass[usenames,dvipsnames]{article}
+\input{preamble}
+
+\title{Trustless Hardware and its Applications in Dinning Cryptographers}
+\author{censored}
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+\section{Protocol Overview}
+
+\paragraph{Notation.} We use $\signed{m}{\pk}$ to denote a message signed by the secret key of $\pk$.
+
+\paragraph{Overview.}
+
+There are three types of players:
+
+\begin{itemize}
+    \item Any trust servers $(S_1, \dots, S_\ell)$ running~\cref{proto:server}.
+    \item Aggregators (each with an SGX enclave) $(A_1, \dots, A_m)$ running~\cref{proto:agg}.
+    \item Users (each with an SGX enclave) $(U_1, \dots, U_n)$ running~\cref{proto:user}.
+\end{itemize}
+
+\begin{figure}
+\protocol{Protocol of a user $U_i$ (and her enclave)}{
+\textbf{State:} \\
+\begin{itemize}[leftmargin=*]
+    \item $(\sk, \pk)$ a pair of keys generated in an enclave. $\pk$ is published in an attestation. $\sk$ is sealed to persistent storage for backup.
+    \item Pair-wise keys with all servers: $K_{i,j} \in \bin^\secpar$ for $j\in [\ell]$.
+\end{itemize}
+\textbf{Registration:} \\
+\t $U_i$ talks to all servers to generate keys and store them. $U_i$ also registers the public key of her local enclave $\enclavekey$. \\[2mm]
+\textbf{Scheduling:} \\
+\t $U_i$ sends $(\msgsched, r, \aux)$ to her local scheduling enclave where $r$ is the desired round in which $U_i$ would like to transmit and $\aux$ some auxilinary information required by the specific scheduling protocol. Then her enclave executes the scheduling protocol and outputs a signed ticket $\ticket=\signed{r, s_l, s_h}{\enclavekey}$ where $s_l, s_h$ are the starting and ending slots reserved for $U_i$. If scheduling fails, the enclave outputs $\bot$ and $U_i$ cannot transmit in round $r$. \\[2mm]
+\textbf{Submission:} \\
+$U_i$ sends $(\ticket, m)$ to her enclave where $m$ is the message. The enclave verifies the ticket and forms a broadcast message $M_i$ containing $m$ in slots $(s_l,s_h)$, and zeroes otherwise. The enclave then computes pads (stretch the key as needed) $K_{i}=\oplus_{j=1}^{\ell} \prg(K_{i,j})$ and outputs $\usermessage_i=\signed{U_i, c_i=M_i \xor K_i}{\pk}$. $U_i$ submits $\usermessage$ to one or more of the aggregators. \\[2mm]
+\textbf{Output:} \\
+Wait to receive the final outcome from aggregators $(r, \vec{m}, \vec{\sigma})$.
+}
+\caption{User protocol}
+\label{proto:user}
+\end{figure}
+
+\begin{figure}
+\protocol{Protocol of an aggregator $A$ (and her enclave)}{
+\textbf{State:} \\
+\begin{itemize}[leftmargin=*]
+    \item $(\sk_A, \pk_A)$: key pair. Ditto.
+    \item A mapping $(r, \mathcal{U}, c)$ storing the aggregated messages so far (for round $r$).
+\end{itemize}
+\textbf{Aggreate}($U_i, c_i$): \\
+\t Retrieve $(r, \mathcal{U}, c)$ from local storage. If $U_i\in\mathcal{U}$, ignore and return. If not, store $(r, U_i, c_i)$ for reasons that will become clear shortly, set $\mathcal{U}:=\set{U_i} \cup \mathcal{U}$ and $c:=c_i \xor c$. Broadcast $(r,\mathcal{U}, c)$ to other aggregators. When $|\cal U|$ is big enough or a timeout has passed, $A$ sends $(r,\mathcal{U}, c)$ to all servers. \\
+\textbf{Catchup}: \\
+\t When receiving $(r,\mathcal{U}', c')$ from a peer aggregator $A'$, catch up if needed. \fanz{$A$ can't simply xor with $c'$ if $U$ overlaps with $U'$. But it's not hard either given both are honest.} \\
+\textbf{Finalize:} \\
+\t After receiving signed pads $(r, K_{S_j}, L_r)$ from all servers, $A$ computes $m=c_r \xor K_{S_1} \xor K_{S_2} \dots \xor K_{S_\ell}$, signs it, and sends to all connected clients. Proceed to round $r+1$.
+}
+\caption{aggregator protocol}
+\label{proto:agg}
+\end{figure}
+
+\begin{figure}
+\protocol{Protocol of a server $S_i$\fanz{no need for SGX unless for defense-in-depth?}}{
+\textbf{Finalize:} \\
+\begin{itemize}[leftmargin=*]
+\item Upon receiving from all aggregators or the round closure deadline has passed, the server $S_j$ forms a list $L_j$ of all client identifiers included in aggregator messages. Broadcast $L_j$ to other servers.
+\item Given all servers' lists, the servers determines a list $L_r$ of clients who submitted in round $r$. Talking to the aggregator if needed (e.g., to retrieve messages not aggregated), all servers reach agreement on the final aggregated message $c_r = \bigoplus_{i \in L_r} c_i$.\fanz{alternatively, we could have aggregators to reach consensus first, and servers just take the largest aggregation set as $L_r$.}
+\item Each server $S_j$ computes her pad $K_{S_j}=\bigoplus_{i\in L_r}{K_{i,j}}$ and broadcast $\signed{r, K_{S_j}, L_r}{\pk_{S_j}}$ to connected aggregators.\fanz{in Dissent this is sent to the clients directly but in our setting the server doesn't interact with clients directly.}
+\end{itemize}
+}
+\caption{server protocol}
+\label{proto:server}
+\end{figure}
+
+\end{document}
