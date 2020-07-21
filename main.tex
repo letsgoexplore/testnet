@@ -34,7 +34,7 @@ There are three types of players:
 \textbf{Scheduling:} \\
 \t $U_i$ sends $(\msgsched, r, \aux)$ to her local scheduling enclave where $r$ is the desired round in which $U_i$ would like to transmit and $\aux$ some auxilinary information required by the specific scheduling protocol. Then her enclave executes the scheduling protocol and outputs a signed ticket $\ticket=\signed{r, s_l, s_h}{\enclavekey}$ where $s_l, s_h$ are the starting and ending slots reserved for $U_i$. If scheduling fails, the enclave outputs $\bot$ and $U_i$ cannot transmit in round $r$. \\[2mm]
 \textbf{Submission:} \\
-$U_i$ sends $(\ticket, m)$ to her enclave where $m$ is the message. The enclave verifies the ticket and forms a broadcast message $M_i$ containing $m$ in slots $(s_l,s_h)$, and zeroes otherwise. The enclave then computes pads (stretch the key as needed) $K_{i}=\oplus_{j=1}^{\ell} \prg(K_{i,j})$ and outputs $\usermessage_i=\signed{U_i, c_i=M_i \xor K_i}{\pk}$. $U_i$ submits $\usermessage$ to one or more of the aggregators. \\[2mm]
+$U_i$ sends $(\ticket, m)$ to her enclave where $m$ is the message. The enclave verifies the ticket and forms a broadcast message $M_i$ containing $m$ in slots $(s_l,s_h)$, and zeroes otherwise. The enclave then computes pads (stretch the key as needed) $K_{i}=\oplus_{j=1}^{\ell} \prg(K_{i,j})$\fanz{$r$ should be in there.} and outputs $\usermessage_i=\signed{U_i, c_i=M_i \xor K_i}{\pk}$. $U_i$ submits $\usermessage$ to one or more of the aggregators. \\[2mm]
 \textbf{Output:} \\
 Wait to receive the final outcome from aggregators $(r, \vec{m}, \vec{\sigma})$.
 }
