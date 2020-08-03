@@ -46,7 +46,7 @@ message Aggregation {
 }
 
 message AggregateResponse{
-  Aggregation new_agg;
+  Aggregation new_agg = 1;
 }
 
 
