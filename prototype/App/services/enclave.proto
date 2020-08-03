@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package rpc;
+
+service enclave {
+  rpc attest(Empty) returns (Attestation);
+  rpc status(Empty) returns (Status);
+  rpc schedule(SchedulingRequest) returns(SchedulingResponse);
+}
+
+message Attestation {
+  string quote = 1;
+  string mr_enclave = 2;
+  string error = 3;
+}
+
+// empty thus far
+message Status {
+  string version = 1;
+}
+
+// scheduling
+message SchedulingRequest {
+  uint32 round = 1;
+}
+
+message SchedulingResponse {
+  bool success = 1;
+  uint32 round = 2;
+  uint32 slot_low = 3;
+  uint32 slow_high = 4;
+  bytes sig = 10;
+}
+
+message AggregateRequest{
+  uint32 round = 1;
+  bytes user_id = 2;
+  bytes user_message = 3;
+  Aggregation current_agg = 4;
+}
+
+message Aggregation {
+  repeated bytes user_id_in_aggregation = 1;
+  bytes current_aggregated_value = 2;
+  bytes sig = 3;
+}
+
+message AggregateResponse{
+  Aggregation new_agg;
+}
+
+
+message Empty {}
