@@ -1,5 +1,4 @@
-
-#include "App/config.h"
+#include "app/config.h"
 
 #include <pwd.h>
 #include <sys/types.h>
@@ -11,7 +10,7 @@
 
 using namespace std;
 
-void tc::Config::parseConfigFile()
+void app::Config::parseConfigFile()
 {
   // parse the config files
   boost::property_tree::ptree pt;
@@ -29,7 +28,7 @@ void tc::Config::parseConfigFile()
   }
 }
 
-tc::Config::Config(int argc, const char **argv)
+app::Config::Config(int argc, const char **argv)
 {
   try {
     po::options_description desc("Allowed options");
@@ -62,7 +61,7 @@ tc::Config::Config(int argc, const char **argv)
   parseConfigFile();
 }
 
-string tc::Config::toString()
+string app::Config::toString()
 {
   stringstream ss;
   ss << "Using config file: " << this->getConfigFile() << endl;
@@ -73,16 +72,16 @@ string tc::Config::toString()
   return ss.str();
 }
 
-const string &tc::Config::getConfigFile() const { return configFile; }
-int tc::Config::getRelayRPCAccessPoint() const { return relayRPCAccessPoint; }
-const string &tc::Config::getSealedSigKey() const { return sealedECDSAKey; }
-const string &tc::Config::getSealedHybridKey() const
+const string &app::Config::getConfigFile() const { return configFile; }
+int app::Config::getRelayRPCAccessPoint() const { return relayRPCAccessPoint; }
+const string &app::Config::getSealedSigKey() const { return sealedECDSAKey; }
+const string &app::Config::getSealedHybridKey() const
 {
   return sealedHybridEncryptionkey;
 }
-const string &tc::Config::getEnclavePath() const { return enclavePath; }
-const string &tc::Config::getTcEthereumAddress() const
+const string &app::Config::getEnclavePath() const { return enclavePath; }
+const string &app::Config::getTcEthereumAddress() const
 {
   return tcContractEthereumAddr;
 }
-bool tc::Config::getIsPrintMR() const { return isPrintMR; }
+bool app::Config::getIsPrintMR() const { return isPrintMR; }

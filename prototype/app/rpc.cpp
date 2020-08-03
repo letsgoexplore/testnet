@@ -12,9 +12,3 @@
 {
   return grpc::Status::OK;
 }
-::grpc::Status RpcServer::process(::grpc::ServerContext* context,
-                                  const ::rpc::Request* request,
-                                  ::rpc::Response* response)
-{
-  return grpc::Status::OK;
-}

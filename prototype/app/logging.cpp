@@ -7,8 +7,8 @@ char log_buffer[BUFSIZ] = {'\0'};
 #define OCALL_LOGGING_ADAPTOR(FUNC)                           \
   {                                                           \
     do {                                                      \
-      FUNC(logger, "(" << file << ":" << line << ") " << msg) \
-    } while (_FALSE);                                         \
+      logger->FUNC("[{}:{}] {}", file, line, msg); \
+    } while (false);                                         \
   }
 
 /*!
@@ -26,19 +26,19 @@ char log_buffer[BUFSIZ] = {'\0'};
  */
 void ocall_logging(int level, const char* file, int line, const char* msg)
 {
-  log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("Enclave"));
+    auto logger = spdlog::get("Enclave");
   switch (level) {
     case 0:
-      OCALL_LOGGING_ADAPTOR(LOG4CXX_ERROR)
+        OCALL_LOGGING_ADAPTOR(error);
       break;
     case 1:
-      OCALL_LOGGING_ADAPTOR(LOG4CXX_WARN)
+    OCALL_LOGGING_ADAPTOR(warn)
       break;
     case 2:
-      OCALL_LOGGING_ADAPTOR(LOG4CXX_INFO)
+    OCALL_LOGGING_ADAPTOR(info)
       break;
     case 3:
-      OCALL_LOGGING_ADAPTOR(LOG4CXX_DEBUG)
+    OCALL_LOGGING_ADAPTOR(debug)
       break;
     default:
       return;

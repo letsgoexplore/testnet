@@ -1,12 +1,11 @@
-
-#include "App/utils.h"
+#include "app/utils.h"
 
 #include <boost/algorithm/hex.hpp>
 #include <boost/filesystem.hpp>
 
 using std::string;
 
-namespace tc
+namespace app
 {
 namespace utils
 {
@@ -14,7 +13,7 @@ log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("utils.cpp"));
 }
 }  // namespace tc
 
-using tc::utils::logger;
+using app::utils::logger;
 
 /*!
  * \brief   Initialize the enclave:
@@ -30,7 +29,7 @@ namespace fs = boost::filesystem;
 int initialize_enclave(const char *enclave_name, sgx_enclave_id_t *eid)
 {
   if (!fs::exists(enclave_name)) {
-    LL_CRITICAL("Enclave file %s doesn't not exist", enclave_name);
+    SPDLOG_ERROR("Enclave file {} doesn't not exist", enclave_name);
     return -1;
   }
   sgx_launch_token_t token = {0};
@@ -149,7 +148,7 @@ const string sgx_error_message(sgx_status_t ret)
     ss << "ecall returned 0x" << std::hex << ret;
   }
 
-  LL_DEBUG("sgx_error_message: %s", ss.str().c_str());
+  SPDLOG_ERROR("sgx_error_message: {}", ss.str());
   return ss.str();
 }
 

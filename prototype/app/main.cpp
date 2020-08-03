@@ -4,8 +4,6 @@
 
 // system headers
 #include <grpcpp/server_builder.h>
-#include <log4cxx/logger.h>
-#include <log4cxx/propertyconfigurator.h>
 
 #include <atomic>
 #include <boost/filesystem.hpp>
@@ -19,11 +17,11 @@
 #include <utility>
 
 // app headers
-#include "App/Enclave_u.h"
-#include "App/config.h"
-#include "App/logging.h"
-#include "App/rpc.h"
-#include "App/utils.h"
+#include "app/Enclave_u.h"
+#include "app/config.h"
+#include "app/logging.h"
+#include "app/rpc.h"
+#include "app/utils.h"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -32,11 +30,10 @@ using namespace std;
 
 int main(int argc, const char *argv[])
 {
-  log4cxx::PropertyConfigurator::configure(LOGGING_CONF_FILE);
-  log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("tc.cpp"));
+  global::init_logging(spdlog::level::debug);
 
-  tc::Config config(argc, argv);
-  LL_INFO("config:\n%s", config.toString().c_str());
+  app::Config config(argc, argv);
+  SPDLOG_INFO("config:\n{}", config.toString().c_str());
 
   int ret;
   sgx_enclave_id_t eid;
@@ -44,10 +41,10 @@ int main(int argc, const char *argv[])
 
   ret = initialize_enclave(config.getEnclavePath().c_str(), &eid);
   if (ret != 0) {
-    LL_CRITICAL("Failed to initialize the enclave");
+    SPDLOG_ERROR("Failed to initialize the enclave");
     std::exit(-1);
   } else {
-    LL_INFO("Enclave %ld created", eid);
+    SPDLOG_INFO("Enclave {} created", eid);
   }
 
   // starting the backend RPC server
@@ -59,9 +56,9 @@ int main(int argc, const char *argv[])
   builder.RegisterService(&tc_service);
 
   std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-  LOG4CXX_INFO(logger, "TC service listening on " << server_address);
+  SPDLOG_INFO("TC service listening on {}", server_address);
 
   server->Wait();
   sgx_destroy_enclave(eid);
-  LL_INFO("all enclave closed successfully");
+  SPDLOG_INFO("all enclave closed successfully");
 }

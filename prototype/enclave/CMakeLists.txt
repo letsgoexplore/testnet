@@ -10,7 +10,7 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "Enclave_t.c; En
 add_custom_command(
         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_t.c
         COMMAND ${SGX_EDGER8R} --trusted ${CMAKE_CURRENT_SOURCE_DIR}/Enclave.edl
-        --search-path ${TC_ROOT_DIR}/Enclave
+        --search-path ${CMAKE_CURRENT_SOURCE_DIR}
         --search-path ${SGX_SDK}/include
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -37,7 +37,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} \
 
 include_directories(
         $(CMAKE_CURRENT_SOURCE_DIR)
-        ${TC_ROOT_DIR}/Common
         ${SGX_SDK}/include
         ${SGX_SDK}/include/tlibc
         ${SGX_SDK}/include/libcxx)
@@ -61,8 +60,6 @@ add_custom_command(TARGET enclave
         COMMAND ${SGX_ENCLAVE_SIGNER} sign
         -key ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_private.pem
         -config ${CMAKE_CURRENT_SOURCE_DIR}/Enclave.config.xml
-        -enclave libenclave.so
-        -out ${DEBUG_ENCLAVE_NAME}
-        COMMENT "Signing the ${CMAKE_CURRENT_BINARY_DIR}/libenclave.so.")
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${DEBUG_ENCLAVE_NAME} DESTINATION enclave)
+        -enclave ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libenclave.so
+        -out ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${DEBUG_ENCLAVE_NAME}
+        COMMENT "Signing the enclave.")

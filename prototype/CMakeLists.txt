@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(Min-SGX)
+project(SGX-DC-Nets)
 
 # build options
 option(BUILD_TESTS "build the mytest target" on)
@@ -33,7 +33,10 @@ ENDIF()
 include(cmake/ConfigSGX.cmake)
 
 # check cmake configuration
-message(STATUS "Building ${CMAKE_BUILD_TYPE} with CFLAGS ${CMAKE_C_FLAGS}")
+message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
-add_subdirectory(App)
-add_subdirectory(Enclave)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+add_subdirectory(app)
+add_subdirectory(enclave)

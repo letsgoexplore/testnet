@@ -3,8 +3,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} -std=c++11")
 
 add_custom_command(
         OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/Enclave_u.c
-        COMMAND ${SGX_EDGER8R} --untrusted ${CMAKE_SOURCE_DIR}/Enclave/Enclave.edl
-        --search-path ${CMAKE_SOURCE_DIR}/Enclave
+        COMMAND ${SGX_EDGER8R} --untrusted ${CMAKE_SOURCE_DIR}/enclave/Enclave.edl
+        --search-path ${CMAKE_SOURCE_DIR}/enclave
         --search-path ${SGX_SDK}/include
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
@@ -26,8 +26,8 @@ find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
 
 # Generated sources
-set(PROTO_OUTDIR ${CMAKE_CURRENT_SOURCE_DIR}/services/generated)
-set(PROTO_FILE ${CMAKE_CURRENT_SOURCE_DIR}/services/enclave.proto)
+set(PROTO_OUTDIR ${CMAKE_SOURCE_DIR}/services/generated)
+set(PROTO_FILE ${CMAKE_SOURCE_DIR}/services/enclave.proto)
 
 file(MAKE_DIRECTORY ${PROTO_OUTDIR})
 
@@ -47,7 +47,7 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "Enclave_u.c; En
 #### targets
 ###############################
 
-add_executable(app
+add_executable(main
         main.cpp
         Enclave_u.c
         ocalls.cpp
@@ -61,26 +61,26 @@ add_executable(app
 include_directories(
         ${Boost_INCLUDE_DIRS}
         ${SGXSDK_INCLUDE_DIRS}
-        ${MBEDTLS_LIB_DIR}/include
         ${LOG4CXX_INCLUDE_DIR}
+        third_party/spdlog/include
         ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(app
+target_link_libraries(main
         ${Boost_LIBRARIES}
         ${LOG4CXX_LIBRARY}
-        ${SGX_URTS_LIBRARY} ${SGX_USVC_LIBRARY}
+        ${SGX_URTS_LIBRARY}
+        ${SGX_USVC_LIBRARY}
         gRPC::grpc++
         protobuf::libprotobuf
         -Wl,-rpath=/opt/grpc/lib:/opt/protobuf/lib # hardcode rpath for now.
         -lpthread -ldl)
 
-add_dependencies(app enclave)
+add_dependencies(main enclave)
 
 ###############################
 #### Output & Installtation
 ###############################
-install(TARGETS app DESTINATION bin)
 install(FILES
         ${CMAKE_SOURCE_DIR}/src/logging.conf
         DESTINATION conf)

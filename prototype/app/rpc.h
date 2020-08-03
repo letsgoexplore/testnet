@@ -29,9 +29,6 @@ class RpcServer final : public rpc::enclave::Service
   ::grpc::Status status(::grpc::ServerContext* context,
                         const ::rpc::Empty* request,
                         ::rpc::Status* response) override;
-  ::grpc::Status process(::grpc::ServerContext* context,
-                         const ::rpc::Request* request,
-                         ::rpc::Response* response) override;
 };
 
 #endif  // TOWN_CRIER_RPC_H
