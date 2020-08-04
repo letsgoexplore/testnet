@@ -33,14 +33,10 @@ int main(int argc, const char *argv[])
   global::init_logging(spdlog::level::debug);
 
   app::Config config(argc, argv);
-  SPDLOG_INFO("config:\n{}", config.toString().c_str());
 
-  int ret;
   sgx_enclave_id_t eid;
-  sgx_status_t st;
-
-  ret = initialize_enclave(config.getEnclavePath().c_str(), &eid);
-  if (ret != 0) {
+  sgx_status_t ret = initialize_enclave(config.get_enclave_path().c_str(), &eid);
+  if (ret != SGX_SUCCESS) {
     SPDLOG_ERROR("Failed to initialize the enclave");
     std::exit(-1);
   } else {
@@ -49,8 +45,7 @@ int main(int argc, const char *argv[])
 
   // starting the backend RPC server
   RpcServer tc_service(eid);
-  std::string server_address("0.0.0.0:" +
-                             std::to_string(config.getRelayRPCAccessPoint()));
+  std::string server_address(fmt::format("0.0.0.0:{}", config.get_rpc_port()));
   grpc::ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
   builder.RegisterService(&tc_service);

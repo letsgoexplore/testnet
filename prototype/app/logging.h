@@ -19,12 +19,10 @@
 #endif
 #include "spdlog/spdlog.h"
 
-constexpr const char *LOG_FORMAT = "[%D-%T] [%^%l%$] (%@) %v";
-
 namespace global {
     void inline init_logging(spdlog::level::level_enum level)
     {
-        spdlog::set_pattern(LOG_FORMAT);
+        spdlog::set_pattern("[%D-%T] [%^%l%$] (%s:%#) %v");
         spdlog::set_level(level);
 
         SPDLOG_INFO("logger initialized");

@@ -27,7 +27,7 @@
 #define TOKEN_FILENAME "app.enclave.token"
 #define ENCLAVE_FILENAME "enclave.signed.so"
 
-int initialize_enclave(const char *name, sgx_enclave_id_t *eid);
+sgx_status_t initialize_enclave(const char *name, sgx_enclave_id_t *eid);
 void print_error_message(sgx_status_t ret);
 const std::string sgx_error_message(sgx_status_t ret);
 

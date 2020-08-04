@@ -9,7 +9,7 @@ namespace app
 {
 namespace utils
 {
-log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger("utils.cpp"));
+log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger(__FILE__));
 }
 }  // namespace tc
 
@@ -26,11 +26,11 @@ using app::utils::logger;
 
 namespace fs = boost::filesystem;
 
-int initialize_enclave(const char *enclave_name, sgx_enclave_id_t *eid)
+sgx_status_t initialize_enclave(const char *enclave_name, sgx_enclave_id_t *eid)
 {
   if (!fs::exists(enclave_name)) {
     SPDLOG_ERROR("Enclave file {} doesn't not exist", enclave_name);
-    return -1;
+    return SGX_ERROR_ENCLAVE_FILE_ACCESS;
   }
   sgx_launch_token_t token = {0};
   sgx_status_t ret = SGX_ERROR_UNEXPECTED;
@@ -62,7 +62,7 @@ int initialize_enclave(const char *enclave_name, sgx_enclave_id_t *eid)
   if (ret != SGX_SUCCESS) {
     print_error_message(ret);
     if (fp != NULL) fclose(fp);
-    return -1;
+    return ret;
   }
 
   /* Step 3: save the launch token if it is updated */
@@ -70,17 +70,18 @@ int initialize_enclave(const char *enclave_name, sgx_enclave_id_t *eid)
     /* if the token is not updated, or file handle is invalid, do not perform
      * saving */
     if (fp != NULL) fclose(fp);
-    return 0;
+    return SGX_SUCCESS;
   }
 
   /* reopen the file with write capablity */
   fp = freopen(token_path, "wb", fp);
-  if (fp == NULL) return 0;
+  if (fp == NULL) return SGX_SUCCESS;
   size_t write_num = fwrite(token, 1, sizeof(sgx_launch_token_t), fp);
   if (write_num != sizeof(sgx_launch_token_t))
     printf("Warning: Failed to save launch token to \"%s\".\n", token_path);
   fclose(fp);
-  return 0;
+
+  return SGX_SUCCESS;
 }
 
 /* Error code returned by sgx_create_enclave */
@@ -151,10 +152,3 @@ const string sgx_error_message(sgx_status_t ret)
   SPDLOG_ERROR("sgx_error_message: {}", ss.str());
   return ss.str();
 }
-
-#ifdef CONFIG_IMPL_DAEMON
-/**
- * \brief This function will daemonize this app
- */
-void daemonize(string working_dir, string pid_filename) {}
-#endif  // CONFIG_IMPL_DAEMON

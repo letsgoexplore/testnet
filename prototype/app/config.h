@@ -15,32 +15,19 @@ namespace app
 class Config
 {
  private:
-  const string DFT_CONFIG_FILE = "/config";
   po::variables_map vm;
+  uint32_t rpc_port;
+  string enclave_path;
 
  public:
-  const string &getConfigFile() const;
-  int getRelayRPCAccessPoint() const;
-  const string &getSealedSigKey() const;
-  const string &getSealedHybridKey() const;
-  const string &getEnclavePath() const;
-  const string &getTcEthereumAddress() const;
-  bool getIsPrintMR() const;
+  uint32_t get_rpc_port() const {
+    return rpc_port;
+  }
 
- private:
-  bool isPrintMR;
-  string configFile;
-  int relayRPCAccessPoint;
-  string tcContractEthereumAddr;
-  string sealedECDSAKey;
-  string sealedHybridEncryptionkey;
-  string enclavePath;
-
-  void parseConfigFile();
-
- public:
+  const string& get_enclave_path() const {
+    return enclave_path;
+  }
   Config(int argc, const char *argv[]);
-  string toString();
 };
 
 }  // namespace tc
