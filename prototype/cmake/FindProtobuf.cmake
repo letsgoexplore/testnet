@@ -20,38 +20,38 @@
 #  ARGN - .proto files
 #
 function(PROTOBUF_GENERATE_CPP SRCS HDRS DEST)
-    if(NOT ARGN)
+    if (NOT ARGN)
         message(SEND_ERROR "Error: PROTOBUF_GENERATE_CPP() called without any proto files")
         return()
-    endif()
+    endif ()
 
-    if(PROTOBUF_GENERATE_CPP_APPEND_PATH)
+    if (PROTOBUF_GENERATE_CPP_APPEND_PATH)
         # Create an include path for each file specified
-        foreach(FIL ${ARGN})
+        foreach (FIL ${ARGN})
             get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
             get_filename_component(ABS_PATH ${ABS_FIL} PATH)
             list(FIND _protobuf_include_path ${ABS_PATH} _contains_already)
-            if(${_contains_already} EQUAL -1)
+            if (${_contains_already} EQUAL -1)
                 list(APPEND _protobuf_include_path -I ${ABS_PATH})
-            endif()
-        endforeach()
-    else()
+            endif ()
+        endforeach ()
+    else ()
         set(_protobuf_include_path -I ${CMAKE_CURRENT_SOURCE_DIR})
-    endif()
+    endif ()
 
-    if(DEFINED PROTOBUF_IMPORT_DIRS)
-        foreach(DIR ${PROTOBUF_IMPORT_DIRS})
+    if (DEFINED PROTOBUF_IMPORT_DIRS)
+        foreach (DIR ${PROTOBUF_IMPORT_DIRS})
             get_filename_component(ABS_PATH ${DIR} ABSOLUTE)
             list(FIND _protobuf_include_path ${ABS_PATH} _contains_already)
-            if(${_contains_already} EQUAL -1)
+            if (${_contains_already} EQUAL -1)
                 list(APPEND _protobuf_include_path -I ${ABS_PATH})
-            endif()
-        endforeach()
-    endif()
+            endif ()
+        endforeach ()
+    endif ()
 
     set(${SRCS})
     set(${HDRS})
-    foreach(FIL ${ARGN})
+    foreach (FIL ${ARGN})
         get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
         get_filename_component(FIL_WE ${FIL} NAME_WE)
 
@@ -65,8 +65,8 @@ function(PROTOBUF_GENERATE_CPP SRCS HDRS DEST)
                 ARGS --cpp_out ${DEST} ${_protobuf_include_path} ${ABS_FIL}
                 DEPENDS ${ABS_FIL} protobuf::protoc
                 COMMENT "Running C++ protocol buffer compiler on ${FIL}"
-                VERBATIM )
-    endforeach()
+                VERBATIM)
+    endforeach ()
 
     set_source_files_properties(${${SRCS}} ${${HDRS}} PROPERTIES GENERATED TRUE)
     set(${SRCS} ${${SRCS}} PARENT_SCOPE)
@@ -75,9 +75,9 @@ endfunction()
 
 # By default have PROTOBUF_GENERATE_CPP macro pass -I to protoc
 # for each directory where a proto file is referenced.
-if(NOT DEFINED PROTOBUF_GENERATE_CPP_APPEND_PATH)
+if (NOT DEFINED PROTOBUF_GENERATE_CPP_APPEND_PATH)
     set(PROTOBUF_GENERATE_CPP_APPEND_PATH TRUE)
-endif()
+endif ()
 
 # Find the include directory
 find_path(PROTOBUF_INCLUDE_DIR google/protobuf/service.h)

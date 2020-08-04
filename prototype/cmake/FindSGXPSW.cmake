@@ -16,11 +16,11 @@ if (SGX_MODE MATCHES HW)
     FIND_LIBRARY(SGX_URTS_LIBRARY lib${SGX_URTS_LIB}.so /usr/lib)
     FIND_LIBRARY(SGX_USVC_LIBRARY lib${SGX_USVC_LIB}.so /usr/lib)
     FIND_PATH(SGXSDK_LIBRARY_DIRS lib${SGX_USVC_LIB}.so /usr/lib)
-else()
+else ()
     FIND_LIBRARY(SGX_URTS_LIBRARY lib${SGX_URTS_LIB}.so ${SGX_SDK}/lib64)
     FIND_LIBRARY(SGX_USVC_LIBRARY lib${SGX_USVC_LIB}.so ${SGX_SDK}/lib64)
     FIND_PATH(SGXSDK_LIBRARY_DIRS lib${SGX_USVC_LIB}.so ${SGX_SDK}/lib64)
-endif()
+endif ()
 
 
 # handle the QUIETLY and REQUIRED arguments and set SGXSuite_FOUND to TRUE
