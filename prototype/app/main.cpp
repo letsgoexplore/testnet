@@ -35,7 +35,8 @@ int main(int argc, const char *argv[])
   app::Config config(argc, argv);
 
   sgx_enclave_id_t eid;
-  sgx_status_t ret = initialize_enclave(config.get_enclave_path().c_str(), &eid);
+  sgx_status_t ret =
+      initialize_enclave(config.get_enclave_path().c_str(), &eid);
   if (ret != SGX_SUCCESS) {
     SPDLOG_ERROR("Failed to initialize the enclave");
     std::exit(-1);

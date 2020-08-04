@@ -1,13 +1,13 @@
 #include <sgx_tseal.h>
-#include <cstring>
 #include <unistd.h>
 
+#include <cstring>
 #include <ctime>
 #include <iostream>
 #include <string>
 
-#include "app/logging.h"
 #include "Enclave_u.h"
+#include "app/logging.h"
 
 int ocall_print_string(const char *str)
 {

@@ -19,15 +19,16 @@
 #endif
 #include "spdlog/spdlog.h"
 
-namespace global {
-    void inline init_logging(spdlog::level::level_enum level)
-    {
-        spdlog::set_pattern("[%D-%T] [%^%l%$] (%s:%#) %v");
-        spdlog::set_level(level);
+namespace global
+{
+void inline init_logging(spdlog::level::level_enum level)
+{
+  spdlog::set_pattern("[%D-%T] [%^%l%$] (%s:%#) %v");
+  spdlog::set_level(level);
 
-        SPDLOG_INFO("logger initialized");
-    }
+  SPDLOG_INFO("logger initialized");
 }
+}  // namespace global
 
 // ocalls
 #ifdef __cplusplus

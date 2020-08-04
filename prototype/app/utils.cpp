@@ -11,7 +11,7 @@ namespace utils
 {
 log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger(__FILE__));
 }
-}  // namespace tc
+}  // namespace app
 
 using app::utils::logger;
 

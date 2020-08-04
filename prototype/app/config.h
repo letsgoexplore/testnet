@@ -20,16 +20,12 @@ class Config
   string enclave_path;
 
  public:
-  uint32_t get_rpc_port() const {
-    return rpc_port;
-  }
+  uint32_t get_rpc_port() const { return rpc_port; }
 
-  const string& get_enclave_path() const {
-    return enclave_path;
-  }
-  Config(int argc, const char *argv[]);
+  const string& get_enclave_path() const { return enclave_path; }
+  Config(int argc, const char* argv[]);
 };
 
-}  // namespace tc
+}  // namespace app
 
 #endif  // SRC_APP_CONFIG_H_
