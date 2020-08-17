@@ -61,7 +61,7 @@ Wait to receive the final outcome from aggregators $(r, \vec{m}, \vec{\sigma})$.
     \item $(\sk_A, \pk_A)$: key pair. Ditto.
     \item A mapping $(r, \mathcal{U}, c)$ storing the aggregated messages so far (for round $r$).
 \end{itemize}
-\textbf{Aggreate}($U_i, c_i$): \\
+\textbf{Aggregate}($U_i, c_i$): \\
 \t Retrieve $(r, \mathcal{U}, c)$ from local storage. If $U_i\in\mathcal{U}$, ignore and return. If not, store $(r, U_i, c_i)$ for reasons that will become clear shortly, set $\mathcal{U}:=\set{U_i} \cup \mathcal{U}$ and $c:=c_i \xor c$. Broadcast $(r,\mathcal{U}, c)$ to other aggregators. When $|\cal U|$ is big enough or a timeout has passed, $A$ sends $(r,\mathcal{U}, c)$ to all servers. \\
 \textbf{Catchup}: \\
 \t When receiving $(r,\mathcal{U}', c')$ from a peer aggregator $A'$, catch up if needed. \fanz{$A$ can't simply xor with $c'$ if $U$ overlaps with $U'$. But it's not hard either given both are honest.} \\
