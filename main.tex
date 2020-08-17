@@ -1,4 +1,4 @@
-\documentclass[usenames,dvipsnames]{article}
+\documentclass[dvipsnames]{article}
 \input{preamble}
 
 \title{Trustless Hardware and its Applications in Dinning Cryptographers}
@@ -31,10 +31,22 @@ There are three types of players:
 \end{itemize}
 \textbf{Registration:} \\
 \t $U_i$ talks to all servers to generate keys and store them. $U_i$ also registers the public key of her local enclave $\enclavekey$. \\[2mm]
-\textbf{Scheduling:} \\
-\t $U_i$ sends $(\msgsched, r, \aux)$ to her local scheduling enclave where $r$ is the desired round in which $U_i$ would like to transmit and $\aux$ some auxilinary information required by the specific scheduling protocol. Then her enclave executes the scheduling protocol and outputs a signed ticket $\ticket=\signed{r, s_l, s_h}{\enclavekey}$ where $s_l, s_h$ are the starting and ending slots reserved for $U_i$. If scheduling fails, the enclave outputs $\bot$ and $U_i$ cannot transmit in round $r$. \fanz{we need to think through how to apply footprint scheduling.}\\[2mm]
+\textbf{Scheduling:}\fanz{changed to be specific to footprint scheduling. How to enable multiple people speak in the same round.} \\
+\underline{Enclave:} User's scheduling enclave has the following function.\\
+\t def $schedule(m, T) \to ({\sf State}, T')$: \fanz{how to authenticate $m$?}\\
+\t\t \pcif $T=\bot$ \pcthen \\
+\t\t\t \pccomment{start by trying to schedule all $S$ slots. $m_\text{out}$ contains footprints} \\
+\t\t\t \pcreturn $({\sf Continue}, (1, \set{1,\cdots,S}, m_\text{out})$ \\
+\t\t assert $m\neq \bot$. Parse $T$ as $(i, \mathcal{S}, m_\text{out})$. \\
+\t\t \pcif $i = R-1$, \pcthen \pcreturn $({\sf Done}, T_\text{final}={\sf Finalize}(m,T)$) \pccomment{Finalize the final result} \\
+\t\t $T' \gets \mathsf{TrySchedule}(i,m,\mathcal{S})$ \pccomment{determines if it continues to schedule for this cycle. If not, $T'=\bot$. Otherwise, it computes $\mathcal{S}'$---slots to reserve next, as well as new footprint message $m'$, and return $T'=(i+1, \mathcal{S}', m')$} \\
+\t\t \pcif $T'=\bot$ \pcthen \pcreturn $({\sf Abort}, \bot)$. \\
+\t\t \pcelse \pcreturn $({\sf Continue}, T'$) \\[2mm]
+%
+\underline{User:} $U_i$ calls $(s, T)\gets schedule(\bot,\bot)$ (in her scheduling enclave) to initialize the scheduling protocol. The enclave returns a state $s$ and a ticket $T$. If $s = {\sf Continue}$, user parses $T$ as $(\_,\_, m)$ and sends $m$ in the next round. User keeps doing so until $s={\sf Done}$ (or abort where user just aborts) and use $T$ as the final ticket $\ticket=\signed{{r_1, r_2, \cdots, r_k}}{\enclavekey}$ where $\set{r_i}_i$ are rounds reserved for $U_i$. \\[2mm]
 \textbf{Submission:} \\
-$U_i$ sends $(\ticket, m)$ to her enclave where $m$ is the message. The enclave verifies the ticket and forms a broadcast message $M_i$ containing $m$ in slots $(s_l,s_h)$, and zeroes otherwise. The enclave then computes pads (stretch the key as needed) $K_{i}=\oplus_{j=1}^{\ell} \prg(K_{i,j})$\fanz{$r$ should be in there.} and outputs $\usermessage_i=\signed{U_i, c_i=M_i \xor K_i}{\pk}$. $U_i$ submits $\usermessage$ to one or more of the aggregators. \\[2mm]
+\fanz{old text. need to be made compatible with footprint scheduling}
+$U_i$ sends $(\ticket, m)$ to her enclave where $m$ is the message. The enclave verifies the ticket and forms a broadcast message $M_i$ containing $m$ in slots $(s_l,s_h)$, and zeroes otherwise. The enclave then computes pads (stretch the key as needed) $K_{i}=\oplus_{j=1}^{\ell} \prg(K_{i,j}\|r)$ and outputs $\usermessage_i=\signed{U_i, c_i=M_i \xor K_i}{\pk}$. $U_i$ submits $\usermessage$ to one or more of the aggregators. \\[2mm]
 \textbf{Output:} \\
 Wait to receive the final outcome from aggregators $(r, \vec{m}, \vec{\sigma})$.
 }
@@ -72,5 +84,36 @@ Wait to receive the final outcome from aggregators $(r, \vec{m}, \vec{\sigma})$.
 \caption{server protocol}
 \label{proto:server}
 \end{figure}
+
+\subsection{Footprint scheduling}
+
+We use footprint scheduling to assign participants to rounds, so that ideally
+only one participant sends messages in a given round.
+
+The ideal functionality of scheduling takes as input a list $\mathcal{U}$ of users who wish to speak in the next $S$ rounds, outputs a list of $S$ identities $(U_1, U_2, \dots, U_S)$ such that $U_i \in \mathcal{U}$,
+which schedules $U_i$ to speak at the $i$th round.\fanz{how do we allow multiple people to speak in the same round?}
+Note that if $|\mathcal{U}|<S$, the output may contain duplicated identities.
+
+Footprint scheduling is done $R=\log(N)$ rounds. When $R \le S$, scheduling rounds can be piggyback on normal message, like in~\cref{fig:message}.
+
+\begin{figure}[H]
+    % \includegraphics[page=6,width=\columnwidth]{all-images.pdf}
+    \centering
+    \begin{tikzpicture}[
+    scheduling/.style={draw=black, fill=green!20},
+    bigbrace/.style={decorate,decoration={brace,amplitude=5pt,raise=4pt}},
+    bigbracemirror/.style={decorate,decoration={brace,mirror,amplitude=5pt,raise=4pt}},
+    ]
+    \draw[scheduling] (0, 0) rectangle (2, 1);
+    \draw (2, 0) rectangle (6,1);
+    \draw (1, .5) node[align=center] {Footprints} +(3, 0) node {Message};
+    \draw[<->, thick, >=latex, yshift=-5pt] (0.0, 0) -- (2, 0) node [black,midway,below] {$B\cdot S$ bits};
+    \draw[<->, thick, >=latex, yshift=-5pt] (2, 0) -- (6, 0) node [black,midway,below] {$M$ bits};
+    \end{tikzpicture}
+    \caption{A DC net message consisting of a footprints for scheduling  (green part; up to $B\cdot S$ bits) and regular message}
+    \label{fig:message}
+    \end{figure}
+
+
 
 \end{document}

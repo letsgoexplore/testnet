@@ -13,6 +13,7 @@
 \usepackage{booktabs}
 \usepackage[capitalise]{cleveref}
 \usepackage{enumitem} % used to reduce indent of {itemize}
+\usepackage{tikz}
 
 \colorlet{party}{Brown}
 \colorlet{randomness}{Maroon}
@@ -39,7 +40,7 @@
 \newcommand{\onrecv}{\textcolor{entry}{\bf On receiving}\xspace}
 \newcommand{\oninit}{\textcolor{entry}{\bf On initialization}\xspace}
 
-\renewcommand{\pccomment}[1]{\text{\textcolor{gray}{\scriptsize // #1}}}
+\renewcommand{\pccomment}[1]{{\textcolor{gray}{\sffamily\footnotesize // #1}}}
 \newcommand{\protocol}[3][\columnwidth]{
   \begin{boxedminipage}[t]{#1}
     \begin{center}\textbf{#2}\end{center}
