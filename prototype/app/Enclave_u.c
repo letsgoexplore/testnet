@@ -1,5 +1,4 @@
 #include "Enclave_u.h"
-
 #include <errno.h>
 
 typedef struct ms_ecall_create_report_t {
@@ -72,5 +71,12 @@ sgx_status_t ecall_get_mr_enclave(sgx_enclave_id_t eid,
   ms.ms_mr_enclave = (unsigned char*)mr_enclave;
   status = sgx_ecall(eid, 1, &ocall_table_Enclave, &ms);
   if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
+  return status;
+}
+
+sgx_status_t TestScheduling(sgx_enclave_id_t eid)
+{
+  sgx_status_t status;
+  status = sgx_ecall(eid, 2, &ocall_table_Enclave, NULL);
   return status;
 }

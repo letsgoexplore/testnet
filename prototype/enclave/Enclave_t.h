@@ -18,6 +18,7 @@ extern "C" {
 int ecall_create_report(sgx_target_info_t* quote_enc_info,
                         sgx_report_t* report);
 int ecall_get_mr_enclave(unsigned char mr_enclave[32]);
+void TestScheduling(void);
 
 sgx_status_t SGX_CDECL ocall_logging(int level,
                                      const char* file,

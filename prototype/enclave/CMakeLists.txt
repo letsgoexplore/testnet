@@ -23,7 +23,9 @@ add_library(enclave SHARED
         ecall_attestation.cpp
         Enclave_t.c
         glue.c
-        log.cpp)
+        log.cpp
+        scheduler.cpp
+        types.cpp)
 
 ###############################
 #### Include & Libs

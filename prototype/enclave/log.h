@@ -36,6 +36,7 @@ enum {
 #define _FALSE 0
 #endif
 
+#define MAX_FILENAME_LEN 1024
 extern char log_buffer[BUFSIZ];
 
 #define LOG_SHOULD_I(level) (level <= LOG_BUILD_LEVEL)

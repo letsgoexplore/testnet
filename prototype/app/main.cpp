@@ -44,6 +44,13 @@ int main(int argc, const char *argv[])
     SPDLOG_INFO("Enclave {} created", eid);
   }
 
+  // do testing
+  SPDLOG_INFO("hi");
+  sgx_status_t st = TestScheduling(eid);
+  if (st != SGX_SUCCESS) {
+    SPDLOG_ERROR("TestScheduling failed with {}", st);
+  }
+
   // starting the backend RPC server
   RpcServer tc_service(eid);
   std::string server_address(fmt::format("0.0.0.0:{}", config.get_rpc_port()));
@@ -52,7 +59,7 @@ int main(int argc, const char *argv[])
   builder.RegisterService(&tc_service);
 
   std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-  SPDLOG_INFO("TC service listening on {}", server_address);
+  SPDLOG_INFO("grpc listening on {}", server_address);
 
   server->Wait();
   sgx_destroy_enclave(eid);

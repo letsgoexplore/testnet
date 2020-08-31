@@ -153,28 +153,39 @@ err:
   return status;
 }
 
+static sgx_status_t SGX_CDECL sgx_TestScheduling(void* pms)
+{
+  sgx_status_t status = SGX_SUCCESS;
+  if (pms != NULL) return SGX_ERROR_INVALID_PARAMETER;
+  TestScheduling();
+  return status;
+}
+
 SGX_EXTERNC const struct {
   size_t nr_ecall;
   struct {
     void* ecall_addr;
     uint8_t is_priv;
-  } ecall_table[2];
-} g_ecall_table = {2,
+  } ecall_table[3];
+} g_ecall_table = {3,
                    {
                        {(void*)(uintptr_t)sgx_ecall_create_report, 0},
                        {(void*)(uintptr_t)sgx_ecall_get_mr_enclave, 0},
+                       {(void*)(uintptr_t)sgx_TestScheduling, 0},
                    }};
 
 SGX_EXTERNC const struct {
   size_t nr_ocall;
-  uint8_t entry_table[2][2];
+  uint8_t entry_table[2][3];
 } g_dyn_entry_table = {2,
                        {
                            {
                                0,
                                0,
+                               0,
                            },
                            {
+                               0,
                                0,
                                0,
                            },
