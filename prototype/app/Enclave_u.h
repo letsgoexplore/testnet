@@ -35,6 +35,11 @@ sgx_status_t ecall_get_mr_enclave(sgx_enclave_id_t eid,
                                   int* retval,
                                   unsigned char mr_enclave[32]);
 sgx_status_t TestScheduling(sgx_enclave_id_t eid);
+sgx_status_t ecall_scheduling(sgx_enclave_id_t eid,
+                              int* retval,
+                              const void* _prev_msg,
+                              void* _state,
+                              void* _new_msg);
 
 #ifdef __cplusplus
 }

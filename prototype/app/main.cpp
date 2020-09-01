@@ -45,11 +45,10 @@ int main(int argc, const char *argv[])
   }
 
   // do testing
-  SPDLOG_INFO("hi");
-  sgx_status_t st = TestScheduling(eid);
-  if (st != SGX_SUCCESS) {
-    SPDLOG_ERROR("TestScheduling failed with {}", st);
-  }
+  //  sgx_status_t st = TestScheduling(eid);
+  //  if (st != SGX_SUCCESS) {
+  //    SPDLOG_ERROR("TestScheduling failed with {}", st);
+  //  }
 
   // starting the backend RPC server
   RpcServer tc_service(eid);

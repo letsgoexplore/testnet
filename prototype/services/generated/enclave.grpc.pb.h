@@ -36,20 +36,6 @@ class enclave final {
   class StubInterface {
    public:
     virtual ~StubInterface() {}
-    virtual ::grpc::Status attest(::grpc::ClientContext* context, const ::rpc::Empty& request, ::rpc::Attestation* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Attestation>> Asyncattest(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Attestation>>(AsyncattestRaw(context, request, cq));
-    }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Attestation>> PrepareAsyncattest(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Attestation>>(PrepareAsyncattestRaw(context, request, cq));
-    }
-    virtual ::grpc::Status status(::grpc::ClientContext* context, const ::rpc::Empty& request, ::rpc::Status* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Status>> Asyncstatus(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Status>>(AsyncstatusRaw(context, request, cq));
-    }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Status>> PrepareAsyncstatus(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Status>>(PrepareAsyncstatusRaw(context, request, cq));
-    }
     virtual ::grpc::Status schedule(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::rpc::SchedulingResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::SchedulingResponse>> Asyncschedule(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::SchedulingResponse>>(AsyncscheduleRaw(context, request, cq));
@@ -60,30 +46,6 @@ class enclave final {
     class experimental_async_interface {
      public:
       virtual ~experimental_async_interface() {}
-      virtual void attest(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Attestation* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void attest(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Attestation* response, std::function<void(::grpc::Status)>) = 0;
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void attest(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Attestation* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void attest(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Attestation* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void attest(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Attestation* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void attest(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Attestation* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
-      virtual void status(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Status* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void status(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Status* response, std::function<void(::grpc::Status)>) = 0;
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void status(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Status* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void status(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Status* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      virtual void status(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Status* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      #else
-      virtual void status(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Status* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
-      #endif
       virtual void schedule(::grpc::ClientContext* context, const ::rpc::SchedulingRequest* request, ::rpc::SchedulingResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void schedule(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::SchedulingResponse* response, std::function<void(::grpc::Status)>) = 0;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -105,30 +67,12 @@ class enclave final {
     #endif
     virtual class experimental_async_interface* experimental_async() { return nullptr; }
   private:
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Attestation>* AsyncattestRaw(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Attestation>* PrepareAsyncattestRaw(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Status>* AsyncstatusRaw(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::rpc::Status>* PrepareAsyncstatusRaw(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::rpc::SchedulingResponse>* AsyncscheduleRaw(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::rpc::SchedulingResponse>* PrepareAsyncscheduleRaw(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
     Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel);
-    ::grpc::Status attest(::grpc::ClientContext* context, const ::rpc::Empty& request, ::rpc::Attestation* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::Attestation>> Asyncattest(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::Attestation>>(AsyncattestRaw(context, request, cq));
-    }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::Attestation>> PrepareAsyncattest(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::Attestation>>(PrepareAsyncattestRaw(context, request, cq));
-    }
-    ::grpc::Status status(::grpc::ClientContext* context, const ::rpc::Empty& request, ::rpc::Status* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::Status>> Asyncstatus(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::Status>>(AsyncstatusRaw(context, request, cq));
-    }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::Status>> PrepareAsyncstatus(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::Status>>(PrepareAsyncstatusRaw(context, request, cq));
-    }
     ::grpc::Status schedule(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::rpc::SchedulingResponse* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::SchedulingResponse>> Asyncschedule(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::SchedulingResponse>>(AsyncscheduleRaw(context, request, cq));
@@ -139,30 +83,6 @@ class enclave final {
     class experimental_async final :
       public StubInterface::experimental_async_interface {
      public:
-      void attest(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Attestation* response, std::function<void(::grpc::Status)>) override;
-      void attest(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Attestation* response, std::function<void(::grpc::Status)>) override;
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void attest(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Attestation* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void attest(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Attestation* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void attest(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Attestation* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void attest(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Attestation* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
-      void status(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Status* response, std::function<void(::grpc::Status)>) override;
-      void status(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Status* response, std::function<void(::grpc::Status)>) override;
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void status(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Status* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void status(::grpc::ClientContext* context, const ::rpc::Empty* request, ::rpc::Status* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
-      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      void status(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Status* response, ::grpc::ClientUnaryReactor* reactor) override;
-      #else
-      void status(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::Status* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
-      #endif
       void schedule(::grpc::ClientContext* context, const ::rpc::SchedulingRequest* request, ::rpc::SchedulingResponse* response, std::function<void(::grpc::Status)>) override;
       void schedule(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::SchedulingResponse* response, std::function<void(::grpc::Status)>) override;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -186,14 +106,8 @@ class enclave final {
    private:
     std::shared_ptr< ::grpc::ChannelInterface> channel_;
     class experimental_async async_stub_{this};
-    ::grpc::ClientAsyncResponseReader< ::rpc::Attestation>* AsyncattestRaw(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::rpc::Attestation>* PrepareAsyncattestRaw(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::rpc::Status>* AsyncstatusRaw(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::rpc::Status>* PrepareAsyncstatusRaw(::grpc::ClientContext* context, const ::rpc::Empty& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::rpc::SchedulingResponse>* AsyncscheduleRaw(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::rpc::SchedulingResponse>* PrepareAsyncscheduleRaw(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) override;
-    const ::grpc::internal::RpcMethod rpcmethod_attest_;
-    const ::grpc::internal::RpcMethod rpcmethod_status_;
     const ::grpc::internal::RpcMethod rpcmethod_schedule_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
@@ -202,58 +116,14 @@ class enclave final {
    public:
     Service();
     virtual ~Service();
-    virtual ::grpc::Status attest(::grpc::ServerContext* context, const ::rpc::Empty* request, ::rpc::Attestation* response);
-    virtual ::grpc::Status status(::grpc::ServerContext* context, const ::rpc::Empty* request, ::rpc::Status* response);
     virtual ::grpc::Status schedule(::grpc::ServerContext* context, const ::rpc::SchedulingRequest* request, ::rpc::SchedulingResponse* response);
-  };
-  template <class BaseClass>
-  class WithAsyncMethod_attest : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithAsyncMethod_attest() {
-      ::grpc::Service::MarkMethodAsync(0);
-    }
-    ~WithAsyncMethod_attest() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status attest(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Attestation* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    void Requestattest(::grpc::ServerContext* context, ::rpc::Empty* request, ::grpc::ServerAsyncResponseWriter< ::rpc::Attestation>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
-    }
-  };
-  template <class BaseClass>
-  class WithAsyncMethod_status : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithAsyncMethod_status() {
-      ::grpc::Service::MarkMethodAsync(1);
-    }
-    ~WithAsyncMethod_status() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status status(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Status* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    void Requeststatus(::grpc::ServerContext* context, ::rpc::Empty* request, ::grpc::ServerAsyncResponseWriter< ::rpc::Status>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
-    }
   };
   template <class BaseClass>
   class WithAsyncMethod_schedule : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithAsyncMethod_schedule() {
-      ::grpc::Service::MarkMethodAsync(2);
-    }
+    WithAsyncMethod_schedule() { ::grpc::Service::MarkMethodAsync(0); }
     ~WithAsyncMethod_schedule() override {
       BaseClassMustBeDerivedFromService(this);
     }
@@ -263,104 +133,11 @@ class enclave final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void Requestschedule(::grpc::ServerContext* context, ::rpc::SchedulingRequest* request, ::grpc::ServerAsyncResponseWriter< ::rpc::SchedulingResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(
+          0, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_attest<WithAsyncMethod_status<WithAsyncMethod_schedule<Service > > > AsyncService;
-  template <class BaseClass>
-  class ExperimentalWithCallbackMethod_attest : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    ExperimentalWithCallbackMethod_attest() {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::Service::
-    #else
-      ::grpc::Service::experimental().
-    #endif
-        MarkMethodCallback(0,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::rpc::Empty, ::rpc::Attestation>(
-            [this](
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                   ::grpc::CallbackServerContext*
-    #else
-                   ::grpc::experimental::CallbackServerContext*
-    #endif
-                     context, const ::rpc::Empty* request, ::rpc::Attestation* response) { return this->attest(context, request, response); }));}
-    void SetMessageAllocatorFor_attest(
-        ::grpc::experimental::MessageAllocator< ::rpc::Empty, ::rpc::Attestation>* allocator) {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
-    #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(0);
-    #endif
-      static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::rpc::Empty, ::rpc::Attestation>*>(handler)
-              ->SetMessageAllocator(allocator);
-    }
-    ~ExperimentalWithCallbackMethod_attest() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status attest(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Attestation* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-    virtual ::grpc::ServerUnaryReactor* attest(
-      ::grpc::CallbackServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Attestation* /*response*/)
-    #else
-    virtual ::grpc::experimental::ServerUnaryReactor* attest(
-      ::grpc::experimental::CallbackServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Attestation* /*response*/)
-    #endif
-      { return nullptr; }
-  };
-  template <class BaseClass>
-  class ExperimentalWithCallbackMethod_status : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    ExperimentalWithCallbackMethod_status() {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::Service::
-    #else
-      ::grpc::Service::experimental().
-    #endif
-        MarkMethodCallback(1,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::rpc::Empty, ::rpc::Status>(
-            [this](
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                   ::grpc::CallbackServerContext*
-    #else
-                   ::grpc::experimental::CallbackServerContext*
-    #endif
-                     context, const ::rpc::Empty* request, ::rpc::Status* response) { return this->status(context, request, response); }));}
-    void SetMessageAllocatorFor_status(
-        ::grpc::experimental::MessageAllocator< ::rpc::Empty, ::rpc::Status>* allocator) {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
-    #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(1);
-    #endif
-      static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::rpc::Empty, ::rpc::Status>*>(handler)
-              ->SetMessageAllocator(allocator);
-    }
-    ~ExperimentalWithCallbackMethod_status() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status status(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Status* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-    virtual ::grpc::ServerUnaryReactor* status(
-      ::grpc::CallbackServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Status* /*response*/)
-    #else
-    virtual ::grpc::experimental::ServerUnaryReactor* status(
-      ::grpc::experimental::CallbackServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Status* /*response*/)
-    #endif
-      { return nullptr; }
-  };
+  typedef WithAsyncMethod_schedule<Service> AsyncService;
   template <class BaseClass>
   class ExperimentalWithCallbackMethod_schedule : public BaseClass {
    private:
@@ -369,25 +146,35 @@ class enclave final {
     ExperimentalWithCallbackMethod_schedule() {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       ::grpc::Service::
-    #else
+#else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodCallback(2,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>(
-            [this](
+          MarkMethodCallback(0,
+                             new ::grpc_impl::internal::CallbackUnaryHandler<
+                                 ::rpc::SchedulingRequest,
+                                 ::rpc::SchedulingResponse>(
+                                 [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                   ::grpc::CallbackServerContext*
+                                     ::grpc::CallbackServerContext*
     #else
-                   ::grpc::experimental::CallbackServerContext*
+                                     ::grpc::experimental::
+                                         CallbackServerContext*
     #endif
-                     context, const ::rpc::SchedulingRequest* request, ::rpc::SchedulingResponse* response) { return this->schedule(context, request, response); }));}
+                                         context,
+                                     const ::rpc::SchedulingRequest* request,
+                                     ::rpc::SchedulingResponse* response) {
+                                   return this->schedule(
+                                       context, request, response);
+                                 }));}
     void SetMessageAllocatorFor_schedule(
         ::grpc::experimental::MessageAllocator< ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>* allocator) {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(2);
-    #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(2);
-    #endif
+      ::grpc::internal::MethodHandler* const handler =
+          ::grpc::Service::GetHandler(0);
+#else
+      ::grpc::internal::MethodHandler* const handler =
+          ::grpc::Service::experimental().GetHandler(0);
+#endif
       static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -409,52 +196,17 @@ class enclave final {
       { return nullptr; }
   };
   #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-  typedef ExperimentalWithCallbackMethod_attest<ExperimentalWithCallbackMethod_status<ExperimentalWithCallbackMethod_schedule<Service > > > CallbackService;
-  #endif
+  typedef ExperimentalWithCallbackMethod_schedule<Service> CallbackService;
+#endif
 
-  typedef ExperimentalWithCallbackMethod_attest<ExperimentalWithCallbackMethod_status<ExperimentalWithCallbackMethod_schedule<Service > > > ExperimentalCallbackService;
-  template <class BaseClass>
-  class WithGenericMethod_attest : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithGenericMethod_attest() {
-      ::grpc::Service::MarkMethodGeneric(0);
-    }
-    ~WithGenericMethod_attest() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status attest(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Attestation* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-  };
-  template <class BaseClass>
-  class WithGenericMethod_status : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithGenericMethod_status() {
-      ::grpc::Service::MarkMethodGeneric(1);
-    }
-    ~WithGenericMethod_status() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status status(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Status* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-  };
+  typedef ExperimentalWithCallbackMethod_schedule<Service>
+      ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_schedule : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithGenericMethod_schedule() {
-      ::grpc::Service::MarkMethodGeneric(2);
-    }
+    WithGenericMethod_schedule() { ::grpc::Service::MarkMethodGeneric(0); }
     ~WithGenericMethod_schedule() override {
       BaseClassMustBeDerivedFromService(this);
     }
@@ -465,53 +217,11 @@ class enclave final {
     }
   };
   template <class BaseClass>
-  class WithRawMethod_attest : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithRawMethod_attest() {
-      ::grpc::Service::MarkMethodRaw(0);
-    }
-    ~WithRawMethod_attest() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status attest(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Attestation* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    void Requestattest(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
-    }
-  };
-  template <class BaseClass>
-  class WithRawMethod_status : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithRawMethod_status() {
-      ::grpc::Service::MarkMethodRaw(1);
-    }
-    ~WithRawMethod_status() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status status(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Status* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    void Requeststatus(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
-    }
-  };
-  template <class BaseClass>
   class WithRawMethod_schedule : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawMethod_schedule() {
-      ::grpc::Service::MarkMethodRaw(2);
-    }
+    WithRawMethod_schedule() { ::grpc::Service::MarkMethodRaw(0); }
     ~WithRawMethod_schedule() override {
       BaseClassMustBeDerivedFromService(this);
     }
@@ -521,84 +231,9 @@ class enclave final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void Requestschedule(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(2, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(
+          0, context, request, response, new_call_cq, notification_cq, tag);
     }
-  };
-  template <class BaseClass>
-  class ExperimentalWithRawCallbackMethod_attest : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    ExperimentalWithRawCallbackMethod_attest() {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::Service::
-    #else
-      ::grpc::Service::experimental().
-    #endif
-        MarkMethodRawCallback(0,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
-            [this](
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                   ::grpc::CallbackServerContext*
-    #else
-                   ::grpc::experimental::CallbackServerContext*
-    #endif
-                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->attest(context, request, response); }));
-    }
-    ~ExperimentalWithRawCallbackMethod_attest() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status attest(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Attestation* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-    virtual ::grpc::ServerUnaryReactor* attest(
-      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
-    #else
-    virtual ::grpc::experimental::ServerUnaryReactor* attest(
-      ::grpc::experimental::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
-    #endif
-      { return nullptr; }
-  };
-  template <class BaseClass>
-  class ExperimentalWithRawCallbackMethod_status : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    ExperimentalWithRawCallbackMethod_status() {
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::Service::
-    #else
-      ::grpc::Service::experimental().
-    #endif
-        MarkMethodRawCallback(1,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
-            [this](
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                   ::grpc::CallbackServerContext*
-    #else
-                   ::grpc::experimental::CallbackServerContext*
-    #endif
-                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->status(context, request, response); }));
-    }
-    ~ExperimentalWithRawCallbackMethod_status() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable synchronous version of this method
-    ::grpc::Status status(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Status* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-    virtual ::grpc::ServerUnaryReactor* status(
-      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
-    #else
-    virtual ::grpc::experimental::ServerUnaryReactor* status(
-      ::grpc::experimental::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
-    #endif
-      { return nullptr; }
   };
   template <class BaseClass>
   class ExperimentalWithRawCallbackMethod_schedule : public BaseClass {
@@ -608,18 +243,24 @@ class enclave final {
     ExperimentalWithRawCallbackMethod_schedule() {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       ::grpc::Service::
-    #else
+#else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodRawCallback(2,
-          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
-            [this](
+          MarkMethodRawCallback(
+              0,
+              new ::grpc_impl::internal::
+                  CallbackUnaryHandler<::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+                      [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                   ::grpc::CallbackServerContext*
+                          ::grpc::CallbackServerContext*
     #else
-                   ::grpc::experimental::CallbackServerContext*
+                          ::grpc::experimental::CallbackServerContext*
     #endif
-                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->schedule(context, request, response); }));
+                              context,
+                          const ::grpc::ByteBuffer* request,
+                          ::grpc::ByteBuffer* response) {
+                        return this->schedule(context, request, response);
+                      }));
     }
     ~ExperimentalWithRawCallbackMethod_schedule() override {
       BaseClassMustBeDerivedFromService(this);
@@ -639,74 +280,22 @@ class enclave final {
       { return nullptr; }
   };
   template <class BaseClass>
-  class WithStreamedUnaryMethod_attest : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithStreamedUnaryMethod_attest() {
-      ::grpc::Service::MarkMethodStreamed(0,
-        new ::grpc::internal::StreamedUnaryHandler<
-          ::rpc::Empty, ::rpc::Attestation>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerUnaryStreamer<
-                     ::rpc::Empty, ::rpc::Attestation>* streamer) {
-                       return this->Streamedattest(context,
-                         streamer);
-                  }));
-    }
-    ~WithStreamedUnaryMethod_attest() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable regular version of this method
-    ::grpc::Status attest(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Attestation* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status Streamedattest(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::rpc::Empty,::rpc::Attestation>* server_unary_streamer) = 0;
-  };
-  template <class BaseClass>
-  class WithStreamedUnaryMethod_status : public BaseClass {
-   private:
-    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
-   public:
-    WithStreamedUnaryMethod_status() {
-      ::grpc::Service::MarkMethodStreamed(1,
-        new ::grpc::internal::StreamedUnaryHandler<
-          ::rpc::Empty, ::rpc::Status>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerUnaryStreamer<
-                     ::rpc::Empty, ::rpc::Status>* streamer) {
-                       return this->Streamedstatus(context,
-                         streamer);
-                  }));
-    }
-    ~WithStreamedUnaryMethod_status() override {
-      BaseClassMustBeDerivedFromService(this);
-    }
-    // disable regular version of this method
-    ::grpc::Status status(::grpc::ServerContext* /*context*/, const ::rpc::Empty* /*request*/, ::rpc::Status* /*response*/) override {
-      abort();
-      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
-    }
-    // replace default version of method with streamed unary
-    virtual ::grpc::Status Streamedstatus(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::rpc::Empty,::rpc::Status>* server_unary_streamer) = 0;
-  };
-  template <class BaseClass>
   class WithStreamedUnaryMethod_schedule : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_schedule() {
-      ::grpc::Service::MarkMethodStreamed(2,
-        new ::grpc::internal::StreamedUnaryHandler<
-          ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>(
-            [this](::grpc_impl::ServerContext* context,
-                   ::grpc_impl::ServerUnaryStreamer<
-                     ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>* streamer) {
-                       return this->Streamedschedule(context,
-                         streamer);
-                  }));
+      ::grpc::Service::MarkMethodStreamed(
+          0,
+          new ::grpc::internal::StreamedUnaryHandler<::rpc::SchedulingRequest,
+                                                     ::rpc::SchedulingResponse>(
+              [this](
+                  ::grpc_impl::ServerContext* context,
+                  ::grpc_impl::ServerUnaryStreamer<::rpc::SchedulingRequest,
+                                                   ::rpc::SchedulingResponse>*
+                      streamer) {
+                return this->Streamedschedule(context, streamer);
+              }));
     }
     ~WithStreamedUnaryMethod_schedule() override {
       BaseClassMustBeDerivedFromService(this);
@@ -719,9 +308,9 @@ class enclave final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status Streamedschedule(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::rpc::SchedulingRequest,::rpc::SchedulingResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_attest<WithStreamedUnaryMethod_status<WithStreamedUnaryMethod_schedule<Service > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_schedule<Service> StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_attest<WithStreamedUnaryMethod_status<WithStreamedUnaryMethod_schedule<Service > > > StreamedService;
+  typedef WithStreamedUnaryMethod_schedule<Service> StreamedService;
 };
 
 }  // namespace rpc

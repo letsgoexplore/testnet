@@ -58,6 +58,8 @@ void InitScheduled(SchedulingState* new_state, SchedulingMessage* new_message)
   // generate scheduling message
   makeScheduleMessage(
       new_state->reservation, new_state->footprints, new_message);
+
+  new_state->round++;
 }
 
 double get_coin()
@@ -85,9 +87,12 @@ Instruction ScheduleOneRound(const SchedulingMessage& prev_msg,
                              SchedulingState* state,
                              SchedulingMessage* new_message)
 {
-  // advance to the next round
-  state->round++;
-  // everything between the first and the last rounds
+  if (state->round == 0 || state->round > N_SCHEDULE_ROUNDS - 1) {
+    throw std::invalid_argument("invalid round # " +
+                                std::to_string(state->round));
+  }
+
+  // for everything between the first and the last rounds
   if (state->round > 0 && state->round < N_SCHEDULE_ROUNDS - 1) {
     for (size_t i = 0; i < N_SLOTS; i++) {
       if (!state->reservation.test(i)) {
@@ -128,6 +133,8 @@ Instruction ScheduleOneRound(const SchedulingMessage& prev_msg,
     makeFreshFootprints(&state->footprints);
     makeScheduleMessage(state->reservation, state->footprints, new_message);
 
+    // advance to the next round
+    state->round++;
     return Continue;
   }
 
@@ -145,7 +152,7 @@ Instruction ScheduleOneRound(const SchedulingMessage& prev_msg,
     return Done;
   }
 
-  throw std::logic_error("wrong round number");
+  return Failed;
 }
 
 void TestScheduling()
@@ -157,7 +164,7 @@ void TestScheduling()
     InitScheduled(&state, &msg);
     Instruction st = Continue;
     while (st != Done) {
-      LL_DEBUG("msg round %d: %s", state.round, msg.to_string().c_str());
+      LL_DEBUG("sched round %02d: %s", state.round, msg.to_string().c_str());
 
       SchedulingMessage new_msg;
       st = ScheduleOneRound(msg, &state, &new_msg);

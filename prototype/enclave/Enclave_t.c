@@ -36,6 +36,13 @@ typedef struct ms_ecall_get_mr_enclave_t {
   unsigned char* ms_mr_enclave;
 } ms_ecall_get_mr_enclave_t;
 
+typedef struct ms_ecall_scheduling_t {
+  int ms_retval;
+  const void* ms__prev_msg;
+  void* ms__state;
+  void* ms__new_msg;
+} ms_ecall_scheduling_t;
+
 typedef struct ms_ocall_logging_t {
   int ms_level;
   const char* ms_file;
@@ -161,30 +168,52 @@ static sgx_status_t SGX_CDECL sgx_TestScheduling(void* pms)
   return status;
 }
 
+static sgx_status_t SGX_CDECL sgx_ecall_scheduling(void* pms)
+{
+  CHECK_REF_POINTER(pms, sizeof(ms_ecall_scheduling_t));
+  //
+  // fence after pointer checks
+  //
+  sgx_lfence();
+  ms_ecall_scheduling_t* ms = SGX_CAST(ms_ecall_scheduling_t*, pms);
+  sgx_status_t status = SGX_SUCCESS;
+  const void* _tmp__prev_msg = ms->ms__prev_msg;
+  void* _tmp__state = ms->ms__state;
+  void* _tmp__new_msg = ms->ms__new_msg;
+
+  ms->ms_retval =
+      ecall_scheduling((const void*)_tmp__prev_msg, _tmp__state, _tmp__new_msg);
+
+  return status;
+}
+
 SGX_EXTERNC const struct {
   size_t nr_ecall;
   struct {
     void* ecall_addr;
     uint8_t is_priv;
-  } ecall_table[3];
-} g_ecall_table = {3,
+  } ecall_table[4];
+} g_ecall_table = {4,
                    {
                        {(void*)(uintptr_t)sgx_ecall_create_report, 0},
                        {(void*)(uintptr_t)sgx_ecall_get_mr_enclave, 0},
                        {(void*)(uintptr_t)sgx_TestScheduling, 0},
+                       {(void*)(uintptr_t)sgx_ecall_scheduling, 0},
                    }};
 
 SGX_EXTERNC const struct {
   size_t nr_ocall;
-  uint8_t entry_table[2][3];
+  uint8_t entry_table[2][4];
 } g_dyn_entry_table = {2,
                        {
                            {
                                0,
                                0,
                                0,
+                               0,
                            },
                            {
+                               0,
                                0,
                                0,
                                0,

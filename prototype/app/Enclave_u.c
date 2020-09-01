@@ -12,6 +12,13 @@ typedef struct ms_ecall_get_mr_enclave_t {
   unsigned char* ms_mr_enclave;
 } ms_ecall_get_mr_enclave_t;
 
+typedef struct ms_ecall_scheduling_t {
+  int ms_retval;
+  const void* ms__prev_msg;
+  void* ms__state;
+  void* ms__new_msg;
+} ms_ecall_scheduling_t;
+
 typedef struct ms_ocall_logging_t {
   int ms_level;
   const char* ms_file;
@@ -78,5 +85,21 @@ sgx_status_t TestScheduling(sgx_enclave_id_t eid)
 {
   sgx_status_t status;
   status = sgx_ecall(eid, 2, &ocall_table_Enclave, NULL);
+  return status;
+}
+
+sgx_status_t ecall_scheduling(sgx_enclave_id_t eid,
+                              int* retval,
+                              const void* _prev_msg,
+                              void* _state,
+                              void* _new_msg)
+{
+  sgx_status_t status;
+  ms_ecall_scheduling_t ms;
+  ms.ms__prev_msg = _prev_msg;
+  ms.ms__state = _state;
+  ms.ms__new_msg = _new_msg;
+  status = sgx_ecall(eid, 3, &ocall_table_Enclave, &ms);
+  if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
   return status;
 }

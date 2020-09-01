@@ -19,6 +19,7 @@ int ecall_create_report(sgx_target_info_t* quote_enc_info,
                         sgx_report_t* report);
 int ecall_get_mr_enclave(unsigned char mr_enclave[32]);
 void TestScheduling(void);
+int ecall_scheduling(const void* _prev_msg, void* _state, void* _new_msg);
 
 sgx_status_t SGX_CDECL ocall_logging(int level,
                                      const char* file,

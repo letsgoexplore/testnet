@@ -3,35 +3,30 @@ syntax = "proto3";
 package rpc;
 
 service enclave {
-  rpc attest(Empty) returns (Attestation);
-  rpc status(Empty) returns (Status);
   rpc schedule(SchedulingRequest) returns(SchedulingResponse);
 }
 
-message Attestation {
-  string quote = 1;
-  string mr_enclave = 2;
-  string error = 3;
+message SchedulingState {
+  uint32 round = 1;                  // round #
+  repeated bool reservation_map = 2; // current reservation map
+  repeated string footprints = 3;    // current footprint
 }
 
-// empty thus far
-message Status {
-  string version = 1;
-}
-
-// scheduling
+// footprint scheduling
 message SchedulingRequest {
-  uint32 round = 1;
+  SchedulingState cur_state = 1; // current state
+  string cur_dc_message = 2;     // message received from DC
 }
 
 message SchedulingResponse {
-  bool success = 1;
-  uint32 round = 2;
-  uint32 slot_low = 3;
-  uint32 slow_high = 4;
-  bytes sig = 10;
+  SchedulingState new_state = 1; // new state
+  string new_dc_message = 2;     // message to send to DC
+  bool final =
+      3; // if set, this is the final round. Send message to DC, and ignore the
+         // outcome. (TODO: ?? this seems to be a bug in footprint scheduling.)
 }
 
+// unused for now
 message AggregateRequest{
   uint32 round = 1;
   bytes user_id = 2;
@@ -48,6 +43,5 @@ message Aggregation {
 message AggregateResponse{
   Aggregation new_agg = 1;
 }
-
 
 message Empty {}

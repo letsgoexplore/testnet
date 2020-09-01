@@ -6,6 +6,7 @@ enclave {
         public int ecall_get_mr_enclave([out] unsigned char mr_enclave[32]);
 
         public void TestScheduling();
+        public int ecall_scheduling([user_check]const void* _prev_msg, [user_check]void* _state, [user_check]void* _new_msg);
     };
 
     untrusted {

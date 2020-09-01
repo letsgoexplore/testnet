@@ -15,15 +15,16 @@
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 extern PROTOBUF_INTERNAL_EXPORT_enclave_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Aggregation_enclave_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_enclave_2eproto ::PROTOBUF_NAMESPACE_ID::
+    internal::SCCInfo<0>
+        scc_info_SchedulingState_enclave_2eproto;
 namespace rpc {
-class AttestationDefaultTypeInternal {
+class SchedulingStateDefaultTypeInternal
+{
  public:
-  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<Attestation> _instance;
-} _Attestation_default_instance_;
-class StatusDefaultTypeInternal {
- public:
-  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<Status> _instance;
-} _Status_default_instance_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<SchedulingState>
+      _instance;
+} _SchedulingState_default_instance_;
 class SchedulingRequestDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<SchedulingRequest> _instance;
@@ -93,20 +94,6 @@ static void InitDefaultsscc_info_Aggregation_enclave_2eproto() {
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Aggregation_enclave_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_Aggregation_enclave_2eproto}, {}};
 
-static void InitDefaultsscc_info_Attestation_enclave_2eproto() {
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-  {
-    void* ptr = &::rpc::_Attestation_default_instance_;
-    new (ptr) ::rpc::Attestation();
-    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
-  }
-  ::rpc::Attestation::InitAsDefaultInstance();
-}
-
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Attestation_enclave_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_Attestation_enclave_2eproto}, {}};
-
 static void InitDefaultsscc_info_Empty_enclave_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -132,8 +119,16 @@ static void InitDefaultsscc_info_SchedulingRequest_enclave_2eproto() {
   ::rpc::SchedulingRequest::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_SchedulingRequest_enclave_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_SchedulingRequest_enclave_2eproto}, {}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1>
+    scc_info_SchedulingRequest_enclave_2eproto = {
+        {ATOMIC_VAR_INIT(
+             ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized),
+         1,
+         0,
+         InitDefaultsscc_info_SchedulingRequest_enclave_2eproto},
+        {
+            &scc_info_SchedulingState_enclave_2eproto.base,
+        }};
 
 static void InitDefaultsscc_info_SchedulingResponse_enclave_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -146,146 +141,181 @@ static void InitDefaultsscc_info_SchedulingResponse_enclave_2eproto() {
   ::rpc::SchedulingResponse::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_SchedulingResponse_enclave_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_SchedulingResponse_enclave_2eproto}, {}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1>
+    scc_info_SchedulingResponse_enclave_2eproto = {
+        {ATOMIC_VAR_INIT(
+             ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized),
+         1,
+         0,
+         InitDefaultsscc_info_SchedulingResponse_enclave_2eproto},
+        {
+            &scc_info_SchedulingState_enclave_2eproto.base,
+        }};
 
-static void InitDefaultsscc_info_Status_enclave_2eproto() {
+static void InitDefaultsscc_info_SchedulingState_enclave_2eproto()
+{
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   {
-    void* ptr = &::rpc::_Status_default_instance_;
-    new (ptr) ::rpc::Status();
+    void* ptr = &::rpc::_SchedulingState_default_instance_;
+    new (ptr)::rpc::SchedulingState();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::rpc::Status::InitAsDefaultInstance();
+  ::rpc::SchedulingState::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Status_enclave_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_Status_enclave_2eproto}, {}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0>
+    scc_info_SchedulingState_enclave_2eproto = {
+        {ATOMIC_VAR_INIT(
+             ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized),
+         0,
+         0,
+         InitDefaultsscc_info_SchedulingState_enclave_2eproto},
+        {}};
 
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_enclave_2eproto[8];
+static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_enclave_2eproto[7];
 static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_enclave_2eproto = nullptr;
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_enclave_2eproto = nullptr;
 
-const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_enclave_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::rpc::Attestation, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::rpc::Attestation, quote_),
-  PROTOBUF_FIELD_OFFSET(::rpc::Attestation, mr_enclave_),
-  PROTOBUF_FIELD_OFFSET(::rpc::Attestation, error_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::rpc::Status, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::rpc::Status, version_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, round_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, success_),
-  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, round_),
-  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, slot_low_),
-  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, slow_high_),
-  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, sig_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, round_),
-  PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, user_id_),
-  PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, user_message_),
-  PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, current_agg_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, user_id_in_aggregation_),
-  PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, current_aggregated_value_),
-  PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, sig_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::rpc::AggregateResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::rpc::AggregateResponse, new_agg_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::rpc::Empty, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
+const ::PROTOBUF_NAMESPACE_ID::uint32
+    TableStruct_enclave_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(
+        protodesc_cold) = {
+        ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, round_),
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, reservation_map_),
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, footprints_),
+        ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, cur_state_),
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, cur_dc_message_),
+        ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, new_state_),
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, new_dc_message_),
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, final_),
+        ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, round_),
+        PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, user_id_),
+        PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, user_message_),
+        PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, current_agg_),
+        ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, user_id_in_aggregation_),
+        PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, current_aggregated_value_),
+        PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, sig_),
+        ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::rpc::AggregateResponse, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
+        PROTOBUF_FIELD_OFFSET(::rpc::AggregateResponse, new_agg_),
+        ~0u,  // no _has_bits_
+        PROTOBUF_FIELD_OFFSET(::rpc::Empty, _internal_metadata_),
+        ~0u,  // no _extensions_
+        ~0u,  // no _oneof_case_
+        ~0u,  // no _weak_field_map_
 };
-static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, sizeof(::rpc::Attestation)},
-  { 8, -1, sizeof(::rpc::Status)},
-  { 14, -1, sizeof(::rpc::SchedulingRequest)},
-  { 20, -1, sizeof(::rpc::SchedulingResponse)},
-  { 30, -1, sizeof(::rpc::AggregateRequest)},
-  { 39, -1, sizeof(::rpc::Aggregation)},
-  { 47, -1, sizeof(::rpc::AggregateResponse)},
-  { 53, -1, sizeof(::rpc::Empty)},
+static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema
+    schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+        {0, -1, sizeof(::rpc::SchedulingState)},
+        {8, -1, sizeof(::rpc::SchedulingRequest)},
+        {15, -1, sizeof(::rpc::SchedulingResponse)},
+        {23, -1, sizeof(::rpc::AggregateRequest)},
+        {32, -1, sizeof(::rpc::Aggregation)},
+        {40, -1, sizeof(::rpc::AggregateResponse)},
+        {46, -1, sizeof(::rpc::Empty)},
 };
 
-static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_Attestation_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_Status_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_SchedulingRequest_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_SchedulingResponse_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_AggregateRequest_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_Aggregation_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_AggregateResponse_default_instance_),
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_Empty_default_instance_),
+static ::PROTOBUF_NAMESPACE_ID::Message const* const file_default_instances[] =
+    {
+        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
+            &::rpc::_SchedulingState_default_instance_),
+        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
+            &::rpc::_SchedulingRequest_default_instance_),
+        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
+            &::rpc::_SchedulingResponse_default_instance_),
+        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
+            &::rpc::_AggregateRequest_default_instance_),
+        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
+            &::rpc::_Aggregation_default_instance_),
+        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
+            &::rpc::_AggregateResponse_default_instance_),
+        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
+            &::rpc::_Empty_default_instance_),
 };
 
-const char descriptor_table_protodef_enclave_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\renclave.proto\022\003rpc\"\?\n\013Attestation\022\r\n\005q"
-  "uote\030\001 \001(\t\022\022\n\nmr_enclave\030\002 \001(\t\022\r\n\005error\030"
-  "\003 \001(\t\"\031\n\006Status\022\017\n\007version\030\001 \001(\t\"\"\n\021Sche"
-  "dulingRequest\022\r\n\005round\030\001 \001(\r\"f\n\022Scheduli"
-  "ngResponse\022\017\n\007success\030\001 \001(\010\022\r\n\005round\030\002 \001"
-  "(\r\022\020\n\010slot_low\030\003 \001(\r\022\021\n\tslow_high\030\004 \001(\r\022"
-  "\013\n\003sig\030\n \001(\014\"o\n\020AggregateRequest\022\r\n\005roun"
-  "d\030\001 \001(\r\022\017\n\007user_id\030\002 \001(\014\022\024\n\014user_message"
-  "\030\003 \001(\014\022%\n\013current_agg\030\004 \001(\0132\020.rpc.Aggreg"
-  "ation\"\\\n\013Aggregation\022\036\n\026user_id_in_aggre"
-  "gation\030\001 \003(\014\022 \n\030current_aggregated_value"
-  "\030\002 \001(\014\022\013\n\003sig\030\003 \001(\014\"6\n\021AggregateResponse"
-  "\022!\n\007new_agg\030\001 \001(\0132\020.rpc.Aggregation\"\007\n\005E"
-  "mpty2\221\001\n\007enclave\022&\n\006attest\022\n.rpc.Empty\032\020"
-  ".rpc.Attestation\022!\n\006status\022\n.rpc.Empty\032\013"
-  ".rpc.Status\022;\n\010schedule\022\026.rpc.Scheduling"
-  "Request\032\027.rpc.SchedulingResponseb\006proto3"
-  ;
+const char
+    descriptor_table_protodef_enclave_2eproto[] PROTOBUF_SECTION_VARIABLE(
+        protodesc_cold) =
+        "\n\renclave.proto\022\003rpc\"M\n\017SchedulingState\022"
+        "\r\n\005round\030\001 \001(\r\022\027\n\017reservation_map\030\002 "
+        "\003(\010\022"
+        "\022\n\nfootprints\030\003 \003(\t\"T\n\021SchedulingRequest"
+        "\022\'\n\tcur_state\030\001 \001(\0132\024.rpc.SchedulingStat"
+        "e\022\026\n\016cur_dc_message\030\002 \001(\t\"d\n\022SchedulingR"
+        "esponse\022\'\n\tnew_state\030\001 \001(\0132\024.rpc.Schedul"
+        "ingState\022\026\n\016new_dc_message\030\002 \001(\t\022\r\n\005fina"
+        "l\030\003 \001(\010\"o\n\020AggregateRequest\022\r\n\005round\030\001 "
+        "\001"
+        "(\r\022\017\n\007user_id\030\002 "
+        "\001(\014\022\024\n\014user_message\030\003 \001("
+        "\014\022%\n\013current_agg\030\004 \001(\0132\020.rpc.Aggregation"
+        "\"\\\n\013Aggregation\022\036\n\026user_id_in_aggregatio"
+        "n\030\001 \003(\014\022 \n\030current_aggregated_value\030\002 \001("
+        "\014\022\013\n\003sig\030\003 "
+        "\001(\014\"6\n\021AggregateResponse\022!\n\007n"
+        "ew_agg\030\001 \001(\0132\020.rpc.Aggregation\"\007\n\005Empty2"
+        "F\n\007enclave\022;\n\010schedule\022\026.rpc.SchedulingR"
+        "equest\032\027.rpc.SchedulingResponseb\006proto3";
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_enclave_2eproto_deps[1] = {
 };
-static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_enclave_2eproto_sccs[8] = {
-  &scc_info_AggregateRequest_enclave_2eproto.base,
-  &scc_info_AggregateResponse_enclave_2eproto.base,
-  &scc_info_Aggregation_enclave_2eproto.base,
-  &scc_info_Attestation_enclave_2eproto.base,
-  &scc_info_Empty_enclave_2eproto.base,
-  &scc_info_SchedulingRequest_enclave_2eproto.base,
-  &scc_info_SchedulingResponse_enclave_2eproto.base,
-  &scc_info_Status_enclave_2eproto.base,
+static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase* const
+    descriptor_table_enclave_2eproto_sccs[7] = {
+        &scc_info_AggregateRequest_enclave_2eproto.base,
+        &scc_info_AggregateResponse_enclave_2eproto.base,
+        &scc_info_Aggregation_enclave_2eproto.base,
+        &scc_info_Empty_enclave_2eproto.base,
+        &scc_info_SchedulingRequest_enclave_2eproto.base,
+        &scc_info_SchedulingResponse_enclave_2eproto.base,
+        &scc_info_SchedulingState_enclave_2eproto.base,
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_enclave_2eproto_once;
-const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_enclave_2eproto = {
-  false, false, descriptor_table_protodef_enclave_2eproto, "enclave.proto", 680,
-  &descriptor_table_enclave_2eproto_once, descriptor_table_enclave_2eproto_sccs, descriptor_table_enclave_2eproto_deps, 8, 0,
-  schemas, file_default_instances, TableStruct_enclave_2eproto::offsets,
-  file_level_metadata_enclave_2eproto, 8, file_level_enum_descriptors_enclave_2eproto, file_level_service_descriptors_enclave_2eproto,
+const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable
+    descriptor_table_enclave_2eproto = {
+        false,
+        false,
+        descriptor_table_protodef_enclave_2eproto,
+        "enclave.proto",
+        639,
+        &descriptor_table_enclave_2eproto_once,
+        descriptor_table_enclave_2eproto_sccs,
+        descriptor_table_enclave_2eproto_deps,
+        7,
+        0,
+        schemas,
+        file_default_instances,
+        TableStruct_enclave_2eproto::offsets,
+        file_level_metadata_enclave_2eproto,
+        7,
+        file_level_enum_descriptors_enclave_2eproto,
+        file_level_service_descriptors_enclave_2eproto,
 };
 
 // Force running AddDescriptors() at dynamic initialization time.
@@ -294,87 +324,78 @@ namespace rpc {
 
 // ===================================================================
 
-void Attestation::InitAsDefaultInstance() {
-}
-class Attestation::_Internal {
+void SchedulingState::InitAsDefaultInstance() {}
+class SchedulingState::_Internal
+{
  public:
 };
 
-Attestation::Attestation(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+SchedulingState::SchedulingState(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+    : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+      reservation_map_(arena),
+      footprints_(arena)
+{
   SharedCtor();
   RegisterArenaDtor(arena);
-  // @@protoc_insertion_point(arena_constructor:rpc.Attestation)
+  // @@protoc_insertion_point(arena_constructor:rpc.SchedulingState)
 }
-Attestation::Attestation(const Attestation& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
+SchedulingState::SchedulingState(const SchedulingState& from)
+    : ::PROTOBUF_NAMESPACE_ID::Message(),
+      reservation_map_(from.reservation_map_),
+      footprints_(from.footprints_)
+{
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  quote_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_quote().empty()) {
-    quote_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_quote(),
-      GetArena());
-  }
-  mr_enclave_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_mr_enclave().empty()) {
-    mr_enclave_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_mr_enclave(),
-      GetArena());
-  }
-  error_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_error().empty()) {
-    error_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_error(),
-      GetArena());
-  }
-  // @@protoc_insertion_point(copy_constructor:rpc.Attestation)
+  round_ = from.round_;
+  // @@protoc_insertion_point(copy_constructor:rpc.SchedulingState)
 }
 
-void Attestation::SharedCtor() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_Attestation_enclave_2eproto.base);
-  quote_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  mr_enclave_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  error_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+void SchedulingState::SharedCtor()
+{
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(
+      &scc_info_SchedulingState_enclave_2eproto.base);
+  round_ = 0u;
 }
 
-Attestation::~Attestation() {
-  // @@protoc_insertion_point(destructor:rpc.Attestation)
+SchedulingState::~SchedulingState()
+{
+  // @@protoc_insertion_point(destructor:rpc.SchedulingState)
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void Attestation::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
-  quote_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  mr_enclave_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  error_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-}
+void SchedulingState::SharedDtor() { GOOGLE_DCHECK(GetArena() == nullptr); }
 
-void Attestation::ArenaDtor(void* object) {
-  Attestation* _this = reinterpret_cast< Attestation* >(object);
+void SchedulingState::ArenaDtor(void* object)
+{
+  SchedulingState* _this = reinterpret_cast<SchedulingState*>(object);
   (void)_this;
 }
-void Attestation::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
-void Attestation::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
-}
-const Attestation& Attestation::default_instance() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_Attestation_enclave_2eproto.base);
+void SchedulingState::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {}
+void SchedulingState::SetCachedSize(int size) const { _cached_size_.Set(size); }
+const SchedulingState& SchedulingState::default_instance()
+{
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(
+      &::scc_info_SchedulingState_enclave_2eproto.base);
   return *internal_default_instance();
 }
 
-
-void Attestation::Clear() {
-// @@protoc_insertion_point(message_clear_start:rpc.Attestation)
+void SchedulingState::Clear()
+{
+  // @@protoc_insertion_point(message_clear_start:rpc.SchedulingState)
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  quote_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  mr_enclave_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  error_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  reservation_map_.Clear();
+  footprints_.Clear();
+  round_ = 0u;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* Attestation::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* SchedulingState::_InternalParse(
+    const char* ptr,
+    ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx)
+{
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
@@ -382,31 +403,42 @@ const char* Attestation::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // string quote = 1;
+      // uint32 round = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          auto str = _internal_mutable_quote();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.Attestation.quote"));
+        if (PROTOBUF_PREDICT_TRUE(
+                static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          round_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
-      // string mr_enclave = 2;
+      // repeated bool reservation_map = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
-          auto str = _internal_mutable_mr_enclave();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.Attestation.mr_enclave"));
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::PackedBoolParser(
+              _internal_mutable_reservation_map(), ptr, ctx);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else if (static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16) {
+          _internal_add_reservation_map(
+              ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
         continue;
-      // string error = 3;
+      // repeated string footprints = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
-          auto str = _internal_mutable_error();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.Attestation.error"));
-          CHK_(ptr);
+          ptr -= 1;
+          do {
+            ptr += 1;
+            auto str = _internal_add_footprints();
+            ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(
+                str, ptr, ctx);
+            CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(
+                str, "rpc.SchedulingState.footprints"));
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
         } else goto handle_unusual;
         continue;
       default: {
@@ -431,77 +463,85 @@ failure:
 #undef CHK_
 }
 
-::PROTOBUF_NAMESPACE_ID::uint8* Attestation::_InternalSerialize(
-    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:rpc.Attestation)
+::PROTOBUF_NAMESPACE_ID::uint8* SchedulingState::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target,
+    ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const
+{
+  // @@protoc_insertion_point(serialize_to_array_start:rpc.SchedulingState)
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // string quote = 1;
-  if (this->quote().size() > 0) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_quote().data(), static_cast<int>(this->_internal_quote().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "rpc.Attestation.quote");
-    target = stream->WriteStringMaybeAliased(
-        1, this->_internal_quote(), target);
+  // uint32 round = 1;
+  if (this->round() != 0) {
+    target = stream->EnsureSpace(target);
+    target =
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(
+            1, this->_internal_round(), target);
   }
 
-  // string mr_enclave = 2;
-  if (this->mr_enclave().size() > 0) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_mr_enclave().data(), static_cast<int>(this->_internal_mr_enclave().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "rpc.Attestation.mr_enclave");
-    target = stream->WriteStringMaybeAliased(
-        2, this->_internal_mr_enclave(), target);
+  // repeated bool reservation_map = 2;
+  if (this->_internal_reservation_map_size() > 0) {
+    target = stream->WriteFixedPacked(2, _internal_reservation_map(), target);
   }
 
-  // string error = 3;
-  if (this->error().size() > 0) {
+  // repeated string footprints = 3;
+  for (int i = 0, n = this->_internal_footprints_size(); i < n; i++) {
+    const auto& s = this->_internal_footprints(i);
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_error().data(), static_cast<int>(this->_internal_error().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "rpc.Attestation.error");
-    target = stream->WriteStringMaybeAliased(
-        3, this->_internal_error(), target);
+        s.data(),
+        static_cast<int>(s.length()),
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+        "rpc.SchedulingState.footprints");
+    target = stream->WriteString(3, s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:rpc.Attestation)
+  // @@protoc_insertion_point(serialize_to_array_end:rpc.SchedulingState)
   return target;
 }
 
-size_t Attestation::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:rpc.Attestation)
+size_t SchedulingState::ByteSizeLong() const
+{
+  // @@protoc_insertion_point(message_byte_size_start:rpc.SchedulingState)
   size_t total_size = 0;
 
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // string quote = 1;
-  if (this->quote().size() > 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_quote());
+  // repeated bool reservation_map = 2;
+  {
+    unsigned int count =
+        static_cast<unsigned int>(this->_internal_reservation_map_size());
+    size_t data_size = 1UL * count;
+    if (data_size > 0) {
+      total_size +=
+          1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
+                  static_cast<::PROTOBUF_NAMESPACE_ID::int32>(data_size));
+    }
+    int cached_size =
+        ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(data_size);
+    _reservation_map_cached_byte_size_.store(cached_size,
+                                             std::memory_order_relaxed);
+    total_size += data_size;
   }
 
-  // string mr_enclave = 2;
-  if (this->mr_enclave().size() > 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_mr_enclave());
+  // repeated string footprints = 3;
+  total_size +=
+      1 * ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(footprints_.size());
+  for (int i = 0, n = footprints_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        footprints_.Get(i));
   }
 
-  // string error = 3;
-  if (this->error().size() > 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_error());
+  // uint32 round = 1;
+  if (this->round() != 0) {
+    total_size +=
+        1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+                this->_internal_round());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -513,287 +553,85 @@ size_t Attestation::ByteSizeLong() const {
   return total_size;
 }
 
-void Attestation::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:rpc.Attestation)
+void SchedulingState::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from)
+{
+  // @@protoc_insertion_point(generalized_merge_from_start:rpc.SchedulingState)
   GOOGLE_DCHECK_NE(&from, this);
-  const Attestation* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<Attestation>(
-          &from);
+  const SchedulingState* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<SchedulingState>(&from);
   if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:rpc.Attestation)
+    // @@protoc_insertion_point(generalized_merge_from_cast_fail:rpc.SchedulingState)
     ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
   } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:rpc.Attestation)
+    // @@protoc_insertion_point(generalized_merge_from_cast_success:rpc.SchedulingState)
     MergeFrom(*source);
   }
 }
 
-void Attestation::MergeFrom(const Attestation& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:rpc.Attestation)
+void SchedulingState::MergeFrom(const SchedulingState& from)
+{
+  // @@protoc_insertion_point(class_specific_merge_from_start:rpc.SchedulingState)
   GOOGLE_DCHECK_NE(&from, this);
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.quote().size() > 0) {
-    _internal_set_quote(from._internal_quote());
-  }
-  if (from.mr_enclave().size() > 0) {
-    _internal_set_mr_enclave(from._internal_mr_enclave());
-  }
-  if (from.error().size() > 0) {
-    _internal_set_error(from._internal_error());
+  reservation_map_.MergeFrom(from.reservation_map_);
+  footprints_.MergeFrom(from.footprints_);
+  if (from.round() != 0) {
+    _internal_set_round(from._internal_round());
   }
 }
 
-void Attestation::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:rpc.Attestation)
+void SchedulingState::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from)
+{
+  // @@protoc_insertion_point(generalized_copy_from_start:rpc.SchedulingState)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-void Attestation::CopyFrom(const Attestation& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:rpc.Attestation)
+void SchedulingState::CopyFrom(const SchedulingState& from)
+{
+  // @@protoc_insertion_point(class_specific_copy_from_start:rpc.SchedulingState)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool Attestation::IsInitialized() const {
-  return true;
-}
+bool SchedulingState::IsInitialized() const { return true; }
 
-void Attestation::InternalSwap(Attestation* other) {
+void SchedulingState::InternalSwap(SchedulingState* other)
+{
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  quote_.Swap(&other->quote_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  mr_enclave_.Swap(&other->mr_enclave_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  error_.Swap(&other->error_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  reservation_map_.InternalSwap(&other->reservation_map_);
+  footprints_.InternalSwap(&other->footprints_);
+  swap(round_, other->round_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata Attestation::GetMetadata() const {
+::PROTOBUF_NAMESPACE_ID::Metadata SchedulingState::GetMetadata() const
+{
   return GetMetadataStatic();
 }
-
-
-// ===================================================================
-
-void Status::InitAsDefaultInstance() {
-}
-class Status::_Internal {
- public:
-};
-
-Status::Status(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
-  SharedCtor();
-  RegisterArenaDtor(arena);
-  // @@protoc_insertion_point(arena_constructor:rpc.Status)
-}
-Status::Status(const Status& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  version_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_version().empty()) {
-    version_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_version(),
-      GetArena());
-  }
-  // @@protoc_insertion_point(copy_constructor:rpc.Status)
-}
-
-void Status::SharedCtor() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_Status_enclave_2eproto.base);
-  version_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-}
-
-Status::~Status() {
-  // @@protoc_insertion_point(destructor:rpc.Status)
-  SharedDtor();
-  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-void Status::SharedDtor() {
-  GOOGLE_DCHECK(GetArena() == nullptr);
-  version_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-}
-
-void Status::ArenaDtor(void* object) {
-  Status* _this = reinterpret_cast< Status* >(object);
-  (void)_this;
-}
-void Status::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
-}
-void Status::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
-}
-const Status& Status::default_instance() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_Status_enclave_2eproto.base);
-  return *internal_default_instance();
-}
-
-
-void Status::Clear() {
-// @@protoc_insertion_point(message_clear_start:rpc.Status)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  version_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* Status::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
-  while (!ctx->Done(&ptr)) {
-    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
-    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
-    CHK_(ptr);
-    switch (tag >> 3) {
-      // string version = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
-          auto str = _internal_mutable_version();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.Status.version"));
-          CHK_(ptr);
-        } else goto handle_unusual;
-        continue;
-      default: {
-      handle_unusual:
-        if ((tag & 7) == 4 || tag == 0) {
-          ctx->SetLastTag(tag);
-          goto success;
-        }
-        ptr = UnknownFieldParse(tag,
-            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-            ptr, ctx);
-        CHK_(ptr != nullptr);
-        continue;
-      }
-    }  // switch
-  }  // while
-success:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto success;
-#undef CHK_
-}
-
-::PROTOBUF_NAMESPACE_ID::uint8* Status::_InternalSerialize(
-    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:rpc.Status)
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // string version = 1;
-  if (this->version().size() > 0) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_version().data(), static_cast<int>(this->_internal_version().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "rpc.Status.version");
-    target = stream->WriteStringMaybeAliased(
-        1, this->_internal_version(), target);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:rpc.Status)
-  return target;
-}
-
-size_t Status::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:rpc.Status)
-  size_t total_size = 0;
-
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // string version = 1;
-  if (this->version().size() > 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_version());
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
-        _internal_metadata_, total_size, &_cached_size_);
-  }
-  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
-  SetCachedSize(cached_size);
-  return total_size;
-}
-
-void Status::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:rpc.Status)
-  GOOGLE_DCHECK_NE(&from, this);
-  const Status* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<Status>(
-          &from);
-  if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:rpc.Status)
-    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
-  } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:rpc.Status)
-    MergeFrom(*source);
-  }
-}
-
-void Status::MergeFrom(const Status& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:rpc.Status)
-  GOOGLE_DCHECK_NE(&from, this);
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  if (from.version().size() > 0) {
-    _internal_set_version(from._internal_version());
-  }
-}
-
-void Status::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:rpc.Status)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-void Status::CopyFrom(const Status& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:rpc.Status)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool Status::IsInitialized() const {
-  return true;
-}
-
-void Status::InternalSwap(Status* other) {
-  using std::swap;
-  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  version_.Swap(&other->version_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata Status::GetMetadata() const {
-  return GetMetadataStatic();
-}
-
 
 // ===================================================================
 
 void SchedulingRequest::InitAsDefaultInstance() {
+  ::rpc::_SchedulingRequest_default_instance_._instance.get_mutable()
+      ->cur_state_ = const_cast<::rpc::SchedulingState*>(
+      ::rpc::SchedulingState::internal_default_instance());
 }
 class SchedulingRequest::_Internal {
  public:
+  static const ::rpc::SchedulingState& cur_state(const SchedulingRequest* msg);
 };
 
+const ::rpc::SchedulingState& SchedulingRequest::_Internal::cur_state(
+    const SchedulingRequest* msg)
+{
+  return *msg->cur_state_;
+}
 SchedulingRequest::SchedulingRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
   SharedCtor();
@@ -803,12 +641,28 @@ SchedulingRequest::SchedulingRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 SchedulingRequest::SchedulingRequest(const SchedulingRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  round_ = from.round_;
+  cur_dc_message_.UnsafeSetDefault(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_cur_dc_message().empty()) {
+    cur_dc_message_.Set(
+        &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+        from._internal_cur_dc_message(),
+        GetArena());
+  }
+  if (from._internal_has_cur_state()) {
+    cur_state_ = new ::rpc::SchedulingState(*from.cur_state_);
+  } else {
+    cur_state_ = nullptr;
+  }
   // @@protoc_insertion_point(copy_constructor:rpc.SchedulingRequest)
 }
 
 void SchedulingRequest::SharedCtor() {
-  round_ = 0u;
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(
+      &scc_info_SchedulingRequest_enclave_2eproto.base);
+  cur_dc_message_.UnsafeSetDefault(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  cur_state_ = nullptr;
 }
 
 SchedulingRequest::~SchedulingRequest() {
@@ -819,6 +673,9 @@ SchedulingRequest::~SchedulingRequest() {
 
 void SchedulingRequest::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
+  cur_dc_message_.DestroyNoArena(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete cur_state_;
 }
 
 void SchedulingRequest::ArenaDtor(void* object) {
@@ -842,7 +699,13 @@ void SchedulingRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  round_ = 0u;
+  cur_dc_message_.ClearToEmpty(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+  if (GetArena() == nullptr && cur_state_ != nullptr) {
+    delete cur_state_;
+  }
+  cur_state_ = nullptr;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -854,12 +717,27 @@ const char* SchedulingRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESP
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // uint32 round = 1;
+      // .rpc.SchedulingState cur_state = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
-          round_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+        if (PROTOBUF_PREDICT_TRUE(
+                static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_cur_state(), ptr);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
+        continue;
+      // string cur_dc_message = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(
+                static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+          auto str = _internal_mutable_cur_dc_message();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(
+              str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(
+              str, "rpc.SchedulingRequest.cur_dc_message"));
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
         continue;
       default: {
       handle_unusual:
@@ -889,10 +767,23 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint32 round = 1;
-  if (this->round() != 0) {
+  // .rpc.SchedulingState cur_state = 1;
+  if (this->has_cur_state()) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(1, this->_internal_round(), target);
+    target =
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::InternalWriteMessage(
+            1, _Internal::cur_state(this), target, stream);
+  }
+
+  // string cur_dc_message = 2;
+  if (this->cur_dc_message().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+        this->_internal_cur_dc_message().data(),
+        static_cast<int>(this->_internal_cur_dc_message().length()),
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+        "rpc.SchedulingRequest.cur_dc_message");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_cur_dc_message(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -911,11 +802,18 @@ size_t SchedulingRequest::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // uint32 round = 1;
-  if (this->round() != 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
-        this->_internal_round());
+  // string cur_dc_message = 2;
+  if (this->cur_dc_message().size() > 0) {
+    total_size +=
+        1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+                this->_internal_cur_dc_message());
+  }
+
+  // .rpc.SchedulingState cur_state = 1;
+  if (this->has_cur_state()) {
+    total_size +=
+        1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+                *cur_state_);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -949,8 +847,12 @@ void SchedulingRequest::MergeFrom(const SchedulingRequest& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.round() != 0) {
-    _internal_set_round(from._internal_round());
+  if (from.cur_dc_message().size() > 0) {
+    _internal_set_cur_dc_message(from._internal_cur_dc_message());
+  }
+  if (from.has_cur_state()) {
+    _internal_mutable_cur_state()->::rpc::SchedulingState::MergeFrom(
+        from._internal_cur_state());
   }
 }
 
@@ -975,7 +877,11 @@ bool SchedulingRequest::IsInitialized() const {
 void SchedulingRequest::InternalSwap(SchedulingRequest* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  swap(round_, other->round_);
+  cur_dc_message_.Swap(
+      &other->cur_dc_message_,
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+  swap(cur_state_, other->cur_state_);
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata SchedulingRequest::GetMetadata() const {
@@ -986,11 +892,20 @@ void SchedulingRequest::InternalSwap(SchedulingRequest* other) {
 // ===================================================================
 
 void SchedulingResponse::InitAsDefaultInstance() {
+  ::rpc::_SchedulingResponse_default_instance_._instance.get_mutable()
+      ->new_state_ = const_cast<::rpc::SchedulingState*>(
+      ::rpc::SchedulingState::internal_default_instance());
 }
 class SchedulingResponse::_Internal {
  public:
+  static const ::rpc::SchedulingState& new_state(const SchedulingResponse* msg);
 };
 
+const ::rpc::SchedulingState& SchedulingResponse::_Internal::new_state(
+    const SchedulingResponse* msg)
+{
+  return *msg->new_state_;
+}
 SchedulingResponse::SchedulingResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
   SharedCtor();
@@ -1000,23 +915,32 @@ SchedulingResponse::SchedulingResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 SchedulingResponse::SchedulingResponse(const SchedulingResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  sig_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_sig().empty()) {
-    sig_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_sig(),
-      GetArena());
+  new_dc_message_.UnsafeSetDefault(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_new_dc_message().empty()) {
+    new_dc_message_.Set(
+        &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+        from._internal_new_dc_message(),
+        GetArena());
   }
-  ::memcpy(&success_, &from.success_,
-    static_cast<size_t>(reinterpret_cast<char*>(&slow_high_) -
-    reinterpret_cast<char*>(&success_)) + sizeof(slow_high_));
+  if (from._internal_has_new_state()) {
+    new_state_ = new ::rpc::SchedulingState(*from.new_state_);
+  } else {
+    new_state_ = nullptr;
+  }
+  final_ = from.final_;
   // @@protoc_insertion_point(copy_constructor:rpc.SchedulingResponse)
 }
 
 void SchedulingResponse::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SchedulingResponse_enclave_2eproto.base);
-  sig_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  ::memset(&success_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&slow_high_) -
-      reinterpret_cast<char*>(&success_)) + sizeof(slow_high_));
+  new_dc_message_.UnsafeSetDefault(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  ::memset(&new_state_,
+           0,
+           static_cast<size_t>(reinterpret_cast<char*>(&final_) -
+                               reinterpret_cast<char*>(&new_state_)) +
+               sizeof(final_));
 }
 
 SchedulingResponse::~SchedulingResponse() {
@@ -1027,7 +951,9 @@ SchedulingResponse::~SchedulingResponse() {
 
 void SchedulingResponse::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  sig_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  new_dc_message_.DestroyNoArena(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete new_state_;
 }
 
 void SchedulingResponse::ArenaDtor(void* object) {
@@ -1051,10 +977,14 @@ void SchedulingResponse::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  sig_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  ::memset(&success_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&slow_high_) -
-      reinterpret_cast<char*>(&success_)) + sizeof(slow_high_));
+  new_dc_message_.ClearToEmpty(
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
+  if (GetArena() == nullptr && new_state_ != nullptr) {
+    delete new_state_;
+  }
+  new_state_ = nullptr;
+  final_ = false;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1066,39 +996,32 @@ const char* SchedulingResponse::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // bool success = 1;
+      // .rpc.SchedulingState new_state = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
-          success_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+        if (PROTOBUF_PREDICT_TRUE(
+                static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_new_state(), ptr);
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
-      // uint32 round = 2;
+      // string new_dc_message = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16)) {
-          round_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+        if (PROTOBUF_PREDICT_TRUE(
+                static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+          auto str = _internal_mutable_new_dc_message();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(
+              str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(
+              str, "rpc.SchedulingResponse.new_dc_message"));
           CHK_(ptr);
-        } else goto handle_unusual;
+        } else
+          goto handle_unusual;
         continue;
-      // uint32 slot_low = 3;
+      // bool final = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 24)) {
-          slot_low_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else goto handle_unusual;
-        continue;
-      // uint32 slow_high = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 32)) {
-          slow_high_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else goto handle_unusual;
-        continue;
-      // bytes sig = 10;
-      case 10:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 82)) {
-          auto str = _internal_mutable_sig();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          final_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1130,34 +1053,31 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // bool success = 1;
-  if (this->success() != 0) {
+  // .rpc.SchedulingState new_state = 1;
+  if (this->has_new_state()) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(1, this->_internal_success(), target);
+    target =
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::InternalWriteMessage(
+            1, _Internal::new_state(this), target, stream);
   }
 
-  // uint32 round = 2;
-  if (this->round() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(2, this->_internal_round(), target);
+  // string new_dc_message = 2;
+  if (this->new_dc_message().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+        this->_internal_new_dc_message().data(),
+        static_cast<int>(this->_internal_new_dc_message().length()),
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+        "rpc.SchedulingResponse.new_dc_message");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_new_dc_message(), target);
   }
 
-  // uint32 slot_low = 3;
-  if (this->slot_low() != 0) {
+  // bool final = 3;
+  if (this->final() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(3, this->_internal_slot_low(), target);
-  }
-
-  // uint32 slow_high = 4;
-  if (this->slow_high() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(4, this->_internal_slow_high(), target);
-  }
-
-  // bytes sig = 10;
-  if (this->sig().size() > 0) {
-    target = stream->WriteBytesMaybeAliased(
-        10, this->_internal_sig(), target);
+    target =
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(
+            3, this->_internal_final(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1176,37 +1096,23 @@ size_t SchedulingResponse::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes sig = 10;
-  if (this->sig().size() > 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_sig());
+  // string new_dc_message = 2;
+  if (this->new_dc_message().size() > 0) {
+    total_size +=
+        1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+                this->_internal_new_dc_message());
   }
 
-  // bool success = 1;
-  if (this->success() != 0) {
+  // .rpc.SchedulingState new_state = 1;
+  if (this->has_new_state()) {
+    total_size +=
+        1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+                *new_state_);
+  }
+
+  // bool final = 3;
+  if (this->final() != 0) {
     total_size += 1 + 1;
-  }
-
-  // uint32 round = 2;
-  if (this->round() != 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
-        this->_internal_round());
-  }
-
-  // uint32 slot_low = 3;
-  if (this->slot_low() != 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
-        this->_internal_slot_low());
-  }
-
-  // uint32 slow_high = 4;
-  if (this->slow_high() != 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
-        this->_internal_slow_high());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1240,20 +1146,15 @@ void SchedulingResponse::MergeFrom(const SchedulingResponse& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.sig().size() > 0) {
-    _internal_set_sig(from._internal_sig());
+  if (from.new_dc_message().size() > 0) {
+    _internal_set_new_dc_message(from._internal_new_dc_message());
   }
-  if (from.success() != 0) {
-    _internal_set_success(from._internal_success());
+  if (from.has_new_state()) {
+    _internal_mutable_new_state()->::rpc::SchedulingState::MergeFrom(
+        from._internal_new_state());
   }
-  if (from.round() != 0) {
-    _internal_set_round(from._internal_round());
-  }
-  if (from.slot_low() != 0) {
-    _internal_set_slot_low(from._internal_slot_low());
-  }
-  if (from.slow_high() != 0) {
-    _internal_set_slow_high(from._internal_slow_high());
+  if (from.final() != 0) {
+    _internal_set_final(from._internal_final());
   }
 }
 
@@ -1278,13 +1179,16 @@ bool SchedulingResponse::IsInitialized() const {
 void SchedulingResponse::InternalSwap(SchedulingResponse* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  sig_.Swap(&other->sig_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  new_dc_message_.Swap(
+      &other->new_dc_message_,
+      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
+      GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(SchedulingResponse, slow_high_)
-      + sizeof(SchedulingResponse::slow_high_)
-      - PROTOBUF_FIELD_OFFSET(SchedulingResponse, success_)>(
-          reinterpret_cast<char*>(&success_),
-          reinterpret_cast<char*>(&other->success_));
+      PROTOBUF_FIELD_OFFSET(SchedulingResponse, final_) +
+      sizeof(SchedulingResponse::final_) -
+      PROTOBUF_FIELD_OFFSET(SchedulingResponse, new_state_)>(
+      reinterpret_cast<char*>(&new_state_),
+      reinterpret_cast<char*>(&other->new_state_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata SchedulingResponse::GetMetadata() const {
@@ -2257,11 +2161,11 @@ void Empty::InternalSwap(Empty* other) {
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace rpc
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::rpc::Attestation* Arena::CreateMaybeMessage< ::rpc::Attestation >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::rpc::Attestation >(arena);
-}
-template<> PROTOBUF_NOINLINE ::rpc::Status* Arena::CreateMaybeMessage< ::rpc::Status >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::rpc::Status >(arena);
+template <>
+PROTOBUF_NOINLINE ::rpc::SchedulingState*
+Arena::CreateMaybeMessage<::rpc::SchedulingState>(Arena* arena)
+{
+  return Arena::CreateMessageInternal<::rpc::SchedulingState>(arena);
 }
 template<> PROTOBUF_NOINLINE ::rpc::SchedulingRequest* Arena::CreateMaybeMessage< ::rpc::SchedulingRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::rpc::SchedulingRequest >(arena);

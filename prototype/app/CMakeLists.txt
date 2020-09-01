@@ -13,15 +13,11 @@ add_custom_command(
 #### dependencies
 ###############################
 
+# Boost
 find_package(Boost QUIET REQUIRED COMPONENTS program_options filesystem system)
-find_package(LOG4CXX REQUIRED)
 
-# ###############################################################################
-# grpc
-# ###############################################################################
-
+# gRPC
 list(APPEND CMAKE_PREFIX_PATH "/opt/grpc" "/opt/protobuf")
-
 find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
 
