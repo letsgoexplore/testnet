@@ -6,5 +6,5 @@ import python.enclave_pb2 as enclave
 channel = grpc.insecure_channel('localhost:12345')
 stub = enclave_grpc.enclaveStub(channel)
 
-req = enclave.SchedulingRequest(round=0)
+req = enclave.SchedulingRequest()
 resp = stub.schedule(req)
