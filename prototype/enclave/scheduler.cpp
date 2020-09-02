@@ -23,6 +23,7 @@ void makeScheduleMessage(const SlotBitmap& map,
 
 void makeFreshFootprints(SlotFootprint* fps)
 {
+  // FIXME: this chooses 000
   size_t msg_len_bytes = (N_SLOTS * FOOTPRINT_SIZE + 7) / 8;  // bits to bytes
   unsigned char random[msg_len_bytes];
   sgx_status_t ret = sgx_read_rand(random, msg_len_bytes);
@@ -149,6 +150,8 @@ Instruction ScheduleOneRound(const SchedulingMessage& prev_msg,
     // get fresh footprints
     makeFreshFootprints(&state->footprints);
     makeScheduleMessage(state->reservation, state->footprints, new_message);
+
+    state->round++;  // TODO: this is not used
     return Done;
   }
 

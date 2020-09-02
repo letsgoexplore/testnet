@@ -36,7 +36,8 @@ enclave::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel)
       rpcmethod_schedule_(enclave_method_names[0],
                           ::grpc::internal::RpcMethod::NORMAL_RPC,
                           channel)
-{}
+{
+}
 
 ::grpc::Status enclave::Stub::schedule(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::rpc::SchedulingResponse* response) {
   return ::grpc::internal::BlockingUnaryCall(channel_.get(), rpcmethod_schedule_, context, request, response);

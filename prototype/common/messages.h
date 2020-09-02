@@ -1,4 +1,6 @@
+#include <array>
 #include <bitset>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -82,6 +84,20 @@ class SchedulingState
     for (Footprint& fp : footprints) {
       fp.reset();
     }
+  }
+
+  std::string to_string()
+  {
+    auto s = "round=" + std::to_string(round) +
+             "; rsvmap=" + reservation.to_string() + "; footprints=";
+
+    std::string ss = "[";
+    for (const auto& fp : footprints) {
+      ss += fp.to_string();
+      ss += ",";
+    }
+    ss += "]";
+    return s + ss;
   }
 };
 

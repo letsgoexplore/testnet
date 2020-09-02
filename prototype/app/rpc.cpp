@@ -31,6 +31,9 @@ grpc::Status RpcServer::schedule(::grpc::ServerContext* context,
 
   // build state
   SchedulingState state = set_state(request->cur_state());
+
+  SPDLOG_INFO("state={}", state.to_string());
+
   SchedulingMessage prev_message;
   if (state.round > 0) {
     // prev_message is not set for the first round
@@ -48,18 +51,24 @@ grpc::Status RpcServer::schedule(::grpc::ServerContext* context,
   }
 
   if (ret == SCHEDULE_CONTINUE || ret == SCHEDULE_DONE) {
-    SPDLOG_DEBUG("ret = {}", ret);
-    rpc::SchedulingState new_st;
-    new_st.set_round(state.round);
+    SPDLOG_INFO(ret == SCHEDULE_CONTINUE ? "continue" : "done");
+    SPDLOG_INFO("next round: {}", state.round);
+    SPDLOG_INFO("new state: {}", state.to_string());
+    SPDLOG_INFO("new message: {}", new_message.to_string());
+
+    // allocate state
+    auto* new_st = new rpc::SchedulingState{};
+    new_st->set_round(state.round);
 
     for (size_t i = 0; i < N_SLOTS; i++) {
       // TODO: check this does not mess up the orders
-      new_st.add_reservation_map(state.reservation.test(i));
-      new_st.add_footprints(state.footprints[i].to_string());
+      new_st->add_reservation_map(state.reservation.test(i));
+      new_st->add_footprints(state.footprints[i].to_string());
     }
 
+    response->set_allocated_new_state(new_st);
+
     // build response
-    response->set_allocated_new_state(&new_st);
     response->set_new_dc_message(new_message.to_string());
     response->set_final(ret == SCHEDULE_DONE);
     return grpc::Status::OK;

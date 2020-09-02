@@ -148,24 +148,25 @@ class enclave final {
       ::grpc::Service::
 #else
       ::grpc::Service::experimental().
-    #endif
+#endif
           MarkMethodCallback(0,
                              new ::grpc_impl::internal::CallbackUnaryHandler<
                                  ::rpc::SchedulingRequest,
                                  ::rpc::SchedulingResponse>(
                                  [this](
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+#ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                                      ::grpc::CallbackServerContext*
-    #else
+#else
                                      ::grpc::experimental::
                                          CallbackServerContext*
-    #endif
+#endif
                                          context,
                                      const ::rpc::SchedulingRequest* request,
                                      ::rpc::SchedulingResponse* response) {
                                    return this->schedule(
                                        context, request, response);
-                                 }));}
+                                 }));
+    }
     void SetMessageAllocatorFor_schedule(
         ::grpc::experimental::MessageAllocator< ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>* allocator) {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -245,17 +246,17 @@ class enclave final {
       ::grpc::Service::
 #else
       ::grpc::Service::experimental().
-    #endif
+#endif
           MarkMethodRawCallback(
               0,
               new ::grpc_impl::internal::
                   CallbackUnaryHandler<::grpc::ByteBuffer, ::grpc::ByteBuffer>(
                       [this](
-    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+#ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
                           ::grpc::CallbackServerContext*
-    #else
+#else
                           ::grpc::experimental::CallbackServerContext*
-    #endif
+#endif
                               context,
                           const ::grpc::ByteBuffer* request,
                           ::grpc::ByteBuffer* response) {

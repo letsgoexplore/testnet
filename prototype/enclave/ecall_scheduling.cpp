@@ -15,6 +15,7 @@ int ecall_scheduling(const void* _prev_msg, void* _state, void* _new_msg)
     if (state->round == 0) {
       LL_DEBUG("init");
       InitScheduled(state, new_msg);
+      return SCHEDULE_CONTINUE;
     } else {
       LL_DEBUG("round %d", state->round);
 
@@ -31,6 +32,4 @@ int ecall_scheduling(const void* _prev_msg, void* _state, void* _new_msg)
     LL_CRITICAL("except: %s", e.what());
     return SCHEDULE_EXCEPT_CAUGHT;
   }
-
-  return 0;
 }
