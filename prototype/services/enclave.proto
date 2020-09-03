@@ -15,12 +15,12 @@ message SchedulingState {
 // footprint scheduling
 message SchedulingRequest {
   SchedulingState cur_state = 1; // current state
-  string cur_dc_message = 2;     // message received from DC
+  string cur_dc_message = 2;     // message received from DC.
 }
 
 message SchedulingResponse {
   SchedulingState new_state = 1; // new state
-  string new_dc_message = 2;     // message to send to DC
+  string new_dc_message = 2;     // message to send to DC. TODO: call it scheduling broadcast.
   bool final =
       3; // if set, this is the final round. Send message to DC, and ignore the
          // outcome. (TODO: ?? this seems to be a bug in footprint scheduling.)
