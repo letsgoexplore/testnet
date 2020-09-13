@@ -18,11 +18,13 @@ class Config
   po::variables_map vm;
   uint32_t rpc_port;
   string enclave_path;
+  bool run_tests_and_exit = false;
 
  public:
   uint32_t get_rpc_port() const { return rpc_port; }
-
   const string& get_enclave_path() const { return enclave_path; }
+  bool is_in_test() const { return run_tests_and_exit; }
+
   Config(int argc, const char* argv[]);
 };
 

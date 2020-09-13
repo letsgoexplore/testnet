@@ -1,20 +1,9 @@
 
-// SGX headers
-#include <sgx_uae_service.h>
-
 // system headers
 #include <grpcpp/server_builder.h>
 
-#include <atomic>
-#include <boost/filesystem.hpp>
-#include <boost/program_options.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-#include <chrono>
-#include <csignal>
-#include <iostream>
 #include <string>
 #include <thread>
-#include <utility>
 
 // app headers
 #include "app/Enclave_u.h"
@@ -45,10 +34,13 @@ int main(int argc, const char *argv[])
   }
 
   // do testing
-  //  sgx_status_t st = TestScheduling(eid);
-  //  if (st != SGX_SUCCESS) {
-  //    SPDLOG_ERROR("TestScheduling failed with {}", st);
-  //  }
+  if (config.is_in_test()) {
+    sgx_status_t st = TestScheduling(eid);
+    if (st != SGX_SUCCESS) {
+      SPDLOG_ERROR("TestScheduling failed with {}", st);
+    }
+    return st;
+  }
 
   // starting the backend RPC server
   RpcServer tc_service(eid);

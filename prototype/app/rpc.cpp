@@ -69,7 +69,7 @@ grpc::Status RpcServer::schedule(::grpc::ServerContext* context,
     response->set_allocated_new_state(new_st);
 
     // build response
-    response->set_new_dc_message(new_message.to_string());
+    response->set_message_to_broadcast(new_message.to_string());
     response->set_final(ret == SCHEDULE_DONE);
     return grpc::Status::OK;
   }

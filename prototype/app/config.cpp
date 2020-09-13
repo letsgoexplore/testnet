@@ -16,6 +16,10 @@ app::Config::Config(int argc, const char **argv)
         "enclave",
         po::value(&enclave_path)->default_value("enclave.debug.so"),
         "path to the enclave so file");
+    desc.add_options()(
+        "test",
+        po::bool_switch(&run_tests_and_exit)->default_value(false),
+        "run tests and exit");
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
     if (vm.count("help")) {

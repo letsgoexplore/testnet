@@ -5,42 +5,62 @@
 #include <vector>
 
 #include "log.h"
+#include "random.h"
 
-//! make a scheduling message to be broadcast to the DC net
+// Function to generate all binary strings
+static void generateAllBinaryStrings(std::vector<Footprint>& out,
+                                     size_t current_len,
+                                     Footprint& fp)
+{
+  if (current_len == FOOTPRINT_SIZE) {
+    out.push_back(fp);
+    return;
+  }
+
+  fp.set(current_len);
+  generateAllBinaryStrings(out, current_len + 1, fp);
+
+  fp.reset(current_len);
+  generateAllBinaryStrings(out, current_len + 1, fp);
+}
+
+static std::vector<Footprint> generateAllPossibleFootprints()
+{
+  std::vector<Footprint> all_possible_fps;
+  Footprint fp;
+  generateAllBinaryStrings(all_possible_fps, 0, fp);
+
+  // last one is always 000..0
+  all_possible_fps.erase(all_possible_fps.end() - 1);
+  return all_possible_fps;
+}
+
+// all possible footprints
+const std::vector<Footprint> ALL_FOOTPRINTS = generateAllPossibleFootprints();
+
+//! write to fps a fresh randomly generated footprints
+//! \param fps
+static void makeFreshFootprints(SlotFootprint* fps)
+{
+  for (size_t i = 0; i < N_SLOTS; i++) {
+    fps->operator[](i) = pick_randomly(ALL_FOOTPRINTS);
+    //    Footprint& fp = fps->at(i);
+    //    fp = pick_randomly(ALL_FOOTPRINTS);
+  }
+}
+
+//! make a scheduling message to be broadcast to the DC net.
+//! this simply put footprints in the slots to be reserved
 //! \param map
 //! \param footprints
 //! \param msg
-void makeScheduleMessage(const SlotBitmap& map,
-                         const SlotFootprint& footprints,
-                         SchedulingMessage* msg)
+static void makeScheduleMessage(const SlotBitmap& map,
+                                const SlotFootprint& footprints,
+                                SchedulingMessage* msg)
 {
   for (size_t i = 0; i < map.size(); i++) {
     if (map.test(i)) {
       msg->message[i] = footprints[i];
-    }
-  }
-}
-
-void makeFreshFootprints(SlotFootprint* fps)
-{
-  // FIXME: this chooses 000
-  size_t msg_len_bytes = (N_SLOTS * FOOTPRINT_SIZE + 7) / 8;  // bits to bytes
-  unsigned char random[msg_len_bytes];
-  sgx_status_t ret = sgx_read_rand(random, msg_len_bytes);
-  if (ret != SGX_SUCCESS) {
-    throw std::runtime_error("SGX random failed with " + std::to_string(ret));
-  }
-
-  for (size_t i = 0; i < fps->size(); i++) {
-    auto& fp = fps->at(i);
-    for (size_t j = 0; j < fp.size(); j++) {
-      unsigned int bit_index = j + i * 3;
-      // take out the bit_index (th) bit of random
-      if ((1U << (bit_index % 8)) & (random[bit_index / 8])) {
-        fp.set(j, true);
-      } else {
-        fp.set(j, false);
-      }
     }
   }
 }
@@ -61,21 +81,6 @@ void InitScheduled(SchedulingState* new_state, SchedulingMessage* new_message)
       new_state->reservation, new_state->footprints, new_message);
 
   new_state->round++;
-}
-
-double get_coin()
-{
-  uint32_t coin;
-  sgx_read_rand((unsigned char*)&coin, sizeof(coin));
-  return coin / std::numeric_limits<uint32_t>::max();
-}
-
-uint32_t get_rand(size_t max)
-{
-  uint32_t coin;
-  sgx_read_rand((unsigned char*)&coin, sizeof(coin));
-
-  return coin % max;
 }
 
 //! one round of footprint scheduling
@@ -158,7 +163,7 @@ Instruction ScheduleOneRound(const SchedulingMessage& prev_msg,
   return Failed;
 }
 
-void TestScheduling()
+static void simulate_scheduling()
 {
   SchedulingState state;
   SchedulingMessage msg;
@@ -177,3 +182,14 @@ void TestScheduling()
     LL_CRITICAL("caught: %s", e.what());
   }
 }
+
+static void test_generate_all()
+{
+  auto fps = generateAllPossibleFootprints();
+  assert(fps.size() == (2U << FOOTPRINT_SIZE) - 1);
+  for (uint32_t i = 0; i < fps.size(); i++) {
+    LL_DEBUG("all possible footprint #%d=%s", i, fps[i].to_string().c_str());
+  }
+}
+
+void TestScheduling() { test_generate_all(); }

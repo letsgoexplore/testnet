@@ -15,6 +15,8 @@ else ()
     set(SGX_SDK /opt/intel/sgxsdk)
 endif ()
 
+set(SGX_SSL_PATH /opt/intel/sgxssl)
+
 include(cmake/Init.cmake)
 
 IF (CMAKE_BUILD_TYPE MATCHES Debug)

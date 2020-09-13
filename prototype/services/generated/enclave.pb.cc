@@ -201,7 +201,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32
         ~0u,  // no _oneof_case_
         ~0u,  // no _weak_field_map_
         PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, new_state_),
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, new_dc_message_),
+        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, message_to_broadcast_),
         PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, final_),
         ~0u,  // no _has_bits_
         PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, _internal_metadata_),
@@ -269,21 +269,22 @@ const char
         "\003(\010\022"
         "\022\n\nfootprints\030\003 \003(\t\"T\n\021SchedulingRequest"
         "\022\'\n\tcur_state\030\001 \001(\0132\024.rpc.SchedulingStat"
-        "e\022\026\n\016cur_dc_message\030\002 \001(\t\"d\n\022SchedulingR"
+        "e\022\026\n\016cur_dc_message\030\002 \001(\t\"j\n\022SchedulingR"
         "esponse\022\'\n\tnew_state\030\001 \001(\0132\024.rpc.Schedul"
-        "ingState\022\026\n\016new_dc_message\030\002 \001(\t\022\r\n\005fina"
-        "l\030\003 \001(\010\"o\n\020AggregateRequest\022\r\n\005round\030\001 "
-        "\001"
-        "(\r\022\017\n\007user_id\030\002 "
-        "\001(\014\022\024\n\014user_message\030\003 \001("
-        "\014\022%\n\013current_agg\030\004 \001(\0132\020.rpc.Aggregation"
-        "\"\\\n\013Aggregation\022\036\n\026user_id_in_aggregatio"
-        "n\030\001 \003(\014\022 \n\030current_aggregated_value\030\002 \001("
-        "\014\022\013\n\003sig\030\003 "
-        "\001(\014\"6\n\021AggregateResponse\022!\n\007n"
-        "ew_agg\030\001 \001(\0132\020.rpc.Aggregation\"\007\n\005Empty2"
-        "F\n\007enclave\022;\n\010schedule\022\026.rpc.SchedulingR"
-        "equest\032\027.rpc.SchedulingResponseb\006proto3";
+        "ingState\022\034\n\024message_to_broadcast\030\002 \001(\t\022\r"
+        "\n\005final\030\003 \001(\010\"o\n\020AggregateRequest\022\r\n\005rou"
+        "nd\030\001 \001(\r\022\017\n\007user_id\030\002 "
+        "\001(\014\022\024\n\014user_messag"
+        "e\030\003 \001(\014\022%\n\013current_agg\030\004 "
+        "\001(\0132\020.rpc.Aggre"
+        "gation\"\\\n\013Aggregation\022\036\n\026user_id_in_aggr"
+        "egation\030\001 \003(\014\022 \n\030current_aggregated_valu"
+        "e\030\002 \001(\014\022\013\n\003sig\030\003 "
+        "\001(\014\"6\n\021AggregateRespons"
+        "e\022!\n\007new_agg\030\001 \001(\0132\020.rpc.Aggregation\"\007\n\005"
+        "Empty2F\n\007enclave\022;\n\010schedule\022\026.rpc.Sched"
+        "ulingRequest\032\027.rpc.SchedulingResponseb\006p"
+        "roto3";
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_enclave_2eproto_deps[1] = {
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase* const
@@ -303,7 +304,7 @@ const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable
         false,
         descriptor_table_protodef_enclave_2eproto,
         "enclave.proto",
-        639,
+        645,
         &descriptor_table_enclave_2eproto_once,
         descriptor_table_enclave_2eproto_sccs,
         descriptor_table_enclave_2eproto_deps,
@@ -915,12 +916,12 @@ SchedulingResponse::SchedulingResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 SchedulingResponse::SchedulingResponse(const SchedulingResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  new_dc_message_.UnsafeSetDefault(
+  message_to_broadcast_.UnsafeSetDefault(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_new_dc_message().empty()) {
-    new_dc_message_.Set(
+  if (!from._internal_message_to_broadcast().empty()) {
+    message_to_broadcast_.Set(
         &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-        from._internal_new_dc_message(),
+        from._internal_message_to_broadcast(),
         GetArena());
   }
   if (from._internal_has_new_state()) {
@@ -934,7 +935,7 @@ SchedulingResponse::SchedulingResponse(const SchedulingResponse& from)
 
 void SchedulingResponse::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SchedulingResponse_enclave_2eproto.base);
-  new_dc_message_.UnsafeSetDefault(
+  message_to_broadcast_.UnsafeSetDefault(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&new_state_,
            0,
@@ -951,7 +952,7 @@ SchedulingResponse::~SchedulingResponse() {
 
 void SchedulingResponse::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  new_dc_message_.DestroyNoArena(
+  message_to_broadcast_.DestroyNoArena(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (this != internal_default_instance()) delete new_state_;
 }
@@ -977,7 +978,7 @@ void SchedulingResponse::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  new_dc_message_.ClearToEmpty(
+  message_to_broadcast_.ClearToEmpty(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       GetArena());
   if (GetArena() == nullptr && new_state_ != nullptr) {
@@ -1005,15 +1006,15 @@ const char* SchedulingResponse::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
         } else
           goto handle_unusual;
         continue;
-      // string new_dc_message = 2;
+      // string message_to_broadcast = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(
                 static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
-          auto str = _internal_mutable_new_dc_message();
+          auto str = _internal_mutable_message_to_broadcast();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(
               str, ptr, ctx);
           CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(
-              str, "rpc.SchedulingResponse.new_dc_message"));
+              str, "rpc.SchedulingResponse.message_to_broadcast"));
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -1061,15 +1062,15 @@ failure:
             1, _Internal::new_state(this), target, stream);
   }
 
-  // string new_dc_message = 2;
-  if (this->new_dc_message().size() > 0) {
+  // string message_to_broadcast = 2;
+  if (this->message_to_broadcast().size() > 0) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-        this->_internal_new_dc_message().data(),
-        static_cast<int>(this->_internal_new_dc_message().length()),
+        this->_internal_message_to_broadcast().data(),
+        static_cast<int>(this->_internal_message_to_broadcast().length()),
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-        "rpc.SchedulingResponse.new_dc_message");
+        "rpc.SchedulingResponse.message_to_broadcast");
     target = stream->WriteStringMaybeAliased(
-        2, this->_internal_new_dc_message(), target);
+        2, this->_internal_message_to_broadcast(), target);
   }
 
   // bool final = 3;
@@ -1096,11 +1097,11 @@ size_t SchedulingResponse::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // string new_dc_message = 2;
-  if (this->new_dc_message().size() > 0) {
+  // string message_to_broadcast = 2;
+  if (this->message_to_broadcast().size() > 0) {
     total_size +=
         1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-                this->_internal_new_dc_message());
+                this->_internal_message_to_broadcast());
   }
 
   // .rpc.SchedulingState new_state = 1;
@@ -1146,8 +1147,8 @@ void SchedulingResponse::MergeFrom(const SchedulingResponse& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.new_dc_message().size() > 0) {
-    _internal_set_new_dc_message(from._internal_new_dc_message());
+  if (from.message_to_broadcast().size() > 0) {
+    _internal_set_message_to_broadcast(from._internal_message_to_broadcast());
   }
   if (from.has_new_state()) {
     _internal_mutable_new_state()->::rpc::SchedulingState::MergeFrom(
@@ -1179,8 +1180,8 @@ bool SchedulingResponse::IsInitialized() const {
 void SchedulingResponse::InternalSwap(SchedulingResponse* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  new_dc_message_.Swap(
-      &other->new_dc_message_,
+  message_to_broadcast_.Swap(
+      &other->message_to_broadcast_,
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<

@@ -20,10 +20,11 @@ message SchedulingRequest {
 
 message SchedulingResponse {
   SchedulingState new_state = 1; // new state
-  string new_dc_message = 2;     // message to send to DC. TODO: call it scheduling broadcast.
-  bool final =
-      3; // if set, this is the final round. Send message to DC, and ignore the
-         // outcome. (TODO: ?? this seems to be a bug in footprint scheduling.)
+  string message_to_broadcast =
+      2;          // message to send to DC. TODO: call it scheduling broadcast.
+  bool final = 3; // if set, this is the final round. Send message to DC, and
+                  // ignore the outcome. (XXX although sending it to DC has no
+                  // effect. this seems to be a bug in footprint scheduling.)
 }
 
 // unused for now

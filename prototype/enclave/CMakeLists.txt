@@ -1,5 +1,4 @@
-add_definitions(-DENCLAVE_STD_ALT)
-add_definitions(-DIN_ENCLAVE)
+add_definitions(-DIN_ENCLAVE)  # used in log.h
 
 ###############################
 #### list source code files
@@ -25,7 +24,7 @@ add_library(enclave SHARED
         glue.c
         log.cpp
         scheduler.cpp
-        types.cpp ecall_scheduling.cpp)
+        types.cpp ecall_scheduling.cpp random.cpp random.h)
 
 ###############################
 #### Include & Libs
@@ -39,6 +38,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_C_FLAGS} \
 
 include_directories(
         $(CMAKE_CURRENT_SOURCE_DIR)
+        ${SGXSSL_INCLUDE_DIRS}
         ${SGX_SDK}/include
         ${SGX_SDK}/include/tlibc
         ${SGX_SDK}/include/libcxx)

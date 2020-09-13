@@ -586,35 +586,36 @@ class SchedulingResponse PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
    enum : int {
-     kNewDcMessageFieldNumber = 2,
+     kMessageToBroadcastFieldNumber = 2,
      kNewStateFieldNumber = 1,
      kFinalFieldNumber = 3,
    };
-   // string new_dc_message = 2;
-   void clear_new_dc_message();
-   const std::string& new_dc_message() const;
-   void set_new_dc_message(const std::string& value);
-   void set_new_dc_message(std::string&& value);
-   void set_new_dc_message(const char* value);
-   void set_new_dc_message(const char* value, size_t size);
-   std::string* mutable_new_dc_message();
-   std::string* release_new_dc_message();
-   void set_allocated_new_dc_message(std::string* new_dc_message);
+   // string message_to_broadcast = 2;
+   void clear_message_to_broadcast();
+   const std::string& message_to_broadcast() const;
+   void set_message_to_broadcast(const std::string& value);
+   void set_message_to_broadcast(std::string&& value);
+   void set_message_to_broadcast(const char* value);
+   void set_message_to_broadcast(const char* value, size_t size);
+   std::string* mutable_message_to_broadcast();
+   std::string* release_message_to_broadcast();
+   void set_allocated_message_to_broadcast(std::string* message_to_broadcast);
    GOOGLE_PROTOBUF_RUNTIME_DEPRECATED(
        "The unsafe_arena_ accessors for"
        "    string fields are deprecated and will be removed in a"
        "    future release.")
-   std::string* unsafe_arena_release_new_dc_message();
+   std::string* unsafe_arena_release_message_to_broadcast();
    GOOGLE_PROTOBUF_RUNTIME_DEPRECATED(
        "The unsafe_arena_ accessors for"
        "    string fields are deprecated and will be removed in a"
        "    future release.")
-   void unsafe_arena_set_allocated_new_dc_message(std::string* new_dc_message);
+   void unsafe_arena_set_allocated_message_to_broadcast(
+       std::string* message_to_broadcast);
 
   private:
-   const std::string& _internal_new_dc_message() const;
-   void _internal_set_new_dc_message(const std::string& value);
-   std::string* _internal_mutable_new_dc_message();
+   const std::string& _internal_message_to_broadcast() const;
+   void _internal_set_message_to_broadcast(const std::string& value);
+   std::string* _internal_mutable_message_to_broadcast();
 
   public:
    // .rpc.SchedulingState new_state = 1;
@@ -656,7 +657,7 @@ class SchedulingResponse PROTOBUF_FINAL :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr new_dc_message_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_to_broadcast_;
   ::rpc::SchedulingState* new_state_;
   bool final_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -1829,113 +1830,116 @@ inline void SchedulingResponse::set_allocated_new_state(
   // @@protoc_insertion_point(field_set_allocated:rpc.SchedulingResponse.new_state)
 }
 
-// string new_dc_message = 2;
-inline void SchedulingResponse::clear_new_dc_message()
+// string message_to_broadcast = 2;
+inline void SchedulingResponse::clear_message_to_broadcast()
 {
-  new_dc_message_.ClearToEmpty(
+  message_to_broadcast_.ClearToEmpty(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       GetArena());
 }
-inline const std::string& SchedulingResponse::new_dc_message() const
+inline const std::string& SchedulingResponse::message_to_broadcast() const
 {
-  // @@protoc_insertion_point(field_get:rpc.SchedulingResponse.new_dc_message)
-  return _internal_new_dc_message();
+  // @@protoc_insertion_point(field_get:rpc.SchedulingResponse.message_to_broadcast)
+  return _internal_message_to_broadcast();
 }
-inline void SchedulingResponse::set_new_dc_message(const std::string& value)
-{
-  _internal_set_new_dc_message(value);
-  // @@protoc_insertion_point(field_set:rpc.SchedulingResponse.new_dc_message)
-}
-inline std::string* SchedulingResponse::mutable_new_dc_message()
-{
-  // @@protoc_insertion_point(field_mutable:rpc.SchedulingResponse.new_dc_message)
-  return _internal_mutable_new_dc_message();
-}
-inline const std::string& SchedulingResponse::_internal_new_dc_message() const
-{
-  return new_dc_message_.Get();
-}
-inline void SchedulingResponse::_internal_set_new_dc_message(
+inline void SchedulingResponse::set_message_to_broadcast(
     const std::string& value)
 {
-  new_dc_message_.Set(
+  _internal_set_message_to_broadcast(value);
+  // @@protoc_insertion_point(field_set:rpc.SchedulingResponse.message_to_broadcast)
+}
+inline std::string* SchedulingResponse::mutable_message_to_broadcast()
+{
+  // @@protoc_insertion_point(field_mutable:rpc.SchedulingResponse.message_to_broadcast)
+  return _internal_mutable_message_to_broadcast();
+}
+inline const std::string& SchedulingResponse::_internal_message_to_broadcast()
+    const
+{
+  return message_to_broadcast_.Get();
+}
+inline void SchedulingResponse::_internal_set_message_to_broadcast(
+    const std::string& value)
+{
+  message_to_broadcast_.Set(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       value,
       GetArena());
 }
-inline void SchedulingResponse::set_new_dc_message(std::string&& value)
+inline void SchedulingResponse::set_message_to_broadcast(std::string&& value)
 {
-  new_dc_message_.Set(
+  message_to_broadcast_.Set(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       ::std::move(value),
       GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:rpc.SchedulingResponse.new_dc_message)
+  // @@protoc_insertion_point(field_set_rvalue:rpc.SchedulingResponse.message_to_broadcast)
 }
-inline void SchedulingResponse::set_new_dc_message(const char* value)
+inline void SchedulingResponse::set_message_to_broadcast(const char* value)
 {
   GOOGLE_DCHECK(value != nullptr);
 
-  new_dc_message_.Set(
+  message_to_broadcast_.Set(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       ::std::string(value),
       GetArena());
-  // @@protoc_insertion_point(field_set_char:rpc.SchedulingResponse.new_dc_message)
+  // @@protoc_insertion_point(field_set_char:rpc.SchedulingResponse.message_to_broadcast)
 }
-inline void SchedulingResponse::set_new_dc_message(const char* value,
-                                                   size_t size)
+inline void SchedulingResponse::set_message_to_broadcast(const char* value,
+                                                         size_t size)
 {
-  new_dc_message_.Set(
+  message_to_broadcast_.Set(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       ::std::string(reinterpret_cast<const char*>(value), size),
       GetArena());
-  // @@protoc_insertion_point(field_set_pointer:rpc.SchedulingResponse.new_dc_message)
+  // @@protoc_insertion_point(field_set_pointer:rpc.SchedulingResponse.message_to_broadcast)
 }
-inline std::string* SchedulingResponse::_internal_mutable_new_dc_message()
+inline std::string* SchedulingResponse::_internal_mutable_message_to_broadcast()
 {
-  return new_dc_message_.Mutable(
+  return message_to_broadcast_.Mutable(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       GetArena());
 }
-inline std::string* SchedulingResponse::release_new_dc_message()
+inline std::string* SchedulingResponse::release_message_to_broadcast()
 {
-  // @@protoc_insertion_point(field_release:rpc.SchedulingResponse.new_dc_message)
-  return new_dc_message_.Release(
+  // @@protoc_insertion_point(field_release:rpc.SchedulingResponse.message_to_broadcast)
+  return message_to_broadcast_.Release(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       GetArena());
 }
-inline void SchedulingResponse::set_allocated_new_dc_message(
-    std::string* new_dc_message)
+inline void SchedulingResponse::set_allocated_message_to_broadcast(
+    std::string* message_to_broadcast)
 {
-  if (new_dc_message != nullptr) {
+  if (message_to_broadcast != nullptr) {
   } else {
   }
-  new_dc_message_.SetAllocated(
+  message_to_broadcast_.SetAllocated(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      new_dc_message,
+      message_to_broadcast,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:rpc.SchedulingResponse.new_dc_message)
+  // @@protoc_insertion_point(field_set_allocated:rpc.SchedulingResponse.message_to_broadcast)
 }
-inline std::string* SchedulingResponse::unsafe_arena_release_new_dc_message()
+inline std::string*
+SchedulingResponse::unsafe_arena_release_message_to_broadcast()
 {
-  // @@protoc_insertion_point(field_unsafe_arena_release:rpc.SchedulingResponse.new_dc_message)
+  // @@protoc_insertion_point(field_unsafe_arena_release:rpc.SchedulingResponse.message_to_broadcast)
   GOOGLE_DCHECK(GetArena() != nullptr);
 
-  return new_dc_message_.UnsafeArenaRelease(
+  return message_to_broadcast_.UnsafeArenaRelease(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       GetArena());
 }
-inline void SchedulingResponse::unsafe_arena_set_allocated_new_dc_message(
-    std::string* new_dc_message)
+inline void SchedulingResponse::unsafe_arena_set_allocated_message_to_broadcast(
+    std::string* message_to_broadcast)
 {
   GOOGLE_DCHECK(GetArena() != nullptr);
-  if (new_dc_message != nullptr) {
+  if (message_to_broadcast != nullptr) {
   } else {
   }
-  new_dc_message_.UnsafeArenaSetAllocated(
+  message_to_broadcast_.UnsafeArenaSetAllocated(
       &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      new_dc_message,
+      message_to_broadcast,
       GetArena());
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:rpc.SchedulingResponse.new_dc_message)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:rpc.SchedulingResponse.message_to_broadcast)
 }
 
 // bool final = 3;

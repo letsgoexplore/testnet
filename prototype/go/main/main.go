@@ -12,7 +12,7 @@ const N_SLOTS = 32
 func handleResponse(resp *rpc.SchedulingResponse) {
 	fmt.Println("Got resp:")
 	fmt.Println("new state: ", resp.GetNewState().ToString())
-	fmt.Println("new message: ", resp.GetNewDcMessage())
+	fmt.Println("new message: ", resp.GetMessageToBroadcast())
 
 	if resp.GetFinal() {
 		fmt.Println("Done")
@@ -58,10 +58,11 @@ func main() {
 	for !done {
 		req = rpc.SchedulingRequest{
 			CurState:     resp.GetNewState(),
-			CurDcMessage: resp.GetNewDcMessage(),
+            // TODO: this message should be the one from DC net.
+            // so here we assume DC net returns the same message
+			CurDcMessage: resp.GetMessageToBroadcast(),
 		}
 
-		// TODO: here we assume DC net returns the same message
 		resp, err = client.Schedule(context.Background(), &req)
 		if err != nil {
 			panic(err)

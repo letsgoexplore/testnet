@@ -46,6 +46,7 @@ else ()
 endif ()
 
 find_package(SGXPSW REQUIRED)
+find_package(SGXSSL REQUIRED)
 
 message(STATUS "SGX_SDK: ${SGX_SDK}")
 message(STATUS "SGX_ARCH: ${SGX_ARCH}")
@@ -60,4 +61,5 @@ message(STATUS "SGX_TRTS_LIB: ${SGX_TRTS_LIB}")
 message(STATUS "SGX_TSVC_LIB: ${SGX_TSVC_LIB}")
 message(STATUS "SGX uRTS path: ${SGX_URTS_LIBRARY}")
 message(STATUS "SGX uSVC path: ${SGX_USVC_LIBRARY}")
+message(STATUS "SGXSSL: ${SGXSSL_INCLUDE_DIRS} ${SGXSSL_LIBRARY_DIRS}")
 message(STATUS "SGX_COMMON_CFLAGS: ${SGX_COMMON_CFLAGS}")

@@ -7,7 +7,6 @@
 #include <pwd.h>
 #include <sgx_eid.h>
 #include <sgx_error.h>
-#include <sgx_uae_service.h>
 #include <sgx_urts.h>
 #include <stdint.h>
 #include <stdio.h>
