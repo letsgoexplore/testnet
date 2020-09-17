@@ -1,7 +1,7 @@
 %!TEX root = main.tex
 
 \section{Introduction}
-Strong anonymous communication is a well studied problem~\cite{}. Indeed, it's a well understood trade off that you can only have either low latency or low bandwidth. 
+Strong anonymous communication is a well studied problem~\cite{}. Indeed, it's a well understood trade off that you can only have either low latency or low bandwidth.
 
 In an anonymous broadcast setting, users attempt to anonymously announce a message to all users. In concept, this can be modeled as a channel whose capacity C is the size of a single message. User's would then take turns. However, in practice, channels usually have large capacity relative to the message size and multiple users can broadcast at once.
 
@@ -9,16 +9,16 @@ Concurrent Anonymous broadcast protocols must accomplish three tasks
 \begin{enumerate}
 	\item anonymously broadcast a message
 	\item provide a channel access method for allowing multiple parties to use the broadcast channel
-	\item provide some mechanism to prevent disruption 
+	\item provide some mechanism to prevent disruption
 \end{enumerate}
 
-To date, there have been two approaches. In \emph{shuffling protocols}~\cite{CCS:LYKGKM19,CCS:AKTZ17} all encrypted messages are collected by a set of servers and then shuffled and decrypted using techniques from multi party computation. Unfortunately, shuffling protocols scale super linearly in the size of the number of messages in the round.  XXXX CHECK 
+To date, there have been two approaches. In \emph{shuffling protocols}~\cite{CCS:LYKGKM19,USENIX:AKTZ17} all encrypted messages are collected by a set of servers and then shuffled and decrypted using techniques from multi party computation. Unfortunately, shuffling protocols scale super linearly in the size of the number of messages in the round.  XXXX CHECK
 
-The other approach, is that of a DC-net~\cite{JC:Chaum88}: each user submits a broadcast that obfuscates which part of the channel (if any) it writes to.  These broadcasts can then be combined to produce the final broadcast. Crucially, the combination process 
+The other approach, is that of a DC-net~\cite{JC:Chaum88}: each user submits a broadcast that obfuscates which part of the channel (if any) it writes to.  These broadcasts can then be combined to produce the final broadcast. Crucially, the combination process
 
-In the orignal DC networks, this process was accomplished  by all parties, pairwise, sharing $|C|$ random coins.
+In the original DC networks, this process was accomplished  by all parties, pairwise, sharing $|C|$ random coins.
 
-There have been two advances 
+There have been two advances
 \begin{itemize}
 	\item The any trust model ~\cite{CCS:CorFor10}: instead of all parties communicating we pick a small number of servers who are trusted for availability and that at least one is honest. This avoids quadratic bandwidth usage and reduces each clients bandwidth requirement to simply $O(C)$: a single channel capacity length message to one of the servers. However, the network must still handle $O(Csn)$ data: i.e. bandwidth usage scales linearly in both the number of servers and the number of clients.
 	\item The distributed point function approach. First introduced in~\cite{SP:CorBonMaz15}, uses cryptography to shorten the message each user submits to $O(\sqrt(C))$

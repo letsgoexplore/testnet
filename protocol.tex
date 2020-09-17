@@ -24,7 +24,7 @@ There are three types of players:
 \begin{itemize}[leftmargin=*]
     \item $(\sk, \pk)$ a pair of keys generated in an enclave. $\pk$ is published in an attestation. $\sk$ is sealed to persistent storage for backup.
     \item Pair-wise keys with all servers: $K_{i,j} \in \bin^\secpar$ for $j\in [\ell]$.
-\item Round counters $\schedround$ for the scheduling protocol and $r$ for the normal communcation rounds. Counters start with $0$ and get incremented as specified below.
+\item Round counters $\schedround$ for the scheduling protocol and $r$ for the normal communication rounds. Counters start with $0$ and get incremented as specified below.
 \item Scheduling state $\schedstate:=\bot$
 \end{itemize}
 \textbf{Registration:} \\
@@ -56,15 +56,15 @@ To join the DC net for communication, a user first registers with the server com
 
 If two participants in a DC net send in the same round---either accidentally or maliciously---their messages collide and the broadcast is disrupted. Therefore, it is essential to coordinate among senders so that ideally only one participant sends in a given round. We refer to this process as {\em scheduling}.
 
-There are generally three approaches to solve this problem. The first is to have participants send {\em reservation messages} to reserve future rounds and resolve collisions. The second approach is to defer the problem of collision to the communication phase, i.e., to {\em resolve} collisions when they happen instead of to prevent them. The third approach is to use secure MPC to compute a random slot assignment. We adopt the first approach and use the footprint scheduling protocol~\cite{}. \fanz{what are the rational: simple, efficient (no MPC or ZKP), can be done on top of DC net. What else?} Compared to the original reservation protocol in~\cite{chaum}, footprint scheduling significnatly reduces the length of reservation vectors. Because the scheduling messages are so short, they can be piggybacked on normal messasges, like in~\cref{fig:message}.
+There are generally three approaches to solve this problem. The first is to have participants send {\em reservation messages} to reserve future rounds and resolve collisions. The second approach is to defer the problem of collision to the communication phase, i.e., to {\em resolve} collisions when they happen instead of to prevent them. The third approach is to use secure MPC to compute a random slot assignment. We adopt the first approach and use the footprint scheduling protocol~\cite{}. \fanz{what are the rational: simple, efficient (no MPC or ZKP), can be done on top of DC net. What else?} Compared to the original reservation protocol in~\cite{JC:Chaum88}, footprint scheduling significantly reduces the length of reservation vectors. The tradeoff, however, is that scheduling now takes multiple ($\log(N)$) rounds. Because the scheduling messages are so short, they can be piggybacked on top of normal messages, like in~\cref{fig:message}.
 
 % The ideal functionality of scheduling takes as input a list $\mathcal{U}$ of users who wish to speak in the next $S$ rounds, outputs a list of $S$ identities $(U_1, U_2, \dots, U_S)$ such that $U_i \in \mathcal{U}$, which schedules $U_i$ to speak at the $i$th round. Note that if $|\mathcal{U}|<S$, the output may contain duplicated identities.
 
 % We use footprint scheduling~\cite{} to assign participants to rounds, so that ideally only one participant sends messages in a given round. Footprint scheduling is done $R=\log(N)$ rounds~\cite{}. We set parameters to ensure $R \le S$ so that scheduling rounds can be piggyback on normal message, like in~\cref{fig:message}.
 
-\paragraph{Scheduling in an enclave.} However, footprint scheduling does not prevent active malicious participants from disruppting the communication by just not observing the protocol. Therefore we run the footprint scheduling in an enclave.
+\paragraph{Scheduling in an enclave.} However, footprint scheduling does not prevent active malicious participants from disrupting the communication by just not observing the protocol. Therefore we run the footprint scheduling in an enclave.
 
-User's enclave has a single API for scheduling: $schedule(\schedmsgin, \schedstate) \to (\schedmsgout, \schedstate')$, which takes as input the previous broadcast messages and state, and outputs a new scheduling messages to be sent through the DC net and an updated state. $\schedstate=(i, slots, footprints)$ where $i$ is the scheduling round number, $slots$ the slots being reserved, $footprints$ the current footprints used to detect collision. Since the scheduling termintes in exactly $R$ rounds (a parameter). The $\schedstate$ of the final round becomes the ticket for the user to send in rounds in $\schedstate.slots$.
+User's enclave has a single API for scheduling: $schedule(\schedmsgin, \schedstate) \to (\schedmsgout, \schedstate')$, which takes as input the previous broadcast messages and state, and outputs a new scheduling messages to be sent through the DC net and an updated state. $\schedstate=(i, slots, footprints)$ where $i$ is the scheduling round number, $slots$ the slots being reserved, $footprints$ the current footprints used to detect collision. Since the scheduling terminates in exactly $R$ rounds (a parameter). The $\schedstate$ of the final round becomes the ticket for the user to send in rounds in $\schedstate.slots$.
 
 \begin{figure}[H]
     % \includegraphics[page=6,width=\columnwidth]{all-images.pdf}
