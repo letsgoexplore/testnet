@@ -1,7 +1,7 @@
 #include "rpc.h"
 
-#include "../common/interface_structs.h"
 #include "../common/converter.h"
+#include "../common/interface_structs.h"
 #include "../common/messages.hpp"
 #include "Enclave_u.h"
 #include "logging.h"
@@ -84,7 +84,6 @@ grpc::Status RpcServer::schedule(::grpc::ServerContext* context,
   return grpc::Status(grpc::StatusCode::UNKNOWN,
                       fmt::format("sched failure {}", ret));
 }
-
 
 grpc::Status RpcServer::aggregate(::grpc::ServerContext* context,
                                   const ::rpc::AggregateRequest* request,

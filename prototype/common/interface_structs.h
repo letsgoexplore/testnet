@@ -12,8 +12,7 @@ typedef struct _AggregatedMessage_C {
   char sig[SIG_LEN];
 } AggregatedMessage_C;
 
-
-typedef struct _UserMessage_C  {
+typedef struct _UserMessage_C {
   uint32_t round;
   char user_id[USER_ID_LEN];
   char dc_msg[DC_NET_MESSAGE_LEN];

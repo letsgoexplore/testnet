@@ -26,7 +26,7 @@ struct DCMessage {
   const static size_t FixedLen = DC_NET_MESSAGE_LEN;
   std::bitset<FixedLen> _msg;
   DCMessage() = default;
-  DCMessage(const char*buf): DCMessage(std::string(buf, FixedLen)){}
+  DCMessage(const char* buf) : DCMessage(std::string(buf, FixedLen)) {}
   DCMessage(const std::string& bin_str);
   DCMessage operator^(const DCMessage& other);
   void operator^=(const DCMessage& other);

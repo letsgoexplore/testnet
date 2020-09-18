@@ -90,8 +90,8 @@ void InitScheduled(SchedulingState* new_state, SchedulingMessage* new_message)
 //! \return {Continue, Abort, Done}. If Done returned, state.reservation is the
 //! final results.
 SchedulingInstruction ScheduleOneRound(const SchedulingMessage& prev_msg,
-                             SchedulingState* state,
-                             SchedulingMessage* new_message)
+                                       SchedulingState* state,
+                                       SchedulingMessage* new_message)
 {
   if (state->round == 0 || state->round > N_SCHEDULE_ROUNDS - 1) {
     throw std::invalid_argument("invalid round # " +

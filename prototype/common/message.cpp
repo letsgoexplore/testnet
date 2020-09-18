@@ -5,16 +5,18 @@
 #include "../app/logging.h"
 #endif
 
-
-
-DCMessage::DCMessage(const std::string &bin_str) {
+DCMessage::DCMessage(const std::string &bin_str)
+{
   if (bin_str.size() != DCMessage::FixedLen) {
-    throw std::invalid_argument("bin_str len " + std::to_string(bin_str.size()) + "  != " + std::to_string(DCMessage::FixedLen));
+    throw std::invalid_argument("bin_str len " +
+                                std::to_string(bin_str.size()) +
+                                "  != " + std::to_string(DCMessage::FixedLen));
   }
   this->_msg = std::bitset<DCMessage::FixedLen>(bin_str);
 }
 
-DCMessage DCMessage::operator^(const DCMessage &other) {
+DCMessage DCMessage::operator^(const DCMessage &other)
+{
   DCMessage out;
   for (size_t i = 0; i < DCMessage::FixedLen; i++) {
     out._msg[i] = (this->_msg[i] ^ other._msg[i]);
@@ -30,7 +32,7 @@ void DCMessage::operator^=(const DCMessage &other)
   }
 }
 
-void DCMessage::marshal(char * out) const
+void DCMessage::marshal(char *out) const
 {
   auto str = this->_msg.to_string();
   for (size_t i = 0; i < DCMessage::FixedLen; i++) {
@@ -38,20 +40,17 @@ void DCMessage::marshal(char * out) const
   }
 }
 
-
-
-UserMessage::UserMessage(const UserMessage_C *bin):
-_round(bin->round),  _user_id(bin->user_id), _msg(bin->dc_msg)
+UserMessage::UserMessage(const UserMessage_C *bin)
+    : _round(bin->round), _user_id(bin->user_id), _msg(bin->dc_msg)
 {
   sig = Signature(bin->sig);
 }
 
-void UserMessage::sign(const SK &)
-{
-}
+void UserMessage::sign(const SK &) {}
 
-bool UserMessage::verify() const {
-  (void) this->sig;
+bool UserMessage::verify() const
+{
+  (void)this->sig;
   return true;
 }
 
@@ -65,25 +64,21 @@ void UserMessage::marshal(UserMessage_C *out) const
 
 std::string UserMessage::to_string() const
 {
-  return this->_user_id._id + " says "
-         + std::to_string(this->_msg._msg.size())
-           + " bits. "
-           +         this->_msg._msg.to_string() +
-      " with sig " + this->sig._sig;
+  return this->_user_id._id + " says " +
+         std::to_string(this->_msg._msg.size()) + " bits. " +
+         this->_msg._msg.to_string() + " with sig " + this->sig._sig;
 }
 
-void AggregatedMessage::sign(const SK &)
-{
-}
+void AggregatedMessage::sign(const SK &) {}
 
 bool AggregatedMessage::verify() const
 {
-  (void) this->sig;
+  (void)this->sig;
   return true;
 }
 
-AggregatedMessage::AggregatedMessage(const AggregatedMessage_C *bin):
-current_aggregated_value(bin->dc_msg)
+AggregatedMessage::AggregatedMessage(const AggregatedMessage_C *bin)
+    : current_aggregated_value(bin->dc_msg)
 {
   // split userids with ":"
   // and populate the array
@@ -109,7 +104,7 @@ current_aggregated_value(bin->dc_msg)
   this->sig = Signature(bin->sig);
 }
 
-void AggregatedMessage::aggregate_in(const UserMessage* msg)
+void AggregatedMessage::aggregate_in(const UserMessage *msg)
 {
   if (msg->verify()) {
     this->aggregated_ids.push_back(msg->_user_id);
@@ -127,7 +122,7 @@ void AggregatedMessage::marshal(AggregatedMessage_C *out)
   std::string all_user_ids;
   for (size_t i = 0; i < this->aggregated_ids.size(); i++) {
     all_user_ids += this->aggregated_ids[i]._id;
-    if (i != this->aggregated_ids.size()-1) {
+    if (i != this->aggregated_ids.size() - 1) {
       all_user_ids += ":";  // delimiter
     }
   }
@@ -146,7 +141,7 @@ std::string AggregatedMessage::to_string() const
 {
   std::string r = "agg: " + this->current_aggregated_value._msg.to_string();
   r += ", user_ids: ";
-  for (const auto& uid: this->aggregated_ids) {
+  for (const auto &uid : this->aggregated_ids) {
     r += uid._id;
     r += ", ";
   }

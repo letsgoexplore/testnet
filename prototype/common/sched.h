@@ -1,11 +1,10 @@
 #ifndef SGX_DC_NETS_SCHEDULE_MESSAGE_H
 #define SGX_DC_NETS_SCHEDULE_MESSAGE_H
 
-
+#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-#include <bitset>
 
 constexpr size_t N_SLOTS = 32;
 constexpr size_t FOOTPRINT_SIZE = 3;
@@ -22,7 +21,7 @@ SlotFootprint FootprintsFromString(Iter begin, Iter end)
 {
   SlotFootprint sp;
 
-  if(std::distance(begin, end) != N_SLOTS) {
+  if (std::distance(begin, end) != N_SLOTS) {
     throw std::invalid_argument("std::distance(begin, end) != N_SLOTS");
   }
 
@@ -102,6 +101,5 @@ enum SchedulingInstruction {
   Done,
   Failed,
 };
-
 
 #endif

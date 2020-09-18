@@ -1,14 +1,16 @@
 #include "../common/messages.hpp"
-#include "log.h"
 #include "ecalls.h"
-
+#include "log.h"
 
 //! TODO: no-op if user is already in aggregation
 //! \param _message
 //! \param _cur_agg
 //! \param _new_agg
 //! \return
-int ecall_aggregate(const UserMessage_C * _message, const AggregatedMessage_C* _cur_agg, AggregatedMessage_C* _new_agg) {
+int ecall_aggregate(const UserMessage_C* _message,
+                    const AggregatedMessage_C* _cur_agg,
+                    AggregatedMessage_C* _new_agg)
+{
   // unmarshal
   UserMessage user_msg(_message);
   AggregatedMessage cur_agg(_cur_agg);
@@ -37,14 +39,14 @@ int ecall_aggregate(const UserMessage_C * _message, const AggregatedMessage_C* _
     } else {
       return INVALID_INPUT;
     }
-  }
-  catch (const std::exception& e) {
+  } catch (const std::exception& e) {
     LL_CRITICAL("%s", e.what());
     return EXCEPT_CAUGHT;
   }
 }
 
-static void test_marshal_aggregated_msg() {
+static void test_marshal_aggregated_msg()
+{
   AggregatedMessage msg;
   msg.aggregated_ids.emplace_back("Alice");
   msg.aggregated_ids.emplace_back("Bob");
@@ -56,27 +58,29 @@ static void test_marshal_aggregated_msg() {
 
   assert(msg.aggregated_ids.size() == msg2.aggregated_ids.size());
   LL_INFO("GOOD");
-  for (size_t i = 0 ; i < msg.aggregated_ids.size(); i++) {
+  for (size_t i = 0; i < msg.aggregated_ids.size(); i++) {
     assert(msg.aggregated_ids[i]._id == msg2.aggregated_ids[i]._id);
     LL_INFO("GOOD");
   }
-  assert(msg.current_aggregated_value._msg == msg2.current_aggregated_value._msg);
+  assert(msg.current_aggregated_value._msg ==
+         msg2.current_aggregated_value._msg);
   LL_INFO("GOOD");
 
   assert(msg.sig._sig == msg2.sig._sig);
   LL_INFO("GOOD");
 }
 
-static void test_marshal_user_message() {
+static void test_marshal_user_message()
+{
   UserMessage msg;
   msg._round = 1;
   msg._user_id = "123";
   std::string big_sig(SIG_LEN, 'c');
-  msg.sig = Signature (big_sig);
+  msg.sig = Signature(big_sig);
 
   LL_INFO("%s", msg.to_string().c_str());
 
-  UserMessage_C  msg_bin;
+  UserMessage_C msg_bin;
   msg.marshal(&msg_bin);
 
   UserMessage msg2(&msg_bin);
@@ -92,16 +96,15 @@ static void test_marshal_user_message() {
 
   assert(msg.sig._sig == msg2.sig._sig);
   LL_INFO("GOOD");
-
 }
 
-void test_aggregator() {
+void test_aggregator()
+{
   try {
     test_marshal_aggregated_msg();
     LL_INFO("testing test_marshal_user_message");
     test_marshal_user_message();
-  }
-  catch (const std::exception& e) {
+  } catch (const std::exception& e) {
     LL_CRITICAL("E: %s", e.what());
   }
 }

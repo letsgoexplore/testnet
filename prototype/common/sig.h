@@ -7,27 +7,25 @@ struct Signature {
   const static size_t FixedLen = 64;
   std::string _sig;
 
-  Signature() {
-    _sig.resize(FixedLen, 0);
-  }
-  explicit Signature(std::string sig): _sig(sig) {}
-  explicit Signature(const char* bin): Signature() {
+  Signature() { _sig.resize(FixedLen, 0); }
+  explicit Signature(std::string sig) : _sig(sig) {}
+  explicit Signature(const char* bin) : Signature()
+  {
     std::copy(bin, bin + FixedLen, _sig.begin());
   }
 
-  void marshal(char*out) const {
-    std::copy(this->_sig.begin(),
-              this->_sig.begin() + FixedLen,
-              out);
+  void marshal(char* out) const
+  {
+    std::copy(this->_sig.begin(), this->_sig.begin() + FixedLen, out);
   }
 };
 
-class PK {
-
+class PK
+{
 };
 
-class SK {
-
+class SK
+{
 };
 
 struct Verifiable {

@@ -22,7 +22,7 @@ int ecall_scheduling(const void* prev_msg, void* state, void* new_message);
 void InitScheduled(SchedulingState* new_state, SchedulingMessage* new_message);
 
 SchedulingInstruction ScheduleOneRound(const SchedulingMessage& prev_msg,
-                             SchedulingState* state,
-                             SchedulingMessage* new_message);
+                                       SchedulingState* state,
+                                       SchedulingMessage* new_message);
 
 #endif  // SGX_DC_NETS_SCHEDULER_H
