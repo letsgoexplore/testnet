@@ -45,7 +45,7 @@ extern char log_buffer[BUFSIZ];
   do {                                                      \
     if (LOG_SHOULD_I(level)) {                              \
       snprintf(log_buffer, BUFSIZ, fmt, ##arg);             \
-      ocall_logging(level, __FILE__, __LINE__, log_buffer); \
+      ocall_logging(level, strrchr(__FILE__, '/')+1, __LINE__, log_buffer); \
     }                                                       \
   } while (_FALSE)
 
