@@ -7,82 +7,72 @@
 #include "logging.h"
 #include "rpc_types.h"
 
-grpc::Status ecall_failure =
-    grpc::Status(grpc::StatusCode::INTERNAL, "ecall failure");
-
-SchedulingState set_state(const rpc::SchedulingState& rpc_sched_state)
-{
-  SchedulingState state;
-
-  state.round = rpc_sched_state.round();
-
-  const auto& rmap = rpc_sched_state.reservation_map();
-  const auto& fps = rpc_sched_state.footprints();
-  assert(rmap.size() == N_SLOTS);
-  assert(fps.size() == N_SLOTS);
-  for (size_t i = 0; i < N_SLOTS; i++) {
-    state.reservation.set(i, rmap[i]);
-  }
-
-  state.footprints = FootprintsFromString(fps.begin(), fps.end());
-
-  return state;
+grpc::Status ecall_failure(sgx_status_t st, int ret) {
+  return grpc::Status(grpc::StatusCode::INTERNAL, fmt::format("ecall failure {} {}", st, ret));
 }
+
+
+
 
 grpc::Status RpcServer::schedule(::grpc::ServerContext* context,
                                  const ::rpc::SchedulingRequest* request,
                                  ::rpc::SchedulingResponse* response)
 {
-  int ret;
+  try {
+    int ret;
 
-  // build state
-  SchedulingState state = set_state(request->cur_state());
+    // build state
+    SchedulingState current_state;
+    rpc_type_to_enclave_type(current_state, request->cur_state());
 
-  SPDLOG_INFO("state={}", state.to_string());
-
-  SchedulingMessage prev_message;
-  if (state.round > 0) {
-    // prev_message is not set for the first round
-    prev_message.message =
-        FootprintsFromString(request->cur_state().footprints().begin(),
-                             request->cur_state().footprints().end());
-  }
-
-  SchedulingMessage new_message;
-
-  sgx_status_t ecall_status =
-      ecall_scheduling(eid, &ret, &prev_message, &state, &new_message);
-  if (ecall_status != SGX_SUCCESS) {
-    return grpc::Status(grpc::StatusCode::UNKNOWN, "ecall failure");
-  }
-
-  if (ret == SCHEDULE_CONTINUE || ret == SCHEDULE_DONE) {
-    SPDLOG_INFO(ret == SCHEDULE_CONTINUE ? "continue" : "done");
-    SPDLOG_INFO("next round: {}", state.round);
-    SPDLOG_INFO("new state: {}", state.to_string());
-    SPDLOG_INFO("new message: {}", new_message.to_string());
-
-    // allocate state
-    auto* new_st = new rpc::SchedulingState{};
-    new_st->set_round(state.round);
-
-    for (size_t i = 0; i < N_SLOTS; i++) {
-      // TODO: check this does not mess up the orders
-      new_st->add_reservation_map(state.reservation.test(i));
-      new_st->add_footprints(state.footprints[i].to_string());
+    SchedulingMessage prev_message;
+    if (current_state.round > 0) {
+      // prev_message is not set for the first round
+      if (request->cur_dc_message().empty()) {
+        throw std::invalid_argument("empty dc message");
+      }
+      prev_message = SchedulingMessage(request->cur_dc_message());
     }
 
-    response->set_allocated_new_state(new_st);
+    // log
+    SPDLOG_INFO("received state: {}", current_state.to_string());
+    SPDLOG_INFO("received dc message: {}", prev_message.to_string());
 
-    // build response
-    response->set_message_to_broadcast(new_message.to_string());
-    response->set_final(ret == SCHEDULE_DONE);
-    return grpc::Status::OK;
+    // marshal
+    SchedulingMessage_C prev_message_C, new_message_C;
+    SchedulingState_C curr_state_C;
+
+    prev_message.marshal(&prev_message_C);
+    current_state.marshal(&curr_state_C);
+
+    sgx_status_t ecall_status = ecall_scheduling(
+        eid,
+        &ret,
+        &prev_message_C,
+        &curr_state_C,
+        &new_message_C);
+    if (ecall_status != SGX_SUCCESS || ret != GOOD) {
+      return ecall_failure(ecall_status, ret);
+    }
+
+    // unmarshal
+    SchedulingMessage new_message(&new_message_C);
+    SchedulingState new_state(&curr_state_C);
+
+      SPDLOG_INFO("new state: {}", new_state.to_string());
+      SPDLOG_INFO("new message: {}", new_message.to_string());
+
+      auto* new_st = new rpc::SchedulingState;
+      enclave_type_to_rpc_type(new_st, new_state);
+
+      response->set_allocated_new_state(new_st);
+      response->set_sched_msg(new_message.to_string());
+      return grpc::Status::OK;
+
+  } catch (const std::exception& e) {
+    SPDLOG_CRITICAL("E: {}", e.what());
+    return grpc::Status(grpc::StatusCode::INTERNAL, e.what());
   }
-
-  SPDLOG_ERROR("sched failed {}", ret);
-  return grpc::Status(grpc::StatusCode::UNKNOWN,
-                      fmt::format("sched failure {}", ret));
 }
 
 grpc::Status RpcServer::aggregate(::grpc::ServerContext* context,
@@ -90,16 +80,15 @@ grpc::Status RpcServer::aggregate(::grpc::ServerContext* context,
                                   ::rpc::AggregateResponse* response)
 {
   try {
-    // unmarshal
     AggregatedMessage cur_agg;
     rpc_type_to_enclave_type(cur_agg, request->current_agg());
 
-    UserMessage user_msg;
-    rpc_type_to_enclave_type(user_msg, request->msg());
+    DCNetSubmission user_msg;
+    rpc_type_to_enclave_type(user_msg, request->submission());
 
     // marshal
     AggregatedMessage_C cur_agg_bin, new_agg_bin;
-    UserMessage_C user_msg_bin;
+    DCNetSubmission_C user_msg_bin;
     cur_agg.marshal(&cur_agg_bin);
     user_msg.marshal(&user_msg_bin);
 
@@ -108,7 +97,7 @@ grpc::Status RpcServer::aggregate(::grpc::ServerContext* context,
         this->eid, &ret, &user_msg_bin, &cur_agg_bin, &new_agg_bin);
     if (st != SGX_SUCCESS || ret != GOOD) {
       SPDLOG_ERROR("ecall_aggregate failed with {} {}", st, ret);
-      return ecall_failure;
+      return ecall_failure(st, ret);
     }
 
     AggregatedMessage new_agg(&new_agg_bin);

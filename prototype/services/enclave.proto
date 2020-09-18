@@ -9,8 +9,11 @@ service enclave {
 
 message SchedulingState {
   uint32 round = 1;                  // round #
-  repeated bool reservation_map = 2; // current reservation map
+  repeated bool reservation_map = 2; // current reservation map. TODO: change this to map
   repeated string footprints = 3;    // current footprint
+  string sig = 4;
+  bool final = 5;                   // if set, this is the final round. Use this as a ticket.
+  // Footprint scheduling paper says you send the final message to DC and ignore the outcome. Doesn't see to be needed.
 }
 
 // footprint scheduling
@@ -19,26 +22,25 @@ message SchedulingRequest {
   string cur_dc_message = 2;     // message received from DC.
 }
 
-message SchedulingResponse {
-  SchedulingState new_state = 1; // new state
-  string message_to_broadcast =
-      2;          // message to send to DC. TODO: call it scheduling broadcast.
-  bool final = 3; // if set, this is the final round. Send message to DC, and
-                  // ignore the outcome. (XXX although sending it to DC has no
-                  // effect. this seems to be a bug in footprint scheduling.)
-  string sig = 4;
+message DCNetBroadcast {
+  string sched_msg = 1;
+  string user_msg = 2;
 }
 
-message UserMessage {
+message DCNetSubmission {
   uint32 round = 1;
   string user_id = 2;
-  string user_message = 3;
+  string message = 3; // message = sched_msg || user_msg
   string sig = 4;
 }
 
-// unused for now
+message SchedulingResponse {
+  SchedulingState new_state = 1;    // new state
+  string sched_msg = 2;  // message to be used in next DC net submission. This is here for convenience only, as it can be derived from new_state.
+}
+
 message AggregateRequest{
-  UserMessage msg = 1;
+  DCNetSubmission submission = 1;
   Aggregation current_agg = 4;
 }
 

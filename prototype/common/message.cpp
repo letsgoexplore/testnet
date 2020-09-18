@@ -40,21 +40,21 @@ void DCMessage::marshal(char *out) const
   }
 }
 
-UserMessage::UserMessage(const UserMessage_C *bin)
+DCNetSubmission::DCNetSubmission(const DCNetSubmission_C *bin)
     : _round(bin->round), _user_id(bin->user_id), _msg(bin->dc_msg)
 {
   sig = Signature(bin->sig);
 }
 
-void UserMessage::sign(const SK &) {}
+void DCNetSubmission::sign(const SK &) {}
 
-bool UserMessage::verify() const
+bool DCNetSubmission::verify() const
 {
   (void)this->sig;
   return true;
 }
 
-void UserMessage::marshal(UserMessage_C *out) const
+void DCNetSubmission::marshal(DCNetSubmission_C *out) const
 {
   out->round = this->_round;
   this->_user_id.marshal(out->user_id);
@@ -62,7 +62,7 @@ void UserMessage::marshal(UserMessage_C *out) const
   this->sig.marshal(out->sig);
 }
 
-std::string UserMessage::to_string() const
+std::string DCNetSubmission::to_string() const
 {
   return this->_user_id._id + " says " +
          std::to_string(this->_msg._msg.size()) + " bits. " +
@@ -104,7 +104,7 @@ AggregatedMessage::AggregatedMessage(const AggregatedMessage_C *bin)
   this->sig = Signature(bin->sig);
 }
 
-void AggregatedMessage::aggregate_in(const UserMessage *msg)
+void AggregatedMessage::aggregate_in(const DCNetSubmission *msg)
 {
   if (msg->verify()) {
     this->aggregated_ids.push_back(msg->_user_id);

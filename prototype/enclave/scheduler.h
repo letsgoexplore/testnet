@@ -13,7 +13,6 @@ extern "C" {
 #endif
 
 void TestScheduling();
-int ecall_scheduling(const void* prev_msg, void* state, void* new_message);
 
 #ifdef __cplusplus
 };
@@ -21,7 +20,7 @@ int ecall_scheduling(const void* prev_msg, void* state, void* new_message);
 
 void InitScheduled(SchedulingState* new_state, SchedulingMessage* new_message);
 
-SchedulingInstruction ScheduleOneRound(const SchedulingMessage& prev_msg,
+void ScheduleOneRound(const SchedulingMessage& prev_msg,
                                        SchedulingState* state,
                                        SchedulingMessage* new_message);
 

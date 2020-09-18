@@ -24,7 +24,8 @@ add_library(enclave SHARED
         glue.c
         log.cpp
         scheduler.cpp
-        types.cpp ecall_scheduling.cpp random.cpp random.h ecall_aggregate.cpp ../common/message.cpp)
+        test_all.cpp
+        types.cpp ecall_scheduling.cpp random.cpp random.h ecall_aggregate.cpp ../common/message.cpp ../common/sched.cpp)
 
 ###############################
 #### Include & Libs

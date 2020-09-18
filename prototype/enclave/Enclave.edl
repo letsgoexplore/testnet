@@ -7,10 +7,13 @@ enclave {
         public int ecall_get_mr_enclave([out] unsigned char mr_enclave[32]);
 
         public void TestScheduling();
-        public void test_aggregator();
-        public int ecall_scheduling([user_check]const void* _prev_msg, [user_check]void* _state, [user_check]void* _new_msg);
+        public void test_all();
+        public int ecall_scheduling(
+            [user_check]const SchedulingMessage_C* _prev_msg,
+            [user_check]SchedulingState_C* _state,
+            [user_check]SchedulingMessage_C* _new_msg);
         public int ecall_aggregate(
-            [user_check]const UserMessage_C* _message,
+            [user_check]const DCNetSubmission_C* _message,
             [user_check]const AggregatedMessage_C* _cur_agg,
             [user_check]AggregatedMessage_C* _new_agg);
     };

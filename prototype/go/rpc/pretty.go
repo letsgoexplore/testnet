@@ -1,3 +1,5 @@
+//go:generate protoc -I../../services --go_out=. --go-grpc_out=. ../../services/enclave.proto
+
 package rpc
 
 import "fmt"
@@ -19,6 +21,10 @@ func (state *SchedulingState) ToString() string {
 	}
 	footprints += "]"
 
-	return fmt.Sprintf("round=%d, map=%s, fps=%s", state.GetRound(), rsvMap, footprints)
+	return fmt.Sprintf("round=%d, map=%s, fps=%s, done=%v", state.GetRound(), rsvMap, footprints, state.Final)
 
+}
+
+func (x *SchedulingResponse) ToString() string {
+	return fmt.Sprintf("new state=%s, new message=%v", x.GetNewState().ToString(), x.GetSchedMsg())
 }

@@ -36,7 +36,7 @@ int main(int argc, const char *argv[])
   // do testing
   if (config.is_in_test()) {
     sgx_status_t st;
-    st = test_aggregator(eid);
+    st = test_all(eid);
     //    sgx_status_t st = TestScheduling(eid);
     if (st != SGX_SUCCESS) {
       SPDLOG_ERROR("TestScheduling failed with {}", st);

@@ -22,6 +22,7 @@ struct UserId {
   void marshal(char* out) const { std::strncpy(out, _id.c_str(), _id.size()); }
 };
 
+// todo: rename to DCNetBroadcast
 struct DCMessage {
   const static size_t FixedLen = DC_NET_MESSAGE_LEN;
   std::bitset<FixedLen> _msg;
@@ -33,20 +34,20 @@ struct DCMessage {
   void marshal(char[]) const;
 };
 
-struct UserMessage : Verifiable {
+struct DCNetSubmission : Verifiable {
   uint32_t _round;
   UserId _user_id;
   DCMessage _msg;
 
-  UserMessage() = default;
+  DCNetSubmission() = default;
 
   // unmarshal
-  UserMessage(const UserMessage_C*);
+  DCNetSubmission(const DCNetSubmission_C*);
 
   void sign(const SK&) override;
   bool verify() const override;
 
-  void marshal(UserMessage_C*) const;
+  void marshal(DCNetSubmission_C*) const;
   std::string to_string() const;
 };
 
@@ -61,7 +62,7 @@ class AggregatedMessage : public Verifiable
   // unmarshal
   AggregatedMessage(const AggregatedMessage_C* bin);
 
-  void aggregate_in(const UserMessage*);
+  void aggregate_in(const DCNetSubmission*);
   void sign(const SK&) override;
   bool verify() const override;
 

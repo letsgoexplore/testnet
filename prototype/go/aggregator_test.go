@@ -104,10 +104,10 @@ func TestAggregator(t *testing.T) {
 		t.Log(userMessage)
 
 		request := rpc.AggregateRequest{
-			Msg: &rpc.UserMessage{
+			Submission: &rpc.DCNetSubmission{
 				Round:       0,
 				UserId:      userName,
-				UserMessage: userMessage,
+				Message: userMessage,
 				Sig:         "sig",
 			},
 			CurrentAgg: &rpc.Aggregation{

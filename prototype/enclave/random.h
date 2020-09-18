@@ -27,4 +27,6 @@ T pick_randomly(const std::vector<T>& v)
   return v.at(get_rand(v.size()));
 }
 
+std::string random_binstr(size_t len);
+
 #endif  // SGX_DC_NETS_RANDOM_H
