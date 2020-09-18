@@ -17,7 +17,7 @@ func TestEnclaveScheduler_UntilDone(t *testing.T) {
 
 	// build initial request
 	state := rpc.SchedulingState{
-		Round:          0,
+		Round: 0,
 	}
 
 	req := rpc.SchedulingRequest{
@@ -28,7 +28,6 @@ func TestEnclaveScheduler_UntilDone(t *testing.T) {
 	resp, err = scheduler.OneRound(context.Background(), &req)
 	initialMap := resp.NewState.ReservationMap
 	require.NoError(t, err)
-
 
 	for {
 		resp, err = scheduler.OneRound(context.Background(), &rpc.SchedulingRequest{
@@ -54,7 +53,7 @@ func TestEnclaveScheduler_TwoRounds(t *testing.T) {
 
 	// build initial request
 	state := rpc.SchedulingState{
-		Round:          0,
+		Round: 0,
 	}
 
 	req := rpc.SchedulingRequest{
@@ -79,7 +78,6 @@ func TestEnclaveScheduler_TwoRounds(t *testing.T) {
 	require.Equal(t, resp.NewState.ReservationMap, oldMap)
 }
 
-
 func TestEnclaveScheduler_OneRounds(t *testing.T) {
 	enclave, err := NewEnclaveOverRpc("localhost:12345")
 	require.NoError(t, err)
@@ -91,7 +89,7 @@ func TestEnclaveScheduler_OneRounds(t *testing.T) {
 	round := uint32(0)
 
 	state := rpc.SchedulingState{
-		Round:          round,
+		Round: round,
 	}
 
 	req := rpc.SchedulingRequest{
@@ -101,8 +99,7 @@ func TestEnclaveScheduler_OneRounds(t *testing.T) {
 	resp, err := scheduler.OneRound(context.Background(), &req)
 	require.NoError(t, err)
 
-
 	t.Log(resp.ToString())
-	require.Equal(t, resp.NewState.Round, round + 1)
+	require.Equal(t, resp.NewState.Round, round+1)
 	require.Equal(t, resp.SchedMsg, strings.Join(resp.NewState.Footprints, ""))
 }

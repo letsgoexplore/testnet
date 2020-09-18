@@ -8,8 +8,8 @@ import (
 
 type EnclaveOverRpc struct {
 	mutex sync.Mutex
-	conn *grpc.ClientConn
-	rpc rpc.EnclaveClient
+	conn  *grpc.ClientConn
+	rpc   rpc.EnclaveClient
 }
 
 func (e *EnclaveOverRpc) Close() error {
@@ -27,7 +27,7 @@ func NewEnclaveOverRpc(address string) (EnclaveOverRpc, error) {
 
 	enclave := rpc.NewEnclaveClient(conn)
 	return EnclaveOverRpc{
-		conn:          conn,
-		rpc: enclave,
+		conn: conn,
+		rpc:  enclave,
 	}, nil
 }

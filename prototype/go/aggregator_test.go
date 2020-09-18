@@ -105,10 +105,10 @@ func TestAggregator(t *testing.T) {
 
 		request := rpc.AggregateRequest{
 			Submission: &rpc.DCNetSubmission{
-				Round:       0,
-				UserId:      userName,
+				Round:   0,
+				UserId:  userName,
 				Message: userMessage,
-				Sig:         "sig",
+				Sig:     "sig",
 			},
 			CurrentAgg: &rpc.Aggregation{
 				UserIdInAggregation:    currUserLists,
