@@ -18,6 +18,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type EnclaveClient interface {
 	Schedule(ctx context.Context, in *SchedulingRequest, opts ...grpc.CallOption) (*SchedulingResponse, error)
+	Aggregate(ctx context.Context, in *AggregateRequest, opts ...grpc.CallOption) (*AggregateResponse, error)
 }
 
 type enclaveClient struct {
@@ -37,11 +38,21 @@ func (c *enclaveClient) Schedule(ctx context.Context, in *SchedulingRequest, opt
 	return out, nil
 }
 
+func (c *enclaveClient) Aggregate(ctx context.Context, in *AggregateRequest, opts ...grpc.CallOption) (*AggregateResponse, error) {
+	out := new(AggregateResponse)
+	err := c.cc.Invoke(ctx, "/rpc.enclave/aggregate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EnclaveServer is the server API for Enclave service.
 // All implementations must embed UnimplementedEnclaveServer
 // for forward compatibility
 type EnclaveServer interface {
 	Schedule(context.Context, *SchedulingRequest) (*SchedulingResponse, error)
+	Aggregate(context.Context, *AggregateRequest) (*AggregateResponse, error)
 	mustEmbedUnimplementedEnclaveServer()
 }
 
@@ -51,6 +62,9 @@ type UnimplementedEnclaveServer struct {
 
 func (*UnimplementedEnclaveServer) Schedule(context.Context, *SchedulingRequest) (*SchedulingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Schedule not implemented")
+}
+func (*UnimplementedEnclaveServer) Aggregate(context.Context, *AggregateRequest) (*AggregateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Aggregate not implemented")
 }
 func (*UnimplementedEnclaveServer) mustEmbedUnimplementedEnclaveServer() {}
 
@@ -76,6 +90,24 @@ func _Enclave_Schedule_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Enclave_Aggregate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AggregateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EnclaveServer).Aggregate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpc.enclave/Aggregate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EnclaveServer).Aggregate(ctx, req.(*AggregateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Enclave_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "rpc.enclave",
 	HandlerType: (*EnclaveServer)(nil),
@@ -83,6 +115,10 @@ var _Enclave_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "schedule",
 			Handler:    _Enclave_Schedule_Handler,
+		},
+		{
+			MethodName: "aggregate",
+			Handler:    _Enclave_Aggregate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

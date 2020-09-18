@@ -4,6 +4,7 @@ package rpc;
 
 service enclave {
   rpc schedule(SchedulingRequest) returns(SchedulingResponse);
+  rpc aggregate(AggregateRequest) returns (AggregateResponse);
 }
 
 message SchedulingState {
@@ -25,20 +26,26 @@ message SchedulingResponse {
   bool final = 3; // if set, this is the final round. Send message to DC, and
                   // ignore the outcome. (XXX although sending it to DC has no
                   // effect. this seems to be a bug in footprint scheduling.)
+  string sig = 4;
+}
+
+message UserMessage {
+  uint32 round = 1;
+  string user_id = 2;
+  string user_message = 3;
+  string sig = 4;
 }
 
 // unused for now
 message AggregateRequest{
-  uint32 round = 1;
-  bytes user_id = 2;
-  bytes user_message = 3;
+  UserMessage msg = 1;
   Aggregation current_agg = 4;
 }
 
 message Aggregation {
-  repeated bytes user_id_in_aggregation = 1;
-  bytes current_aggregated_value = 2;
-  bytes sig = 3;
+  repeated string user_id_in_aggregation = 1;
+  string current_aggregated_value = 2;
+  string sig = 3;
 }
 
 message AggregateResponse{

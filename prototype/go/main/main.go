@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/bl4ck5un/sgx-dc-nets/prototype/go/rpc"
 	"google.golang.org/grpc"
-	rpc "sgx-dc-net.org/rpc"
 )
 
 const N_SLOTS = 32

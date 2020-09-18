@@ -43,6 +43,13 @@ class enclave final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::SchedulingResponse>> PrepareAsyncschedule(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::SchedulingResponse>>(PrepareAsyncscheduleRaw(context, request, cq));
     }
+    virtual ::grpc::Status aggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest& request, ::rpc::AggregateResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::AggregateResponse>> Asyncaggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::AggregateResponse>>(AsyncaggregateRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::AggregateResponse>> PrepareAsyncaggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::rpc::AggregateResponse>>(PrepareAsyncaggregateRaw(context, request, cq));
+    }
     class experimental_async_interface {
      public:
       virtual ~experimental_async_interface() {}
@@ -58,6 +65,18 @@ class enclave final {
       #else
       virtual void schedule(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::SchedulingResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
       #endif
+      virtual void aggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest* request, ::rpc::AggregateResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void aggregate(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::AggregateResponse* response, std::function<void(::grpc::Status)>) = 0;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      virtual void aggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest* request, ::rpc::AggregateResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      #else
+      virtual void aggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest* request, ::rpc::AggregateResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
+      #endif
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      virtual void aggregate(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::AggregateResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      #else
+      virtual void aggregate(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::AggregateResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
+      #endif
     };
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
     typedef class experimental_async_interface async_interface;
@@ -69,6 +88,8 @@ class enclave final {
   private:
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::rpc::SchedulingResponse>* AsyncscheduleRaw(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::rpc::SchedulingResponse>* PrepareAsyncscheduleRaw(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::rpc::AggregateResponse>* AsyncaggregateRaw(::grpc::ClientContext* context, const ::rpc::AggregateRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::rpc::AggregateResponse>* PrepareAsyncaggregateRaw(::grpc::ClientContext* context, const ::rpc::AggregateRequest& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -79,6 +100,13 @@ class enclave final {
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::SchedulingResponse>> PrepareAsyncschedule(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::SchedulingResponse>>(PrepareAsyncscheduleRaw(context, request, cq));
+    }
+    ::grpc::Status aggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest& request, ::rpc::AggregateResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::AggregateResponse>> Asyncaggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::AggregateResponse>>(AsyncaggregateRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::AggregateResponse>> PrepareAsyncaggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::rpc::AggregateResponse>>(PrepareAsyncaggregateRaw(context, request, cq));
     }
     class experimental_async final :
       public StubInterface::experimental_async_interface {
@@ -95,6 +123,18 @@ class enclave final {
       #else
       void schedule(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::SchedulingResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
       #endif
+      void aggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest* request, ::rpc::AggregateResponse* response, std::function<void(::grpc::Status)>) override;
+      void aggregate(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::AggregateResponse* response, std::function<void(::grpc::Status)>) override;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      void aggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest* request, ::rpc::AggregateResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      #else
+      void aggregate(::grpc::ClientContext* context, const ::rpc::AggregateRequest* request, ::rpc::AggregateResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
+      #endif
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      void aggregate(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::AggregateResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      #else
+      void aggregate(::grpc::ClientContext* context, const ::grpc::ByteBuffer* request, ::rpc::AggregateResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
+      #endif
      private:
       friend class Stub;
       explicit experimental_async(Stub* stub): stub_(stub) { }
@@ -108,7 +148,10 @@ class enclave final {
     class experimental_async async_stub_{this};
     ::grpc::ClientAsyncResponseReader< ::rpc::SchedulingResponse>* AsyncscheduleRaw(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::rpc::SchedulingResponse>* PrepareAsyncscheduleRaw(::grpc::ClientContext* context, const ::rpc::SchedulingRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::rpc::AggregateResponse>* AsyncaggregateRaw(::grpc::ClientContext* context, const ::rpc::AggregateRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::rpc::AggregateResponse>* PrepareAsyncaggregateRaw(::grpc::ClientContext* context, const ::rpc::AggregateRequest& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_schedule_;
+    const ::grpc::internal::RpcMethod rpcmethod_aggregate_;
   };
   static std::unique_ptr<Stub> NewStub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options = ::grpc::StubOptions());
 
@@ -117,13 +160,16 @@ class enclave final {
     Service();
     virtual ~Service();
     virtual ::grpc::Status schedule(::grpc::ServerContext* context, const ::rpc::SchedulingRequest* request, ::rpc::SchedulingResponse* response);
+    virtual ::grpc::Status aggregate(::grpc::ServerContext* context, const ::rpc::AggregateRequest* request, ::rpc::AggregateResponse* response);
   };
   template <class BaseClass>
   class WithAsyncMethod_schedule : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithAsyncMethod_schedule() { ::grpc::Service::MarkMethodAsync(0); }
+    WithAsyncMethod_schedule() {
+      ::grpc::Service::MarkMethodAsync(0);
+    }
     ~WithAsyncMethod_schedule() override {
       BaseClassMustBeDerivedFromService(this);
     }
@@ -133,11 +179,30 @@ class enclave final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void Requestschedule(::grpc::ServerContext* context, ::rpc::SchedulingRequest* request, ::grpc::ServerAsyncResponseWriter< ::rpc::SchedulingResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(
-          0, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_schedule<Service> AsyncService;
+  template <class BaseClass>
+  class WithAsyncMethod_aggregate : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_aggregate() {
+      ::grpc::Service::MarkMethodAsync(1);
+    }
+    ~WithAsyncMethod_aggregate() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status aggregate(::grpc::ServerContext* /*context*/, const ::rpc::AggregateRequest* /*request*/, ::rpc::AggregateResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void Requestaggregate(::grpc::ServerContext* context, ::rpc::AggregateRequest* request, ::grpc::ServerAsyncResponseWriter< ::rpc::AggregateResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  typedef WithAsyncMethod_schedule<WithAsyncMethod_aggregate<Service > > AsyncService;
   template <class BaseClass>
   class ExperimentalWithCallbackMethod_schedule : public BaseClass {
    private:
@@ -146,36 +211,25 @@ class enclave final {
     ExperimentalWithCallbackMethod_schedule() {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       ::grpc::Service::
-#else
+    #else
       ::grpc::Service::experimental().
-#endif
-          MarkMethodCallback(0,
-                             new ::grpc_impl::internal::CallbackUnaryHandler<
-                                 ::rpc::SchedulingRequest,
-                                 ::rpc::SchedulingResponse>(
-                                 [this](
-#ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                                     ::grpc::CallbackServerContext*
-#else
-                                     ::grpc::experimental::
-                                         CallbackServerContext*
-#endif
-                                         context,
-                                     const ::rpc::SchedulingRequest* request,
-                                     ::rpc::SchedulingResponse* response) {
-                                   return this->schedule(
-                                       context, request, response);
-                                 }));
-    }
+    #endif
+        MarkMethodCallback(0,
+          new ::grpc_impl::internal::CallbackUnaryHandler< ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::rpc::SchedulingRequest* request, ::rpc::SchedulingResponse* response) { return this->schedule(context, request, response); }));}
     void SetMessageAllocatorFor_schedule(
         ::grpc::experimental::MessageAllocator< ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>* allocator) {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::internal::MethodHandler* const handler =
-          ::grpc::Service::GetHandler(0);
-#else
-      ::grpc::internal::MethodHandler* const handler =
-          ::grpc::Service::experimental().GetHandler(0);
-#endif
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(0);
+    #else
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(0);
+    #endif
       static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -196,18 +250,66 @@ class enclave final {
     #endif
       { return nullptr; }
   };
+  template <class BaseClass>
+  class ExperimentalWithCallbackMethod_aggregate : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    ExperimentalWithCallbackMethod_aggregate() {
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodCallback(1,
+          new ::grpc_impl::internal::CallbackUnaryHandler< ::rpc::AggregateRequest, ::rpc::AggregateResponse>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::rpc::AggregateRequest* request, ::rpc::AggregateResponse* response) { return this->aggregate(context, request, response); }));}
+    void SetMessageAllocatorFor_aggregate(
+        ::grpc::experimental::MessageAllocator< ::rpc::AggregateRequest, ::rpc::AggregateResponse>* allocator) {
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(1);
+    #else
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(1);
+    #endif
+      static_cast<::grpc_impl::internal::CallbackUnaryHandler< ::rpc::AggregateRequest, ::rpc::AggregateResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~ExperimentalWithCallbackMethod_aggregate() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status aggregate(::grpc::ServerContext* /*context*/, const ::rpc::AggregateRequest* /*request*/, ::rpc::AggregateResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* aggregate(
+      ::grpc::CallbackServerContext* /*context*/, const ::rpc::AggregateRequest* /*request*/, ::rpc::AggregateResponse* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* aggregate(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::rpc::AggregateRequest* /*request*/, ::rpc::AggregateResponse* /*response*/)
+    #endif
+      { return nullptr; }
+  };
   #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-  typedef ExperimentalWithCallbackMethod_schedule<Service> CallbackService;
-#endif
+  typedef ExperimentalWithCallbackMethod_schedule<ExperimentalWithCallbackMethod_aggregate<Service > > CallbackService;
+  #endif
 
-  typedef ExperimentalWithCallbackMethod_schedule<Service>
-      ExperimentalCallbackService;
+  typedef ExperimentalWithCallbackMethod_schedule<ExperimentalWithCallbackMethod_aggregate<Service > > ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_schedule : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithGenericMethod_schedule() { ::grpc::Service::MarkMethodGeneric(0); }
+    WithGenericMethod_schedule() {
+      ::grpc::Service::MarkMethodGeneric(0);
+    }
     ~WithGenericMethod_schedule() override {
       BaseClassMustBeDerivedFromService(this);
     }
@@ -218,11 +320,30 @@ class enclave final {
     }
   };
   template <class BaseClass>
+  class WithGenericMethod_aggregate : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_aggregate() {
+      ::grpc::Service::MarkMethodGeneric(1);
+    }
+    ~WithGenericMethod_aggregate() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status aggregate(::grpc::ServerContext* /*context*/, const ::rpc::AggregateRequest* /*request*/, ::rpc::AggregateResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_schedule : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
-    WithRawMethod_schedule() { ::grpc::Service::MarkMethodRaw(0); }
+    WithRawMethod_schedule() {
+      ::grpc::Service::MarkMethodRaw(0);
+    }
     ~WithRawMethod_schedule() override {
       BaseClassMustBeDerivedFromService(this);
     }
@@ -232,8 +353,27 @@ class enclave final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void Requestschedule(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(
-          0, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(0, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
+  class WithRawMethod_aggregate : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_aggregate() {
+      ::grpc::Service::MarkMethodRaw(1);
+    }
+    ~WithRawMethod_aggregate() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status aggregate(::grpc::ServerContext* /*context*/, const ::rpc::AggregateRequest* /*request*/, ::rpc::AggregateResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void Requestaggregate(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(1, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -244,24 +384,18 @@ class enclave final {
     ExperimentalWithRawCallbackMethod_schedule() {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       ::grpc::Service::
-#else
+    #else
       ::grpc::Service::experimental().
-#endif
-          MarkMethodRawCallback(
-              0,
-              new ::grpc_impl::internal::
-                  CallbackUnaryHandler<::grpc::ByteBuffer, ::grpc::ByteBuffer>(
-                      [this](
-#ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-                          ::grpc::CallbackServerContext*
-#else
-                          ::grpc::experimental::CallbackServerContext*
-#endif
-                              context,
-                          const ::grpc::ByteBuffer* request,
-                          ::grpc::ByteBuffer* response) {
-                        return this->schedule(context, request, response);
-                      }));
+    #endif
+        MarkMethodRawCallback(0,
+          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->schedule(context, request, response); }));
     }
     ~ExperimentalWithRawCallbackMethod_schedule() override {
       BaseClassMustBeDerivedFromService(this);
@@ -281,22 +415,58 @@ class enclave final {
       { return nullptr; }
   };
   template <class BaseClass>
+  class ExperimentalWithRawCallbackMethod_aggregate : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    ExperimentalWithRawCallbackMethod_aggregate() {
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodRawCallback(1,
+          new ::grpc_impl::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->aggregate(context, request, response); }));
+    }
+    ~ExperimentalWithRawCallbackMethod_aggregate() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status aggregate(::grpc::ServerContext* /*context*/, const ::rpc::AggregateRequest* /*request*/, ::rpc::AggregateResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* aggregate(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* aggregate(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #endif
+      { return nullptr; }
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_schedule : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_schedule() {
-      ::grpc::Service::MarkMethodStreamed(
-          0,
-          new ::grpc::internal::StreamedUnaryHandler<::rpc::SchedulingRequest,
-                                                     ::rpc::SchedulingResponse>(
-              [this](
-                  ::grpc_impl::ServerContext* context,
-                  ::grpc_impl::ServerUnaryStreamer<::rpc::SchedulingRequest,
-                                                   ::rpc::SchedulingResponse>*
-                      streamer) {
-                return this->Streamedschedule(context, streamer);
-              }));
+      ::grpc::Service::MarkMethodStreamed(0,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>(
+            [this](::grpc_impl::ServerContext* context,
+                   ::grpc_impl::ServerUnaryStreamer<
+                     ::rpc::SchedulingRequest, ::rpc::SchedulingResponse>* streamer) {
+                       return this->Streamedschedule(context,
+                         streamer);
+                  }));
     }
     ~WithStreamedUnaryMethod_schedule() override {
       BaseClassMustBeDerivedFromService(this);
@@ -309,9 +479,36 @@ class enclave final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status Streamedschedule(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::rpc::SchedulingRequest,::rpc::SchedulingResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_schedule<Service> StreamedUnaryService;
+  template <class BaseClass>
+  class WithStreamedUnaryMethod_aggregate : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_aggregate() {
+      ::grpc::Service::MarkMethodStreamed(1,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::rpc::AggregateRequest, ::rpc::AggregateResponse>(
+            [this](::grpc_impl::ServerContext* context,
+                   ::grpc_impl::ServerUnaryStreamer<
+                     ::rpc::AggregateRequest, ::rpc::AggregateResponse>* streamer) {
+                       return this->Streamedaggregate(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_aggregate() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status aggregate(::grpc::ServerContext* /*context*/, const ::rpc::AggregateRequest* /*request*/, ::rpc::AggregateResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status Streamedaggregate(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::rpc::AggregateRequest,::rpc::AggregateResponse>* server_unary_streamer) = 0;
+  };
+  typedef WithStreamedUnaryMethod_schedule<WithStreamedUnaryMethod_aggregate<Service > > StreamedUnaryService;
   typedef Service SplitStreamedService;
-  typedef WithStreamedUnaryMethod_schedule<Service> StreamedService;
+  typedef WithStreamedUnaryMethod_schedule<WithStreamedUnaryMethod_aggregate<Service > > StreamedService;
 };
 
 }  // namespace rpc

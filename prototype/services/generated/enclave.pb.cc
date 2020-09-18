@@ -15,15 +15,12 @@
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 extern PROTOBUF_INTERNAL_EXPORT_enclave_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Aggregation_enclave_2eproto;
-extern PROTOBUF_INTERNAL_EXPORT_enclave_2eproto ::PROTOBUF_NAMESPACE_ID::
-    internal::SCCInfo<0>
-        scc_info_SchedulingState_enclave_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_enclave_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_SchedulingState_enclave_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_enclave_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_UserMessage_enclave_2eproto;
 namespace rpc {
-class SchedulingStateDefaultTypeInternal
-{
+class SchedulingStateDefaultTypeInternal {
  public:
-  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<SchedulingState>
-      _instance;
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<SchedulingState> _instance;
 } _SchedulingState_default_instance_;
 class SchedulingRequestDefaultTypeInternal {
  public:
@@ -33,6 +30,10 @@ class SchedulingResponseDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<SchedulingResponse> _instance;
 } _SchedulingResponse_default_instance_;
+class UserMessageDefaultTypeInternal {
+ public:
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<UserMessage> _instance;
+} _UserMessage_default_instance_;
 class AggregateRequestDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<AggregateRequest> _instance;
@@ -61,8 +62,9 @@ static void InitDefaultsscc_info_AggregateRequest_enclave_2eproto() {
   ::rpc::AggregateRequest::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_AggregateRequest_enclave_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_AggregateRequest_enclave_2eproto}, {
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<2> scc_info_AggregateRequest_enclave_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 2, 0, InitDefaultsscc_info_AggregateRequest_enclave_2eproto}, {
+      &scc_info_UserMessage_enclave_2eproto.base,
       &scc_info_Aggregation_enclave_2eproto.base,}};
 
 static void InitDefaultsscc_info_AggregateResponse_enclave_2eproto() {
@@ -119,16 +121,9 @@ static void InitDefaultsscc_info_SchedulingRequest_enclave_2eproto() {
   ::rpc::SchedulingRequest::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1>
-    scc_info_SchedulingRequest_enclave_2eproto = {
-        {ATOMIC_VAR_INIT(
-             ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized),
-         1,
-         0,
-         InitDefaultsscc_info_SchedulingRequest_enclave_2eproto},
-        {
-            &scc_info_SchedulingState_enclave_2eproto.base,
-        }};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_SchedulingRequest_enclave_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_SchedulingRequest_enclave_2eproto}, {
+      &scc_info_SchedulingState_enclave_2eproto.base,}};
 
 static void InitDefaultsscc_info_SchedulingResponse_enclave_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -141,182 +136,165 @@ static void InitDefaultsscc_info_SchedulingResponse_enclave_2eproto() {
   ::rpc::SchedulingResponse::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1>
-    scc_info_SchedulingResponse_enclave_2eproto = {
-        {ATOMIC_VAR_INIT(
-             ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized),
-         1,
-         0,
-         InitDefaultsscc_info_SchedulingResponse_enclave_2eproto},
-        {
-            &scc_info_SchedulingState_enclave_2eproto.base,
-        }};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_SchedulingResponse_enclave_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_SchedulingResponse_enclave_2eproto}, {
+      &scc_info_SchedulingState_enclave_2eproto.base,}};
 
-static void InitDefaultsscc_info_SchedulingState_enclave_2eproto()
-{
+static void InitDefaultsscc_info_SchedulingState_enclave_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   {
     void* ptr = &::rpc::_SchedulingState_default_instance_;
-    new (ptr)::rpc::SchedulingState();
+    new (ptr) ::rpc::SchedulingState();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
   ::rpc::SchedulingState::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0>
-    scc_info_SchedulingState_enclave_2eproto = {
-        {ATOMIC_VAR_INIT(
-             ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized),
-         0,
-         0,
-         InitDefaultsscc_info_SchedulingState_enclave_2eproto},
-        {}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_SchedulingState_enclave_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_SchedulingState_enclave_2eproto}, {}};
 
-static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_enclave_2eproto[7];
+static void InitDefaultsscc_info_UserMessage_enclave_2eproto() {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  {
+    void* ptr = &::rpc::_UserMessage_default_instance_;
+    new (ptr) ::rpc::UserMessage();
+    ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
+  }
+  ::rpc::UserMessage::InitAsDefaultInstance();
+}
+
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_UserMessage_enclave_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_UserMessage_enclave_2eproto}, {}};
+
+static ::PROTOBUF_NAMESPACE_ID::Metadata file_level_metadata_enclave_2eproto[8];
 static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum_descriptors_enclave_2eproto = nullptr;
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_enclave_2eproto = nullptr;
 
-const ::PROTOBUF_NAMESPACE_ID::uint32
-    TableStruct_enclave_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(
-        protodesc_cold) = {
-        ~0u,  // no _has_bits_
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, _internal_metadata_),
-        ~0u,  // no _extensions_
-        ~0u,  // no _oneof_case_
-        ~0u,  // no _weak_field_map_
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, round_),
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, reservation_map_),
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, footprints_),
-        ~0u,  // no _has_bits_
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, _internal_metadata_),
-        ~0u,  // no _extensions_
-        ~0u,  // no _oneof_case_
-        ~0u,  // no _weak_field_map_
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, cur_state_),
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, cur_dc_message_),
-        ~0u,  // no _has_bits_
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, _internal_metadata_),
-        ~0u,  // no _extensions_
-        ~0u,  // no _oneof_case_
-        ~0u,  // no _weak_field_map_
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, new_state_),
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, message_to_broadcast_),
-        PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, final_),
-        ~0u,  // no _has_bits_
-        PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, _internal_metadata_),
-        ~0u,  // no _extensions_
-        ~0u,  // no _oneof_case_
-        ~0u,  // no _weak_field_map_
-        PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, round_),
-        PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, user_id_),
-        PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, user_message_),
-        PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, current_agg_),
-        ~0u,  // no _has_bits_
-        PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, _internal_metadata_),
-        ~0u,  // no _extensions_
-        ~0u,  // no _oneof_case_
-        ~0u,  // no _weak_field_map_
-        PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, user_id_in_aggregation_),
-        PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, current_aggregated_value_),
-        PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, sig_),
-        ~0u,  // no _has_bits_
-        PROTOBUF_FIELD_OFFSET(::rpc::AggregateResponse, _internal_metadata_),
-        ~0u,  // no _extensions_
-        ~0u,  // no _oneof_case_
-        ~0u,  // no _weak_field_map_
-        PROTOBUF_FIELD_OFFSET(::rpc::AggregateResponse, new_agg_),
-        ~0u,  // no _has_bits_
-        PROTOBUF_FIELD_OFFSET(::rpc::Empty, _internal_metadata_),
-        ~0u,  // no _extensions_
-        ~0u,  // no _oneof_case_
-        ~0u,  // no _weak_field_map_
+const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_enclave_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, round_),
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, reservation_map_),
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingState, footprints_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, cur_state_),
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingRequest, cur_dc_message_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, new_state_),
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, message_to_broadcast_),
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, final_),
+  PROTOBUF_FIELD_OFFSET(::rpc::SchedulingResponse, sig_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::rpc::UserMessage, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::rpc::UserMessage, round_),
+  PROTOBUF_FIELD_OFFSET(::rpc::UserMessage, user_id_),
+  PROTOBUF_FIELD_OFFSET(::rpc::UserMessage, user_message_),
+  PROTOBUF_FIELD_OFFSET(::rpc::UserMessage, sig_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, msg_),
+  PROTOBUF_FIELD_OFFSET(::rpc::AggregateRequest, current_agg_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, user_id_in_aggregation_),
+  PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, current_aggregated_value_),
+  PROTOBUF_FIELD_OFFSET(::rpc::Aggregation, sig_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::rpc::AggregateResponse, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  PROTOBUF_FIELD_OFFSET(::rpc::AggregateResponse, new_agg_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::rpc::Empty, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
 };
-static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema
-    schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-        {0, -1, sizeof(::rpc::SchedulingState)},
-        {8, -1, sizeof(::rpc::SchedulingRequest)},
-        {15, -1, sizeof(::rpc::SchedulingResponse)},
-        {23, -1, sizeof(::rpc::AggregateRequest)},
-        {32, -1, sizeof(::rpc::Aggregation)},
-        {40, -1, sizeof(::rpc::AggregateResponse)},
-        {46, -1, sizeof(::rpc::Empty)},
-};
-
-static ::PROTOBUF_NAMESPACE_ID::Message const* const file_default_instances[] =
-    {
-        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
-            &::rpc::_SchedulingState_default_instance_),
-        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
-            &::rpc::_SchedulingRequest_default_instance_),
-        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
-            &::rpc::_SchedulingResponse_default_instance_),
-        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
-            &::rpc::_AggregateRequest_default_instance_),
-        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
-            &::rpc::_Aggregation_default_instance_),
-        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
-            &::rpc::_AggregateResponse_default_instance_),
-        reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(
-            &::rpc::_Empty_default_instance_),
+static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+  { 0, -1, sizeof(::rpc::SchedulingState)},
+  { 8, -1, sizeof(::rpc::SchedulingRequest)},
+  { 15, -1, sizeof(::rpc::SchedulingResponse)},
+  { 24, -1, sizeof(::rpc::UserMessage)},
+  { 33, -1, sizeof(::rpc::AggregateRequest)},
+  { 40, -1, sizeof(::rpc::Aggregation)},
+  { 48, -1, sizeof(::rpc::AggregateResponse)},
+  { 54, -1, sizeof(::rpc::Empty)},
 };
 
-const char
-    descriptor_table_protodef_enclave_2eproto[] PROTOBUF_SECTION_VARIABLE(
-        protodesc_cold) =
-        "\n\renclave.proto\022\003rpc\"M\n\017SchedulingState\022"
-        "\r\n\005round\030\001 \001(\r\022\027\n\017reservation_map\030\002 "
-        "\003(\010\022"
-        "\022\n\nfootprints\030\003 \003(\t\"T\n\021SchedulingRequest"
-        "\022\'\n\tcur_state\030\001 \001(\0132\024.rpc.SchedulingStat"
-        "e\022\026\n\016cur_dc_message\030\002 \001(\t\"j\n\022SchedulingR"
-        "esponse\022\'\n\tnew_state\030\001 \001(\0132\024.rpc.Schedul"
-        "ingState\022\034\n\024message_to_broadcast\030\002 \001(\t\022\r"
-        "\n\005final\030\003 \001(\010\"o\n\020AggregateRequest\022\r\n\005rou"
-        "nd\030\001 \001(\r\022\017\n\007user_id\030\002 "
-        "\001(\014\022\024\n\014user_messag"
-        "e\030\003 \001(\014\022%\n\013current_agg\030\004 "
-        "\001(\0132\020.rpc.Aggre"
-        "gation\"\\\n\013Aggregation\022\036\n\026user_id_in_aggr"
-        "egation\030\001 \003(\014\022 \n\030current_aggregated_valu"
-        "e\030\002 \001(\014\022\013\n\003sig\030\003 "
-        "\001(\014\"6\n\021AggregateRespons"
-        "e\022!\n\007new_agg\030\001 \001(\0132\020.rpc.Aggregation\"\007\n\005"
-        "Empty2F\n\007enclave\022;\n\010schedule\022\026.rpc.Sched"
-        "ulingRequest\032\027.rpc.SchedulingResponseb\006p"
-        "roto3";
+static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_SchedulingState_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_SchedulingRequest_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_SchedulingResponse_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_UserMessage_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_AggregateRequest_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_Aggregation_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_AggregateResponse_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::rpc::_Empty_default_instance_),
+};
+
+const char descriptor_table_protodef_enclave_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
+  "\n\renclave.proto\022\003rpc\"M\n\017SchedulingState\022"
+  "\r\n\005round\030\001 \001(\r\022\027\n\017reservation_map\030\002 \003(\010\022"
+  "\022\n\nfootprints\030\003 \003(\t\"T\n\021SchedulingRequest"
+  "\022\'\n\tcur_state\030\001 \001(\0132\024.rpc.SchedulingStat"
+  "e\022\026\n\016cur_dc_message\030\002 \001(\t\"w\n\022SchedulingR"
+  "esponse\022\'\n\tnew_state\030\001 \001(\0132\024.rpc.Schedul"
+  "ingState\022\034\n\024message_to_broadcast\030\002 \001(\t\022\r"
+  "\n\005final\030\003 \001(\010\022\013\n\003sig\030\004 \001(\t\"P\n\013UserMessag"
+  "e\022\r\n\005round\030\001 \001(\r\022\017\n\007user_id\030\002 \001(\t\022\024\n\014use"
+  "r_message\030\003 \001(\t\022\013\n\003sig\030\004 \001(\t\"X\n\020Aggregat"
+  "eRequest\022\035\n\003msg\030\001 \001(\0132\020.rpc.UserMessage\022"
+  "%\n\013current_agg\030\004 \001(\0132\020.rpc.Aggregation\"\\"
+  "\n\013Aggregation\022\036\n\026user_id_in_aggregation\030"
+  "\001 \003(\t\022 \n\030current_aggregated_value\030\002 \001(\t\022"
+  "\013\n\003sig\030\003 \001(\t\"6\n\021AggregateResponse\022!\n\007new"
+  "_agg\030\001 \001(\0132\020.rpc.Aggregation\"\007\n\005Empty2\202\001"
+  "\n\007enclave\022;\n\010schedule\022\026.rpc.SchedulingRe"
+  "quest\032\027.rpc.SchedulingResponse\022:\n\taggreg"
+  "ate\022\025.rpc.AggregateRequest\032\026.rpc.Aggrega"
+  "teResponseb\006proto3"
+  ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_enclave_2eproto_deps[1] = {
 };
-static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase* const
-    descriptor_table_enclave_2eproto_sccs[7] = {
-        &scc_info_AggregateRequest_enclave_2eproto.base,
-        &scc_info_AggregateResponse_enclave_2eproto.base,
-        &scc_info_Aggregation_enclave_2eproto.base,
-        &scc_info_Empty_enclave_2eproto.base,
-        &scc_info_SchedulingRequest_enclave_2eproto.base,
-        &scc_info_SchedulingResponse_enclave_2eproto.base,
-        &scc_info_SchedulingState_enclave_2eproto.base,
+static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_enclave_2eproto_sccs[8] = {
+  &scc_info_AggregateRequest_enclave_2eproto.base,
+  &scc_info_AggregateResponse_enclave_2eproto.base,
+  &scc_info_Aggregation_enclave_2eproto.base,
+  &scc_info_Empty_enclave_2eproto.base,
+  &scc_info_SchedulingRequest_enclave_2eproto.base,
+  &scc_info_SchedulingResponse_enclave_2eproto.base,
+  &scc_info_SchedulingState_enclave_2eproto.base,
+  &scc_info_UserMessage_enclave_2eproto.base,
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_enclave_2eproto_once;
-const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable
-    descriptor_table_enclave_2eproto = {
-        false,
-        false,
-        descriptor_table_protodef_enclave_2eproto,
-        "enclave.proto",
-        645,
-        &descriptor_table_enclave_2eproto_once,
-        descriptor_table_enclave_2eproto_sccs,
-        descriptor_table_enclave_2eproto_deps,
-        7,
-        0,
-        schemas,
-        file_default_instances,
-        TableStruct_enclave_2eproto::offsets,
-        file_level_metadata_enclave_2eproto,
-        7,
-        file_level_enum_descriptors_enclave_2eproto,
-        file_level_service_descriptors_enclave_2eproto,
+const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_enclave_2eproto = {
+  false, false, descriptor_table_protodef_enclave_2eproto, "enclave.proto", 778,
+  &descriptor_table_enclave_2eproto_once, descriptor_table_enclave_2eproto_sccs, descriptor_table_enclave_2eproto_deps, 8, 0,
+  schemas, file_default_instances, TableStruct_enclave_2eproto::offsets,
+  file_level_metadata_enclave_2eproto, 8, file_level_enum_descriptors_enclave_2eproto, file_level_service_descriptors_enclave_2eproto,
 };
 
 // Force running AddDescriptors() at dynamic initialization time.
@@ -325,64 +303,61 @@ namespace rpc {
 
 // ===================================================================
 
-void SchedulingState::InitAsDefaultInstance() {}
-class SchedulingState::_Internal
-{
+void SchedulingState::InitAsDefaultInstance() {
+}
+class SchedulingState::_Internal {
  public:
 };
 
 SchedulingState::SchedulingState(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-    : ::PROTOBUF_NAMESPACE_ID::Message(arena),
-      reservation_map_(arena),
-      footprints_(arena)
-{
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+  reservation_map_(arena),
+  footprints_(arena) {
   SharedCtor();
   RegisterArenaDtor(arena);
   // @@protoc_insertion_point(arena_constructor:rpc.SchedulingState)
 }
 SchedulingState::SchedulingState(const SchedulingState& from)
-    : ::PROTOBUF_NAMESPACE_ID::Message(),
+  : ::PROTOBUF_NAMESPACE_ID::Message(),
       reservation_map_(from.reservation_map_),
-      footprints_(from.footprints_)
-{
+      footprints_(from.footprints_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   round_ = from.round_;
   // @@protoc_insertion_point(copy_constructor:rpc.SchedulingState)
 }
 
-void SchedulingState::SharedCtor()
-{
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(
-      &scc_info_SchedulingState_enclave_2eproto.base);
+void SchedulingState::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SchedulingState_enclave_2eproto.base);
   round_ = 0u;
 }
 
-SchedulingState::~SchedulingState()
-{
+SchedulingState::~SchedulingState() {
   // @@protoc_insertion_point(destructor:rpc.SchedulingState)
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void SchedulingState::SharedDtor() { GOOGLE_DCHECK(GetArena() == nullptr); }
+void SchedulingState::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+}
 
-void SchedulingState::ArenaDtor(void* object)
-{
-  SchedulingState* _this = reinterpret_cast<SchedulingState*>(object);
+void SchedulingState::ArenaDtor(void* object) {
+  SchedulingState* _this = reinterpret_cast< SchedulingState* >(object);
   (void)_this;
 }
-void SchedulingState::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {}
-void SchedulingState::SetCachedSize(int size) const { _cached_size_.Set(size); }
-const SchedulingState& SchedulingState::default_instance()
-{
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(
-      &::scc_info_SchedulingState_enclave_2eproto.base);
+void SchedulingState::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void SchedulingState::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const SchedulingState& SchedulingState::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_SchedulingState_enclave_2eproto.base);
   return *internal_default_instance();
 }
 
-void SchedulingState::Clear()
-{
-  // @@protoc_insertion_point(message_clear_start:rpc.SchedulingState)
+
+void SchedulingState::Clear() {
+// @@protoc_insertion_point(message_clear_start:rpc.SchedulingState)
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
@@ -393,10 +368,7 @@ void SchedulingState::Clear()
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* SchedulingState::_InternalParse(
-    const char* ptr,
-    ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx)
-{
+const char* SchedulingState::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
   while (!ctx->Done(&ptr)) {
@@ -406,25 +378,20 @@ const char* SchedulingState::_InternalParse(
     switch (tag >> 3) {
       // uint32 round = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(
-                static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
           round_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
-        } else
-          goto handle_unusual;
+        } else goto handle_unusual;
         continue;
       // repeated bool reservation_map = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::PackedBoolParser(
-              _internal_mutable_reservation_map(), ptr, ctx);
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::PackedBoolParser(_internal_mutable_reservation_map(), ptr, ctx);
           CHK_(ptr);
         } else if (static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 16) {
-          _internal_add_reservation_map(
-              ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
+          _internal_add_reservation_map(::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr));
           CHK_(ptr);
-        } else
-          goto handle_unusual;
+        } else goto handle_unusual;
         continue;
       // repeated string footprints = 3;
       case 3:
@@ -433,10 +400,8 @@ const char* SchedulingState::_InternalParse(
           do {
             ptr += 1;
             auto str = _internal_add_footprints();
-            ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(
-                str, ptr, ctx);
-            CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(
-                str, "rpc.SchedulingState.footprints"));
+            ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+            CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.SchedulingState.footprints"));
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
@@ -465,9 +430,7 @@ failure:
 }
 
 ::PROTOBUF_NAMESPACE_ID::uint8* SchedulingState::_InternalSerialize(
-    ::PROTOBUF_NAMESPACE_ID::uint8* target,
-    ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const
-{
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:rpc.SchedulingState)
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
@@ -475,9 +438,7 @@ failure:
   // uint32 round = 1;
   if (this->round() != 0) {
     target = stream->EnsureSpace(target);
-    target =
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(
-            1, this->_internal_round(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(1, this->_internal_round(), target);
   }
 
   // repeated bool reservation_map = 2;
@@ -489,10 +450,9 @@ failure:
   for (int i = 0, n = this->_internal_footprints_size(); i < n; i++) {
     const auto& s = this->_internal_footprints(i);
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-        s.data(),
-        static_cast<int>(s.length()),
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-        "rpc.SchedulingState.footprints");
+      s.data(), static_cast<int>(s.length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "rpc.SchedulingState.footprints");
     target = stream->WriteString(3, s, target);
   }
 
@@ -504,9 +464,8 @@ failure:
   return target;
 }
 
-size_t SchedulingState::ByteSizeLong() const
-{
-  // @@protoc_insertion_point(message_byte_size_start:rpc.SchedulingState)
+size_t SchedulingState::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:rpc.SchedulingState)
   size_t total_size = 0;
 
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
@@ -515,34 +474,32 @@ size_t SchedulingState::ByteSizeLong() const
 
   // repeated bool reservation_map = 2;
   {
-    unsigned int count =
-        static_cast<unsigned int>(this->_internal_reservation_map_size());
+    unsigned int count = static_cast<unsigned int>(this->_internal_reservation_map_size());
     size_t data_size = 1UL * count;
     if (data_size > 0) {
-      total_size +=
-          1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
-                  static_cast<::PROTOBUF_NAMESPACE_ID::int32>(data_size));
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::Int32Size(
+            static_cast<::PROTOBUF_NAMESPACE_ID::int32>(data_size));
     }
-    int cached_size =
-        ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(data_size);
+    int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(data_size);
     _reservation_map_cached_byte_size_.store(cached_size,
-                                             std::memory_order_relaxed);
+                                    std::memory_order_relaxed);
     total_size += data_size;
   }
 
   // repeated string footprints = 3;
-  total_size +=
-      1 * ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(footprints_.size());
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(footprints_.size());
   for (int i = 0, n = footprints_.size(); i < n; i++) {
     total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        footprints_.Get(i));
+      footprints_.Get(i));
   }
 
   // uint32 round = 1;
   if (this->round() != 0) {
-    total_size +=
-        1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
-                this->_internal_round());
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_round());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -554,24 +511,23 @@ size_t SchedulingState::ByteSizeLong() const
   return total_size;
 }
 
-void SchedulingState::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from)
-{
-  // @@protoc_insertion_point(generalized_merge_from_start:rpc.SchedulingState)
+void SchedulingState::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:rpc.SchedulingState)
   GOOGLE_DCHECK_NE(&from, this);
   const SchedulingState* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<SchedulingState>(&from);
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<SchedulingState>(
+          &from);
   if (source == nullptr) {
-    // @@protoc_insertion_point(generalized_merge_from_cast_fail:rpc.SchedulingState)
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:rpc.SchedulingState)
     ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
   } else {
-    // @@protoc_insertion_point(generalized_merge_from_cast_success:rpc.SchedulingState)
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:rpc.SchedulingState)
     MergeFrom(*source);
   }
 }
 
-void SchedulingState::MergeFrom(const SchedulingState& from)
-{
-  // @@protoc_insertion_point(class_specific_merge_from_start:rpc.SchedulingState)
+void SchedulingState::MergeFrom(const SchedulingState& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:rpc.SchedulingState)
   GOOGLE_DCHECK_NE(&from, this);
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
@@ -584,26 +540,25 @@ void SchedulingState::MergeFrom(const SchedulingState& from)
   }
 }
 
-void SchedulingState::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from)
-{
-  // @@protoc_insertion_point(generalized_copy_from_start:rpc.SchedulingState)
+void SchedulingState::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:rpc.SchedulingState)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-void SchedulingState::CopyFrom(const SchedulingState& from)
-{
-  // @@protoc_insertion_point(class_specific_copy_from_start:rpc.SchedulingState)
+void SchedulingState::CopyFrom(const SchedulingState& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:rpc.SchedulingState)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool SchedulingState::IsInitialized() const { return true; }
+bool SchedulingState::IsInitialized() const {
+  return true;
+}
 
-void SchedulingState::InternalSwap(SchedulingState* other)
-{
+void SchedulingState::InternalSwap(SchedulingState* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   reservation_map_.InternalSwap(&other->reservation_map_);
@@ -611,16 +566,15 @@ void SchedulingState::InternalSwap(SchedulingState* other)
   swap(round_, other->round_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata SchedulingState::GetMetadata() const
-{
+::PROTOBUF_NAMESPACE_ID::Metadata SchedulingState::GetMetadata() const {
   return GetMetadataStatic();
 }
+
 
 // ===================================================================
 
 void SchedulingRequest::InitAsDefaultInstance() {
-  ::rpc::_SchedulingRequest_default_instance_._instance.get_mutable()
-      ->cur_state_ = const_cast<::rpc::SchedulingState*>(
+  ::rpc::_SchedulingRequest_default_instance_._instance.get_mutable()->cur_state_ = const_cast< ::rpc::SchedulingState*>(
       ::rpc::SchedulingState::internal_default_instance());
 }
 class SchedulingRequest::_Internal {
@@ -628,9 +582,8 @@ class SchedulingRequest::_Internal {
   static const ::rpc::SchedulingState& cur_state(const SchedulingRequest* msg);
 };
 
-const ::rpc::SchedulingState& SchedulingRequest::_Internal::cur_state(
-    const SchedulingRequest* msg)
-{
+const ::rpc::SchedulingState&
+SchedulingRequest::_Internal::cur_state(const SchedulingRequest* msg) {
   return *msg->cur_state_;
 }
 SchedulingRequest::SchedulingRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
@@ -642,13 +595,10 @@ SchedulingRequest::SchedulingRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 SchedulingRequest::SchedulingRequest(const SchedulingRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  cur_dc_message_.UnsafeSetDefault(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  cur_dc_message_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_cur_dc_message().empty()) {
-    cur_dc_message_.Set(
-        &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-        from._internal_cur_dc_message(),
-        GetArena());
+    cur_dc_message_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_cur_dc_message(),
+      GetArena());
   }
   if (from._internal_has_cur_state()) {
     cur_state_ = new ::rpc::SchedulingState(*from.cur_state_);
@@ -659,10 +609,8 @@ SchedulingRequest::SchedulingRequest(const SchedulingRequest& from)
 }
 
 void SchedulingRequest::SharedCtor() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(
-      &scc_info_SchedulingRequest_enclave_2eproto.base);
-  cur_dc_message_.UnsafeSetDefault(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SchedulingRequest_enclave_2eproto.base);
+  cur_dc_message_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   cur_state_ = nullptr;
 }
 
@@ -674,8 +622,7 @@ SchedulingRequest::~SchedulingRequest() {
 
 void SchedulingRequest::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  cur_dc_message_.DestroyNoArena(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  cur_dc_message_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (this != internal_default_instance()) delete cur_state_;
 }
 
@@ -700,9 +647,7 @@ void SchedulingRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  cur_dc_message_.ClearToEmpty(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      GetArena());
+  cur_dc_message_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   if (GetArena() == nullptr && cur_state_ != nullptr) {
     delete cur_state_;
   }
@@ -720,25 +665,19 @@ const char* SchedulingRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESP
     switch (tag >> 3) {
       // .rpc.SchedulingState cur_state = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(
-                static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_cur_state(), ptr);
           CHK_(ptr);
-        } else
-          goto handle_unusual;
+        } else goto handle_unusual;
         continue;
       // string cur_dc_message = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(
-                static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
           auto str = _internal_mutable_cur_dc_message();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(
-              str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(
-              str, "rpc.SchedulingRequest.cur_dc_message"));
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.SchedulingRequest.cur_dc_message"));
           CHK_(ptr);
-        } else
-          goto handle_unusual;
+        } else goto handle_unusual;
         continue;
       default: {
       handle_unusual:
@@ -771,18 +710,17 @@ failure:
   // .rpc.SchedulingState cur_state = 1;
   if (this->has_cur_state()) {
     target = stream->EnsureSpace(target);
-    target =
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::InternalWriteMessage(
-            1, _Internal::cur_state(this), target, stream);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        1, _Internal::cur_state(this), target, stream);
   }
 
   // string cur_dc_message = 2;
   if (this->cur_dc_message().size() > 0) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-        this->_internal_cur_dc_message().data(),
-        static_cast<int>(this->_internal_cur_dc_message().length()),
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-        "rpc.SchedulingRequest.cur_dc_message");
+      this->_internal_cur_dc_message().data(), static_cast<int>(this->_internal_cur_dc_message().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "rpc.SchedulingRequest.cur_dc_message");
     target = stream->WriteStringMaybeAliased(
         2, this->_internal_cur_dc_message(), target);
   }
@@ -805,16 +743,16 @@ size_t SchedulingRequest::ByteSizeLong() const {
 
   // string cur_dc_message = 2;
   if (this->cur_dc_message().size() > 0) {
-    total_size +=
-        1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-                this->_internal_cur_dc_message());
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_cur_dc_message());
   }
 
   // .rpc.SchedulingState cur_state = 1;
   if (this->has_cur_state()) {
-    total_size +=
-        1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-                *cur_state_);
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *cur_state_);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -852,8 +790,7 @@ void SchedulingRequest::MergeFrom(const SchedulingRequest& from) {
     _internal_set_cur_dc_message(from._internal_cur_dc_message());
   }
   if (from.has_cur_state()) {
-    _internal_mutable_cur_state()->::rpc::SchedulingState::MergeFrom(
-        from._internal_cur_state());
+    _internal_mutable_cur_state()->::rpc::SchedulingState::MergeFrom(from._internal_cur_state());
   }
 }
 
@@ -878,10 +815,7 @@ bool SchedulingRequest::IsInitialized() const {
 void SchedulingRequest::InternalSwap(SchedulingRequest* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  cur_dc_message_.Swap(
-      &other->cur_dc_message_,
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      GetArena());
+  cur_dc_message_.Swap(&other->cur_dc_message_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   swap(cur_state_, other->cur_state_);
 }
 
@@ -893,8 +827,7 @@ void SchedulingRequest::InternalSwap(SchedulingRequest* other) {
 // ===================================================================
 
 void SchedulingResponse::InitAsDefaultInstance() {
-  ::rpc::_SchedulingResponse_default_instance_._instance.get_mutable()
-      ->new_state_ = const_cast<::rpc::SchedulingState*>(
+  ::rpc::_SchedulingResponse_default_instance_._instance.get_mutable()->new_state_ = const_cast< ::rpc::SchedulingState*>(
       ::rpc::SchedulingState::internal_default_instance());
 }
 class SchedulingResponse::_Internal {
@@ -902,9 +835,8 @@ class SchedulingResponse::_Internal {
   static const ::rpc::SchedulingState& new_state(const SchedulingResponse* msg);
 };
 
-const ::rpc::SchedulingState& SchedulingResponse::_Internal::new_state(
-    const SchedulingResponse* msg)
-{
+const ::rpc::SchedulingState&
+SchedulingResponse::_Internal::new_state(const SchedulingResponse* msg) {
   return *msg->new_state_;
 }
 SchedulingResponse::SchedulingResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
@@ -916,13 +848,15 @@ SchedulingResponse::SchedulingResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 SchedulingResponse::SchedulingResponse(const SchedulingResponse& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  message_to_broadcast_.UnsafeSetDefault(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  message_to_broadcast_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (!from._internal_message_to_broadcast().empty()) {
-    message_to_broadcast_.Set(
-        &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-        from._internal_message_to_broadcast(),
-        GetArena());
+    message_to_broadcast_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_message_to_broadcast(),
+      GetArena());
+  }
+  sig_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_sig().empty()) {
+    sig_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_sig(),
+      GetArena());
   }
   if (from._internal_has_new_state()) {
     new_state_ = new ::rpc::SchedulingState(*from.new_state_);
@@ -935,13 +869,11 @@ SchedulingResponse::SchedulingResponse(const SchedulingResponse& from)
 
 void SchedulingResponse::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_SchedulingResponse_enclave_2eproto.base);
-  message_to_broadcast_.UnsafeSetDefault(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  ::memset(&new_state_,
-           0,
-           static_cast<size_t>(reinterpret_cast<char*>(&final_) -
-                               reinterpret_cast<char*>(&new_state_)) +
-               sizeof(final_));
+  message_to_broadcast_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  sig_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  ::memset(&new_state_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&final_) -
+      reinterpret_cast<char*>(&new_state_)) + sizeof(final_));
 }
 
 SchedulingResponse::~SchedulingResponse() {
@@ -952,8 +884,8 @@ SchedulingResponse::~SchedulingResponse() {
 
 void SchedulingResponse::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  message_to_broadcast_.DestroyNoArena(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  message_to_broadcast_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  sig_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (this != internal_default_instance()) delete new_state_;
 }
 
@@ -978,9 +910,8 @@ void SchedulingResponse::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  message_to_broadcast_.ClearToEmpty(
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      GetArena());
+  message_to_broadcast_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  sig_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   if (GetArena() == nullptr && new_state_ != nullptr) {
     delete new_state_;
   }
@@ -999,30 +930,33 @@ const char* SchedulingResponse::_InternalParse(const char* ptr, ::PROTOBUF_NAMES
     switch (tag >> 3) {
       // .rpc.SchedulingState new_state = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(
-                static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
           ptr = ctx->ParseMessage(_internal_mutable_new_state(), ptr);
           CHK_(ptr);
-        } else
-          goto handle_unusual;
+        } else goto handle_unusual;
         continue;
       // string message_to_broadcast = 2;
       case 2:
-        if (PROTOBUF_PREDICT_TRUE(
-                static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
           auto str = _internal_mutable_message_to_broadcast();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(
-              str, ptr, ctx);
-          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(
-              str, "rpc.SchedulingResponse.message_to_broadcast"));
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.SchedulingResponse.message_to_broadcast"));
           CHK_(ptr);
-        } else
-          goto handle_unusual;
+        } else goto handle_unusual;
         continue;
       // bool final = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 24)) {
           final_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string sig = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+          auto str = _internal_mutable_sig();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.SchedulingResponse.sig"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1057,18 +991,17 @@ failure:
   // .rpc.SchedulingState new_state = 1;
   if (this->has_new_state()) {
     target = stream->EnsureSpace(target);
-    target =
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::InternalWriteMessage(
-            1, _Internal::new_state(this), target, stream);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        1, _Internal::new_state(this), target, stream);
   }
 
   // string message_to_broadcast = 2;
   if (this->message_to_broadcast().size() > 0) {
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-        this->_internal_message_to_broadcast().data(),
-        static_cast<int>(this->_internal_message_to_broadcast().length()),
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-        "rpc.SchedulingResponse.message_to_broadcast");
+      this->_internal_message_to_broadcast().data(), static_cast<int>(this->_internal_message_to_broadcast().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "rpc.SchedulingResponse.message_to_broadcast");
     target = stream->WriteStringMaybeAliased(
         2, this->_internal_message_to_broadcast(), target);
   }
@@ -1076,9 +1009,17 @@ failure:
   // bool final = 3;
   if (this->final() != 0) {
     target = stream->EnsureSpace(target);
-    target =
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(
-            3, this->_internal_final(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteBoolToArray(3, this->_internal_final(), target);
+  }
+
+  // string sig = 4;
+  if (this->sig().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_sig().data(), static_cast<int>(this->_internal_sig().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "rpc.SchedulingResponse.sig");
+    target = stream->WriteStringMaybeAliased(
+        4, this->_internal_sig(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1099,16 +1040,23 @@ size_t SchedulingResponse::ByteSizeLong() const {
 
   // string message_to_broadcast = 2;
   if (this->message_to_broadcast().size() > 0) {
-    total_size +=
-        1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-                this->_internal_message_to_broadcast());
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_message_to_broadcast());
+  }
+
+  // string sig = 4;
+  if (this->sig().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_sig());
   }
 
   // .rpc.SchedulingState new_state = 1;
   if (this->has_new_state()) {
-    total_size +=
-        1 + ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-                *new_state_);
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *new_state_);
   }
 
   // bool final = 3;
@@ -1150,9 +1098,11 @@ void SchedulingResponse::MergeFrom(const SchedulingResponse& from) {
   if (from.message_to_broadcast().size() > 0) {
     _internal_set_message_to_broadcast(from._internal_message_to_broadcast());
   }
+  if (from.sig().size() > 0) {
+    _internal_set_sig(from._internal_sig());
+  }
   if (from.has_new_state()) {
-    _internal_mutable_new_state()->::rpc::SchedulingState::MergeFrom(
-        from._internal_new_state());
+    _internal_mutable_new_state()->::rpc::SchedulingState::MergeFrom(from._internal_new_state());
   }
   if (from.final() != 0) {
     _internal_set_final(from._internal_final());
@@ -1180,16 +1130,14 @@ bool SchedulingResponse::IsInitialized() const {
 void SchedulingResponse::InternalSwap(SchedulingResponse* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  message_to_broadcast_.Swap(
-      &other->message_to_broadcast_,
-      &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
-      GetArena());
+  message_to_broadcast_.Swap(&other->message_to_broadcast_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  sig_.Swap(&other->sig_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(SchedulingResponse, final_) +
-      sizeof(SchedulingResponse::final_) -
-      PROTOBUF_FIELD_OFFSET(SchedulingResponse, new_state_)>(
-      reinterpret_cast<char*>(&new_state_),
-      reinterpret_cast<char*>(&other->new_state_));
+      PROTOBUF_FIELD_OFFSET(SchedulingResponse, final_)
+      + sizeof(SchedulingResponse::final_)
+      - PROTOBUF_FIELD_OFFSET(SchedulingResponse, new_state_)>(
+          reinterpret_cast<char*>(&new_state_),
+          reinterpret_cast<char*>(&other->new_state_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata SchedulingResponse::GetMetadata() const {
@@ -1199,15 +1147,334 @@ void SchedulingResponse::InternalSwap(SchedulingResponse* other) {
 
 // ===================================================================
 
+void UserMessage::InitAsDefaultInstance() {
+}
+class UserMessage::_Internal {
+ public:
+};
+
+UserMessage::UserMessage(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:rpc.UserMessage)
+}
+UserMessage::UserMessage(const UserMessage& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  user_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_user_id().empty()) {
+    user_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_user_id(),
+      GetArena());
+  }
+  user_message_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_user_message().empty()) {
+    user_message_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_user_message(),
+      GetArena());
+  }
+  sig_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (!from._internal_sig().empty()) {
+    sig_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_sig(),
+      GetArena());
+  }
+  round_ = from.round_;
+  // @@protoc_insertion_point(copy_constructor:rpc.UserMessage)
+}
+
+void UserMessage::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_UserMessage_enclave_2eproto.base);
+  user_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  user_message_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  sig_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  round_ = 0u;
+}
+
+UserMessage::~UserMessage() {
+  // @@protoc_insertion_point(destructor:rpc.UserMessage)
+  SharedDtor();
+  _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+void UserMessage::SharedDtor() {
+  GOOGLE_DCHECK(GetArena() == nullptr);
+  user_id_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  user_message_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  sig_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+}
+
+void UserMessage::ArenaDtor(void* object) {
+  UserMessage* _this = reinterpret_cast< UserMessage* >(object);
+  (void)_this;
+}
+void UserMessage::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+}
+void UserMessage::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+const UserMessage& UserMessage::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_UserMessage_enclave_2eproto.base);
+  return *internal_default_instance();
+}
+
+
+void UserMessage::Clear() {
+// @@protoc_insertion_point(message_clear_start:rpc.UserMessage)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  user_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  user_message_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  sig_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  round_ = 0u;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* UserMessage::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
+  while (!ctx->Done(&ptr)) {
+    ::PROTOBUF_NAMESPACE_ID::uint32 tag;
+    ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
+    CHK_(ptr);
+    switch (tag >> 3) {
+      // uint32 round = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
+          round_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string user_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
+          auto str = _internal_mutable_user_id();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.UserMessage.user_id"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string user_message = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
+          auto str = _internal_mutable_user_message();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.UserMessage.user_message"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // string sig = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+          auto str = _internal_mutable_sig();
+          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.UserMessage.sig"));
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      default: {
+      handle_unusual:
+        if ((tag & 7) == 4 || tag == 0) {
+          ctx->SetLastTag(tag);
+          goto success;
+        }
+        ptr = UnknownFieldParse(tag,
+            _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+            ptr, ctx);
+        CHK_(ptr != nullptr);
+        continue;
+      }
+    }  // switch
+  }  // while
+success:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto success;
+#undef CHK_
+}
+
+::PROTOBUF_NAMESPACE_ID::uint8* UserMessage::_InternalSerialize(
+    ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:rpc.UserMessage)
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint32 round = 1;
+  if (this->round() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(1, this->_internal_round(), target);
+  }
+
+  // string user_id = 2;
+  if (this->user_id().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_user_id().data(), static_cast<int>(this->_internal_user_id().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "rpc.UserMessage.user_id");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_user_id(), target);
+  }
+
+  // string user_message = 3;
+  if (this->user_message().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_user_message().data(), static_cast<int>(this->_internal_user_message().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "rpc.UserMessage.user_message");
+    target = stream->WriteStringMaybeAliased(
+        3, this->_internal_user_message(), target);
+  }
+
+  // string sig = 4;
+  if (this->sig().size() > 0) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_sig().data(), static_cast<int>(this->_internal_sig().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "rpc.UserMessage.sig");
+    target = stream->WriteStringMaybeAliased(
+        4, this->_internal_sig(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:rpc.UserMessage)
+  return target;
+}
+
+size_t UserMessage::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:rpc.UserMessage)
+  size_t total_size = 0;
+
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string user_id = 2;
+  if (this->user_id().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_user_id());
+  }
+
+  // string user_message = 3;
+  if (this->user_message().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_user_message());
+  }
+
+  // string sig = 4;
+  if (this->sig().size() > 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_sig());
+  }
+
+  // uint32 round = 1;
+  if (this->round() != 0) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
+        this->_internal_round());
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
+        _internal_metadata_, total_size, &_cached_size_);
+  }
+  int cached_size = ::PROTOBUF_NAMESPACE_ID::internal::ToCachedSize(total_size);
+  SetCachedSize(cached_size);
+  return total_size;
+}
+
+void UserMessage::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:rpc.UserMessage)
+  GOOGLE_DCHECK_NE(&from, this);
+  const UserMessage* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<UserMessage>(
+          &from);
+  if (source == nullptr) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:rpc.UserMessage)
+    ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
+  } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:rpc.UserMessage)
+    MergeFrom(*source);
+  }
+}
+
+void UserMessage::MergeFrom(const UserMessage& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:rpc.UserMessage)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from.user_id().size() > 0) {
+    _internal_set_user_id(from._internal_user_id());
+  }
+  if (from.user_message().size() > 0) {
+    _internal_set_user_message(from._internal_user_message());
+  }
+  if (from.sig().size() > 0) {
+    _internal_set_sig(from._internal_sig());
+  }
+  if (from.round() != 0) {
+    _internal_set_round(from._internal_round());
+  }
+}
+
+void UserMessage::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:rpc.UserMessage)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void UserMessage::CopyFrom(const UserMessage& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:rpc.UserMessage)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool UserMessage::IsInitialized() const {
+  return true;
+}
+
+void UserMessage::InternalSwap(UserMessage* other) {
+  using std::swap;
+  _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
+  user_id_.Swap(&other->user_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  user_message_.Swap(&other->user_message_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  sig_.Swap(&other->sig_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  swap(round_, other->round_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata UserMessage::GetMetadata() const {
+  return GetMetadataStatic();
+}
+
+
+// ===================================================================
+
 void AggregateRequest::InitAsDefaultInstance() {
+  ::rpc::_AggregateRequest_default_instance_._instance.get_mutable()->msg_ = const_cast< ::rpc::UserMessage*>(
+      ::rpc::UserMessage::internal_default_instance());
   ::rpc::_AggregateRequest_default_instance_._instance.get_mutable()->current_agg_ = const_cast< ::rpc::Aggregation*>(
       ::rpc::Aggregation::internal_default_instance());
 }
 class AggregateRequest::_Internal {
  public:
+  static const ::rpc::UserMessage& msg(const AggregateRequest* msg);
   static const ::rpc::Aggregation& current_agg(const AggregateRequest* msg);
 };
 
+const ::rpc::UserMessage&
+AggregateRequest::_Internal::msg(const AggregateRequest* msg) {
+  return *msg->msg_;
+}
 const ::rpc::Aggregation&
 AggregateRequest::_Internal::current_agg(const AggregateRequest* msg) {
   return *msg->current_agg_;
@@ -1221,32 +1488,24 @@ AggregateRequest::AggregateRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena)
 AggregateRequest::AggregateRequest(const AggregateRequest& from)
   : ::PROTOBUF_NAMESPACE_ID::Message() {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  user_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_user_id().empty()) {
-    user_id_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_user_id(),
-      GetArena());
-  }
-  user_message_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  if (!from._internal_user_message().empty()) {
-    user_message_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), from._internal_user_message(),
-      GetArena());
+  if (from._internal_has_msg()) {
+    msg_ = new ::rpc::UserMessage(*from.msg_);
+  } else {
+    msg_ = nullptr;
   }
   if (from._internal_has_current_agg()) {
     current_agg_ = new ::rpc::Aggregation(*from.current_agg_);
   } else {
     current_agg_ = nullptr;
   }
-  round_ = from.round_;
   // @@protoc_insertion_point(copy_constructor:rpc.AggregateRequest)
 }
 
 void AggregateRequest::SharedCtor() {
   ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_AggregateRequest_enclave_2eproto.base);
-  user_id_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  user_message_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  ::memset(&current_agg_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&round_) -
-      reinterpret_cast<char*>(&current_agg_)) + sizeof(round_));
+  ::memset(&msg_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&current_agg_) -
+      reinterpret_cast<char*>(&msg_)) + sizeof(current_agg_));
 }
 
 AggregateRequest::~AggregateRequest() {
@@ -1257,8 +1516,7 @@ AggregateRequest::~AggregateRequest() {
 
 void AggregateRequest::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
-  user_id_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
-  user_message_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
+  if (this != internal_default_instance()) delete msg_;
   if (this != internal_default_instance()) delete current_agg_;
 }
 
@@ -1283,13 +1541,14 @@ void AggregateRequest::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  user_id_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  user_message_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
+  if (GetArena() == nullptr && msg_ != nullptr) {
+    delete msg_;
+  }
+  msg_ = nullptr;
   if (GetArena() == nullptr && current_agg_ != nullptr) {
     delete current_agg_;
   }
   current_agg_ = nullptr;
-  round_ = 0u;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1301,26 +1560,10 @@ const char* AggregateRequest::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPA
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // uint32 round = 1;
+      // .rpc.UserMessage msg = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 8)) {
-          round_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else goto handle_unusual;
-        continue;
-      // bytes user_id = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
-          auto str = _internal_mutable_user_id();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-        } else goto handle_unusual;
-        continue;
-      // bytes user_message = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
-          auto str = _internal_mutable_user_message();
-          ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_msg(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1359,22 +1602,12 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // uint32 round = 1;
-  if (this->round() != 0) {
+  // .rpc.UserMessage msg = 1;
+  if (this->has_msg()) {
     target = stream->EnsureSpace(target);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(1, this->_internal_round(), target);
-  }
-
-  // bytes user_id = 2;
-  if (this->user_id().size() > 0) {
-    target = stream->WriteBytesMaybeAliased(
-        2, this->_internal_user_id(), target);
-  }
-
-  // bytes user_message = 3;
-  if (this->user_message().size() > 0) {
-    target = stream->WriteBytesMaybeAliased(
-        3, this->_internal_user_message(), target);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(
+        1, _Internal::msg(this), target, stream);
   }
 
   // .rpc.Aggregation current_agg = 4;
@@ -1401,18 +1634,11 @@ size_t AggregateRequest::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // bytes user_id = 2;
-  if (this->user_id().size() > 0) {
+  // .rpc.UserMessage msg = 1;
+  if (this->has_msg()) {
     total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_user_id());
-  }
-
-  // bytes user_message = 3;
-  if (this->user_message().size() > 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_user_message());
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *msg_);
   }
 
   // .rpc.Aggregation current_agg = 4;
@@ -1420,13 +1646,6 @@ size_t AggregateRequest::ByteSizeLong() const {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
         *current_agg_);
-  }
-
-  // uint32 round = 1;
-  if (this->round() != 0) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::UInt32Size(
-        this->_internal_round());
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -1460,17 +1679,11 @@ void AggregateRequest::MergeFrom(const AggregateRequest& from) {
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from.user_id().size() > 0) {
-    _internal_set_user_id(from._internal_user_id());
-  }
-  if (from.user_message().size() > 0) {
-    _internal_set_user_message(from._internal_user_message());
+  if (from.has_msg()) {
+    _internal_mutable_msg()->::rpc::UserMessage::MergeFrom(from._internal_msg());
   }
   if (from.has_current_agg()) {
     _internal_mutable_current_agg()->::rpc::Aggregation::MergeFrom(from._internal_current_agg());
-  }
-  if (from.round() != 0) {
-    _internal_set_round(from._internal_round());
   }
 }
 
@@ -1495,14 +1708,12 @@ bool AggregateRequest::IsInitialized() const {
 void AggregateRequest::InternalSwap(AggregateRequest* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
-  user_id_.Swap(&other->user_id_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
-  user_message_.Swap(&other->user_message_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(AggregateRequest, round_)
-      + sizeof(AggregateRequest::round_)
-      - PROTOBUF_FIELD_OFFSET(AggregateRequest, current_agg_)>(
-          reinterpret_cast<char*>(&current_agg_),
-          reinterpret_cast<char*>(&other->current_agg_));
+      PROTOBUF_FIELD_OFFSET(AggregateRequest, current_agg_)
+      + sizeof(AggregateRequest::current_agg_)
+      - PROTOBUF_FIELD_OFFSET(AggregateRequest, msg_)>(
+          reinterpret_cast<char*>(&msg_),
+          reinterpret_cast<char*>(&other->msg_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata AggregateRequest::GetMetadata() const {
@@ -1595,7 +1806,7 @@ const char* Aggregation::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID
     ptr = ::PROTOBUF_NAMESPACE_ID::internal::ReadTag(ptr, &tag);
     CHK_(ptr);
     switch (tag >> 3) {
-      // repeated bytes user_id_in_aggregation = 1;
+      // repeated string user_id_in_aggregation = 1;
       case 1:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 10)) {
           ptr -= 1;
@@ -1603,24 +1814,27 @@ const char* Aggregation::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID
             ptr += 1;
             auto str = _internal_add_user_id_in_aggregation();
             ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+            CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.Aggregation.user_id_in_aggregation"));
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
         } else goto handle_unusual;
         continue;
-      // bytes current_aggregated_value = 2;
+      // string current_aggregated_value = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 18)) {
           auto str = _internal_mutable_current_aggregated_value();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.Aggregation.current_aggregated_value"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // bytes sig = 3;
+      // string sig = 3;
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
           auto str = _internal_mutable_sig();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "rpc.Aggregation.sig"));
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -1652,21 +1866,33 @@ failure:
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // repeated bytes user_id_in_aggregation = 1;
+  // repeated string user_id_in_aggregation = 1;
   for (int i = 0, n = this->_internal_user_id_in_aggregation_size(); i < n; i++) {
     const auto& s = this->_internal_user_id_in_aggregation(i);
-    target = stream->WriteBytes(1, s, target);
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      s.data(), static_cast<int>(s.length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "rpc.Aggregation.user_id_in_aggregation");
+    target = stream->WriteString(1, s, target);
   }
 
-  // bytes current_aggregated_value = 2;
+  // string current_aggregated_value = 2;
   if (this->current_aggregated_value().size() > 0) {
-    target = stream->WriteBytesMaybeAliased(
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_current_aggregated_value().data(), static_cast<int>(this->_internal_current_aggregated_value().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "rpc.Aggregation.current_aggregated_value");
+    target = stream->WriteStringMaybeAliased(
         2, this->_internal_current_aggregated_value(), target);
   }
 
-  // bytes sig = 3;
+  // string sig = 3;
   if (this->sig().size() > 0) {
-    target = stream->WriteBytesMaybeAliased(
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_sig().data(), static_cast<int>(this->_internal_sig().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "rpc.Aggregation.sig");
+    target = stream->WriteStringMaybeAliased(
         3, this->_internal_sig(), target);
   }
 
@@ -1686,25 +1912,25 @@ size_t Aggregation::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated bytes user_id_in_aggregation = 1;
+  // repeated string user_id_in_aggregation = 1;
   total_size += 1 *
       ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(user_id_in_aggregation_.size());
   for (int i = 0, n = user_id_in_aggregation_.size(); i < n; i++) {
-    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
       user_id_in_aggregation_.Get(i));
   }
 
-  // bytes current_aggregated_value = 2;
+  // string current_aggregated_value = 2;
   if (this->current_aggregated_value().size() > 0) {
     total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_current_aggregated_value());
   }
 
-  // bytes sig = 3;
+  // string sig = 3;
   if (this->sig().size() > 0) {
     total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
         this->_internal_sig());
   }
 
@@ -2162,17 +2388,17 @@ void Empty::InternalSwap(Empty* other) {
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace rpc
 PROTOBUF_NAMESPACE_OPEN
-template <>
-PROTOBUF_NOINLINE ::rpc::SchedulingState*
-Arena::CreateMaybeMessage<::rpc::SchedulingState>(Arena* arena)
-{
-  return Arena::CreateMessageInternal<::rpc::SchedulingState>(arena);
+template<> PROTOBUF_NOINLINE ::rpc::SchedulingState* Arena::CreateMaybeMessage< ::rpc::SchedulingState >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::rpc::SchedulingState >(arena);
 }
 template<> PROTOBUF_NOINLINE ::rpc::SchedulingRequest* Arena::CreateMaybeMessage< ::rpc::SchedulingRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::rpc::SchedulingRequest >(arena);
 }
 template<> PROTOBUF_NOINLINE ::rpc::SchedulingResponse* Arena::CreateMaybeMessage< ::rpc::SchedulingResponse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::rpc::SchedulingResponse >(arena);
+}
+template<> PROTOBUF_NOINLINE ::rpc::UserMessage* Arena::CreateMaybeMessage< ::rpc::UserMessage >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::rpc::UserMessage >(arena);
 }
 template<> PROTOBUF_NOINLINE ::rpc::AggregateRequest* Arena::CreateMaybeMessage< ::rpc::AggregateRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::rpc::AggregateRequest >(arena);
