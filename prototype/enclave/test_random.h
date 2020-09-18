@@ -7,7 +7,8 @@
 
 #include "random.h"
 
-void test_random_binstr() {
+void test_random_binstr()
+{
   LL_INFO("starting %s", __FUNCTION__);
   for (int i = 0; i < 10; i++) {
     auto rand_len = get_rand(10) + 100;

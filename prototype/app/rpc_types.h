@@ -1,32 +1,34 @@
 #ifndef SGX_DC_NETS_RPC_TYPES_H
 #define SGX_DC_NETS_RPC_TYPES_H
 
-
-inline void rpc_type_to_enclave_type(SchedulingState& state,
-                                     const rpc::SchedulingState& rpc_sched_state)
+inline void rpc_type_to_enclave_type(
+    SchedulingState& state,
+    const rpc::SchedulingState& rpc_sched_state)
 {
-    state.round = rpc_sched_state.round();
+  state.round = rpc_sched_state.round();
 
-    // we don't use any of the fields for the first round
-    if (state.round == 0)
-      return;
+  // we don't use any of the fields for the first round
+  if (state.round == 0) return;
 
-    const auto& rmap = rpc_sched_state.reservation_map();
-    const auto& fps = rpc_sched_state.footprints();
+  const auto& rmap = rpc_sched_state.reservation_map();
+  const auto& fps = rpc_sched_state.footprints();
 
-    if (rmap.size() != constants::N_SLOTS || fps.size() != constants::N_SLOTS) {
-      throw std::invalid_argument("rmap.size() != N_SLOTS || fps.size() != N_SLOTS");
-    }
+  if (rmap.size() != constants::N_SLOTS || fps.size() != constants::N_SLOTS) {
+    throw std::invalid_argument(
+        "rmap.size() != N_SLOTS || fps.size() != N_SLOTS");
+  }
 
-    for (size_t i = 0; i < constants::N_SLOTS; i++) {
-        state.reservation.set(i, rmap[i]);
-    }
+  for (size_t i = 0; i < constants::N_SLOTS; i++) {
+    state.reservation.set(i, rmap[i]);
+  }
 
-    state.footprints = FootprintsForAllSlots(fps.begin(), fps.end());
-    state.final = rpc_sched_state.final();
+  state.footprints = FootprintsForAllSlots(fps.begin(), fps.end());
+  state.final = rpc_sched_state.final();
 }
 
-inline void enclave_type_to_rpc_type(rpc::SchedulingState* out, const SchedulingState& in) {
+inline void enclave_type_to_rpc_type(rpc::SchedulingState* out,
+                                     const SchedulingState& in)
+{
   out->set_round(in.round);
   out->set_final(in.final);
   out->set_sig(in.sig._sig);

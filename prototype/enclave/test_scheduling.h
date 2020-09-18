@@ -1,10 +1,11 @@
 #ifndef SGX_DC_NETS_TEST_SCHEDULING_H
 #define SGX_DC_NETS_TEST_SCHEDULING_H
 
-#include "scheduler.h"
 #include "random.h"
+#include "scheduler.h"
 
-void test_marshal_sched_messages() {
+void test_marshal_sched_messages()
+{
   LL_INFO("starting %s", __FUNCTION__);
   auto ranbin = random_binstr(constants::SchedMessageFixedBitLen);
   assert(ranbin.size() == constants::SchedMessageFixedBitLen);
@@ -26,7 +27,7 @@ void test_marshal_sched_messages() {
   st.final = false;
   st.footprints = ffa;
 
-  SchedulingState_C  st_bin;
+  SchedulingState_C st_bin;
   st.marshal(&st_bin);
   LL_INFO("marshal GOOD");
 
@@ -36,7 +37,8 @@ void test_marshal_sched_messages() {
   LL_INFO("GOOD");
 }
 
-void test_sched_message() {
+void test_sched_message()
+{
   LL_INFO("starting %s", __FUNCTION__);
   auto binstr = random_binstr(constants::SchedMessageFixedBitLen);
   SchedulingMessage from_binstr(binstr);

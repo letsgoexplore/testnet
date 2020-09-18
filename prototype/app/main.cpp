@@ -6,7 +6,7 @@
 #include <thread>
 
 // app headers
-#include "app/Enclave_u.h"
+#include "Enclave_u.h"
 #include "app/config.h"
 #include "app/logging.h"
 #include "app/rpc.h"

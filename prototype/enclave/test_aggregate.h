@@ -56,7 +56,6 @@ inline void test_marshal_user_message()
   LL_INFO("GOOD");
 }
 
-
 inline void test_aggregator()
 {
   try {

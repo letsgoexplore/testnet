@@ -1,43 +1,42 @@
 #ifndef SGX_DC_NETS_SCHEDULE_MESSAGE_H
 #define SGX_DC_NETS_SCHEDULE_MESSAGE_H
 
+#include <algorithm>
+#include <array>
 #include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
-#include <array>
-#include <algorithm>
 
-#include "sig.h"
 #include "interface_structs.h"
-
+#include "sig.h"
 
 // TODO: create proper classes
 using Footprint = std::bitset<constants::FOOTPRINT_SIZE>;
-//using SlotBitmap = std::bitset<constants::N_SLOTS>;
-//using SlotFootprint = std::array<Footprint, constants::N_SLOTS>;
-
-
-
+// using SlotBitmap = std::bitset<constants::N_SLOTS>;
+// using SlotFootprint = std::array<Footprint, constants::N_SLOTS>;
 
 using SlotBitset = std::bitset<constants::N_SLOTS>;
 
-class SlotBitmap: public SlotBitset
+class SlotBitmap : public SlotBitset
 {
  public:
-  SlotBitmap(){ SlotBitset::reset();
+  SlotBitmap() { SlotBitset::reset(); }
+  explicit SlotBitmap(const char* in)
+      : SlotBitmap(std::string(in, constants::N_SLOTS))
+  {
   }
-  explicit SlotBitmap(const char* in): SlotBitmap(std::string(in, constants::N_SLOTS)) {
-  }
-  explicit SlotBitmap(std::string binstr): SlotBitset(binstr) {
+  explicit SlotBitmap(std::string binstr) : SlotBitset(binstr)
+  {
     if (binstr.size() != this->size()) {
       throw std::invalid_argument("binstr len");
     }
   }
 
-  void marshal(char* out) const {
+  void marshal(char* out) const
+  {
     auto s = this->to_string();
-    if(s.size() != this->size()) {
+    if (s.size() != this->size()) {
       throw std::runtime_error("s.size");
     }
 
@@ -51,21 +50,27 @@ class FootprintsForAllSlots
   std::array<Footprint, constants::N_SLOTS> footprints;
 
  public:
-  FootprintsForAllSlots() {
+  FootprintsForAllSlots()
+  {
     for (Footprint& fp : footprints) {
       fp.reset();
     }
   }
-  explicit FootprintsForAllSlots(const FootprintsForAllSlots_C* in): FootprintsForAllSlots(std::string(in->bitmsg, constants::SchedMessageFixedBitLen)) {
+  explicit FootprintsForAllSlots(const FootprintsForAllSlots_C* in)
+      : FootprintsForAllSlots(
+            std::string(in->bitmsg, constants::SchedMessageFixedBitLen))
+  {
   }
 
-  explicit FootprintsForAllSlots(std::string binstr) {
+  explicit FootprintsForAllSlots(std::string binstr)
+  {
     if (binstr.size() != constants::SchedMessageFixedBitLen) {
-      throw std::invalid_argument("binstr len " + std::to_string(binstr.size()));
+      throw std::invalid_argument("binstr len " +
+                                  std::to_string(binstr.size()));
     }
     for (size_t i = 0; i < constants::N_SLOTS; i++) {
-      this->footprints[i] = Footprint(
-          binstr.substr(i * constants::FOOTPRINT_SIZE, (i + 1) * constants::FOOTPRINT_SIZE));
+      this->footprints[i] = Footprint(binstr.substr(
+          i * constants::FOOTPRINT_SIZE, (i + 1) * constants::FOOTPRINT_SIZE));
     }
   }
 
@@ -87,7 +92,8 @@ class FootprintsForAllSlots
     }
   }
 
-  void set(size_t i, const Footprint &fp) {
+  void set(size_t i, const Footprint& fp)
+  {
     if (i < 0 || i > this->footprints.size()) {
       throw std::invalid_argument("i");
     }
@@ -95,7 +101,8 @@ class FootprintsForAllSlots
     this->footprints[i] = fp;
   }
 
-  Footprint get(size_t i) const {
+  Footprint get(size_t i) const
+  {
     if (i < 0 || i > this->footprints.size()) {
       throw std::invalid_argument("i");
     }
@@ -103,7 +110,8 @@ class FootprintsForAllSlots
     return this->footprints[i];
   }
 
-  void marshal(FootprintsForAllSlots_C * out) const {
+  void marshal(FootprintsForAllSlots_C* out) const
+  {
     std::string bin;
     for (size_t i = 0; i < this->footprints.size(); i++) {
       bin += this->footprints.at(i).to_string();
@@ -116,7 +124,8 @@ class FootprintsForAllSlots
     std::copy(bin.begin(), bin.end(), out->bitmsg);
   }
 
-  std::string to_string(const char* delimiter=nullptr) const {
+  std::string to_string(const char* delimiter = nullptr) const
+  {
     std::string s;
     for (const Footprint& fp : this->footprints) {
       s += fp.to_string();
@@ -129,12 +138,10 @@ class FootprintsForAllSlots
   }
 };
 
-
 // they are the same thing
 using SchedulingMessage = FootprintsForAllSlots;
 
-
-class SchedulingState: public Verifiable
+class SchedulingState : public Verifiable
 {
  public:
   uint16_t round = 0;
@@ -155,10 +162,10 @@ class SchedulingState: public Verifiable
 
   std::string to_string()
   {
-    auto s = "round=" + std::to_string(round)
-             + "; rsvmap=" + reservation.to_string()
-             + "; footprints=" + footprints.to_string()
-            + "; final=" + std::to_string(final);
+    auto s = "round=" + std::to_string(round) +
+             "; rsvmap=" + reservation.to_string() +
+             "; footprints=" + footprints.to_string() +
+             "; final=" + std::to_string(final);
     return s;
   }
 };

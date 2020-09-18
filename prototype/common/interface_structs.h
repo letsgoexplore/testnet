@@ -6,31 +6,30 @@
 #define USER_ID_LEN 1024
 #define MAX_USER_N 100
 
-#define   N_SLOTS_C  32
-#define   FOOTPRINT_SIZE_C  3
-#define   N_PARTICIPANTS_C 10000
-#define   N_SCHEDULE_ROUNDS_C 15 // should be log(N)
-
+#define N_SLOTS_C 32
+#define FOOTPRINT_SIZE_C 3
+#define N_PARTICIPANTS_C 10000
+#define N_SCHEDULE_ROUNDS_C 15  // should be log(N)
 
 #ifdef __cplusplus
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #else
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #endif
 
 #ifdef __cplusplus
-namespace constants {
+namespace constants
+{
 constexpr size_t N_SLOTS = N_SLOTS_C;
 constexpr size_t FOOTPRINT_SIZE = FOOTPRINT_SIZE_C;
 constexpr size_t N_PARTICIPANTS = N_PARTICIPANTS_C;
 constexpr size_t N_SCHEDULE_ROUNDS = N_SCHEDULE_ROUNDS_C;
 constexpr size_t SchedMessageFixedBitLen = FOOTPRINT_SIZE * N_SLOTS;
-}
+}  // namespace constants
 
 #endif
-
 
 typedef struct _FootprintsForAllSlots {
   char bitmsg[N_SLOTS_C * FOOTPRINT_SIZE_C];

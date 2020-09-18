@@ -1,8 +1,9 @@
 #include "test_aggregate.h"
-#include "test_scheduling.h"
 #include "test_random.h"
+#include "test_scheduling.h"
 
-void test_all() {
+void test_all()
+{
   try {
     test_aggregator();
     test_marshal_sched_messages();
@@ -11,5 +12,5 @@ void test_all() {
     LL_CRITICAL("E: %s", e.what());
   }
 
-//  test_random_binstr();
+  //  test_random_binstr();
 }

@@ -7,12 +7,11 @@
 #include "logging.h"
 #include "rpc_types.h"
 
-grpc::Status ecall_failure(sgx_status_t st, int ret) {
-  return grpc::Status(grpc::StatusCode::INTERNAL, fmt::format("ecall failure {} {}", st, ret));
+grpc::Status ecall_failure(sgx_status_t st, int ret)
+{
+  return grpc::Status(grpc::StatusCode::INTERNAL,
+                      fmt::format("ecall failure {} {}", st, ret));
 }
-
-
-
 
 grpc::Status RpcServer::schedule(::grpc::ServerContext* context,
                                  const ::rpc::SchedulingRequest* request,
@@ -46,11 +45,7 @@ grpc::Status RpcServer::schedule(::grpc::ServerContext* context,
     current_state.marshal(&curr_state_C);
 
     sgx_status_t ecall_status = ecall_scheduling(
-        eid,
-        &ret,
-        &prev_message_C,
-        &curr_state_C,
-        &new_message_C);
+        eid, &ret, &prev_message_C, &curr_state_C, &new_message_C);
     if (ecall_status != SGX_SUCCESS || ret != GOOD) {
       return ecall_failure(ecall_status, ret);
     }
@@ -59,15 +54,15 @@ grpc::Status RpcServer::schedule(::grpc::ServerContext* context,
     SchedulingMessage new_message(&new_message_C);
     SchedulingState new_state(&curr_state_C);
 
-      SPDLOG_INFO("new state: {}", new_state.to_string());
-      SPDLOG_INFO("new message: {}", new_message.to_string());
+    SPDLOG_INFO("new state: {}", new_state.to_string());
+    SPDLOG_INFO("new message: {}", new_message.to_string());
 
-      auto* new_st = new rpc::SchedulingState;
-      enclave_type_to_rpc_type(new_st, new_state);
+    auto* new_st = new rpc::SchedulingState;
+    enclave_type_to_rpc_type(new_st, new_state);
 
-      response->set_allocated_new_state(new_st);
-      response->set_sched_msg(new_message.to_string());
-      return grpc::Status::OK;
+    response->set_allocated_new_state(new_st);
+    response->set_sched_msg(new_message.to_string());
+    return grpc::Status::OK;
 
   } catch (const std::exception& e) {
     SPDLOG_CRITICAL("E: {}", e.what());

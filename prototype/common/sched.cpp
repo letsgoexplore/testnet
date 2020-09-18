@@ -8,7 +8,8 @@
 #include "../enclave/log.h"
 #endif
 
-SchedulingState::SchedulingState(const SchedulingState_C *in) {
+SchedulingState::SchedulingState(const SchedulingState_C *in)
+{
   if (in == nullptr) {
     throw std::invalid_argument("null");
   }

@@ -59,6 +59,7 @@ include_directories(
         ${SGXSDK_INCLUDE_DIRS}
         ${LOG4CXX_INCLUDE_DIR}
         third_party/spdlog/include
+        ${PROTO_OUTDIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 

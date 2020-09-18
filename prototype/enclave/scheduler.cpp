@@ -86,8 +86,8 @@ void InitScheduled(SchedulingState* new_state, SchedulingMessage* new_message)
 //! \param state
 //! \param new_message
 void ScheduleOneRound(const SchedulingMessage& prev_msg,
-                                       SchedulingState* state,
-                                       SchedulingMessage* new_message)
+                      SchedulingState* state,
+                      SchedulingMessage* new_message)
 {
   // for everything between the first and the last rounds
   if (state->round > 0 && state->round < constants::N_SCHEDULE_ROUNDS - 1) {
@@ -149,8 +149,8 @@ void ScheduleOneRound(const SchedulingMessage& prev_msg,
     state->final = true;
     return;
   } else {
-      throw std::invalid_argument("invalid round # " +
-                                  std::to_string(state->round));
+    throw std::invalid_argument("invalid round # " +
+                                std::to_string(state->round));
   }
 }
 

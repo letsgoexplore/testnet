@@ -21,7 +21,7 @@ void TestScheduling();
 void InitScheduled(SchedulingState* new_state, SchedulingMessage* new_message);
 
 void ScheduleOneRound(const SchedulingMessage& prev_msg,
-                                       SchedulingState* state,
-                                       SchedulingMessage* new_message);
+                      SchedulingState* state,
+                      SchedulingMessage* new_message);
 
 #endif  // SGX_DC_NETS_SCHEDULER_H

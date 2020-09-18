@@ -23,7 +23,8 @@ uint32_t get_rand(size_t max)
 }
 
 #include <string>
-std::string random_binstr(size_t len) {
+std::string random_binstr(size_t len)
+{
   std::string r;
   r.resize(len);
   std::string charset("01");

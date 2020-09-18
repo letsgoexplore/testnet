@@ -7,8 +7,8 @@
 #include <cstdio>
 
 #include "../common/messages.hpp"
-#include "services/generated/enclave.grpc.pb.h"
-#include "services/generated/enclave.pb.h"
+#include "enclave.grpc.pb.h"
+#include "enclave.pb.h"
 
 class RpcServer final : public rpc::enclave::Service
 {
