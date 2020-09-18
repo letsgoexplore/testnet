@@ -52,7 +52,7 @@ add_executable(main
         config.cpp
         utils.cpp
         ${PROTO_SRCS}
-        ${GRPC_SRCS})
+        ${GRPC_SRCS} ../common/message.cpp)
 
 include_directories(
         ${Boost_INCLUDE_DIRS}

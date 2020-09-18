@@ -89,7 +89,7 @@ void InitScheduled(SchedulingState* new_state, SchedulingMessage* new_message)
 //! \param new_message
 //! \return {Continue, Abort, Done}. If Done returned, state.reservation is the
 //! final results.
-Instruction ScheduleOneRound(const SchedulingMessage& prev_msg,
+SchedulingInstruction ScheduleOneRound(const SchedulingMessage& prev_msg,
                              SchedulingState* state,
                              SchedulingMessage* new_message)
 {
@@ -170,7 +170,7 @@ static void simulate_scheduling()
 
   try {
     InitScheduled(&state, &msg);
-    Instruction st = Continue;
+    SchedulingInstruction st = Continue;
     while (st != Done) {
       LL_DEBUG("sched round %02d: %s", state.round, msg.to_string().c_str());
 

@@ -6,7 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "../common/messages.h"
+#include "../common/messages.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,7 +21,7 @@ int ecall_scheduling(const void* prev_msg, void* state, void* new_message);
 
 void InitScheduled(SchedulingState* new_state, SchedulingMessage* new_message);
 
-Instruction ScheduleOneRound(const SchedulingMessage& prev_msg,
+SchedulingInstruction ScheduleOneRound(const SchedulingMessage& prev_msg,
                              SchedulingState* state,
                              SchedulingMessage* new_message);
 

@@ -1,8 +1,14 @@
 #include "rpc.h"
 
-#include "../common/messages.h"
+#include "../common/interface_structs.h"
+#include "../common/converter.h"
+#include "../common/messages.hpp"
 #include "Enclave_u.h"
 #include "logging.h"
+#include "rpc_types.h"
+
+grpc::Status ecall_failure =
+    grpc::Status(grpc::StatusCode::INTERNAL, "ecall failure");
 
 SchedulingState set_state(const rpc::SchedulingState& rpc_sched_state)
 {
@@ -77,4 +83,46 @@ grpc::Status RpcServer::schedule(::grpc::ServerContext* context,
   SPDLOG_ERROR("sched failed {}", ret);
   return grpc::Status(grpc::StatusCode::UNKNOWN,
                       fmt::format("sched failure {}", ret));
+}
+
+
+grpc::Status RpcServer::aggregate(::grpc::ServerContext* context,
+                                  const ::rpc::AggregateRequest* request,
+                                  ::rpc::AggregateResponse* response)
+{
+  try {
+    // unmarshal
+    AggregatedMessage cur_agg;
+    rpc_type_to_enclave_type(cur_agg, request->current_agg());
+
+    UserMessage user_msg;
+    rpc_type_to_enclave_type(user_msg, request->msg());
+
+    // marshal
+    AggregatedMessage_C cur_agg_bin, new_agg_bin;
+    UserMessage_C user_msg_bin;
+    cur_agg.marshal(&cur_agg_bin);
+    user_msg.marshal(&user_msg_bin);
+
+    int ret;
+    sgx_status_t st = ecall_aggregate(
+        this->eid, &ret, &user_msg_bin, &cur_agg_bin, &new_agg_bin);
+    if (st != SGX_SUCCESS || ret != GOOD) {
+      SPDLOG_ERROR("ecall_aggregate failed with {} {}", st, ret);
+      return ecall_failure;
+    }
+
+    AggregatedMessage new_agg(&new_agg_bin);
+    auto* new_agg_rpc = new rpc::Aggregation{};
+
+    SPDLOG_INFO("new agg: {}", new_agg.to_string());
+
+    enclave_type_to_rpc_type(new_agg_rpc, new_agg);
+    response->set_allocated_new_agg(new_agg_rpc);
+
+    return grpc::Status::OK;
+  } catch (const std::exception& e) {
+    SPDLOG_CRITICAL("E: {}", e.what());
+    return grpc::Status(grpc::StatusCode::INTERNAL, e.what());
+  }
 }

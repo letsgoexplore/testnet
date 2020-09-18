@@ -1,12 +1,18 @@
 enclave {
     include "sgx_report.h"
+    include "../common/interface_structs.h"
 
     trusted {
         public int ecall_create_report ([in] sgx_target_info_t* quote_enc_info, [out] sgx_report_t* report);
         public int ecall_get_mr_enclave([out] unsigned char mr_enclave[32]);
 
         public void TestScheduling();
+        public void test_aggregator();
         public int ecall_scheduling([user_check]const void* _prev_msg, [user_check]void* _state, [user_check]void* _new_msg);
+        public int ecall_aggregate(
+            [user_check]const UserMessage_C* _message,
+            [user_check]const AggregatedMessage_C* _cur_agg,
+            [user_check]AggregatedMessage_C* _new_agg);
     };
 
     untrusted {

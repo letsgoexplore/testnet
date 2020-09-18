@@ -4,7 +4,7 @@
 int ecall_scheduling(const void* _prev_msg, void* _state, void* _new_msg)
 {
   if (_prev_msg == nullptr || _state == nullptr || _new_msg == nullptr) {
-    return SCHEDULE_INVALID_INPUT;
+    return INVALID_INPUT;
   }
 
   const auto* prev_msg = (const SchedulingMessage*)_prev_msg;
@@ -25,11 +25,11 @@ int ecall_scheduling(const void* _prev_msg, void* _state, void* _new_msg)
       } else if (next_step == Done) {
         return SCHEDULE_DONE;
       } else {
-        return SCHEDULE_INVALID_INPUT;
+        return INVALID_INPUT;
       }
     }
   } catch (const std::exception& e) {
     LL_CRITICAL("except: %s", e.what());
-    return SCHEDULE_EXCEPT_CAUGHT;
+    return EXCEPT_CAUGHT;
   }
 }

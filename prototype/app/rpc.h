@@ -6,7 +6,7 @@
 
 #include <cstdio>
 
-#include "../common/messages.h"
+#include "../common/messages.hpp"
 #include "services/generated/enclave.grpc.pb.h"
 #include "services/generated/enclave.pb.h"
 
@@ -21,6 +21,10 @@ class RpcServer final : public rpc::enclave::Service
   grpc::Status schedule(grpc::ServerContext* context,
                         const rpc::SchedulingRequest* request,
                         rpc::SchedulingResponse* response) override;
+
+  grpc::Status aggregate(::grpc::ServerContext* context,
+                         const ::rpc::AggregateRequest* request,
+                         ::rpc::AggregateResponse* response) override;
 };
 
 SchedulingState set_state(const rpc::SchedulingState&);
