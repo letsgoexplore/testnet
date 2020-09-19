@@ -3,17 +3,19 @@ syntax = "proto3";
 package rpc;
 
 service enclave {
-  rpc schedule(SchedulingRequest) returns(SchedulingResponse);
+  rpc schedule(SchedulingRequest) returns (SchedulingResponse);
   rpc aggregate(AggregateRequest) returns (AggregateResponse);
 }
 
 message SchedulingState {
-  uint32 round = 1;                  // round #
-  repeated bool reservation_map = 2; // current reservation map. TODO: change this to map
-  repeated string footprints = 3;    // current footprint
+  uint32 round = 1; // round #
+  repeated bool reservation_map =
+      2; // current reservation map. TODO: change this to map
+  repeated string footprints = 3; // current footprint
   string sig = 4;
-  bool final = 5;                   // if set, this is the final round. Use this as a ticket.
-  // Footprint scheduling paper says you send the final message to DC and ignore the outcome. Doesn't see to be needed.
+  bool final = 5; // if set, this is the final round. Use this as a ticket.
+  // Footprint scheduling paper says you send the final message to DC and ignore
+  // the outcome. Doesn't see to be needed.
 }
 
 // footprint scheduling
@@ -35,11 +37,13 @@ message DCNetSubmission {
 }
 
 message SchedulingResponse {
-  SchedulingState new_state = 1;    // new state
-  string sched_msg = 2;  // message to be used in next DC net submission. This is here for convenience only, as it can be derived from new_state.
+  SchedulingState new_state = 1; // new state
+  string sched_msg =
+      2; // message to be used in next DC net submission. This is here for
+         // convenience only, as it can be derived from new_state.
 }
 
-message AggregateRequest{
+message AggregateRequest {
   DCNetSubmission submission = 1;
   Aggregation current_agg = 4;
 }
@@ -50,8 +54,6 @@ message Aggregation {
   string sig = 3;
 }
 
-message AggregateResponse{
-  Aggregation new_agg = 1;
-}
+message AggregateResponse { Aggregation new_agg = 1; }
 
 message Empty {}

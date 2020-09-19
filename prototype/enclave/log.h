@@ -41,12 +41,12 @@ extern char log_buffer[BUFSIZ];
 
 #define LOG_SHOULD_I(level) (level <= LOG_BUILD_LEVEL)
 
-#define LOG(level, fmt, arg...)                             \
-  do {                                                      \
-    if (LOG_SHOULD_I(level)) {                              \
-      snprintf(log_buffer, BUFSIZ, fmt, ##arg);             \
-      ocall_logging(level, strrchr(__FILE__, '/')+1, __LINE__, log_buffer); \
-    }                                                       \
+#define LOG(level, fmt, arg...)                                               \
+  do {                                                                        \
+    if (LOG_SHOULD_I(level)) {                                                \
+      snprintf(log_buffer, BUFSIZ, fmt, ##arg);                               \
+      ocall_logging(level, strrchr(__FILE__, '/') + 1, __LINE__, log_buffer); \
+    }                                                                         \
   } while (_FALSE)
 
 #if (defined(WIN32) || defined(_WIN32))
