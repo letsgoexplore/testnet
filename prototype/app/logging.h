@@ -1,8 +1,3 @@
-#include <log4cxx/logger.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-
 #ifndef APP_LOG_H
 #define APP_LOG_H
 

@@ -5,16 +5,6 @@
 
 using std::string;
 
-namespace app
-{
-namespace utils
-{
-log4cxx::LoggerPtr logger(log4cxx::Logger::getLogger(__FILE__));
-}
-}  // namespace app
-
-using app::utils::logger;
-
 /*!
  * \brief   Initialize the enclave:
  *      Step 1: try to retrieve the launch token saved by last transaction

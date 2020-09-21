@@ -1,9 +1,15 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.15)
 project(SGX-DC-Nets)
 
 # build options
 option(BUILD_TESTS "build the mytest target" on)
 option(CMAKE_BUILD_TYPE "(Debug|Prerelease|Release)" Debug)
+
+set(GRPC_PREFIX "$ENV{HOME}/.local" CACHE STRING "prefix to gRPC")
+message(STATUS "GRPC prefix is set to ${GRPC_PREFIX}")
+
+# global setting
+set(CMAKE_CXX_STANDARD 11)
 
 # only support x64
 set(SGX_ARCH x64)
@@ -36,6 +42,7 @@ include(cmake/ConfigSGX.cmake)
 
 # check cmake configuration
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
+
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

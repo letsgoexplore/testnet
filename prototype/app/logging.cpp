@@ -1,7 +1,5 @@
 #include "logging.h"
 
-#include <log4cxx/logger.h>
-
 char log_buffer[BUFSIZ] = {'\0'};
 
 #define OCALL_LOGGING_ADAPTOR(FUNC)                \
