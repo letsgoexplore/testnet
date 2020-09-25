@@ -23,3 +23,27 @@ There have been two advances
 	\item The any trust model ~\cite{CCS:CorFor10}: instead of all parties communicating we pick a small number of servers who are trusted for availability and that at least one is honest. This avoids quadratic bandwidth usage and reduces each clients bandwidth requirement to simply $O(C)$: a single channel capacity length message to one of the servers. However, the network must still handle $O(Csn)$ data: i.e. bandwidth usage scales linearly in both the number of servers and the number of clients.
 	\item The distributed point function approach. First introduced in~\cite{SP:CorBonMaz15}, uses cryptography to shorten the message each user submits to $O(\sqrt(C))$
 \end{itemize}
+
+
+\subsectiton{Scheduling }
+A common approach to scheduling (e.g., in Dissent~\cite{CCS:CorFor10}) is a verifiable shuffle.  We observe that with careful design, verifiability of the shuffle is not necessary and can be handled by an accusation phase.
+
+In our protocol, each user submits a ephemeral epoch key via a traditional mixnet operated by each server in the any trust set. The servers operate in lock step. I.e. each server waits until it has received all submissions before striping off the outer encryption layer and forwarding, in random order, the contents to the next server. At the end, we have a clear text list of ephemeral round keys which cannot be linked to the submitters.
+
+In and of it self, however, this is insufficient.  The last sever in the any trust set could, for example,  collude to schedule only sybils and one victim user. To prevent this, we publicly shuffle the  output using randomness contributed by each anytrust server after the nextnet finishes.
+
+Finally, any given server could drop honest users  by colluding with dishonest ones. In particular, the initial server who learns the submitters IP address can target specific users. To prevent this, we rely on an accusation mechanism where anyone who had their scheduling key dropped would announce this along with proof (to whit, a signature form the first server saying they included a ciphertext along with the opening of the ciphertext)
+
+
+Security argument consider an ideal functionality that on input a list of ciphertexts returns a permuted list of cleartext messages.
+
+With out loss of generality, assume  3 servers and the middle one is honest. 
+
+.....
+
+FIXME: in the ideal functionality even dishonest messages get shuffled. In the real protocol we cannot detect if dishonest messages get substituted out 
+
+
+
+
+
