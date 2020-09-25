@@ -25,7 +25,7 @@ There have been two advances
 \end{itemize}
 
 
-\subsectiton{Scheduling }
+\subsection{Scheduling }
 A common approach to scheduling (e.g., in Dissent~\cite{CCS:CorFor10}) is a verifiable shuffle.  We observe that with careful design, verifiability of the shuffle is not necessary and can be handled by an accusation phase.
 
 In our protocol, each user submits a ephemeral epoch key via a traditional mixnet operated by each server in the any trust set. The servers operate in lock step. I.e. each server waits until it has received all submissions before striping off the outer encryption layer and forwarding, in random order, the contents to the next server. At the end, we have a clear text list of ephemeral round keys which cannot be linked to the submitters.
