@@ -1,7 +1,7 @@
 %!TEX root = main.tex
 
 \section{Introduction}
-Strong anonymous communication is a well studied problem~\cite{}. Indeed, it's a well understood trade off that you can only have either low latency or low bandwidth.
+Strong anonymous communication is a well studied problem~\cite{}. Indeed, it's a well understood trade off that you can only have either low latency or low bandwidth. [It is also increasingly important]
 
 In an anonymous broadcast setting, users attempt to anonymously announce a message to all users. In concept, this can be modeled as a channel whose capacity C is the size of a single message. User's would then take turns. However, in practice, channels usually have large capacity relative to the message size and multiple users can broadcast at once.
 
@@ -11,37 +11,37 @@ Concurrent Anonymous broadcast protocols must accomplish three tasks
 	\item provide a channel access method for allowing multiple parties to use the broadcast channel
 	\item provide some mechanism to prevent disruption
 \end{enumerate}
+All three of these steps introduce considerable overheads that to date make scaling these systems a major problem.
 
-To date, there have been two approaches. In \emph{shuffling protocols}~\cite{CCS:LYKGKM19,USENIX:AKTZ17} all encrypted messages are collected by a set of servers and then shuffled and decrypted using techniques from multi party computation. Unfortunately, shuffling protocols scale super linearly in the size of the number of messages in the round.  XXXX CHECK
+To date, there have been two approaches with very strong Anonymity. In \emph{shuffling protocols}~\cite{CCS:LYKGKM19,USENIX:AKTZ17} all encrypted messages are collected by a set of servers and then shuffled and decrypted using techniques from multi party computation. Unfortunately, shuffling protocols scale super linearly in the size of the number of messages in the round.  XXXX CHECK
 
-The other approach, is that of a DC-net~\cite{JC:Chaum88}: each user submits a broadcast that obfuscates which part of the channel (if any) it writes to.  These broadcasts can then be combined to produce the final broadcast. Crucially, the combination process
+The other approach, is that of a DC-net~\cite{JC:Chaum88}: each user submits a broadcast that obfuscates which part of the channel (if any) it writes to.  These broadcasts can then be combined to produce the final broadcast. Crucially, the combination process involves only symmetric primitives and can be done in parallel by all participants. In the original DC networks, this process was accomplished  by all parties, pairwise, sharing $|C|$ random coins.
+This results in extremely low latency at the cost of two major disadvantages: 1) it is easy to disrupt 2) clients must submit $|C|$ sized messages. Even which clients have available uplink capacity, this results in servers and choke-points in the network processing $O(|C|n)$ data.
 
-In the original DC networks, this process was accomplished  by all parties, pairwise, sharing $|C|$ random coins.
+
 
 There have been two advances
 \begin{itemize}
 	\item The any trust model ~\cite{CCS:CorFor10}: instead of all parties communicating we pick a small number of servers who are trusted for availability and that at least one is honest. This avoids quadratic bandwidth usage and reduces each clients bandwidth requirement to simply $O(C)$: a single channel capacity length message to one of the servers. However, the network must still handle $O(Csn)$ data: i.e. bandwidth usage scales linearly in both the number of servers and the number of clients.
-	\item The distributed point function approach. First introduced in~\cite{SP:CorBonMaz15}, uses cryptography to shorten the message each user submits to $O(\sqrt(C))$
+	\item The distributed point function approach. First introduced in~\cite{SP:CorBonMaz15}, uses cryptography to shorten the message each user submits to $O(\sqrt(C))$ at the cost of increased 
 \end{itemize}
 
 
 \subsection{Scheduling }
-A common approach to scheduling (e.g., in Dissent~\cite{CCS:CorFor10}) is a verifiable shuffle.  We observe that with careful design, verifiability of the shuffle is not necessary and can be handled by an accusation phase.
+A common approach to scheduling (e.g., in Dissent~\cite{CCS:CorFor10}) is a verifiable shuffle.  We observe that  this can be replaced with a mixnet, a public shuffle phase, and an accusation phase.  In particular, the fact that clients can abort and not act on a suspicious shuffle renders the usual attacks on a mixnet moot.
 
 In our protocol, each user submits a ephemeral epoch key via a traditional mixnet operated by each server in the any trust set. The servers operate in lock step. I.e. each server waits until it has received all submissions before striping off the outer encryption layer and forwarding, in random order, the contents to the next server. At the end, we have a clear text list of ephemeral round keys which cannot be linked to the submitters.
 
-In and of it self, however, this is insufficient.  The last sever in the any trust set could, for example,  collude to schedule only sybils and one victim user. To prevent this, we publicly shuffle the  output using randomness contributed by each anytrust server after the nextnet finishes.
-
-Finally, any given server could drop honest users  by colluding with dishonest ones. In particular, the initial server who learns the submitters IP address can target specific users. To prevent this, we rely on an accusation mechanism where anyone who had their scheduling key dropped would announce this along with proof (to whit, a signature form the first server saying they included a ciphertext along with the opening of the ciphertext)
+In and of it self, however, this is insufficient.  The last sever in the any trust set could, for example,  collude to schedule only sybils and one victim user. To prevent this, we publicly shuffle the  output using randomness contributed by each anytrust server after the mixnet finishes.
 
 
-Security argument consider an ideal functionality that on input a list of ciphertexts returns a permuted list of cleartext messages.
+Finally, any given server could drop honest users  by colluding with dishonest ones.  This is a so called n-1 attack. However, this detectable after the fact by honest users who's messages were dropped. If the mixnet encryption is picked carefully and servers issue receipts for submitted messages, then clients can issue verifiable accusations of such and attack and refuse to participate in the next dc round. Since the any-trust setting for DCnets already requires honest servers to abort in the event of a sudden decrease in participants between rounds (also to prevent an n-1 style attack from a network adversary), this gives us safety.
 
-With out loss of generality, assume  3 servers and the middle one is honest. 
 
-.....
+Things to consider:
+1) ios obfuscation instead of SGX
+2) a high latency but low bandwidth mode where we only use the DCNet for checking. Note we can avoid downloading the whole mixnet output by having the output be a ciphertext under a server shared key containing both a message(itself a ciphertext) and a tag. All clients download the tags before announcing via a DCNet how to decrypt their messages.
 
-FIXME: in the ideal functionality even dishonest messages get shuffled. In the real protocol we cannot detect if dishonest messages get substituted out 
 
 
 
