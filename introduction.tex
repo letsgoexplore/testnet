@@ -3,7 +3,8 @@
 \section{Introduction}
 Strong anonymous communication is a well studied problem~\cite{}. Indeed, it's a well understood trade off that you can only have either low latency or low bandwidth. [It is also increasingly important]
 
-In an anonymous broadcast setting, users attempt to anonymously announce a message to all users. In concept, this can be modeled as a channel whose capacity C is the size of a single message. User's would then take turns. However, in practice, channels usually have large capacity relative to the message size and multiple users can broadcast at once.
+
+In an anonymous broadcast setting, users attempt to anonymously announce a message to all users. In concept, this can be modeled as a channel whose capacity C is the size of a single message. User's would then take turns. However, in practice, channels usually have large capacity relative to the message size and multiple users can broadcast at once. 
 
 Concurrent Anonymous broadcast protocols must accomplish three tasks
 \begin{enumerate}
@@ -13,7 +14,21 @@ Concurrent Anonymous broadcast protocols must accomplish three tasks
 \end{enumerate}
 All three of these steps introduce considerable overheads that to date make scaling these systems a major problem.
 
-To date, there have been two approaches with very strong Anonymity. In \emph{shuffling protocols}~\cite{CCS:LYKGKM19,USENIX:AKTZ17} all encrypted messages are collected by a set of servers and then shuffled and decrypted using techniques from multi party computation. Unfortunately, shuffling protocols scale super linearly in the size of the number of messages in the round.  XXXX CHECK
+
+To date, there have been two approaches with very strong Anonymity. Heavyweight cryptographic protocols approximate shuffling mechanisms or private information retrieval.  These protocols put heavy load in servers, thus severely limiting the number of available operators.  Since one or more of the servers must be honest, this is a major impediment to deployment and widespread usage. 
+Moreover, as the number of servers increase, the complexity of the protocol does not scale linearly.
+
+To date, the design space for anonymous systems has failed to consider two key issues. 1) scalable and diverse trust assumptions . In particular, many of the most practical systems rely on heavyweight cryptographic protocols that e.g. approximate a shuffling algorithms. This induces two problems. First, these put severe load on the servers, drastically reducing the number of available parties who could run a deployed instance. The Tor Project and the EFF, for example, do not have the resources to run or admin large numbers of servers Moreover, even if a number of such parties could be found, the protocols do not practically scale to large numbers of servers. As a result, getting a diverse set of trusted parties is impossible.  This also hinders adoption.
+
+Secondly, existing systems fail to differentiate between participant scalability and capacity scalability.  Instead, they implicitly assume that everyone who wishes to contribute to the anonymity of the system is actually also using the system to communicate. This needlessly limits the anonymity provided by the systems and poses a special problem for bootstrapping anonymous systems beyond Tor.
+
+Take the case of privacy preserving cryptocurrencies. There are a large number of end user clients and full network nodes participating in operating the network. However, a small number of transactions are sent at any given time.
+Privacy preserving cryptocurrencies need privacy at two levels: 1) on the blockchain, where the record of who paid who -- the transaction graph --- needs to be hidden  2) network layer.  Currently the best practice here is to use Tor (\imm{or I2P for monero, do we want to mention}). However, Tor offers weaker protections than the on chain layer. .... Transitioning to such a replacement, however, would immediately hit a participation gap there are less people sending private transactions in cryptocurrencies than their are using Tor at any given point in time. 
+
+In \emph{shuffling protocols}~\cite{CCS:LYKGKM19,USENIX:AKTZ17} all encrypted messages are collected by a set of servers and then shuffled and decrypted using techniques from multi party computation. Unfortunately, shuffling protocols scale super linearly in the size of the number of messages in the round.  XXXX CHECK. 
+
+
+
 
 The other approach, is that of a DC-net~\cite{JC:Chaum88}: each user submits a broadcast that obfuscates which part of the channel (if any) it writes to.  These broadcasts can then be combined to produce the final broadcast. Crucially, the combination process involves only symmetric primitives and can be done in parallel by all participants. In the original DC networks, this process was accomplished  by all parties, pairwise, sharing $|C|$ random coins.
 This results in extremely low latency at the cost of two major disadvantages: 1) it is easy to disrupt 2) clients must submit $|C|$ sized messages. Even which clients have available uplink capacity, this results in servers and choke-points in the network processing $O(|C|n)$ data.
@@ -42,6 +57,15 @@ Things to consider:
 1) ios obfuscation instead of SGX
 2) a high latency but low bandwidth mode where we only use the DCNet for checking. Note we can avoid downloading the whole mixnet output by having the output be a ciphertext under a server shared key containing both a message(itself a ciphertext) and a tag. All clients download the tags before announcing via a DCNet how to decrypt their messages.
 
+
+
+notes:
+reliability vs perfect n-1 prevention. Depends on how you deal with churn
+
+different between participation and utilization of the channel.
+
+
+Point: we need to latency numbers for uploads.
 
 
 
