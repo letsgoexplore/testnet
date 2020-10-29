@@ -25,7 +25,13 @@ add_library(enclave SHARED
         log.cpp
         scheduler.cpp
         test_all.cpp
-        types.cpp ecall_scheduling.cpp random.cpp random.h ecall_aggregate.cpp ../common/message.cpp ../common/sched.cpp)
+        types.cpp
+        random.cpp
+        ecall_scheduling.cpp
+        ecall_aggregate.cpp
+        ecall_send.cpp
+        ../common/message.cpp
+        ../common/sched.cpp ../common/dcnet.cpp ../common/dcnet.h crypto.cpp crypto.h)
 
 ###############################
 #### Include & Libs

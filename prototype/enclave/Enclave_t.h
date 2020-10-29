@@ -22,7 +22,7 @@ int ecall_get_mr_enclave(unsigned char mr_enclave[32]);
 void TestScheduling(void);
 void test_all(void);
 int ecall_scheduling(const SchedulingMessage_C* _prev_msg, SchedulingState_C* _state, SchedulingMessage_C* _new_msg);
-int ecall_aggregate(const DCNetSubmission_C* _message, const AggregatedMessage_C* _cur_agg, AggregatedMessage_C* _new_agg);
+int ecall_aggregate(const SignedUserMessage_C* _message, const AggregatedMessage_C* _cur_agg, AggregatedMessage_C* _new_agg);
 
 sgx_status_t SGX_CDECL ocall_logging(int level, const char* file, int line, const char* msg);
 sgx_status_t SGX_CDECL ocall_print_string(int* retval, const char* str);

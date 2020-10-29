@@ -25,8 +25,9 @@ class RpcServer final : public rpc::enclave::Service
   grpc::Status aggregate(::grpc::ServerContext* context,
                          const ::rpc::AggregateRequest* request,
                          ::rpc::AggregateResponse* response) override;
+  grpc::Status send(::grpc::ServerContext* ctx,
+                    const ::rpc::SendRequest* request,
+                    ::rpc::SignedUserMessage* response) override;
 };
-
-SchedulingState set_state(const rpc::SchedulingState&);
 
 #endif  // TOWN_CRIER_RPC_H

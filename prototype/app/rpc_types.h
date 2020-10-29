@@ -42,7 +42,7 @@ inline void enclave_type_to_rpc_type(rpc::SchedulingState* out,
 inline void rpc_type_to_enclave_type(AggregatedMessage& new_agg,
                                      const rpc::Aggregation& agg)
 {
-  new_agg.current_aggregated_value = DCMessage{agg.current_aggregated_value()};
+  new_agg.current_aggregated_value = Message{agg.current_aggregated_value()};
   new_agg.aggregated_ids.clear();
 
   for (const auto& uid : agg.user_id_in_aggregation()) {
@@ -65,12 +65,12 @@ inline void enclave_type_to_rpc_type(rpc::Aggregation* agg,
   agg->set_sig(agg_msg.sig._sig);
 }
 
-inline void rpc_type_to_enclave_type(DCNetSubmission& new_msg,
-                                     const rpc::DCNetSubmission& msg)
+inline void rpc_type_to_enclave_type(SignedUserMessage& new_msg,
+                                     const rpc::SignedUserMessage& msg)
 {
   new_msg._round = msg.round();
   new_msg._user_id = UserId{msg.user_id()};
-  new_msg._msg = DCMessage{msg.message()};
+  new_msg._msg = Message{msg.message()};
   new_msg.sig = Signature{msg.sig()};
 }
 

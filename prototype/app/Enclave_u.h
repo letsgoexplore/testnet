@@ -32,7 +32,7 @@ sgx_status_t ecall_get_mr_enclave(sgx_enclave_id_t eid, int* retval, unsigned ch
 sgx_status_t TestScheduling(sgx_enclave_id_t eid);
 sgx_status_t test_all(sgx_enclave_id_t eid);
 sgx_status_t ecall_scheduling(sgx_enclave_id_t eid, int* retval, const SchedulingMessage_C* _prev_msg, SchedulingState_C* _state, SchedulingMessage_C* _new_msg);
-sgx_status_t ecall_aggregate(sgx_enclave_id_t eid, int* retval, const DCNetSubmission_C* _message, const AggregatedMessage_C* _cur_agg, AggregatedMessage_C* _new_agg);
+sgx_status_t ecall_aggregate(sgx_enclave_id_t eid, int* retval, const SignedUserMessage_C* _message, const AggregatedMessage_C* _cur_agg, AggregatedMessage_C* _new_agg);
 
 #ifdef __cplusplus
 }

@@ -78,12 +78,12 @@ grpc::Status RpcServer::aggregate(::grpc::ServerContext* context,
     AggregatedMessage cur_agg;
     rpc_type_to_enclave_type(cur_agg, request->current_agg());
 
-    DCNetSubmission user_msg;
-    rpc_type_to_enclave_type(user_msg, request->submission());
+    SignedUserMessage user_msg;
+    rpc_type_to_enclave_type(user_msg, request->user_msg());
 
     // marshal
     AggregatedMessage_C cur_agg_bin, new_agg_bin;
-    DCNetSubmission_C user_msg_bin;
+    SignedUserMessage_C user_msg_bin;
     cur_agg.marshal(&cur_agg_bin);
     user_msg.marshal(&user_msg_bin);
 
@@ -108,4 +108,9 @@ grpc::Status RpcServer::aggregate(::grpc::ServerContext* context,
     SPDLOG_CRITICAL("E: {}", e.what());
     return grpc::Status(grpc::StatusCode::INTERNAL, e.what());
   }
+}
+
+grpc::Status RpcServer::send(::grpc::ServerContext* ctx, const ::rpc::SendRequest* request, ::rpc::SignedUserMessage* response)
+{
+  return grpc::Status::OK;
 }

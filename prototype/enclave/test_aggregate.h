@@ -32,16 +32,16 @@ inline void test_marshal_aggregated_msg()
 
 inline void test_marshal_user_message()
 {
-  DCNetSubmission msg;
+  SignedUserMessage msg;
   msg._round = 1;
-  msg._user_id = "123";
+  msg._user_id = UserId("123");
   std::string big_sig(SIG_LEN, 'c');
   msg.sig = Signature(big_sig);
 
-  DCNetSubmission_C msg_bin;
+  SignedUserMessage_C msg_bin;
   msg.marshal(&msg_bin);
 
-  DCNetSubmission msg2(&msg_bin);
+  SignedUserMessage msg2(&msg_bin);
 
   assert(msg._user_id._id == msg2._user_id._id);
   LL_INFO("GOOD");

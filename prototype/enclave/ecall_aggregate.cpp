@@ -7,12 +7,12 @@
 //! \param _cur_agg
 //! \param _new_agg
 //! \return
-int ecall_aggregate(const DCNetSubmission_C* _message,
+int ecall_aggregate(const SignedUserMessage_C* _message,
                     const AggregatedMessage_C* _cur_agg,
                     AggregatedMessage_C* _new_agg)
 {
   // unmarshal
-  DCNetSubmission user_msg(_message);
+  SignedUserMessage user_msg(_message);
   AggregatedMessage cur_agg(_cur_agg);
 
   LL_DEBUG("old agg: %s", cur_agg.to_string().c_str());

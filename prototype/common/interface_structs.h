@@ -1,3 +1,5 @@
+// This file defines constants structs to be used as ecall parameters.
+
 #ifndef SGX_DC_NETS_INTERFACE_STRUCTS_H
 #define SGX_DC_NETS_INTERFACE_STRUCTS_H
 
@@ -31,6 +33,7 @@ constexpr size_t SchedMessageFixedBitLen = FOOTPRINT_SIZE * N_SLOTS;
 
 #endif
 
+// we follow the convention that C-compatible struct ends with _C
 typedef struct _FootprintsForAllSlots {
   char bitmsg[N_SLOTS_C * FOOTPRINT_SIZE_C];
 } FootprintsForAllSlots_C;
@@ -55,6 +58,6 @@ typedef struct _UserMessage_C {
   char user_id[USER_ID_LEN];
   char dc_msg[DC_NET_MESSAGE_LEN];
   char sig[SIG_LEN];
-} DCNetSubmission_C;
+} SignedUserMessage_C;
 
 #endif  // SGX_DC_NETS_INTERFACE_STRUCTS_H

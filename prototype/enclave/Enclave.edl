@@ -13,7 +13,7 @@ enclave {
             [user_check]SchedulingState_C* _state,
             [user_check]SchedulingMessage_C* _new_msg);
         public int ecall_aggregate(
-            [user_check]const DCNetSubmission_C* _message,
+            [user_check]const SignedUserMessage_C* _message,
             [user_check]const AggregatedMessage_C* _cur_agg,
             [user_check]AggregatedMessage_C* _new_agg);
     };

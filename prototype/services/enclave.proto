@@ -5,55 +5,70 @@ package rpc;
 service enclave {
   rpc schedule(SchedulingRequest) returns (SchedulingResponse);
   rpc aggregate(AggregateRequest) returns (AggregateResponse);
+  rpc send(SendRequest) returns (SignedUserMessage);
 }
 
 message SchedulingState {
-  uint32 round = 1; // round #
-  repeated bool reservation_map =
-      2; // current reservation map. TODO: change this to map
-  repeated string footprints = 3; // current footprint
+  // round #
+  uint32 round = 1;
+  // current reservation map. TODO: change this to map
+  repeated bool reservation_map = 2;
+  // current footprint
+  repeated string footprints = 3;
   string sig = 4;
-  bool final = 5; // if set, this is the final round. Use this as a ticket.
+  // if set, this is the final round. Use this as a ticket.
   // Footprint scheduling paper says you send the final message to DC and ignore
   // the outcome. Doesn't see to be needed.
+  bool final = 5;
 }
 
-// footprint scheduling
+// footprint scheduling request
 message SchedulingRequest {
-  SchedulingState cur_state = 1; // current state
-  string cur_dc_message = 2;     // message received from DC.
+  // current state
+  SchedulingState cur_state = 1;
+  // message received from DC.
+  string cur_dc_message = 2;
 }
 
-message DCNetBroadcast {
-  string sched_msg = 1;
-  string user_msg = 2;
+// footprint scheduling response
+message SchedulingResponse {
+  // new state
+  SchedulingState new_state = 1;
+  // scheduling message. To to submitted to DC net.
+  string sched_msg = 2;
 }
 
-message DCNetSubmission {
+// request sent to user enclave
+message SendRequest {
+  string message = 1;
+  uint32 round = 2;
+  repeated string server_keys = 3;
+  bytes sealed_enclave_key = 4;
+  SchedulingState ticket = 5;
+}
+
+// messages user send to aggregators and servers
+message SignedUserMessage {
   uint32 round = 1;
   string user_id = 2;
   string message = 3; // message = sched_msg || user_msg
   string sig = 4;
 }
 
-message SchedulingResponse {
-  SchedulingState new_state = 1; // new state
-  string sched_msg =
-      2; // message to be used in next DC net submission. This is here for
-         // convenience only, as it can be derived from new_state.
-}
-
+// messages aggregator send to its enclave
 message AggregateRequest {
-  DCNetSubmission submission = 1;
+  SignedUserMessage user_msg = 1;
   Aggregation current_agg = 4;
 }
 
+// aggregator's local state
 message Aggregation {
   repeated string user_id_in_aggregation = 1;
   string current_aggregated_value = 2;
   string sig = 3;
 }
 
+// response from aggregator's enclave
 message AggregateResponse { Aggregation new_agg = 1; }
 
 message Empty {}

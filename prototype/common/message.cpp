@@ -5,56 +5,57 @@
 #include "../app/logging.h"
 #endif
 
-DCMessage::DCMessage(const std::string &bin_str)
+Message::Message(const std::string &bin_str)
 {
-  if (bin_str.size() != DCMessage::FixedLen) {
+  if (bin_str.size() != Message::FixedLen) {
     throw std::invalid_argument("bin_str len " +
                                 std::to_string(bin_str.size()) +
-                                "  != " + std::to_string(DCMessage::FixedLen));
+                                "  != " + std::to_string(Message::FixedLen));
   }
-  this->_msg = std::bitset<DCMessage::FixedLen>(bin_str);
+  this->_msg = std::bitset<Message::FixedLen>(bin_str);
 }
 
-DCMessage DCMessage::operator^(const DCMessage &other)
+Message Message::operator^(const Message &other)
 {
-  DCMessage out;
-  for (size_t i = 0; i < DCMessage::FixedLen; i++) {
+  Message out;
+  for (size_t i = 0; i < Message::FixedLen; i++) {
     out._msg[i] = (this->_msg[i] ^ other._msg[i]);
   }
 
   return out;
 }
 
-void DCMessage::operator^=(const DCMessage &other)
+void Message::operator^=(const Message &other)
 {
-  for (size_t i = 0; i < DCMessage::FixedLen; i++) {
+  for (size_t i = 0; i < Message::FixedLen; i++) {
     this->_msg[i] = (this->_msg[i] ^ other._msg[i]);
   }
 }
 
-void DCMessage::marshal(char *out) const
+void Message::marshal(char *out) const
 {
   auto str = this->_msg.to_string();
-  for (size_t i = 0; i < DCMessage::FixedLen; i++) {
+  for (size_t i = 0; i < Message::FixedLen; i++) {
     out[i] = str[i];
   }
 }
 
-DCNetSubmission::DCNetSubmission(const DCNetSubmission_C *bin)
+SignedUserMessage::SignedUserMessage(const SignedUserMessage_C *bin)
     : _round(bin->round), _user_id(bin->user_id), _msg(bin->dc_msg)
 {
   sig = Signature(bin->sig);
 }
 
-void DCNetSubmission::sign(const SK &) {}
+void SignedUserMessage::sign(const SK &) {}
 
-bool DCNetSubmission::verify() const
+bool SignedUserMessage::verify() const
 {
+  // TODO: implement me
   (void)this->sig;
   return true;
 }
 
-void DCNetSubmission::marshal(DCNetSubmission_C *out) const
+void SignedUserMessage::marshal(SignedUserMessage_C *out) const
 {
   out->round = this->_round;
   this->_user_id.marshal(out->user_id);
@@ -62,7 +63,7 @@ void DCNetSubmission::marshal(DCNetSubmission_C *out) const
   this->sig.marshal(out->sig);
 }
 
-std::string DCNetSubmission::to_string() const
+std::string SignedUserMessage::to_string() const
 {
   return this->_user_id._id + " says " +
          std::to_string(this->_msg._msg.size()) + " bits. " +
@@ -104,7 +105,7 @@ AggregatedMessage::AggregatedMessage(const AggregatedMessage_C *bin)
   this->sig = Signature(bin->sig);
 }
 
-void AggregatedMessage::aggregate_in(const DCNetSubmission *msg)
+void AggregatedMessage::aggregate_in(const SignedUserMessage *msg)
 {
   if (msg->verify()) {
     this->aggregated_ids.push_back(msg->_user_id);
@@ -130,7 +131,7 @@ void AggregatedMessage::marshal(AggregatedMessage_C *out)
   std::strncpy(out->user_ids, all_user_ids.c_str(), sizeof out->user_ids);
 
   // copy curr agg
-  assert(sizeof out->dc_msg >= DCMessage::FixedLen);
+  assert(sizeof out->dc_msg >= Message::FixedLen);
   this->current_aggregated_value.marshal(out->dc_msg);
 
   // copy sig

@@ -47,7 +47,7 @@ typedef struct ms_ecall_scheduling_t {
 
 typedef struct ms_ecall_aggregate_t {
 	int ms_retval;
-	const DCNetSubmission_C* ms__message;
+	const SignedUserMessage_C* ms__message;
 	const AggregatedMessage_C* ms__cur_agg;
 	AggregatedMessage_C* ms__new_agg;
 } ms_ecall_aggregate_t;
@@ -217,13 +217,13 @@ static sgx_status_t SGX_CDECL sgx_ecall_aggregate(void* pms)
 	sgx_lfence();
 	ms_ecall_aggregate_t* ms = SGX_CAST(ms_ecall_aggregate_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
-	const DCNetSubmission_C* _tmp__message = ms->ms__message;
+	const SignedUserMessage_C* _tmp__message = ms->ms__message;
 	const AggregatedMessage_C* _tmp__cur_agg = ms->ms__cur_agg;
 	AggregatedMessage_C* _tmp__new_agg = ms->ms__new_agg;
 
 
 
-	ms->ms_retval = ecall_aggregate((const DCNetSubmission_C*)_tmp__message, (const AggregatedMessage_C*)_tmp__cur_agg, _tmp__new_agg);
+	ms->ms_retval = ecall_aggregate((const SignedUserMessage_C*)_tmp__message, (const AggregatedMessage_C*)_tmp__cur_agg, _tmp__new_agg);
 
 
 	return status;

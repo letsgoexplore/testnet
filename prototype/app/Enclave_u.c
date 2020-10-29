@@ -21,7 +21,7 @@ typedef struct ms_ecall_scheduling_t {
 
 typedef struct ms_ecall_aggregate_t {
 	int ms_retval;
-	const DCNetSubmission_C* ms__message;
+	const SignedUserMessage_C* ms__message;
 	const AggregatedMessage_C* ms__cur_agg;
 	AggregatedMessage_C* ms__new_agg;
 } ms_ecall_aggregate_t;
@@ -111,7 +111,7 @@ sgx_status_t ecall_scheduling(sgx_enclave_id_t eid, int* retval, const Schedulin
 	return status;
 }
 
-sgx_status_t ecall_aggregate(sgx_enclave_id_t eid, int* retval, const DCNetSubmission_C* _message, const AggregatedMessage_C* _cur_agg, AggregatedMessage_C* _new_agg)
+sgx_status_t ecall_aggregate(sgx_enclave_id_t eid, int* retval, const SignedUserMessage_C* _message, const AggregatedMessage_C* _cur_agg, AggregatedMessage_C* _new_agg)
 {
 	sgx_status_t status;
 	ms_ecall_aggregate_t ms;
