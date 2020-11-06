@@ -17,6 +17,7 @@
 
 extern crate sgx_types;
 extern crate sgx_urts;
+
 use sgx_types::*;
 use sgx_urts::SgxEnclave;
 
@@ -36,7 +37,7 @@ fn init_enclave() -> SgxResult<SgxEnclave> {
     // call sgx_create_enclave to initialize an enclave instance
     // Debug Support: set 2nd parameter to 1
     let debug = 1;
-    let mut misc_attr = sgx_misc_attribute_t {secs_attr: sgx_attributes_t { flags:0, xfrm:0}, misc_select:0};
+    let mut misc_attr = sgx_misc_attribute_t { secs_attr: sgx_attributes_t { flags: 0, xfrm: 0 }, misc_select: 0 };
     SgxEnclave::create(ENCLAVE_FILE,
                        debug,
                        &mut launch_token,
@@ -45,7 +46,7 @@ fn init_enclave() -> SgxResult<SgxEnclave> {
 }
 
 fn main() {
-    let send_request = interface::SendRequest{
+    let send_request = interface::SendRequest {
         message: interface::Message {
             msg: [9 as u8; interface::DC_NET_MESSAGE_LENGTH]
         },
@@ -61,11 +62,11 @@ fn main() {
         Ok(r) => {
             println!("[+] Init Enclave Successful {}!", r.geteid());
             r
-        },
+        }
         Err(x) => {
             println!("[-] Init Enclave Failed {}!", x.as_str());
             return;
-        },
+        }
     };
 
     let input_string = String::from("This is a normal world string passed into Enclave!\n");
@@ -74,11 +75,11 @@ fn main() {
     let result = unsafe {
         say_something(enclave.geteid(),
                       &mut retval,
-                      input_string.as_ptr() as * const u8,
+                      input_string.as_ptr() as *const u8,
                       input_string.len())
     };
     match result {
-        sgx_status_t::SGX_SUCCESS => {},
+        sgx_status_t::SGX_SUCCESS => {}
         _ => {
             println!("[-] ECALL Enclave Failed {}!", result.as_str());
             return;

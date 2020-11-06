@@ -1,5 +1,5 @@
 [dependencies]
-alloc = {}
+alloc = { }
 
 [dependencies.sgx_types]
 path = "../../../sgx_types"

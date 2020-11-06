@@ -13,7 +13,7 @@ cfg_if! {
         #[macro_use]
         extern crate serde_sgx;
         #[macro_use]
-        extern crate serde_big_array_sgx as serde_big_array;
+        extern crate serde_big_array_sgx;
         extern crate sgx_tstd as std;
     } else {
         compile_error!{"must be either trusted or untrusted"}
