@@ -38,7 +38,8 @@ message SchedulingResponse {
   string sched_msg = 2;
 }
 
-// request sent to user enclave
+// User -> Enclave
+// message to be sent
 message SendRequest {
   string message = 1;
   uint32 round = 2;
@@ -48,6 +49,7 @@ message SendRequest {
 }
 
 // messages user send to aggregators and servers
+// Enclave -> User
 message SignedUserMessage {
   uint32 round = 1;
   string user_id = 2;
