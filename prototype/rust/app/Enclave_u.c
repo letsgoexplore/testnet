@@ -1,11 +1,22 @@
 #include "Enclave_u.h"
 #include <errno.h>
 
-typedef struct ms_say_something_t {
+typedef struct ms_test_main_entrance_t {
 	sgx_status_t ms_retval;
-	const uint8_t* ms_some_string;
-	size_t ms_len;
-} ms_say_something_t;
+} ms_test_main_entrance_t;
+
+typedef struct ms_client_submit_t {
+	sgx_status_t ms_retval;
+	uint8_t* ms_plaintext;
+	uint32_t ms_plaintext_size;
+	uint32_t ms_round;
+	uint8_t* ms_secrets;
+	uint32_t ms_secrets_size;
+	uint8_t* ms_identity;
+	uint32_t ms_identity_size;
+	uint8_t* ms_output;
+	uint32_t ms_output_size;
+} ms_client_submit_t;
 
 typedef struct ms_t_global_init_ecall_t {
 	uint64_t ms_id;
@@ -987,13 +998,29 @@ static const struct {
 		(void*)Enclave_sgx_thread_set_multiple_untrusted_events_ocall,
 	}
 };
-sgx_status_t say_something(sgx_enclave_id_t eid, sgx_status_t* retval, const uint8_t* some_string, size_t len)
+sgx_status_t test_main_entrance(sgx_enclave_id_t eid, sgx_status_t* retval)
 {
 	sgx_status_t status;
-	ms_say_something_t ms;
-	ms.ms_some_string = some_string;
-	ms.ms_len = len;
+	ms_test_main_entrance_t ms;
 	status = sgx_ecall(eid, 0, &ocall_table_Enclave, &ms);
+	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
+	return status;
+}
+
+sgx_status_t client_submit(sgx_enclave_id_t eid, sgx_status_t* retval, uint8_t* plaintext, uint32_t plaintext_size, uint32_t round, uint8_t* secrets, uint32_t secrets_size, uint8_t* identity, uint32_t identity_size, uint8_t* output, uint32_t output_size)
+{
+	sgx_status_t status;
+	ms_client_submit_t ms;
+	ms.ms_plaintext = plaintext;
+	ms.ms_plaintext_size = plaintext_size;
+	ms.ms_round = round;
+	ms.ms_secrets = secrets;
+	ms.ms_secrets_size = secrets_size;
+	ms.ms_identity = identity;
+	ms.ms_identity_size = identity_size;
+	ms.ms_output = output;
+	ms.ms_output_size = output_size;
+	status = sgx_ecall(eid, 1, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;
 }
@@ -1005,14 +1032,14 @@ sgx_status_t t_global_init_ecall(sgx_enclave_id_t eid, uint64_t id, const uint8_
 	ms.ms_id = id;
 	ms.ms_path = path;
 	ms.ms_len = len;
-	status = sgx_ecall(eid, 1, &ocall_table_Enclave, &ms);
+	status = sgx_ecall(eid, 2, &ocall_table_Enclave, &ms);
 	return status;
 }
 
 sgx_status_t t_global_exit_ecall(sgx_enclave_id_t eid)
 {
 	sgx_status_t status;
-	status = sgx_ecall(eid, 2, &ocall_table_Enclave, NULL);
+	status = sgx_ecall(eid, 3, &ocall_table_Enclave, NULL);
 	return status;
 }
 

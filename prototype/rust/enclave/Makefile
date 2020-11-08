@@ -28,5 +28,5 @@ endif
 all: $(Rust_Enclave_Name)
 
 $(Rust_Enclave_Name): $(Rust_Enclave_Files)
-	cargo build --release
-	cp ./target/release/libhelloworldsampleenclave.a ../lib/libenclave.a
+	cargo build
+	cp ../target/debug/libdcnetenclave.a ../lib/libenclave.a

@@ -24,6 +24,9 @@ use sgx_urts::SgxEnclave;
 extern crate interface;
 extern crate serde_json;
 
+mod enclave_tests;
+mod utils;
+
 static ENCLAVE_FILE: &'static str = "enclave.signed.so";
 
 extern {
@@ -46,17 +49,17 @@ fn init_enclave() -> SgxResult<SgxEnclave> {
 }
 
 fn main() {
-    let send_request = interface::SendRequest {
-        message: interface::Message {
-            msg: [9 as u8; interface::DC_NET_MESSAGE_LENGTH]
-        },
-        round: 0,
-        server_keys: vec![interface::ServerKey::zero()],
-    };
-
-    println!("a send_request am {:?}", send_request);
-    let json: String = serde_json::to_string(&send_request).unwrap();
-    println!("Serialized json = {}", json);
+    // let send_request = interface::SendRequest {
+    //     message: interface::Message {
+    //         msg: [9 as u8; interface::DC_NET_MESSAGE_LENGTH]
+    //     },
+    //     round: 0,
+    //     server_keys: vec![interface::ServerKey::zero()],
+    // };
+    //
+    // println!("a send_request am {:?}", send_request);
+    // let json: String = serde_json::to_string(&send_request).unwrap();
+    // println!("Serialized json = {}", json);
 
     let enclave = match init_enclave() {
         Ok(r) => {
@@ -69,22 +72,6 @@ fn main() {
         }
     };
 
-    let input_string = String::from("This is a normal world string passed into Enclave!\n");
-    let mut retval = sgx_status_t::SGX_SUCCESS;
-
-    let result = unsafe {
-        say_something(enclave.geteid(),
-                      &mut retval,
-                      input_string.as_ptr() as *const u8,
-                      input_string.len())
-    };
-    match result {
-        sgx_status_t::SGX_SUCCESS => {}
-        _ => {
-            println!("[-] ECALL Enclave Failed {}!", result.as_str());
-            return;
-        }
-    }
-    println!("[+] say_something success...");
+    enclave_tests::test(&enclave);
     enclave.destroy();
 }

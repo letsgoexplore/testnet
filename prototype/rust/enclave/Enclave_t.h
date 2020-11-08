@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include "sgx_edger8r.h" /* for sgx_ocall etc. */
 
+#include "sgx_tcrypto.h"
 #include "time.h"
 #include "inc/stat.h"
 #include "sys/uio.h"
@@ -20,7 +21,8 @@
 extern "C" {
 #endif
 
-sgx_status_t say_something(const uint8_t* some_string, size_t len);
+sgx_status_t test_main_entrance(void);
+sgx_status_t client_submit(uint8_t* plaintext, uint32_t plaintext_size, uint32_t round, uint8_t* secrets, uint32_t secrets_size, uint8_t* identity, uint32_t identity_size, uint8_t* output, uint32_t output_size);
 void t_global_init_ecall(uint64_t id, const uint8_t* path, size_t len);
 void t_global_exit_ecall(void);
 
