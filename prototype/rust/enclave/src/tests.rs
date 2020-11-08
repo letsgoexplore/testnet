@@ -1,10 +1,11 @@
 extern crate hex;
 
 use crypto;
+use error::CryptoError;
 
 use crate::interface::*;
-use crate::sgx_types;
 use crate::sgx_tunittest::*;
+use crate::sgx_types;
 use crate::std::prelude::v1::*;
 
 use sgx_types::sgx_status_t;
@@ -13,24 +14,25 @@ pub fn test_all() -> sgx_status_t {
     // rsgx_unit_tests!(test_agg_msg);
     // rsgx_unit_tests!(scheduler_tests);
     // rsgx_unit_tests!(test_dc_msg);
-    rsgx_unit_tests!(kdf);
-    rsgx_unit_tests!(xor);
+    // rsgx_unit_tests!(kdf);
+    // rsgx_unit_tests!(xor);
+    rsgx_unit_tests!(sign);
     sgx_status_t::SGX_SUCCESS
 }
 
 fn xor() {
-    let a: Vec<u8> = vec![1,2,3];
+    let a: Vec<u8> = vec![1, 2, 3];
 
-    assert_eq!(a, crypto::xor(&a, &vec![0,0,0]).unwrap().to_vec());
+    assert_eq!(a, crypto::xor(&a, &vec![0, 0, 0]).unwrap().to_vec());
 
-    let b: Vec<u8> = vec![5,6,7];
-    let c: Vec<u8> = vec![1 ^ 5,2 ^ 6,3 ^ 7];
+    let b: Vec<u8> = vec![5, 6, 7];
+    let c: Vec<u8> = vec![1 ^ 5, 2 ^ 6, 3 ^ 7];
 
     let d = crypto::xor(&a, &b).unwrap().into_vec();
 
     assert_eq!(c, d);
 
-    let b = vec![4,5];
+    let b = vec![4, 5];
     assert!(crypto::xor(&a, &b).is_err());
 }
 
@@ -41,7 +43,38 @@ pub fn kdf() {
     let refs = [r0, r1];
     for round in 0..1 {
         let round_secret = crypto::kdf_hmac(&server_secret, round).unwrap();
-        assert_eq!(round_secret.secret.to_vec(), hex::decode(refs[round as usize]).unwrap());
+        assert_eq!(
+            round_secret.secret.to_vec(),
+            hex::decode(refs[round as usize]).unwrap()
+        );
     }
+}
 
+fn test_keypair() -> crypto::CryptoResult<KeyPair> {
+    let handle = sgx_tcrypto::SgxEccHandle::new();
+    handle.open().unwrap();
+    match handle.create_key_pair() {
+        Ok(pair) => Ok(KeyPair {
+            prv_key: PrvKey::from(pair.0),
+            pub_key: PubKey::from(pair.1),
+        }),
+        Err(e) => Err(CryptoError::SgxCryptoError(e)),
+    }
+}
+
+pub fn sign() {
+    let keypair = test_keypair().unwrap();
+
+    let mutable = SignedUserMessage {
+        round: 100,
+        message: test_raw_msg(),
+        tee_sig: Default::default(),
+        tee_pk: Default::default(),
+    };
+
+    let signed = crypto::sign_dc_message(&mutable, keypair.prv_key).unwrap();
+
+    println!("sig {:?}", signed.tee_sig);
+
+    assert!(crypto::verify_dc_message(&signed).unwrap());
 }

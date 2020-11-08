@@ -17,5 +17,5 @@ sgx_trts = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.g
 sgx_tcrypto = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_tunittest = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 interface = { path = "../interface", default-features = false, features = ["trusted"] }
-hex = {git = "https://github.com/mesalock-linux/rust-hex-sgx"}
-quick-error = {git = "https://github.com/mesalock-linux/quick-error-sgx"}
+hex = { git = "https://github.com/mesalock-linux/rust-hex-sgx" }
+quick-error = { git = "https://github.com/mesalock-linux/quick-error-sgx" }

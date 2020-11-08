@@ -22,20 +22,20 @@ extern crate sgx_types;
 extern crate sgx_tstd as std;
 #[macro_use]
 extern crate sgx_tunittest;
-extern crate sgx_tcrypto;
 extern crate interface;
+extern crate sgx_tcrypto;
 
 #[macro_use]
 extern crate quick_error;
 
-use std::prelude::v1::*;
 use sgx_tunittest::*;
 use sgx_types::*;
+use std::prelude::v1::*;
 
-mod submit;
 mod crypto;
-mod tests;
 mod error;
+mod submit;
+mod tests;
 
 #[no_mangle]
 pub extern "C" fn test_main_entrance() -> sgx_status_t {

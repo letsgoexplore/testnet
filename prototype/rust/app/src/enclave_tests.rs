@@ -3,13 +3,13 @@ extern crate sgx_urts;
 
 use sgx_types::*;
 
-use sgx_urts::SgxEnclave;
 use sgx_status_t::SGX_SUCCESS;
+use sgx_urts::SgxEnclave;
 use std::io::Result;
 
 use utils::sgx_error;
 
-extern {
+extern "C" {
     fn test_main_entrance(eid: sgx_enclave_id_t, retval: *mut sgx_status_t) -> sgx_status_t;
 }
 

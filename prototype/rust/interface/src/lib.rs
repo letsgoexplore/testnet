@@ -24,12 +24,12 @@ use std::prelude::v1::*;
 
 big_array! { BigArray; }
 
-mod key;
-mod params;
-mod message;
 mod footprint_sched;
+mod key;
+mod message;
+mod params;
 
-pub use key::*;
-pub use params::*;
-pub use message::*;
 pub use footprint_sched::*;
+pub use key::*;
+pub use message::*;
+pub use params::*;

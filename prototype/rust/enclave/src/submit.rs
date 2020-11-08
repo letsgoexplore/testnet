@@ -4,18 +4,19 @@ use sgx_status_t;
 
 extern crate interface;
 
-use std::prelude::v1::*;
 use self::interface::*;
+use std::prelude::v1::*;
 
 use sgx_types::*;
 
 use crypto;
-use error::{DcNetError};
+use error::DcNetError;
 
 // the safe version
-fn submit(request: SendRequest,
-          tee_sk: PrvKey,  // TODO: this should be sealed/unsealed
-          ) -> Result<SignedUserMessage, DcNetError>{
+fn submit(
+    request: SendRequest,
+    tee_sk: PrvKey, // TODO: this should be sealed/unsealed
+) -> Result<SignedUserMessage, DcNetError> {
     // 1. compute the round secret
     match crypto::derive_round_secret(request.round, &request.server_keys) {
         Ok(round_secret) => {
@@ -25,18 +26,19 @@ fn submit(request: SendRequest,
                 round: request.round,
                 message: request.message,
                 tee_sig: Default::default(),
-                tee_pk: Default::default()
+                tee_pk: Default::default(),
             };
 
             return match crypto::sign_dc_message(&mutable, tee_sk) {
                 Ok(signed) => Ok(signed),
                 Err(e) => return Err(DcNetError::Crypto(e)),
             };
-        },
-        Err(e) => {return Err(DcNetError::Crypto(e)); }
+        }
+        Err(e) => {
+            return Err(DcNetError::Crypto(e));
+        }
     }
 }
-
 
 // Client: Send plaintext in the round specified
 // A round of dc-nets is run i.e., shared secrets are xored with the plaintext to compute client's
@@ -44,12 +46,20 @@ fn submit(request: SendRequest,
 // scheduling_data: Data that needs to be persisted between rounds
 // raw_schedule_tokens: Schedule token data for the current round
 #[no_mangle]
-pub extern "C" fn client_submit(plaintext: u8, round: u32,
-                                sealed_state: *mut u8, sealed_state_size: u32,
-                                sealed_identity: *mut u8, sealed_identity_size: u32,
-                                scheduling_data: *mut u8, scheduling_data_size: u32,
-                                raw_schedule_tokens: *mut u8, raw_schedule_tokens_size: u32,
-                                output: *mut u8, output_size: u32) -> sgx_status_t {
+pub extern "C" fn client_submit(
+    plaintext: u8,
+    round: u32,
+    sealed_state: *mut u8,
+    sealed_state_size: u32,
+    sealed_identity: *mut u8,
+    sealed_identity_size: u32,
+    scheduling_data: *mut u8,
+    scheduling_data_size: u32,
+    raw_schedule_tokens: *mut u8,
+    raw_schedule_tokens_size: u32,
+    output: *mut u8,
+    output_size: u32,
+) -> sgx_status_t {
     unimplemented!()
     // let mut start = Instant::now();
     // let mut round_share = match dc_round(&[], sealed_state, sealed_state_size, true) {
