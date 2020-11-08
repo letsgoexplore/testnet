@@ -9,7 +9,7 @@ use sgx_types::{
 
 // A wrapper around sgx_ec256_public_t
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct PubKey {
     pub gx: [u8; SGX_ECP256_KEY_SIZE],
     pub gy: [u8; SGX_ECP256_KEY_SIZE],

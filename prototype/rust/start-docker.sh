@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euf pipofail
+set -euo pipefail
 
 CONTAINER_NAME=dcnet-new
 DOCKER_IMAGE=baiduxlab/sgx-rust:1804-1.1.3
