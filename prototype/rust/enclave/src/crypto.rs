@@ -36,6 +36,7 @@ impl RoundSecret {
     }
 }
 
+// TODO: This is a very simplistic KDF. We should use a proper one like HKDF in the final version.
 pub fn kdf_hmac(secret: &ServerSecret, round: u32) -> CryptoResult<RoundSecret> {
     let key_len = secret.secret.len();
     let chunk_size = SGX_HMAC256_MAC_SIZE;
@@ -44,7 +45,7 @@ pub fn kdf_hmac(secret: &ServerSecret, round: u32) -> CryptoResult<RoundSecret> 
 
     let num_chunks = (key_len + chunk_size - 1) / chunk_size;
     for i in 0..num_chunks {
-        // input to KDF
+        // input to PRF: round || counter
         let counter = [round, i as u32];
         let buf = sgx_tcrypto::rsgx_hmac_sha256_slice(&secret.secret, &counter)?;
         result.extend_from_slice(&buf);
