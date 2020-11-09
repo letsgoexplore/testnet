@@ -2,10 +2,8 @@ use crate::sgx_types::{SGX_HMAC256_KEY_SIZE, SGX_HMAC256_MAC_SIZE};
 use crate::std::prelude::v1::*;
 use interface::*;
 
-use sgx_types::sgx_status_t;
-use sgx_types::SgxResult;
-
 use error::*;
+use std::convert::TryInto;
 
 pub fn xor(a: &[u8], b: &[u8]) -> CryptoResult<Box<[u8]>> {
     if a.len() != b.len() {
@@ -39,24 +37,20 @@ impl RoundSecret {
 }
 
 pub fn kdf_hmac(secret: &ServerSecret, round: u32) -> CryptoResult<RoundSecret> {
-    if secret.secret.len() != SGX_HMAC256_KEY_SIZE {
-        return Err(CryptoError::KeyError);
-    }
+    let key_len = secret.secret.len();
+    let chunk_size = SGX_HMAC256_MAC_SIZE;
 
-    let mut result = Vec::with_capacity(DC_NET_MESSAGE_LENGTH);
+    let mut result = Vec::with_capacity(key_len);
 
-    let num_chunks = (DC_NET_MESSAGE_LENGTH + SGX_HMAC256_MAC_SIZE - 1) / SGX_HMAC256_MAC_SIZE;
+    let num_chunks = (key_len + chunk_size - 1) / chunk_size;
     for i in 0..num_chunks {
+        // input to KDF
         let counter = [round, i as u32];
-
-        match sgx_tcrypto::rsgx_hmac_sha256_slice(&secret.secret, &counter) {
-            Err(x) => return Err(CryptoError::SgxCryptoError(x)),
-            Ok(buf) => result.extend_from_slice(&buf),
-        }
+        let buf = sgx_tcrypto::rsgx_hmac_sha256_slice(&secret.secret, &counter)?;
+        result.extend_from_slice(&buf);
     }
 
     let mut output: RoundSecret = RoundSecret::zero();
-
     for i in 0..output.secret.len() {
         output.secret[i] = result[i];
     }
@@ -92,30 +86,16 @@ pub fn sign_dc_message(
 
     let sha256 = sgx_tcrypto::SgxShaHandle::new();
 
-    sha256
-        .init()
-        .or_else(|e| return Err(CryptoError::SgxCryptoError(e)));
-    sha256
-        .update_msg(&msg.round)
-        .or_else(|e| return Err(CryptoError::SgxCryptoError(e)));
-    sha256
-        .update_slice(&msg.message)
-        .or_else(|e| return Err(CryptoError::SgxCryptoError(e)));
+    sha256.init()?;
+    sha256.update_msg(&msg.round)?;
+    sha256.update_slice(&msg.message)?;
 
-    let msg_hash = match sha256.get_hash() {
-        Ok(h) => h,
-        Err(e) => return Err(CryptoError::SgxCryptoError(e)),
-    };
+    let msg_hash = sha256.get_hash()?;
 
     let ecdsa_handler = sgx_tcrypto::SgxEccHandle::new();
-    ecdsa_handler
-        .open()
-        .or_else(|e| return Err(CryptoError::SgxCryptoError(e)));
+    ecdsa_handler.open()?;
 
-    let sig = match ecdsa_handler.ecdsa_sign_slice(&msg_hash, &tee_prv_key.into()) {
-        Ok(sig) => sig,
-        Err(e) => return Err(CryptoError::SgxCryptoError(e)),
-    };
+    let sig = ecdsa_handler.ecdsa_sign_slice(&msg_hash, &tee_prv_key.into())?;
 
     return Ok(SignedUserMessage {
         round: msg.round,
@@ -127,26 +107,17 @@ pub fn sign_dc_message(
 
 pub fn verify_dc_message(msg: &SignedUserMessage) -> CryptoResult<bool> {
     let sha256 = sgx_tcrypto::SgxShaHandle::new();
-    sha256
-        .init()
-        .or_else(|e| return Err(CryptoError::SgxCryptoError(e)));
-    sha256
-        .update_msg(&msg.round)
-        .or_else(|e| return Err(CryptoError::SgxCryptoError(e)));
-    sha256
-        .update_slice(&msg.message)
-        .or_else(|e| return Err(CryptoError::SgxCryptoError(e)));
+    sha256.init()?;
 
-    let msg_hash = match sha256.get_hash() {
-        Ok(h) => h,
-        Err(e) => return Err(CryptoError::SgxCryptoError(e)),
-    };
+    sha256.update_msg(&msg.round)?;
+    sha256.update_slice(&msg.message)?;
+
+    let msg_hash = sha256.get_hash()?;
 
     let ecdsa_handler = sgx_tcrypto::SgxEccHandle::new();
-    ecdsa_handler.open();
+    ecdsa_handler.open()?;
 
-    match ecdsa_handler.ecdsa_verify_slice(&msg_hash, &msg.tee_pk.into(), &msg.tee_sig.into()) {
-        Ok(verified) => Ok(verified),
-        Err(e) => Err(CryptoError::SgxCryptoError(e)),
-    }
+    return ecdsa_handler
+        .ecdsa_verify_slice(&msg_hash, &msg.tee_pk.into(), &msg.tee_sig.into())
+        .map_err(CryptoError::from);
 }

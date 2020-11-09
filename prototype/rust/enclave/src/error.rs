@@ -1,5 +1,3 @@
-use quick_error;
-
 use sgx_types::sgx_status_t;
 
 quick_error! {
@@ -7,9 +5,11 @@ quick_error! {
     pub enum CryptoError {
         XorNotEqualLength
         KeyError
-        SgxCryptoError(descr: sgx_status_t) {
-            description(descr.as_str())
-            display("Error {}", descr)
+        SgxCryptoError(err: sgx_status_t) {
+            description(err.as_str())
+            display("Error {}", err)
+            from()
+            cause(err)
         }
         Other
     }

@@ -1,7 +1,5 @@
 extern crate sgx_types;
 
-use crate::params::*;
-
 use sgx_types::{
     sgx_ec256_private_t, sgx_ec256_public_t, sgx_ec256_signature_t, SGX_ECP256_KEY_SIZE,
     SGX_HMAC256_KEY_SIZE, SGX_NISTP_ECP256_KEY_SIZE,

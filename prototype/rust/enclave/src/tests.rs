@@ -15,7 +15,7 @@ pub fn test_all() -> sgx_status_t {
     // rsgx_unit_tests!(scheduler_tests);
     // rsgx_unit_tests!(test_dc_msg);
     // rsgx_unit_tests!(kdf);
-    // rsgx_unit_tests!(xor);
+    rsgx_unit_tests!(xor);
     rsgx_unit_tests!(sign);
     sgx_status_t::SGX_SUCCESS
 }

@@ -28,9 +28,7 @@ extern crate sgx_tcrypto;
 #[macro_use]
 extern crate quick_error;
 
-use sgx_tunittest::*;
 use sgx_types::*;
-use std::prelude::v1::*;
 
 mod crypto;
 mod error;
