@@ -1,5 +1,6 @@
 #![no_std]
 
+extern crate cfg_if;
 use cfg_if::cfg_if;
 
 cfg_if! {
@@ -15,6 +16,8 @@ cfg_if! {
         #[macro_use]
         extern crate serde_big_array_sgx;
         extern crate sgx_tstd as std;
+        extern crate sha2;
+        extern crate byteorder;
     } else {
         compile_error!{"must be either trusted or untrusted"}
     }

@@ -25,52 +25,16 @@ extern crate interface;
 extern crate serde_json;
 
 mod enclave_tests;
+mod enclave_wrapper;
 mod utils;
 
-static ENCLAVE_FILE: &'static str = "enclave.signed.so";
+use enclave_wrapper::*;
+use interface::*;
 
-extern "C" {
-    fn say_something(
-        eid: sgx_enclave_id_t,
-        retval: *mut sgx_status_t,
-        some_string: *const u8,
-        len: usize,
-    ) -> sgx_status_t;
-}
-
-fn init_enclave() -> SgxResult<SgxEnclave> {
-    let mut launch_token: sgx_launch_token_t = [0; 1024];
-    let mut launch_token_updated: i32 = 0;
-    // call sgx_create_enclave to initialize an enclave instance
-    // Debug Support: set 2nd parameter to 1
-    let debug = 1;
-    let mut misc_attr = sgx_misc_attribute_t {
-        secs_attr: sgx_attributes_t { flags: 0, xfrm: 0 },
-        misc_select: 0,
-    };
-    SgxEnclave::create(
-        ENCLAVE_FILE,
-        debug,
-        &mut launch_token,
-        &mut launch_token_updated,
-        &mut misc_attr,
-    )
-}
+use sgx_status_t::SGX_SUCCESS;
 
 fn main() {
-    // let send_request = interface::SendRequest {
-    //     message: interface::Message {
-    //         msg: [9 as u8; interface::DC_NET_MESSAGE_LENGTH]
-    //     },
-    //     round: 0,
-    //     server_keys: vec![interface::ServerKey::zero()],
-    // };
-    //
-    // println!("a send_request am {:?}", send_request);
-    // let json: String = serde_json::to_string(&send_request).unwrap();
-    // println!("Serialized json = {}", json);
-
-    let enclave = match init_enclave() {
+    let dc_enclave = match DcNetEnclave::init() {
         Ok(r) => {
             println!("[+] Init Enclave Successful {}!", r.geteid());
             r
@@ -81,6 +45,20 @@ fn main() {
         }
     };
 
-    enclave_tests::test(&enclave);
-    enclave.destroy();
+    // enclave_tests::test(&enclave);
+
+    let send_request = SendRequest {
+        message: [9 as u8; DC_NET_MESSAGE_LENGTH],
+        round: 0,
+        server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
+    };
+
+    let sgx_key = PrvKey::gen_test(9);
+
+    match dc_enclave.client_submit(&send_request, &sgx_key) {
+        Ok(m) => println!("{:?}", m),
+        Err(e) => println!("Err {}", e),
+    }
+
+    dc_enclave.close();
 }

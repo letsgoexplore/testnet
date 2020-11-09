@@ -7,15 +7,13 @@ typedef struct ms_test_main_entrance_t {
 
 typedef struct ms_client_submit_t {
 	sgx_status_t ms_retval;
-	uint8_t* ms_plaintext;
-	uint32_t ms_plaintext_size;
-	uint32_t ms_round;
-	uint8_t* ms_secrets;
+	const uint8_t* ms_send_request;
+	uint32_t ms_send_request_size;
+	const uint8_t* ms_secrets;
 	uint32_t ms_secrets_size;
-	uint8_t* ms_identity;
-	uint32_t ms_identity_size;
 	uint8_t* ms_output;
 	uint32_t ms_output_size;
+	uint32_t* ms_bytewritten;
 } ms_client_submit_t;
 
 typedef struct ms_t_global_init_ecall_t {
@@ -1007,19 +1005,17 @@ sgx_status_t test_main_entrance(sgx_enclave_id_t eid, sgx_status_t* retval)
 	return status;
 }
 
-sgx_status_t client_submit(sgx_enclave_id_t eid, sgx_status_t* retval, uint8_t* plaintext, uint32_t plaintext_size, uint32_t round, uint8_t* secrets, uint32_t secrets_size, uint8_t* identity, uint32_t identity_size, uint8_t* output, uint32_t output_size)
+sgx_status_t client_submit(sgx_enclave_id_t eid, sgx_status_t* retval, const uint8_t* send_request, uint32_t send_request_size, const uint8_t* secrets, uint32_t secrets_size, uint8_t* output, uint32_t output_size, uint32_t* bytewritten)
 {
 	sgx_status_t status;
 	ms_client_submit_t ms;
-	ms.ms_plaintext = plaintext;
-	ms.ms_plaintext_size = plaintext_size;
-	ms.ms_round = round;
+	ms.ms_send_request = send_request;
+	ms.ms_send_request_size = send_request_size;
 	ms.ms_secrets = secrets;
 	ms.ms_secrets_size = secrets_size;
-	ms.ms_identity = identity;
-	ms.ms_identity_size = identity_size;
 	ms.ms_output = output;
 	ms.ms_output_size = output_size;
+	ms.ms_bytewritten = bytewritten;
 	status = sgx_ecall(eid, 1, &ocall_table_Enclave, &ms);
 	if (status == SGX_SUCCESS && retval) *retval = ms.ms_retval;
 	return status;

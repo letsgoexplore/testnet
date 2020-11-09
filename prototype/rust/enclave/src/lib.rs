@@ -28,6 +28,15 @@ extern crate sgx_tcrypto;
 #[macro_use]
 extern crate quick_error;
 
+extern crate byteorder;
+extern crate hex;
+extern crate hkdf;
+extern crate sha2;
+
+#[macro_use]
+extern crate serde;
+extern crate serde_json;
+
 use sgx_types::*;
 
 mod crypto;

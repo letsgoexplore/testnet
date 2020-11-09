@@ -38,6 +38,14 @@ pub struct PrvKey {
     pub r: [u8; SGX_ECP256_KEY_SIZE],
 }
 
+impl PrvKey {
+    pub fn gen_test(byte: u8) -> Self {
+        return Self {
+            r: [byte; SGX_ECP256_KEY_SIZE],
+        };
+    }
+}
+
 impl From<sgx_ec256_private_t> for PrvKey {
     fn from(sgx_prv_key: sgx_ec256_private_t) -> Self {
         return Self { r: sgx_prv_key.r };
@@ -45,6 +53,12 @@ impl From<sgx_ec256_private_t> for PrvKey {
 }
 
 impl Into<sgx_ec256_private_t> for PrvKey {
+    fn into(self) -> sgx_ec256_private_t {
+        return sgx_ec256_private_t { r: self.r };
+    }
+}
+
+impl Into<sgx_ec256_private_t> for &PrvKey {
     fn into(self) -> sgx_ec256_private_t {
         return sgx_ec256_private_t { r: self.r };
     }
@@ -87,4 +101,12 @@ pub struct ServerSecret {
                                             // TODO: add server public key & signature
                                             // pubkey: PubKey,
                                             // sig: Signature,
+}
+
+impl ServerSecret {
+    pub fn gen_test(byte: u8) -> Self {
+        return ServerSecret {
+            secret: [byte; SGX_HMAC256_KEY_SIZE],
+        };
+    }
 }

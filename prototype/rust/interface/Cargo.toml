@@ -7,16 +7,21 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cfg-if = "1.0"
+
+# untrusted
 serde = { version = "1.0", features = ["derive"], optional = true }
 serde-big-array = { version = "0.3.0", optional = true }
 sgx_types = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 
+# trusted
 serde_sgx = { package = "serde", git = "https://github.com/mesalock-linux/serde-sgx", features = ["derive"], optional = true }
 serde-big-array_sgx = { package = "serde-big-array", git = "https://github.com/mesalock-linux/serde-big-array-sgx", optional = true }
 sgx_tstd = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
-cfg-if = "1.0"
+sha2 = {git = "https://github.com/mesalock-linux/rustcrypto-hashes-sgx", optional = true}
+byteorder = {git = "https://github.com/mesalock-linux/byteorder-sgx", optional = true}
 
 [features]
 default = ["untrusted"]
 untrusted = ["serde", "serde-big-array"]
-trusted = ["serde_sgx", "serde-big-array_sgx", "sgx_tstd"]
+trusted = ["serde_sgx", "serde-big-array_sgx", "sgx_tstd", "sha2", "byteorder"]

@@ -33,15 +33,13 @@ typedef struct ms_test_main_entrance_t {
 
 typedef struct ms_client_submit_t {
 	sgx_status_t ms_retval;
-	uint8_t* ms_plaintext;
-	uint32_t ms_plaintext_size;
-	uint32_t ms_round;
-	uint8_t* ms_secrets;
+	const uint8_t* ms_send_request;
+	uint32_t ms_send_request_size;
+	const uint8_t* ms_secrets;
 	uint32_t ms_secrets_size;
-	uint8_t* ms_identity;
-	uint32_t ms_identity_size;
 	uint8_t* ms_output;
 	uint32_t ms_output_size;
+	uint32_t* ms_bytewritten;
 } ms_client_submit_t;
 
 typedef struct ms_t_global_init_ecall_t {
@@ -503,46 +501,45 @@ static sgx_status_t SGX_CDECL sgx_client_submit(void* pms)
 	sgx_lfence();
 	ms_client_submit_t* ms = SGX_CAST(ms_client_submit_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
-	uint8_t* _tmp_plaintext = ms->ms_plaintext;
-	uint32_t _tmp_plaintext_size = ms->ms_plaintext_size;
-	size_t _len_plaintext = _tmp_plaintext_size;
-	uint8_t* _in_plaintext = NULL;
-	uint8_t* _tmp_secrets = ms->ms_secrets;
+	const uint8_t* _tmp_send_request = ms->ms_send_request;
+	uint32_t _tmp_send_request_size = ms->ms_send_request_size;
+	size_t _len_send_request = _tmp_send_request_size;
+	uint8_t* _in_send_request = NULL;
+	const uint8_t* _tmp_secrets = ms->ms_secrets;
 	uint32_t _tmp_secrets_size = ms->ms_secrets_size;
 	size_t _len_secrets = _tmp_secrets_size;
 	uint8_t* _in_secrets = NULL;
-	uint8_t* _tmp_identity = ms->ms_identity;
-	uint32_t _tmp_identity_size = ms->ms_identity_size;
-	size_t _len_identity = _tmp_identity_size;
-	uint8_t* _in_identity = NULL;
 	uint8_t* _tmp_output = ms->ms_output;
 	uint32_t _tmp_output_size = ms->ms_output_size;
 	size_t _len_output = _tmp_output_size;
 	uint8_t* _in_output = NULL;
+	uint32_t* _tmp_bytewritten = ms->ms_bytewritten;
+	size_t _len_bytewritten = sizeof(uint32_t);
+	uint32_t* _in_bytewritten = NULL;
 
-	CHECK_UNIQUE_POINTER(_tmp_plaintext, _len_plaintext);
+	CHECK_UNIQUE_POINTER(_tmp_send_request, _len_send_request);
 	CHECK_UNIQUE_POINTER(_tmp_secrets, _len_secrets);
-	CHECK_UNIQUE_POINTER(_tmp_identity, _len_identity);
 	CHECK_UNIQUE_POINTER(_tmp_output, _len_output);
+	CHECK_UNIQUE_POINTER(_tmp_bytewritten, _len_bytewritten);
 
 	//
 	// fence after pointer checks
 	//
 	sgx_lfence();
 
-	if (_tmp_plaintext != NULL && _len_plaintext != 0) {
-		if ( _len_plaintext % sizeof(*_tmp_plaintext) != 0)
+	if (_tmp_send_request != NULL && _len_send_request != 0) {
+		if ( _len_send_request % sizeof(*_tmp_send_request) != 0)
 		{
 			status = SGX_ERROR_INVALID_PARAMETER;
 			goto err;
 		}
-		_in_plaintext = (uint8_t*)malloc(_len_plaintext);
-		if (_in_plaintext == NULL) {
+		_in_send_request = (uint8_t*)malloc(_len_send_request);
+		if (_in_send_request == NULL) {
 			status = SGX_ERROR_OUT_OF_MEMORY;
 			goto err;
 		}
 
-		if (memcpy_s(_in_plaintext, _len_plaintext, _tmp_plaintext, _len_plaintext)) {
+		if (memcpy_s(_in_send_request, _len_send_request, _tmp_send_request, _len_send_request)) {
 			status = SGX_ERROR_UNEXPECTED;
 			goto err;
 		}
@@ -566,24 +563,6 @@ static sgx_status_t SGX_CDECL sgx_client_submit(void* pms)
 		}
 
 	}
-	if (_tmp_identity != NULL && _len_identity != 0) {
-		if ( _len_identity % sizeof(*_tmp_identity) != 0)
-		{
-			status = SGX_ERROR_INVALID_PARAMETER;
-			goto err;
-		}
-		_in_identity = (uint8_t*)malloc(_len_identity);
-		if (_in_identity == NULL) {
-			status = SGX_ERROR_OUT_OF_MEMORY;
-			goto err;
-		}
-
-		if (memcpy_s(_in_identity, _len_identity, _tmp_identity, _len_identity)) {
-			status = SGX_ERROR_UNEXPECTED;
-			goto err;
-		}
-
-	}
 	if (_tmp_output != NULL && _len_output != 0) {
 		if ( _len_output % sizeof(*_tmp_output) != 0)
 		{
@@ -597,26 +576,39 @@ static sgx_status_t SGX_CDECL sgx_client_submit(void* pms)
 
 		memset((void*)_in_output, 0, _len_output);
 	}
-
-	ms->ms_retval = client_submit(_in_plaintext, _tmp_plaintext_size, ms->ms_round, _in_secrets, _tmp_secrets_size, _in_identity, _tmp_identity_size, _in_output, _tmp_output_size);
-	if (_in_secrets) {
-		if (memcpy_s(_tmp_secrets, _len_secrets, _in_secrets, _len_secrets)) {
-			status = SGX_ERROR_UNEXPECTED;
+	if (_tmp_bytewritten != NULL && _len_bytewritten != 0) {
+		if ( _len_bytewritten % sizeof(*_tmp_bytewritten) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
 			goto err;
 		}
+		if ((_in_bytewritten = (uint32_t*)malloc(_len_bytewritten)) == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		memset((void*)_in_bytewritten, 0, _len_bytewritten);
 	}
+
+	ms->ms_retval = client_submit((const uint8_t*)_in_send_request, _tmp_send_request_size, (const uint8_t*)_in_secrets, _tmp_secrets_size, _in_output, _tmp_output_size, _in_bytewritten);
 	if (_in_output) {
 		if (memcpy_s(_tmp_output, _len_output, _in_output, _len_output)) {
 			status = SGX_ERROR_UNEXPECTED;
 			goto err;
 		}
 	}
+	if (_in_bytewritten) {
+		if (memcpy_s(_tmp_bytewritten, _len_bytewritten, _in_bytewritten, _len_bytewritten)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+	}
 
 err:
-	if (_in_plaintext) free(_in_plaintext);
+	if (_in_send_request) free(_in_send_request);
 	if (_in_secrets) free(_in_secrets);
-	if (_in_identity) free(_in_identity);
 	if (_in_output) free(_in_output);
+	if (_in_bytewritten) free(_in_bytewritten);
 	return status;
 }
 

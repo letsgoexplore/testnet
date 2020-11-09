@@ -264,7 +264,7 @@ int SGX_UBRIDGE(SGX_CDECL, sgx_thread_set_multiple_untrusted_events_ocall, (cons
 #endif
 
 sgx_status_t test_main_entrance(sgx_enclave_id_t eid, sgx_status_t* retval);
-sgx_status_t client_submit(sgx_enclave_id_t eid, sgx_status_t* retval, uint8_t* plaintext, uint32_t plaintext_size, uint32_t round, uint8_t* secrets, uint32_t secrets_size, uint8_t* identity, uint32_t identity_size, uint8_t* output, uint32_t output_size);
+sgx_status_t client_submit(sgx_enclave_id_t eid, sgx_status_t* retval, const uint8_t* send_request, uint32_t send_request_size, const uint8_t* secrets, uint32_t secrets_size, uint8_t* output, uint32_t output_size, uint32_t* bytewritten);
 sgx_status_t t_global_init_ecall(sgx_enclave_id_t eid, uint64_t id, const uint8_t* path, size_t len);
 sgx_status_t t_global_exit_ecall(sgx_enclave_id_t eid);
 
