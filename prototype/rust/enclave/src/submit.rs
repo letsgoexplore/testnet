@@ -77,8 +77,6 @@ pub extern "C" fn client_submit(
         }
     };
 
-    println!("deser request {:?}", send_request);
-
     let tee_prv_key: PrvKey = match serde_json::from_slice(unsafe {
         slice::from_raw_parts(sealed_tee_prv_key, sealed_tee_prv_key_len)
     }) {
@@ -88,8 +86,6 @@ pub extern "C" fn client_submit(
             return SGX_ERROR_INVALID_PARAMETER;
         }
     };
-
-    println!("deser prv key: {:?}", tee_prv_key);
 
     match submit(&send_request, &tee_prv_key) {
         Ok(signed_msg) => {
@@ -118,49 +114,4 @@ pub extern "C" fn client_submit(
             sgx_status_t::SGX_ERROR_UNEXPECTED
         }
     }
-
-    // let mut start = Instant::now();
-    // let mut round_share = match dc_round(&[], sealed_state, sealed_state_size, true) {
-    //     Ok(x) => x,
-    //     Err(x) => return x
-    // };
-    // let identity = match unseal::<IdentityData>(sealed_identity, sealed_identity_size) {
-    //     Ok(x) => x,
-    //     Err(x) => return x
-    // };
-    // let dc_round_duration = Instant::now().duration_since(start);
-    //
-    // start = Instant::now();
-    // // add the client's plaintext
-    // let plaintext = vec![0; SHARE_SIZE];
-    // let slice_build_duration = Instant::now().duration_since(start);
-    //
-    // start = Instant::now();
-    // xor(&mut round_share, plaintext.as_slice());
-    // let xor_duration = Instant::now().duration_since(start);
-    // let dc_msg = DCMessage {
-    //     share: round_share.as_slice(),
-    //     client_id: PubKey {
-    //         gx: identity.pub_key.gx,
-    //         gy: identity.pub_key.gy
-    //     },
-    //     round: round
-    // };
-    // // println!("{:?}", dc_msg);
-    // assert!(output_size == DC_MESSAGE_SIZE + SIGNATURE_SIZE);
-    //
-    // start = Instant::now();
-    // serialize_and_sign::<DCMessage>(&dc_msg,
-    //                                 output,
-    //                                 &identity.prv_key,
-    //                                 DC_MESSAGE_SIZE as usize,
-    //                                 SIGNATURE_SIZE as usize);
-    // let dc_ser_duration = Instant::now().duration_since(start);
-    // println!("Sub-Times(client_submit): {} {} {} {} {}",
-    //          SHARE_SIZE,
-    //          to_ms(slice_build_duration),
-    //          to_ms(xor_duration),
-    //          to_ms(dc_round_duration),
-    //          to_ms(dc_ser_duration));
-    // SGX_SUCCESS
 }

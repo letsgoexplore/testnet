@@ -18,6 +18,8 @@ extern "C" {
         output_size: usize,
         bytes_written: *mut usize,
     ) -> sgx_status_t;
+
+    fn test_main_entrance(eid: sgx_enclave_id_t, retval: *mut sgx_status_t) -> sgx_status_t;
 }
 
 pub struct DcNetEnclave {
@@ -25,11 +27,14 @@ pub struct DcNetEnclave {
 }
 
 use sgx_status_t::SGX_SUCCESS;
+use std::path::PathBuf;
 
 impl DcNetEnclave {
     const ENCLAVE_FILE: &'static str = "enclave.signed.so";
 
-    pub fn init() -> SgxResult<Self> {
+    pub fn init(enclave_path_inp: Option<PathBuf>) -> SgxResult<Self> {
+        let enclave_path = enclave_path_inp.unwrap_or(PathBuf::from(DcNetEnclave::ENCLAVE_FILE));
+
         let mut launch_token: sgx_launch_token_t = [0; 1024];
         let mut launch_token_updated: i32 = 0;
         // call sgx_create_enclave to initialize an enclave instance
@@ -40,8 +45,10 @@ impl DcNetEnclave {
             misc_select: 0,
         };
 
+        println!("{:?}", std::env::current_dir().unwrap());
+
         let enclave = SgxEnclave::create(
-            DcNetEnclave::ENCLAVE_FILE,
+            enclave_path,
             debug,
             &mut launch_token,
             &mut launch_token_updated,
@@ -51,7 +58,7 @@ impl DcNetEnclave {
         Ok(Self { enclave: enclave })
     }
 
-    pub fn close(self) {
+    pub fn destroy(self) {
         self.enclave.destroy();
     }
 
@@ -103,5 +110,65 @@ impl DcNetEnclave {
                 Err(sgx_status_t::SGX_ERROR_UNEXPECTED)
             }
         }
+    }
+
+    pub fn run_enclave_tests(&self) -> SgxError {
+        let mut retval = SGX_SUCCESS;
+        unsafe {
+            test_main_entrance(self.enclave.geteid(), &mut retval);
+        }
+        if retval != SGX_SUCCESS {
+            return Err(retval);
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    const TEST_ENCLAVE_PATH: &'static str = "/root/sgx/bin/enclave.signed.so";
+    use enclave_wrapper::DcNetEnclave;
+    extern crate interface;
+    use interface::*;
+
+    #[test]
+    fn client_submit() {
+        let enclave_path = std::path::PathBuf::from(TEST_ENCLAVE_PATH);
+        let enc = DcNetEnclave::init(Some(enclave_path.to_owned()))
+            .expect(&format!("Make sure the enclave is at {:?}", enclave_path));
+
+        let req_1 = SendRequest {
+            message: [9 as u8; DC_NET_MESSAGE_LENGTH],
+            round: 0,
+            server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
+        };
+
+        let sgx_key = PrvKey::gen_test(9);
+
+        let resp_1 = enc.client_submit(&req_1, &sgx_key).unwrap();
+
+        let req_2 = SendRequest {
+            message: resp_1.message,
+            round: 0,
+            server_keys: req_1.server_keys,
+        };
+
+        let resp_2 = enc.client_submit(&req_2, &sgx_key).unwrap();
+
+        // resp 2 == req 1 because server's are xor twice
+        assert_eq!(resp_2.message, req_1.message);
+
+        enc.destroy();
+    }
+
+    #[test]
+    fn enclave_tests() {
+        let enclave_path = std::path::PathBuf::from(TEST_ENCLAVE_PATH);
+        let enc = DcNetEnclave::init(Some(enclave_path.to_owned()))
+            .expect(&format!("Make sure the enclave is at {:?}", enclave_path));
+
+        enc.run_enclave_tests().unwrap();
+
+        enc.destroy()
     }
 }

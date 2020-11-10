@@ -24,7 +24,7 @@ use sgx_urts::SgxEnclave;
 extern crate interface;
 extern crate serde_json;
 
-mod enclave_tests;
+mod client;
 mod enclave_wrapper;
 mod utils;
 
@@ -34,7 +34,7 @@ use interface::*;
 use sgx_status_t::SGX_SUCCESS;
 
 fn main() {
-    let dc_enclave = match DcNetEnclave::init() {
+    let dc_enclave = match DcNetEnclave::init(None) {
         Ok(r) => {
             println!("[+] Init Enclave Successful {}!", r.geteid());
             r
@@ -44,8 +44,6 @@ fn main() {
             return;
         }
     };
-
-    // enclave_tests::test(&enclave);
 
     let send_request = SendRequest {
         message: [9 as u8; DC_NET_MESSAGE_LENGTH],
@@ -60,5 +58,5 @@ fn main() {
         Err(e) => println!("Err {}", e),
     }
 
-    dc_enclave.close();
+    dc_enclave.destroy();
 }
