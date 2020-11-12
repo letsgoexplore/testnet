@@ -1,26 +1,21 @@
 enclave {
-    include "sgx_report.h"
-    include "../common/interface_structs.h"
+    from "sgx_tstd.edl" import *;
+    from "sgx_stdio.edl" import *;
+    from "sgx_backtrace.edl" import *;
+    from "sgx_tstdc.edl" import *;
+    from "sgx_time.edl" import *;
+
+    include "sgx_tcrypto.h"
 
     trusted {
-        public int ecall_create_report ([in] sgx_target_info_t* quote_enc_info, [out] sgx_report_t* report);
-        public int ecall_get_mr_enclave([out] unsigned char mr_enclave[32]);
-
-        public void TestScheduling();
-        public void test_all();
-        public int ecall_scheduling(
-            [user_check]const SchedulingMessage_C* _prev_msg,
-            [user_check]SchedulingState_C* _state,
-            [user_check]SchedulingMessage_C* _new_msg);
-        public int ecall_aggregate(
-            [user_check]const SignedUserMessage_C* _message,
-            [user_check]const AggregatedMessage_C* _cur_agg,
-            [user_check]AggregatedMessage_C* _new_agg);
-    };
-
-    untrusted {
-        void ocall_logging(int level, [in,string] const char* file, int line, [in,string] const char* msg);
-        // printf
-        int ocall_print_string([in, string] const char *str);
+      public sgx_status_t test_main_entrance();
+      public sgx_status_t client_submit(
+                        [in, size=send_request_size] const uint8_t* send_request,
+					    uint32_t send_request_size,
+      					[in, size=secrets_size] const uint8_t* secrets,
+      					uint32_t secrets_size,
+      					[out, size=output_size] uint8_t* output,
+					    uint32_t output_size,
+					    [out] uint32_t *bytewritten);
     };
 };

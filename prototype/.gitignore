@@ -33,3 +33,6 @@ cmake-build-*
 .idea
 venv
 __pycache__
+target
+bin
+lib
