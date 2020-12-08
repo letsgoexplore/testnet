@@ -68,12 +68,14 @@ Enclave_EDL_Files := enclave/Enclave_t.c enclave/Enclave_t.h app/Enclave_u.c app
 
 ######## APP Settings ########
 
+TARGET_DIR := /tmp/sgxdcnet/target/debug
+
 App_Rust_Flags :=
 App_SRC_Files := $(shell find app/ -type f -name '*.rs') $(shell find app/ -type f -name 'Cargo.toml')
 App_Include_Paths := -I ./app -I./include -I$(SGX_SDK)/include -I$(CUSTOM_EDL_PATH)
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
 
-App_Rust_Path := ./target/debug
+App_Rust_Path := ${TARGET_DIR}
 App_Enclave_u_Object :=lib/libEnclave_u.a
 App_Name := bin/app
 
@@ -86,6 +88,13 @@ else
 	Trts_Library_Name := sgx_trts
 	Service_Library_Name := sgx_tservice
 endif
+
+ifeq ($(MITIGATION-CVE-2020-0551), LOAD)
+export MITIGATION_CVE_2020_0551=LOAD
+else ifeq ($(MITIGATION-CVE-2020-0551), CF)
+export MITIGATION_CVE_2020_0551=CF
+endif
+
 Crypto_Library_Name := sgx_tcrypto
 KeyExchange_Library_Name := sgx_tkey_exchange
 ProtectedFs_Library_Name := sgx_tprotected_fs
@@ -136,6 +145,11 @@ enclave/Enclave_t.o: $(Enclave_EDL_Files)
 	@$(CC) $(RustEnclave_Compile_Flags) -c enclave/Enclave_t.c -o $@
 	@echo "CC   <=  $<"
 
+.PHONY: enclave
+enclave:
+	@cd enclave && cargo build
+	@cp ${TARGET_DIR}/libdcnetenclave.a lib/libenclave.a
+
 $(RustEnclave_Name): enclave enclave/Enclave_t.o
 	@$(CXX) enclave/Enclave_t.o -o $@ $(RustEnclave_Link_Flags)
 	@echo "LINK =>  $@"
@@ -144,11 +158,6 @@ $(Signed_RustEnclave_Name): $(RustEnclave_Name)
 	mkdir -p bin
 	@$(SGX_ENCLAVE_SIGNER) sign -key enclave/Enclave_private.pem -enclave $(RustEnclave_Name) -out $@ -config enclave/Enclave.config.xml
 	@echo "SIGN =>  $@"
-
-.PHONY: enclave
-enclave:
-	$(MAKE) -C ./enclave/
-
 
 .PHONY: clean
 clean:

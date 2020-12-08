@@ -29,4 +29,4 @@ all: $(Rust_Enclave_Name)
 
 $(Rust_Enclave_Name): $(Rust_Enclave_Files)
 	cargo build
-	cp ../target/debug/libdcnetenclave.a ../lib/libenclave.a
+	cp ${TARGET_DIR}/libdcnetenclave.a ../lib/libenclave.a
