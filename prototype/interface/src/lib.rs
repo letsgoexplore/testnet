@@ -18,6 +18,9 @@ cfg_if! {
         extern crate sgx_tstd as std;
         extern crate sha2;
         extern crate byteorder;
+        extern crate sgx_rand;
+        #[macro_use]
+        extern crate sgx_rand_derive;
     } else {
         compile_error!{"must be either trusted or untrusted"}
     }

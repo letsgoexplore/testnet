@@ -263,6 +263,7 @@ int SGX_UBRIDGE(SGX_CDECL, sgx_thread_setwait_untrusted_events_ocall, (const voi
 int SGX_UBRIDGE(SGX_CDECL, sgx_thread_set_multiple_untrusted_events_ocall, (const void** waiters, size_t total));
 #endif
 
+sgx_status_t new_fresh_signing_key(sgx_enclave_id_t eid, sgx_status_t* retval, uint8_t* output, uint32_t output_size, uint32_t* bytewritten);
 sgx_status_t test_main_entrance(sgx_enclave_id_t eid, sgx_status_t* retval);
 sgx_status_t client_submit(sgx_enclave_id_t eid, sgx_status_t* retval, const uint8_t* send_request, uint32_t send_request_size, const uint8_t* secrets, uint32_t secrets_size, uint8_t* output, uint32_t output_size, uint32_t* bytewritten);
 sgx_status_t t_global_init_ecall(sgx_enclave_id_t eid, uint64_t id, const uint8_t* path, size_t len);

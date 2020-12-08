@@ -7,6 +7,14 @@ use sgx_urts::SgxEnclave;
 use interface::*;
 
 extern "C" {
+    fn new_fresh_signing_key(
+        eid: sgx_enclave_id_t,
+        retval: *mut sgx_status_t,
+        output: *mut u8,
+        output_size: u32,
+        bytewritten: *mut u32,
+    ) -> sgx_status_t;
+
     fn client_submit(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
@@ -30,10 +38,8 @@ use sgx_status_t::SGX_SUCCESS;
 use std::path::PathBuf;
 
 impl DcNetEnclave {
-    const ENCLAVE_FILE: &'static str = "enclave.signed.so";
-
-    pub fn init(enclave_path_inp: Option<PathBuf>) -> SgxResult<Self> {
-        let enclave_path = enclave_path_inp.unwrap_or(PathBuf::from(DcNetEnclave::ENCLAVE_FILE));
+    pub fn init(enclave_file: &'static str) -> SgxResult<Self> {
+        let enclave_path = PathBuf::from(enclave_file);
 
         let mut launch_token: sgx_launch_token_t = [0; 1024];
         let mut launch_token_updated: i32 = 0;
@@ -66,14 +72,43 @@ impl DcNetEnclave {
         self.enclave.geteid()
     }
 
+    // return sealed key
+    pub fn new_tee_signing_key(&self) -> SgxResult<Vec<u8>> {
+        // 100 byte should be enough?
+        let mut ret = SGX_SUCCESS;
+        let mut output = vec![0; 1024];
+        let mut output_bytes_written: u32 = 0;
+
+        let call_ret = unsafe {
+            new_fresh_signing_key(
+                self.enclave.geteid(),
+                &mut ret,
+                output.as_mut_ptr(),
+                output.len() as u32,
+                &mut output_bytes_written,
+            )
+        };
+
+        if call_ret != SGX_SUCCESS {
+            return Err(call_ret);
+        }
+
+        if ret != SGX_SUCCESS {
+            return Err(ret);
+        }
+
+        output.truncate(output_bytes_written as usize);
+
+        Ok(output)
+    }
+
     // TODO: sealed_tee_prv_key should be sealed
     pub fn client_submit(
         &self,
         send_request: &SendRequest,
-        sealed_tee_prv_key: &PrvKey,
+        sealed_tee_prv_key: &Vec<u8>,
     ) -> SgxResult<SignedUserMessage> {
         let req_json = serde_json::to_vec(&send_request).unwrap();
-        let key_json = serde_json::to_vec(&sealed_tee_prv_key).unwrap();
 
         // this should be big enough
         // TODO: serde_json is very inefficient with [u8]. but who cares for now :-)
@@ -87,8 +122,8 @@ impl DcNetEnclave {
                 &mut ret,
                 req_json.as_ptr(),
                 req_json.len(),
-                key_json.as_ptr(),
-                key_json.len(),
+                sealed_tee_prv_key.as_ptr(),
+                sealed_tee_prv_key.len(),
                 output.as_mut_ptr(),
                 output.len(),
                 &mut output_bytes_written,
@@ -132,10 +167,17 @@ mod tests {
     use interface::*;
 
     #[test]
+    fn key_seal_unseal() {
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+        println!("haha");
+        let sealed = enc.new_tee_signing_key().unwrap();
+
+        println!("[untrusted] sealed len = {}", sealed.len());
+    }
+
+    #[test]
     fn client_submit() {
-        let enclave_path = std::path::PathBuf::from(TEST_ENCLAVE_PATH);
-        let enc = DcNetEnclave::init(Some(enclave_path.to_owned()))
-            .expect(&format!("Make sure the enclave is at {:?}", enclave_path));
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         let req_1 = SendRequest {
             message: [9 as u8; DC_NET_MESSAGE_LENGTH],
@@ -143,7 +185,7 @@ mod tests {
             server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
         };
 
-        let sgx_key = PrvKey::gen_test(9);
+        let sgx_key = vec![1_u8; 128];
 
         let resp_1 = enc.client_submit(&req_1, &sgx_key).unwrap();
 
@@ -163,9 +205,7 @@ mod tests {
 
     #[test]
     fn enclave_tests() {
-        let enclave_path = std::path::PathBuf::from(TEST_ENCLAVE_PATH);
-        let enc = DcNetEnclave::init(Some(enclave_path.to_owned()))
-            .expect(&format!("Make sure the enclave is at {:?}", enclave_path));
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         enc.run_enclave_tests().unwrap();
 

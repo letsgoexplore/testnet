@@ -34,7 +34,7 @@ use interface::*;
 use sgx_status_t::SGX_SUCCESS;
 
 fn main() {
-    let dc_enclave = match DcNetEnclave::init(None) {
+    let dc_enclave = match DcNetEnclave::init("enclave.signed.so") {
         Ok(r) => {
             println!("[+] Init Enclave Successful {}!", r.geteid());
             r
@@ -51,7 +51,7 @@ fn main() {
         server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
     };
 
-    let sgx_key = PrvKey::gen_test(9);
+    let sgx_key = vec![1_u8; 128];
 
     match dc_enclave.client_submit(&send_request, &sgx_key) {
         Ok(m) => println!("{:?}", m),

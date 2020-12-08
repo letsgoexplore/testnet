@@ -32,11 +32,14 @@ impl Into<sgx_ec256_public_t> for PubKey {
 }
 
 // A wrapper around sgx_ec256_private_t
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Debug)]
+#[cfg_attr(feature = "trusted", derive(Rand))]
 pub struct PrvKey {
     pub r: [u8; SGX_ECP256_KEY_SIZE],
 }
+
+#[cfg(feature = "trusted")]
+unsafe impl sgx_types::marker::ContiguousMemory for PrvKey {}
 
 impl PrvKey {
     pub fn gen_test(byte: u8) -> Self {

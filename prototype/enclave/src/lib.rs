@@ -41,6 +41,7 @@ use sgx_types::*;
 
 mod crypto;
 mod error;
+mod keygen;
 mod submit;
 mod tests;
 

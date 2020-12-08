@@ -19,22 +19,13 @@ fn submit(
     tee_sk: &PrvKey, // TODO: this should be sealed/unsealed
 ) -> Result<SignedUserMessage, DcNetError> {
     let round_key = crypto::derive_round_secret(request.round, &request.server_keys)?;
-
-    println!("round key");
-
     let encrypted_msg = round_key.encrypt(&request.message);
-
-    println!("encrypt");
-
     let mutable = SignedUserMessage {
         round: request.round,
         message: encrypted_msg,
         tee_sig: Default::default(),
         tee_pk: Default::default(),
     };
-
-    println!("signing");
-
     crypto::sign_dc_message(&mutable, tee_sk).map_err(DcNetError::from)
 }
 
@@ -77,15 +68,18 @@ pub extern "C" fn client_submit(
         }
     };
 
-    let tee_prv_key: PrvKey = match serde_json::from_slice(unsafe {
-        slice::from_raw_parts(sealed_tee_prv_key, sealed_tee_prv_key_len)
-    }) {
-        Ok(k) => k,
-        Err(e) => {
-            println!("Err: {}", e);
-            return SGX_ERROR_INVALID_PARAMETER;
-        }
-    };
+    // let tee_prv_key: PrvKey = match serde_json::from_slice(unsafe {
+    //     slice::from_raw_parts(sealed_tee_prv_key, sealed_tee_prv_key_len)
+    // }) {
+    //     Ok(k) => k,
+    //     Err(e) => {
+    //         println!("Err: {}", e);
+    //         return SGX_ERROR_INVALID_PARAMETER;
+    //     }
+    // };
+
+    // TODO: placeholder
+    let tee_prv_key = sgx_rand::random::<PrvKey>();
 
     match submit(&send_request, &tee_prv_key) {
         Ok(signed_msg) => {

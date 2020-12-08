@@ -27,6 +27,13 @@
 )
 
 
+typedef struct ms_new_fresh_signing_key_t {
+	sgx_status_t ms_retval;
+	uint8_t* ms_output;
+	uint32_t ms_output_size;
+	uint32_t* ms_bytewritten;
+} ms_new_fresh_signing_key_t;
+
 typedef struct ms_test_main_entrance_t {
 	sgx_status_t ms_retval;
 } ms_test_main_entrance_t;
@@ -474,6 +481,78 @@ typedef struct ms_sgx_thread_set_multiple_untrusted_events_ocall_t {
 	size_t ms_total;
 } ms_sgx_thread_set_multiple_untrusted_events_ocall_t;
 
+static sgx_status_t SGX_CDECL sgx_new_fresh_signing_key(void* pms)
+{
+	CHECK_REF_POINTER(pms, sizeof(ms_new_fresh_signing_key_t));
+	//
+	// fence after pointer checks
+	//
+	sgx_lfence();
+	ms_new_fresh_signing_key_t* ms = SGX_CAST(ms_new_fresh_signing_key_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+	uint8_t* _tmp_output = ms->ms_output;
+	uint32_t _tmp_output_size = ms->ms_output_size;
+	size_t _len_output = _tmp_output_size;
+	uint8_t* _in_output = NULL;
+	uint32_t* _tmp_bytewritten = ms->ms_bytewritten;
+	size_t _len_bytewritten = sizeof(uint32_t);
+	uint32_t* _in_bytewritten = NULL;
+
+	CHECK_UNIQUE_POINTER(_tmp_output, _len_output);
+	CHECK_UNIQUE_POINTER(_tmp_bytewritten, _len_bytewritten);
+
+	//
+	// fence after pointer checks
+	//
+	sgx_lfence();
+
+	if (_tmp_output != NULL && _len_output != 0) {
+		if ( _len_output % sizeof(*_tmp_output) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		if ((_in_output = (uint8_t*)malloc(_len_output)) == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		memset((void*)_in_output, 0, _len_output);
+	}
+	if (_tmp_bytewritten != NULL && _len_bytewritten != 0) {
+		if ( _len_bytewritten % sizeof(*_tmp_bytewritten) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		if ((_in_bytewritten = (uint32_t*)malloc(_len_bytewritten)) == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		memset((void*)_in_bytewritten, 0, _len_bytewritten);
+	}
+
+	ms->ms_retval = new_fresh_signing_key(_in_output, _tmp_output_size, _in_bytewritten);
+	if (_in_output) {
+		if (memcpy_s(_tmp_output, _len_output, _in_output, _len_output)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+	}
+	if (_in_bytewritten) {
+		if (memcpy_s(_tmp_bytewritten, _len_bytewritten, _in_bytewritten, _len_bytewritten)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+	}
+
+err:
+	if (_in_output) free(_in_output);
+	if (_in_bytewritten) free(_in_bytewritten);
+	return status;
+}
+
 static sgx_status_t SGX_CDECL sgx_test_main_entrance(void* pms)
 {
 	CHECK_REF_POINTER(pms, sizeof(ms_test_main_entrance_t));
@@ -669,10 +748,11 @@ static sgx_status_t SGX_CDECL sgx_t_global_exit_ecall(void* pms)
 
 SGX_EXTERNC const struct {
 	size_t nr_ecall;
-	struct {void* ecall_addr; uint8_t is_priv; uint8_t is_switchless;} ecall_table[4];
+	struct {void* ecall_addr; uint8_t is_priv; uint8_t is_switchless;} ecall_table[5];
 } g_ecall_table = {
-	4,
+	5,
 	{
+		{(void*)(uintptr_t)sgx_new_fresh_signing_key, 0, 0},
 		{(void*)(uintptr_t)sgx_test_main_entrance, 0, 0},
 		{(void*)(uintptr_t)sgx_client_submit, 0, 0},
 		{(void*)(uintptr_t)sgx_t_global_init_ecall, 0, 0},
@@ -682,70 +762,70 @@ SGX_EXTERNC const struct {
 
 SGX_EXTERNC const struct {
 	size_t nr_ocall;
-	uint8_t entry_table[60][4];
+	uint8_t entry_table[60][5];
 } g_dyn_entry_table = {
 	60,
 	{
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
-		{0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, },
 	}
 };
 
