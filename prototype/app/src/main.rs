@@ -33,7 +33,13 @@ use interface::*;
 
 use sgx_status_t::SGX_SUCCESS;
 
+extern crate pretty_env_logger;
+#[macro_use]
+extern crate log;
+
 fn main() {
+    pretty_env_logger::init();
+
     let dc_enclave = match DcNetEnclave::init("enclave.signed.so") {
         Ok(r) => {
             println!("[+] Init Enclave Successful {}!", r.geteid());

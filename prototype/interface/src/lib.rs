@@ -2,6 +2,7 @@
 
 extern crate cfg_if;
 use cfg_if::cfg_if;
+extern crate hex;
 
 cfg_if! {
     if #[cfg(feature = "untrusted")] {
@@ -21,6 +22,7 @@ cfg_if! {
         extern crate sgx_rand;
         #[macro_use]
         extern crate sgx_rand_derive;
+        extern crate sgx_tcrypto;
     } else {
         compile_error!{"must be either trusted or untrusted"}
     }

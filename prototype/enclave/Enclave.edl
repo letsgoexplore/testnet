@@ -8,10 +8,13 @@ enclave {
     include "sgx_tcrypto.h"
 
     trusted {
-      public sgx_status_t new_fresh_signing_key(
+      public sgx_status_t new_tee_signing_key(
                         [out, size=output_size] uint8_t* output,
                         uint32_t output_size,
                         [out] uint32_t *bytewritten);
+      public sgx_status_t unseal_to_pubkey(
+                        [in, size=inp_len] uint8_t* inp,
+                        uint32_t inp_len);
 
       public sgx_status_t test_main_entrance();
       public sgx_status_t client_submit(

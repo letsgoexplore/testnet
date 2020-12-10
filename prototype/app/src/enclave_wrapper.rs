@@ -7,12 +7,19 @@ use sgx_urts::SgxEnclave;
 use interface::*;
 
 extern "C" {
-    fn new_fresh_signing_key(
+    fn new_tee_signing_key(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
         output: *mut u8,
         output_size: u32,
         bytewritten: *mut u32,
+    ) -> sgx_status_t;
+
+    fn unseal_to_pubkey(
+        eid: sgx_enclave_id_t,
+        retval: *mut sgx_status_t,
+        inp: *mut u8,
+        inp_len: u32,
     ) -> sgx_status_t;
 
     fn client_submit(
@@ -80,7 +87,7 @@ impl DcNetEnclave {
         let mut output_bytes_written: u32 = 0;
 
         let call_ret = unsafe {
-            new_fresh_signing_key(
+            new_tee_signing_key(
                 self.enclave.geteid(),
                 &mut ret,
                 output.as_mut_ptr(),
@@ -102,6 +109,30 @@ impl DcNetEnclave {
         Ok(output)
     }
 
+    // unseal the key to see its public key
+    pub fn unseal_to_pubkey(&self, sealed_key: &Vec<u8>) -> SgxError {
+        let mut ret = SGX_SUCCESS;
+        let mut sealed_key_copy = sealed_key.clone();
+        let call_ret = unsafe {
+            unseal_to_pubkey(
+                self.enclave.geteid(),
+                &mut ret,
+                sealed_key_copy.as_mut_ptr(),
+                sealed_key_copy.len() as u32,
+            )
+        };
+
+        if call_ret != SGX_SUCCESS {
+            return Err(call_ret);
+        }
+
+        if ret != SGX_SUCCESS {
+            return Err(ret);
+        }
+
+        Ok(())
+    }
+
     // TODO: sealed_tee_prv_key should be sealed
     pub fn client_submit(
         &self,
@@ -109,7 +140,6 @@ impl DcNetEnclave {
         sealed_tee_prv_key: &Vec<u8>,
     ) -> SgxResult<SignedUserMessage> {
         let req_json = serde_json::to_vec(&send_request).unwrap();
-
         // this should be big enough
         // TODO: serde_json is very inefficient with [u8]. but who cares for now :-)
         let mut output = vec![0; DC_NET_MESSAGE_LENGTH * 5];
@@ -163,16 +193,21 @@ impl DcNetEnclave {
 mod tests {
     const TEST_ENCLAVE_PATH: &'static str = "/root/sgx/bin/enclave.signed.so";
     use enclave_wrapper::DcNetEnclave;
+    extern crate base64;
+    extern crate hexdump;
     extern crate interface;
+    extern crate sgx_types;
     use interface::*;
+    use sgx_status_t::SGX_SUCCESS;
 
     #[test]
     fn key_seal_unseal() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
-        println!("haha");
         let sealed = enc.new_tee_signing_key().unwrap();
-
-        println!("[untrusted] sealed len = {}", sealed.len());
+        let encoded = base64::encode(&sealed);
+        println!("sealed key len = {}", sealed.len());
+        println!("base64 encoded: {}", encoded);
+        enc.unseal_to_pubkey(&sealed).unwrap();
     }
 
     #[test]
@@ -185,17 +220,17 @@ mod tests {
             server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
         };
 
-        let sgx_key = vec![1_u8; 128];
+        // using a testing key
+        let sgx_key_sealed = base64::decode("BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAIaOkrL+G/tjwqpYb2cPLagU2yBuV2gTFnrQR1YRijjLAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAJAAAAAAAAAAAAAAAAAAAAMcwvJUTIR5owP6OfXybb09woO+S2ZZ1DHRXUFLcu7GfdV+AQ6ddvsqjCZpdA0X+BQECAwQ=").unwrap();
 
-        let resp_1 = enc.client_submit(&req_1, &sgx_key).unwrap();
-
+        let resp_1 = enc.client_submit(&req_1, &sgx_key_sealed).unwrap();
         let req_2 = SendRequest {
             message: resp_1.message,
             round: 0,
             server_keys: req_1.server_keys,
         };
 
-        let resp_2 = enc.client_submit(&req_2, &sgx_key).unwrap();
+        let resp_2 = enc.client_submit(&req_2, &sgx_key_sealed).unwrap();
 
         // resp 2 == req 1 because server's are xor twice
         assert_eq!(resp_2.message, req_1.message);

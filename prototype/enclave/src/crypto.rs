@@ -90,8 +90,6 @@ pub fn sign_dc_message(
         Err(e) => return Err(CryptoError::SgxCryptoError(e)),
     };
 
-    println!("pk computed");
-
     let msg_hash = msg.serialize_for_sign();
 
     let ecdsa_handler = sgx_tcrypto::SgxEccHandle::new();

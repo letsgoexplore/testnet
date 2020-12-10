@@ -39,6 +39,9 @@ extern crate serde_json;
 
 use sgx_types::*;
 
+#[macro_use]
+mod macros;
+
 mod crypto;
 mod error;
 mod keygen;

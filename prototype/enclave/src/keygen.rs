@@ -6,18 +6,20 @@ use std::mem::size_of;
 
 extern crate sgx_rand;
 extern crate sgx_tseal;
+
 use self::sgx_rand::Rng;
 
-use interface::PrvKey;
+use self::sgx_tseal::{SgxSealedData, SgxUnsealedData};
+
+use core::convert::TryFrom;
+use interface::{PrvKey, PubKey};
 use sgx_types::marker::ContiguousMemory;
 use sgx_types::sgx_status_t::{
     SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_INVALID_STATE, SGX_ERROR_UNEXPECTED, SGX_SUCCESS,
 };
 
-use self::sgx_tseal::SgxSealedData;
-
 #[no_mangle]
-pub extern "C" fn new_fresh_signing_key(
+pub extern "C" fn new_tee_signing_key(
     output: *mut u8,
     output_size: u32,
     output_bytes_written: *mut u32,
@@ -29,13 +31,14 @@ pub extern "C" fn new_fresh_signing_key(
             return SGX_ERROR_UNEXPECTED;
         }
     };
+    let prv_key = rand.gen::<PrvKey>();
 
-    println!("rand generated");
+    let pk = unwrap_or_return!(PubKey::try_from(&prv_key));
+    println!("PK: {}", pk);
 
-    let priv_key = rand.gen::<PrvKey>();
     // TODO: use a reasonable associated data
     let ad = [1, 2, 3, 4];
-    let sealed = match SgxSealedData::<PrvKey>::seal_data(&ad, &priv_key) {
+    let sealed = match SgxSealedData::<PrvKey>::seal_data(&ad, &prv_key) {
         Ok(s) => s,
         Err(e) => return e,
     };
@@ -55,4 +58,34 @@ pub extern "C" fn new_fresh_signing_key(
     }
 
     SGX_SUCCESS
+}
+
+#[no_mangle]
+pub extern "C" fn unseal_to_pubkey(inp: *mut u8, inp_len: u32) -> sgx_status_t {
+    let unsealed = match unseal_data::<PrvKey>(inp, inp_len) {
+        Ok(u) => u,
+        Err(e) => return e,
+    };
+
+    let prv_key = unsealed.get_decrypt_txt();
+    let pk = unwrap_or_return!(PubKey::try_from(prv_key));
+    println!("PK: {}", pk);
+    SGX_SUCCESS
+}
+
+// unseal
+// TODO: move this to a better place
+pub fn unseal_data<'a, T: Copy + ContiguousMemory>(
+    sealed_log: *mut u8,
+    sealed_log_size: u32,
+) -> SgxResult<SgxUnsealedData<'a, T>> {
+    let sealed = unsafe {
+        SgxSealedData::<T>::from_raw_sealed_data_t(
+            sealed_log as *mut sgx_sealed_data_t,
+            sealed_log_size,
+        )
+    }
+    .ok_or(SGX_ERROR_INVALID_PARAMETER)?;
+
+    sealed.unseal_data()
 }

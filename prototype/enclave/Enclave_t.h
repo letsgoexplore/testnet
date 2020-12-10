@@ -21,7 +21,8 @@
 extern "C" {
 #endif
 
-sgx_status_t new_fresh_signing_key(uint8_t* output, uint32_t output_size, uint32_t* bytewritten);
+sgx_status_t new_tee_signing_key(uint8_t* output, uint32_t output_size, uint32_t* bytewritten);
+sgx_status_t unseal_to_pubkey(uint8_t* inp, uint32_t inp_len);
 sgx_status_t test_main_entrance(void);
 sgx_status_t client_submit(const uint8_t* send_request, uint32_t send_request_size, const uint8_t* secrets, uint32_t secrets_size, uint8_t* output, uint32_t output_size, uint32_t* bytewritten);
 void t_global_init_ecall(uint64_t id, const uint8_t* path, size_t len);

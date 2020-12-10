@@ -32,28 +32,17 @@ fn submit(
 use std::slice;
 use std::string;
 
+use keygen;
 use serde;
 use serde_json;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
-
-macro_rules! unwrap_or_return {
-    ( $e:expr ) => {
-        match $e {
-            Ok(x) => x,
-            Err(e) => {
-                println!("Err {}", e);
-                return SGX_ERROR_INVALID_PARAMETER;
-            }
-        }
-    };
-}
 
 #[no_mangle]
 pub extern "C" fn client_submit(
     send_request: *const u8,
     send_request_len: usize,
-    sealed_tee_prv_key: *const u8,
-    sealed_tee_prv_key_len: usize,
+    sealed_tee_prv_key: *mut u8,
+    sealed_tee_prv_key_len: u32,
     output: *mut u8,
     output_size: usize,
     output_bytes_written: *mut usize,
@@ -68,18 +57,13 @@ pub extern "C" fn client_submit(
         }
     };
 
-    // let tee_prv_key: PrvKey = match serde_json::from_slice(unsafe {
-    //     slice::from_raw_parts(sealed_tee_prv_key, sealed_tee_prv_key_len)
-    // }) {
-    //     Ok(k) => k,
-    //     Err(e) => {
-    //         println!("Err: {}", e);
-    //         return SGX_ERROR_INVALID_PARAMETER;
-    //     }
-    // };
+    let tee_prv_key_unsealed =
+        match keygen::unseal_data::<PrvKey>(sealed_tee_prv_key, sealed_tee_prv_key_len) {
+            Ok(k) => k,
+            Err(e) => return e,
+        };
 
-    // TODO: placeholder
-    let tee_prv_key = sgx_rand::random::<PrvKey>();
+    let tee_prv_key = tee_prv_key_unsealed.get_decrypt_txt();
 
     match submit(&send_request, &tee_prv_key) {
         Ok(signed_msg) => {

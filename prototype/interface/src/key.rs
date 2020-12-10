@@ -1,16 +1,36 @@
 extern crate sgx_types;
 
 use sgx_types::{
-    sgx_ec256_private_t, sgx_ec256_public_t, sgx_ec256_signature_t, SGX_ECP256_KEY_SIZE,
-    SGX_HMAC256_KEY_SIZE, SGX_NISTP_ECP256_KEY_SIZE,
+    sgx_ec256_private_t, sgx_ec256_public_t, sgx_ec256_signature_t, sgx_status_t,
+    SGX_ECP256_KEY_SIZE, SGX_HMAC256_KEY_SIZE, SGX_NISTP_ECP256_KEY_SIZE,
 };
+
+use core::convert::TryFrom;
+use core::fmt;
+use core::fmt::{Debug, Display, Formatter};
+use std::string::{String, ToString};
 
 // A wrapper around sgx_ec256_public_t
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
 pub struct PubKey {
     pub gx: [u8; SGX_ECP256_KEY_SIZE],
     pub gy: [u8; SGX_ECP256_KEY_SIZE],
+}
+
+impl Debug for PubKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PK")
+            .field("x", &hex::encode(&self.gx))
+            .field("y", &hex::encode(&self.gx))
+            .finish()
+    }
+}
+
+impl Display for PubKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        std::write!(f, "({}, {})", hex::encode(self.gx), hex::encode(self.gy))
+    }
 }
 
 impl From<sgx_ec256_public_t> for PubKey {
@@ -19,6 +39,15 @@ impl From<sgx_ec256_public_t> for PubKey {
             gx: sgx_ec_pubkey.gx,
             gy: sgx_ec_pubkey.gy,
         };
+    }
+}
+
+#[cfg(feature = "trusted")]
+impl TryFrom<&PrvKey> for PubKey {
+    type Error = sgx_status_t;
+
+    fn try_from(prv_key: &PrvKey) -> Result<Self, Self::Error> {
+        sgx_tcrypto::rsgx_ecc256_pub_from_priv(&prv_key.into()).map(PubKey::from)
     }
 }
 
@@ -32,7 +61,7 @@ impl Into<sgx_ec256_public_t> for PubKey {
 }
 
 // A wrapper around sgx_ec256_private_t
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Copy, Clone, Default)]
 #[cfg_attr(feature = "trusted", derive(Rand))]
 pub struct PrvKey {
     pub r: [u8; SGX_ECP256_KEY_SIZE],
