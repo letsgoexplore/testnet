@@ -44,6 +44,7 @@ pub struct DcNetEnclave {
 use sgx_status_t::SGX_SUCCESS;
 use std::path::PathBuf;
 
+#[allow(dead_code)]
 impl DcNetEnclave {
     pub fn init(enclave_file: &'static str) -> SgxResult<Self> {
         let enclave_path = PathBuf::from(enclave_file);

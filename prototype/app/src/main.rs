@@ -19,19 +19,15 @@ extern crate sgx_types;
 extern crate sgx_urts;
 
 use sgx_types::*;
-use sgx_urts::SgxEnclave;
 
 extern crate interface;
 extern crate serde_json;
 
 mod client;
 mod enclave_wrapper;
-mod utils;
 
 use enclave_wrapper::*;
 use interface::*;
-
-use sgx_status_t::SGX_SUCCESS;
 
 extern crate pretty_env_logger;
 #[macro_use]
@@ -42,11 +38,11 @@ fn main() {
 
     let dc_enclave = match DcNetEnclave::init("enclave.signed.so") {
         Ok(r) => {
-            println!("[+] Init Enclave Successful {}!", r.geteid());
+            info!("[+] Init Enclave Successful {}!", r.geteid());
             r
         }
         Err(x) => {
-            println!("[-] Init Enclave Failed {}!", x.as_str());
+            error!("[-] Init Enclave Failed {}!", x.as_str());
             return;
         }
     };
