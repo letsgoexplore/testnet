@@ -7,6 +7,10 @@ use sgx_types::{
 
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
+#[allow(unused_imports)]
+use std::convert::TryFrom;
+#[allow(unused_imports)]
+use sgx_types::sgx_status_t;
 
 // A wrapper around sgx_ec256_public_t
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
