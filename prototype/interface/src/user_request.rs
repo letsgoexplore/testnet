@@ -57,4 +57,8 @@ impl SignedUserMessage {
     pub const fn size() -> usize {
         std::mem::size_of::<SignedUserMessage>()
     }
+
+    pub const fn size_marshalled() -> usize {
+        std::mem::size_of::<SignedUserMessage>() * 2
+    }
 }

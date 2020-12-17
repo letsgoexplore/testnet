@@ -141,7 +141,7 @@ impl DcNetEnclave {
         let req_json = serde_cbor::to_vec(&send_request).unwrap();
         // this should be big enough
         // TODO: serde_json is very inefficient with [u8]. but who cares for now :-)
-        let mut output = vec![0; DC_NET_MESSAGE_LENGTH * 5];
+        let mut output = vec![0; SignedUserMessage::size_marshalled()];
         let mut output_bytes_written: usize = 0;
 
         let mut ret = sgx_status_t::default();
