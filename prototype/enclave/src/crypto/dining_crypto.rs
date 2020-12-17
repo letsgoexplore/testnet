@@ -1,8 +1,8 @@
 use interface::*;
-use sgx_types::{SGX_HMAC256_KEY_SIZE, SGX_HMAC256_MAC_SIZE};
+
 use std::prelude::v1::*;
 
-use std::convert::TryInto;
+
 
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;

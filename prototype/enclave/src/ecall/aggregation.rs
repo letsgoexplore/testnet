@@ -3,7 +3,7 @@ use crate::interface::*;
 use crate::types::*;
 
 use sgx_types::sgx_status_t;
-use sgx_types::SgxResult;
+
 use std::prelude::v1::*;
 
 pub fn aggregate(

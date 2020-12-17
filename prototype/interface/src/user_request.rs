@@ -3,7 +3,6 @@ use std::prelude::v1::*;
 use crate::key::*;
 use crate::params::*;
 use crate::signature::*;
-use crate::traits::Zero;
 use sgx_types::SGX_HMAC256_KEY_SIZE;
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 
@@ -26,7 +25,8 @@ pub struct DCMessage {
 
 #[cfg(feature = "trusted")]
 use sgx_rand::{Rand, Rng};
-
+#[cfg(feature = "trusted")]
+use crate::traits::Zero;
 #[cfg(feature = "trusted")]
 impl Rand for DCMessage {
     fn rand<R: Rng>(rng: &mut R) -> Self {

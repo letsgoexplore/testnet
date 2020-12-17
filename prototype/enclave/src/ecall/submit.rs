@@ -4,14 +4,14 @@ extern crate sgx_types;
 use serde_cbor;
 use sgx_status_t;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
-use sgx_types::*;
-use std::convert::TryInto;
+
+
 use std::prelude::v1::*;
 use std::slice;
 
 use crypto;
 use crypto::SignMutable;
-use ecall::*;
+
 use types::*;
 use utils;
 

@@ -1,17 +1,15 @@
-use sgx_types::{
-    sgx_ec256_private_t, sgx_sealed_data_t, sgx_status_t, SgxResult, SGX_ECP256_KEY_SIZE,
-};
+use sgx_types::{sgx_sealed_data_t, sgx_status_t};
 
-use std::mem::size_of;
+
 
 use sgx_rand::Rng;
-use sgx_tseal::{SgxSealedData, SgxUnsealedData};
+use sgx_tseal::{SgxSealedData};
 
 use core::convert::TryFrom;
 use interface::{PrvKey, PubKey};
-use sgx_types::marker::ContiguousMemory;
+
 use sgx_types::sgx_status_t::{
-    SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_INVALID_STATE, SGX_ERROR_UNEXPECTED, SGX_SUCCESS,
+    SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED, SGX_SUCCESS,
 };
 
 #[no_mangle]
