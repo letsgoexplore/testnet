@@ -173,13 +173,10 @@ impl DcNetEnclave {
             output_bytes_written
         );
 
-        match serde_cbor::from_slice(&output[..output_bytes_written]) {
-            Ok(m) => Ok(m),
-            Err(e) => {
-                println!("Err {}", e);
-                Err(sgx_status_t::SGX_ERROR_UNEXPECTED)
-            }
-        }
+        serde_cbor::from_slice(&output[..output_bytes_written]).map_err(|e| {
+            println!("Err {}", e);
+            sgx_status_t::SGX_ERROR_UNEXPECTED
+        })
     }
 
     pub fn run_enclave_tests(&self) -> SgxError {
