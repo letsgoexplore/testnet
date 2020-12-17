@@ -216,6 +216,7 @@ mod tests {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         let req_1 = SendRequest {
+            user_id: [0 as u8; 32],
             message: [9 as u8; DC_NET_MESSAGE_LENGTH],
             round: 0,
             server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
@@ -226,6 +227,7 @@ mod tests {
 
         let resp_1 = enc.client_submit(&req_1, &sgx_key_sealed).unwrap();
         let req_2 = SendRequest {
+            user_id: [0 as u8; 32],
             message: resp_1.message,
             round: 0,
             server_keys: req_1.server_keys,

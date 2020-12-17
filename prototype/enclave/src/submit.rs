@@ -11,22 +11,25 @@ use std::prelude::v1::*;
 use sgx_types::*;
 
 use crypto;
-use error::DcNetError;
+use types::*;
+
+use crypto::{SignMutable, Verifiable};
 
 // the safe version
-fn submit(
-    request: &SendRequest,
-    tee_sk: &PrvKey, // TODO: this should be sealed/unsealed
-) -> Result<SignedUserMessage, DcNetError> {
+fn submit(request: &SendRequest, tee_sk: &PrvKey) -> DcNetResult<SignedUserMessage> {
     let round_key = crypto::derive_round_secret(request.round, &request.server_keys)?;
     let encrypted_msg = round_key.encrypt(&request.message);
-    let mutable = SignedUserMessage {
+    let mut mutable = SignedUserMessage {
+        user_id: request.user_id,
         round: request.round,
         message: encrypted_msg,
         tee_sig: Default::default(),
         tee_pk: Default::default(),
     };
-    crypto::sign_dc_message(&mutable, tee_sk).map_err(DcNetError::from)
+
+    mutable.sign(tee_sk).map_err(DcNetError::from)?;
+
+    Ok(mutable)
 }
 
 use std::slice;

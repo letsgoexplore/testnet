@@ -2,12 +2,13 @@ use interface::*;
 use sgx_types::{SGX_HMAC256_KEY_SIZE, SGX_HMAC256_MAC_SIZE};
 use std::prelude::v1::*;
 
-use error::*;
 use std::convert::TryInto;
 
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
 use sha2::{Digest, Sha256};
+
+use super::*;
 
 pub fn xor(a: &[u8], b: &[u8]) -> CryptoResult<Vec<u8>> {
     if a.len() != b.len() {
@@ -15,8 +16,6 @@ pub fn xor(a: &[u8], b: &[u8]) -> CryptoResult<Vec<u8>> {
     }
     return Ok(a.iter().zip(b).map(|(x, y)| x ^ y).collect());
 }
-
-pub type CryptoResult<T> = Result<T, CryptoError>;
 
 pub struct RoundSecret {
     pub secret: [u8; DC_NET_MESSAGE_LENGTH],
@@ -79,38 +78,4 @@ pub fn derive_round_secret(
     Ok(server_round_keys
         .iter()
         .fold(RoundSecret::zero(), |acc, s| RoundSecret::xor(&acc, s)))
-}
-
-pub fn sign_dc_message(
-    msg: &SignedUserMessage,
-    tee_prv_key: &PrvKey,
-) -> CryptoResult<SignedUserMessage> {
-    let tee_pk = match sgx_tcrypto::rsgx_ecc256_pub_from_priv(&tee_prv_key.into()) {
-        Ok(pk) => pk,
-        Err(e) => return Err(CryptoError::SgxCryptoError(e)),
-    };
-
-    let msg_hash = msg.serialize_for_sign();
-
-    let ecdsa_handler = sgx_tcrypto::SgxEccHandle::new();
-    ecdsa_handler.open()?;
-    let sig = ecdsa_handler.ecdsa_sign_slice(&msg_hash, &tee_prv_key.into())?;
-
-    Ok(SignedUserMessage {
-        round: msg.round,
-        message: msg.message,
-        tee_sig: Signature::from(sig),
-        tee_pk: PubKey::from(tee_pk),
-    })
-}
-
-pub fn verify_dc_message(msg: &SignedUserMessage) -> CryptoResult<bool> {
-    let msg_hash = msg.serialize_for_sign();
-
-    let ecdsa_handler = sgx_tcrypto::SgxEccHandle::new();
-    ecdsa_handler.open()?;
-
-    ecdsa_handler
-        .ecdsa_verify_slice(&msg_hash, &msg.tee_pk.into(), &msg.tee_sig.into())
-        .map_err(CryptoError::from)
 }

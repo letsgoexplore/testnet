@@ -39,14 +39,20 @@ extern crate serde_json;
 
 use sgx_types::*;
 
+extern crate sgx_serialize;
+use sgx_serialize::{DeSerializeHelper, SerializeHelper};
+#[macro_use]
+extern crate sgx_serialize_derive;
+
 #[macro_use]
 mod macros;
 
+mod aggregation;
 mod crypto;
-mod error;
 mod keygen;
 mod submit;
 mod tests;
+mod types;
 
 #[no_mangle]
 pub extern "C" fn test_main_entrance() -> sgx_status_t {

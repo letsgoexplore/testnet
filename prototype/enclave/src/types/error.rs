@@ -1,4 +1,5 @@
 use sgx_types::sgx_status_t;
+use std::string::ToString;
 
 quick_error! {
     #[derive(Debug)]
@@ -23,6 +24,11 @@ quick_error! {
             description("crypto error")
             display("crypto error: {}", err)
             cause(err)
+        }
+        AggregationError(err: &'static str) {
+            description(err)
+            display("Error {}", err)
+            from()
         }
     }
 }

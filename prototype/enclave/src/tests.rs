@@ -1,7 +1,6 @@
 use crypto;
-use error::CryptoError;
+use types::*;
 
-use crate::interface::*;
 use crate::sgx_tunittest::*;
 use crate::sgx_types;
 use crate::std::prelude::v1::*;
@@ -11,13 +10,14 @@ use sgx_types::sgx_status_t;
 use hkdf::Hkdf;
 use sha2::Sha256;
 
+use crate::interface::*;
+use crypto::{SignMutable, Verifiable};
+
 pub fn test_all() -> sgx_status_t {
     // rsgx_unit_tests!(test_agg_msg);
     // rsgx_unit_tests!(scheduler_tests);
     // rsgx_unit_tests!(test_dc_msg);
-    rsgx_unit_tests!(xor);
-    rsgx_unit_tests!(sign);
-    rsgx_unit_tests!(hkdf);
+    rsgx_unit_tests!(xor, sign, hkdf);
     sgx_status_t::SGX_SUCCESS
 }
 
@@ -69,17 +69,18 @@ fn test_keypair() -> crypto::CryptoResult<KeyPair> {
 fn sign() {
     let keypair = test_keypair().unwrap();
 
-    let mutable = SignedUserMessage {
+    let mut mutable = SignedUserMessage {
+        user_id: [0 as u8; 32],
         round: 100,
         message: test_raw_msg(),
         tee_sig: Default::default(),
         tee_pk: Default::default(),
     };
 
-    let signed = crypto::sign_dc_message(&mutable, &keypair.prv_key).unwrap();
+    mutable.sign(&keypair.prv_key).expect("sign");
 
-    assert_eq!(signed.tee_pk, keypair.pub_key);
-    assert!(crypto::verify_dc_message(&signed).unwrap());
+    assert_eq!(mutable.tee_pk, keypair.pub_key);
+    assert!(mutable.verify().expect("verify"));
 }
 
 fn round() {
