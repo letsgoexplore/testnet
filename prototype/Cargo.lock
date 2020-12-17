@@ -19,7 +19,7 @@ dependencies = [
  "log",
  "pretty_env_logger",
  "serde 1.0.118",
- "serde_json 1.0.60",
+ "serde_cbor 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "sgx_serialize",
  "sgx_serialize_derive",
  "sgx_types",
@@ -122,7 +122,7 @@ dependencies = [
  "interface",
  "quick-error 1.2.2",
  "serde 1.0.117",
- "serde_json 1.0.51",
+ "serde_cbor 0.11.1 (git+https://github.com/mesalock-linux/cbor-sgx)",
  "sgx_rand",
  "sgx_serialize",
  "sgx_serialize_derive",
@@ -172,6 +172,12 @@ checksum = "c68f0274ae0e023facc3c97b2e00f076be70e254bc851d972503b328db79b2ec"
 dependencies = [
  "typenum",
 ]
+
+[[package]]
+name = "half"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d36fab90f82edc3c747f9d438e06cf0a491055896f2a279638bb5beed6c40177"
 
 [[package]]
 name = "hashbrown_tstd"
@@ -265,20 +271,6 @@ name = "itertools"
 version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4a9b56eb56058f43dc66e58f40a214b2ccbc9f3df51861b63d51dec7b65bc3f"
-
-[[package]]
-name = "itoa"
-version = "0.4.5"
-source = "git+https://github.com/mesalock-linux/itoa-sgx#295ee451f5ec74f25c299552b481beb445ea3eb7"
-dependencies = [
- "sgx_tstd",
-]
-
-[[package]]
-name = "itoa"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc6f3ad7b9d11a0c00842ff8de1b60ee58661048eb8049ed33c73594f359d7e6"
 
 [[package]]
 name = "lazy_static"
@@ -389,12 +381,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b181ba2dcf07aaccad5448e8ead58db5b742cf85dfe035e2227f137a539a189"
 
 [[package]]
-name = "ryu"
-version = "1.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
-
-[[package]]
 name = "serde"
 version = "1.0.117"
 source = "git+https://github.com/mesalock-linux/serde-sgx#f65f251fee55aa1618f3c22878ada540bbe02557"
@@ -432,6 +418,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_cbor"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e18acfa2f90e8b735b2836ab8d538de304cbb6729a7360729ea5a895d15a622"
+dependencies = [
+ "half",
+ "serde 1.0.118",
+]
+
+[[package]]
+name = "serde_cbor"
+version = "0.11.1"
+source = "git+https://github.com/mesalock-linux/cbor-sgx#64211d5d095bc0e39259de45f6e88f78d8de77fb"
+dependencies = [
+ "half",
+ "serde 1.0.117",
+ "sgx_tstd",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.117"
 source = "git+https://github.com/mesalock-linux/serde-sgx#f65f251fee55aa1618f3c22878ada540bbe02557"
@@ -450,28 +456,6 @@ dependencies = [
  "proc-macro2",
  "quote 1.0.7",
  "syn 1.0.54",
-]
-
-[[package]]
-name = "serde_json"
-version = "1.0.51"
-source = "git+https://github.com/mesalock-linux/serde-json-sgx#2ee25951220f36584f6a1d7432a6c0299ab63f00"
-dependencies = [
- "itoa 0.4.5",
- "ryu",
- "serde 1.0.117",
- "sgx_tstd",
-]
-
-[[package]]
-name = "serde_json"
-version = "1.0.60"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1500e84d27fe482ed1dc791a56eddc2f230046a040fa908c08bda1d9fb615779"
-dependencies = [
- "itoa 0.4.6",
- "ryu",
- "serde 1.0.118",
 ]
 
 [[package]]

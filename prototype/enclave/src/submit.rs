@@ -37,7 +37,7 @@ use std::string;
 
 use keygen;
 use serde;
-use serde_json;
+use serde_cbor;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 
 #[no_mangle]
@@ -50,16 +50,12 @@ pub extern "C" fn client_submit(
     output_size: usize,
     output_bytes_written: *mut usize,
 ) -> sgx_status_t {
-    let send_request: SendRequest = match serde_json::from_slice(unsafe {
-        slice::from_raw_parts(send_request, send_request_len)
-    }) {
-        Ok(j) => j,
-        Err(e) => {
-            println!("Err: {}", e);
-            return SGX_ERROR_INVALID_PARAMETER;
-        }
-    };
+    let marshaled_send_request = unsafe { slice::from_raw_parts(send_request, send_request_len) };
 
+    let send_request: SendRequest =
+        unwrap_or_return!(serde_cbor::from_slice(marshaled_send_request));
+
+    // unseal SGX signing key
     let tee_prv_key_unsealed =
         match keygen::unseal_data::<PrvKey>(sealed_tee_prv_key, sealed_tee_prv_key_len) {
             Ok(k) => k,
@@ -70,7 +66,7 @@ pub extern "C" fn client_submit(
 
     match submit(&send_request, &tee_prv_key) {
         Ok(signed_msg) => {
-            let serialized: Vec<u8> = match serde_json::to_vec(&signed_msg) {
+            let serialized: Vec<u8> = match serde_cbor::to_vec(&signed_msg) {
                 Ok(vec) => vec,
                 Err(e) => {
                     println!("err {}", e);

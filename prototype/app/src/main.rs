@@ -21,7 +21,7 @@ extern crate sgx_urts;
 use sgx_types::*;
 
 extern crate interface;
-extern crate serde_json;
+extern crate serde_cbor;
 
 mod client;
 mod enclave_wrapper;

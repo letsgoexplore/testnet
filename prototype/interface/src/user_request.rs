@@ -52,3 +52,9 @@ pub struct SignedUserMessage {
     pub tee_sig: Signature,
     pub tee_pk: PubKey,
 }
+
+impl SignedUserMessage {
+    pub const fn size() -> usize {
+        std::mem::size_of::<SignedUserMessage>()
+    }
+}

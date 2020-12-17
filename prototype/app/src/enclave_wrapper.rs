@@ -59,8 +59,6 @@ impl DcNetEnclave {
             misc_select: 0,
         };
 
-        println!("{:?}", std::env::current_dir().unwrap());
-
         let enclave = SgxEnclave::create(
             enclave_path,
             debug,
@@ -140,7 +138,7 @@ impl DcNetEnclave {
         send_request: &SendRequest,
         sealed_tee_prv_key: &Vec<u8>,
     ) -> SgxResult<SignedUserMessage> {
-        let req_json = serde_json::to_vec(&send_request).unwrap();
+        let req_json = serde_cbor::to_vec(&send_request).unwrap();
         // this should be big enough
         // TODO: serde_json is very inefficient with [u8]. but who cares for now :-)
         let mut output = vec![0; DC_NET_MESSAGE_LENGTH * 5];
@@ -169,7 +167,13 @@ impl DcNetEnclave {
             return Err(ret);
         }
 
-        match serde_json::from_slice(&output[..output_bytes_written]) {
+        println!(
+            "SignedUserMessage size: unmarshalled {}, marshaled {}",
+            SignedUserMessage::size(),
+            output_bytes_written
+        );
+
+        match serde_cbor::from_slice(&output[..output_bytes_written]) {
             Ok(m) => Ok(m),
             Err(e) => {
                 println!("Err {}", e);
@@ -243,10 +247,12 @@ mod tests {
 
     #[test]
     fn enclave_tests() {
+        println!("===begin enclave tests");
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         enc.run_enclave_tests().unwrap();
 
-        enc.destroy()
+        enc.destroy();
+        println!("===end enclave tests");
     }
 }
