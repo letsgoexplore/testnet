@@ -35,60 +35,46 @@ fn submit(request: &SendRequest, tee_sk: &PrvKey) -> DcNetResult<SignedUserMessa
 use ecall::*;
 use std::slice;
 use std::string;
+use utils;
 
 use serde;
 use serde_cbor;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 
 #[no_mangle]
-pub extern "C" fn client_submit(
-    send_request: *const u8,
+pub extern "C" fn ecall_client_submit(
+    send_request_ptr: *const u8,
     send_request_len: usize,
-    sealed_tee_prv_key: *mut u8,
-    sealed_tee_prv_key_len: u32,
+    sealed_tee_prv_key_ptr: *mut u8,
+    sealed_tee_prv_key_len: usize,
     output: *mut u8,
     output_size: usize,
     output_bytes_written: *mut usize,
 ) -> sgx_status_t {
-    let marshaled_send_request = unsafe { slice::from_raw_parts(send_request, send_request_len) };
+    let send_request = unmarshal_or_return!(SendRequest, send_request_ptr, send_request_len);
+    let tee_prv_key = unwrap_or_return!(
+        utils::unseal_prv_key(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len),
+        SGX_ERROR_UNEXPECTED
+    );
 
-    let send_request: SendRequest =
-        unwrap_or_return!(serde_cbor::from_slice(marshaled_send_request));
-
-    // unseal SGX signing key
-    let tee_prv_key_unsealed =
-        match unseal_data::<PrvKey>(sealed_tee_prv_key, sealed_tee_prv_key_len) {
-            Ok(k) => k,
-            Err(e) => return e,
-        };
-
-    let tee_prv_key = tee_prv_key_unsealed.get_decrypt_txt();
-
-    match submit(&send_request, &tee_prv_key) {
-        Ok(signed_msg) => {
-            let serialized: Vec<u8> = match serde_cbor::to_vec(&signed_msg) {
-                Ok(vec) => vec,
-                Err(e) => {
-                    println!("err {}", e);
-                    return SGX_ERROR_UNEXPECTED;
-                }
-            };
-
-            if serialized.len() > output_size {
-                println!("not enough output space. need {}", serialized.len());
-                return SGX_ERROR_INVALID_PARAMETER;
-            }
-
-            unsafe {
-                output.copy_from(serialized.as_ptr(), serialized.len());
-                output_bytes_written.write(serialized.len())
-            }
-
-            sgx_status_t::SGX_SUCCESS
-        }
+    let signed_msg = match submit(&send_request, &tee_prv_key) {
+        Ok(m) => m,
         Err(e) => {
             println!("Err: {}", e);
-            sgx_status_t::SGX_ERROR_UNEXPECTED
+            return sgx_status_t::SGX_ERROR_UNEXPECTED;
         }
+    };
+
+    let serialized = unwrap_or_return!(serde_cbor::to_vec(&signed_msg), SGX_ERROR_UNEXPECTED);
+    if serialized.len() > output_size {
+        println!("not enough output space. need {}", serialized.len());
+        return SGX_ERROR_INVALID_PARAMETER;
     }
+
+    unsafe {
+        output.copy_from(serialized.as_ptr(), serialized.len());
+        output_bytes_written.write(serialized.len())
+    }
+
+    sgx_status_t::SGX_SUCCESS
 }

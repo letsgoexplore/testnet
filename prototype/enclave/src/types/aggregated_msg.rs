@@ -3,7 +3,7 @@ use crate::interface::*;
 use crypto::Signable;
 use std::vec::Vec;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AggregatedMessage {
     pub user_ids: Vec<UserId>,
     pub aggregated_msg: DCMessage,

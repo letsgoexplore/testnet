@@ -9,7 +9,7 @@ use hkdf::Hkdf;
 use sha2::{Digest, Sha256};
 
 use super::*;
-use types::{Xor, Zero};
+use types::Xor;
 
 pub struct RoundSecret {
     pub secret: [u8; DC_NET_MESSAGE_LENGTH],

@@ -24,7 +24,8 @@ extern "C" {
 sgx_status_t new_tee_signing_key(uint8_t* output, uint32_t output_size, uint32_t* bytewritten);
 sgx_status_t unseal_to_pubkey(uint8_t* inp, uint32_t inp_len);
 sgx_status_t test_main_entrance(void);
-sgx_status_t client_submit(const uint8_t* send_request, uint32_t send_request_size, const uint8_t* secrets, uint32_t secrets_size, uint8_t* output, uint32_t output_size, uint32_t* bytewritten);
+sgx_status_t ecall_client_submit(const uint8_t* send_request, uint32_t send_request_size, const uint8_t* secrets, uint32_t secrets_size, uint8_t* output, uint32_t output_size, uint32_t* bytewritten);
+sgx_status_t ecall_aggregate(const uint8_t* sign_user_msg_ptr, uint32_t sign_user_msg_len, const uint8_t* current_aggregation_ptr, uint32_t current_aggregation_len, uint8_t* sealed_tee_prv_key_ptr, uint32_t sealed_tee_prv_key_len, uint8_t* output_aggregation_ptr, uint32_t output_size, uint32_t* bytewritten);
 void t_global_init_ecall(uint64_t id, const uint8_t* path, size_t len);
 void t_global_exit_ecall(void);
 

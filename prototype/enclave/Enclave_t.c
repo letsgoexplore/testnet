@@ -44,7 +44,7 @@ typedef struct ms_test_main_entrance_t {
 	sgx_status_t ms_retval;
 } ms_test_main_entrance_t;
 
-typedef struct ms_client_submit_t {
+typedef struct ms_ecall_client_submit_t {
 	sgx_status_t ms_retval;
 	const uint8_t* ms_send_request;
 	uint32_t ms_send_request_size;
@@ -53,7 +53,20 @@ typedef struct ms_client_submit_t {
 	uint8_t* ms_output;
 	uint32_t ms_output_size;
 	uint32_t* ms_bytewritten;
-} ms_client_submit_t;
+} ms_ecall_client_submit_t;
+
+typedef struct ms_ecall_aggregate_t {
+	sgx_status_t ms_retval;
+	const uint8_t* ms_sign_user_msg_ptr;
+	uint32_t ms_sign_user_msg_len;
+	const uint8_t* ms_current_aggregation_ptr;
+	uint32_t ms_current_aggregation_len;
+	uint8_t* ms_sealed_tee_prv_key_ptr;
+	uint32_t ms_sealed_tee_prv_key_len;
+	uint8_t* ms_output_aggregation_ptr;
+	uint32_t ms_output_size;
+	uint32_t* ms_bytewritten;
+} ms_ecall_aggregate_t;
 
 typedef struct ms_t_global_init_ecall_t {
 	uint64_t ms_id;
@@ -624,14 +637,14 @@ static sgx_status_t SGX_CDECL sgx_test_main_entrance(void* pms)
 	return status;
 }
 
-static sgx_status_t SGX_CDECL sgx_client_submit(void* pms)
+static sgx_status_t SGX_CDECL sgx_ecall_client_submit(void* pms)
 {
-	CHECK_REF_POINTER(pms, sizeof(ms_client_submit_t));
+	CHECK_REF_POINTER(pms, sizeof(ms_ecall_client_submit_t));
 	//
 	// fence after pointer checks
 	//
 	sgx_lfence();
-	ms_client_submit_t* ms = SGX_CAST(ms_client_submit_t*, pms);
+	ms_ecall_client_submit_t* ms = SGX_CAST(ms_ecall_client_submit_t*, pms);
 	sgx_status_t status = SGX_SUCCESS;
 	const uint8_t* _tmp_send_request = ms->ms_send_request;
 	uint32_t _tmp_send_request_size = ms->ms_send_request_size;
@@ -722,7 +735,7 @@ static sgx_status_t SGX_CDECL sgx_client_submit(void* pms)
 		memset((void*)_in_bytewritten, 0, _len_bytewritten);
 	}
 
-	ms->ms_retval = client_submit((const uint8_t*)_in_send_request, _tmp_send_request_size, (const uint8_t*)_in_secrets, _tmp_secrets_size, _in_output, _tmp_output_size, _in_bytewritten);
+	ms->ms_retval = ecall_client_submit((const uint8_t*)_in_send_request, _tmp_send_request_size, (const uint8_t*)_in_secrets, _tmp_secrets_size, _in_output, _tmp_output_size, _in_bytewritten);
 	if (_in_output) {
 		if (memcpy_s(_tmp_output, _len_output, _in_output, _len_output)) {
 			status = SGX_ERROR_UNEXPECTED;
@@ -740,6 +753,150 @@ err:
 	if (_in_send_request) free(_in_send_request);
 	if (_in_secrets) free(_in_secrets);
 	if (_in_output) free(_in_output);
+	if (_in_bytewritten) free(_in_bytewritten);
+	return status;
+}
+
+static sgx_status_t SGX_CDECL sgx_ecall_aggregate(void* pms)
+{
+	CHECK_REF_POINTER(pms, sizeof(ms_ecall_aggregate_t));
+	//
+	// fence after pointer checks
+	//
+	sgx_lfence();
+	ms_ecall_aggregate_t* ms = SGX_CAST(ms_ecall_aggregate_t*, pms);
+	sgx_status_t status = SGX_SUCCESS;
+	const uint8_t* _tmp_sign_user_msg_ptr = ms->ms_sign_user_msg_ptr;
+	uint32_t _tmp_sign_user_msg_len = ms->ms_sign_user_msg_len;
+	size_t _len_sign_user_msg_ptr = _tmp_sign_user_msg_len;
+	uint8_t* _in_sign_user_msg_ptr = NULL;
+	const uint8_t* _tmp_current_aggregation_ptr = ms->ms_current_aggregation_ptr;
+	uint32_t _tmp_current_aggregation_len = ms->ms_current_aggregation_len;
+	size_t _len_current_aggregation_ptr = _tmp_current_aggregation_len;
+	uint8_t* _in_current_aggregation_ptr = NULL;
+	uint8_t* _tmp_sealed_tee_prv_key_ptr = ms->ms_sealed_tee_prv_key_ptr;
+	uint32_t _tmp_sealed_tee_prv_key_len = ms->ms_sealed_tee_prv_key_len;
+	size_t _len_sealed_tee_prv_key_ptr = _tmp_sealed_tee_prv_key_len;
+	uint8_t* _in_sealed_tee_prv_key_ptr = NULL;
+	uint8_t* _tmp_output_aggregation_ptr = ms->ms_output_aggregation_ptr;
+	uint32_t _tmp_output_size = ms->ms_output_size;
+	size_t _len_output_aggregation_ptr = _tmp_output_size;
+	uint8_t* _in_output_aggregation_ptr = NULL;
+	uint32_t* _tmp_bytewritten = ms->ms_bytewritten;
+	size_t _len_bytewritten = sizeof(uint32_t);
+	uint32_t* _in_bytewritten = NULL;
+
+	CHECK_UNIQUE_POINTER(_tmp_sign_user_msg_ptr, _len_sign_user_msg_ptr);
+	CHECK_UNIQUE_POINTER(_tmp_current_aggregation_ptr, _len_current_aggregation_ptr);
+	CHECK_UNIQUE_POINTER(_tmp_sealed_tee_prv_key_ptr, _len_sealed_tee_prv_key_ptr);
+	CHECK_UNIQUE_POINTER(_tmp_output_aggregation_ptr, _len_output_aggregation_ptr);
+	CHECK_UNIQUE_POINTER(_tmp_bytewritten, _len_bytewritten);
+
+	//
+	// fence after pointer checks
+	//
+	sgx_lfence();
+
+	if (_tmp_sign_user_msg_ptr != NULL && _len_sign_user_msg_ptr != 0) {
+		if ( _len_sign_user_msg_ptr % sizeof(*_tmp_sign_user_msg_ptr) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		_in_sign_user_msg_ptr = (uint8_t*)malloc(_len_sign_user_msg_ptr);
+		if (_in_sign_user_msg_ptr == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		if (memcpy_s(_in_sign_user_msg_ptr, _len_sign_user_msg_ptr, _tmp_sign_user_msg_ptr, _len_sign_user_msg_ptr)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+
+	}
+	if (_tmp_current_aggregation_ptr != NULL && _len_current_aggregation_ptr != 0) {
+		if ( _len_current_aggregation_ptr % sizeof(*_tmp_current_aggregation_ptr) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		_in_current_aggregation_ptr = (uint8_t*)malloc(_len_current_aggregation_ptr);
+		if (_in_current_aggregation_ptr == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		if (memcpy_s(_in_current_aggregation_ptr, _len_current_aggregation_ptr, _tmp_current_aggregation_ptr, _len_current_aggregation_ptr)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+
+	}
+	if (_tmp_sealed_tee_prv_key_ptr != NULL && _len_sealed_tee_prv_key_ptr != 0) {
+		if ( _len_sealed_tee_prv_key_ptr % sizeof(*_tmp_sealed_tee_prv_key_ptr) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		_in_sealed_tee_prv_key_ptr = (uint8_t*)malloc(_len_sealed_tee_prv_key_ptr);
+		if (_in_sealed_tee_prv_key_ptr == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		if (memcpy_s(_in_sealed_tee_prv_key_ptr, _len_sealed_tee_prv_key_ptr, _tmp_sealed_tee_prv_key_ptr, _len_sealed_tee_prv_key_ptr)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+
+	}
+	if (_tmp_output_aggregation_ptr != NULL && _len_output_aggregation_ptr != 0) {
+		if ( _len_output_aggregation_ptr % sizeof(*_tmp_output_aggregation_ptr) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		if ((_in_output_aggregation_ptr = (uint8_t*)malloc(_len_output_aggregation_ptr)) == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		memset((void*)_in_output_aggregation_ptr, 0, _len_output_aggregation_ptr);
+	}
+	if (_tmp_bytewritten != NULL && _len_bytewritten != 0) {
+		if ( _len_bytewritten % sizeof(*_tmp_bytewritten) != 0)
+		{
+			status = SGX_ERROR_INVALID_PARAMETER;
+			goto err;
+		}
+		if ((_in_bytewritten = (uint32_t*)malloc(_len_bytewritten)) == NULL) {
+			status = SGX_ERROR_OUT_OF_MEMORY;
+			goto err;
+		}
+
+		memset((void*)_in_bytewritten, 0, _len_bytewritten);
+	}
+
+	ms->ms_retval = ecall_aggregate((const uint8_t*)_in_sign_user_msg_ptr, _tmp_sign_user_msg_len, (const uint8_t*)_in_current_aggregation_ptr, _tmp_current_aggregation_len, _in_sealed_tee_prv_key_ptr, _tmp_sealed_tee_prv_key_len, _in_output_aggregation_ptr, _tmp_output_size, _in_bytewritten);
+	if (_in_output_aggregation_ptr) {
+		if (memcpy_s(_tmp_output_aggregation_ptr, _len_output_aggregation_ptr, _in_output_aggregation_ptr, _len_output_aggregation_ptr)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+	}
+	if (_in_bytewritten) {
+		if (memcpy_s(_tmp_bytewritten, _len_bytewritten, _in_bytewritten, _len_bytewritten)) {
+			status = SGX_ERROR_UNEXPECTED;
+			goto err;
+		}
+	}
+
+err:
+	if (_in_sign_user_msg_ptr) free(_in_sign_user_msg_ptr);
+	if (_in_current_aggregation_ptr) free(_in_current_aggregation_ptr);
+	if (_in_sealed_tee_prv_key_ptr) free(_in_sealed_tee_prv_key_ptr);
+	if (_in_output_aggregation_ptr) free(_in_output_aggregation_ptr);
 	if (_in_bytewritten) free(_in_bytewritten);
 	return status;
 }
@@ -801,14 +958,15 @@ static sgx_status_t SGX_CDECL sgx_t_global_exit_ecall(void* pms)
 
 SGX_EXTERNC const struct {
 	size_t nr_ecall;
-	struct {void* ecall_addr; uint8_t is_priv; uint8_t is_switchless;} ecall_table[6];
+	struct {void* ecall_addr; uint8_t is_priv; uint8_t is_switchless;} ecall_table[7];
 } g_ecall_table = {
-	6,
+	7,
 	{
 		{(void*)(uintptr_t)sgx_new_tee_signing_key, 0, 0},
 		{(void*)(uintptr_t)sgx_unseal_to_pubkey, 0, 0},
 		{(void*)(uintptr_t)sgx_test_main_entrance, 0, 0},
-		{(void*)(uintptr_t)sgx_client_submit, 0, 0},
+		{(void*)(uintptr_t)sgx_ecall_client_submit, 0, 0},
+		{(void*)(uintptr_t)sgx_ecall_aggregate, 0, 0},
 		{(void*)(uintptr_t)sgx_t_global_init_ecall, 0, 0},
 		{(void*)(uintptr_t)sgx_t_global_exit_ecall, 0, 0},
 	}
@@ -816,70 +974,70 @@ SGX_EXTERNC const struct {
 
 SGX_EXTERNC const struct {
 	size_t nr_ocall;
-	uint8_t entry_table[60][6];
+	uint8_t entry_table[60][7];
 } g_dyn_entry_table = {
 	60,
 	{
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
-		{0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
+		{0, 0, 0, 0, 0, 0, 0, },
 	}
 };
 

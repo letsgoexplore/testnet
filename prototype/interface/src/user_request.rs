@@ -42,6 +42,13 @@ pub struct SendRequest {
     pub server_keys: Vec<ServerSecret>,
 }
 
+// TODO: do this
+// impl Debug for SendRequest {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+//         f.debug_struct()
+//     }
+// }
+
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SignedUserMessage {
@@ -53,12 +60,92 @@ pub struct SignedUserMessage {
     pub tee_pk: PubKey,
 }
 
-impl SignedUserMessage {
-    pub const fn size() -> usize {
-        std::mem::size_of::<SignedUserMessage>()
+pub trait Size {
+    fn size() -> usize;
+    fn size_marshalled() -> usize;
+}
+
+impl<T> Size for T {
+    fn size() -> usize {
+        std::mem::size_of::<T>()
     }
 
-    pub const fn size_marshalled() -> usize {
-        std::mem::size_of::<SignedUserMessage>() * 2
+    fn size_marshalled() -> usize {
+        std::mem::size_of::<T>() * 2
+    }
+}
+
+// a wrapper around RawMessage so that we can impl traits
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Deserialize)]
+pub struct DCMessage {
+    #[serde(with = "BigArray")]
+    pub msg: RawMessage,
+}
+
+// return a reasonable zero value
+pub trait Zero {
+    fn zero() -> Self;
+}
+
+impl Zero for RawMessage {
+    fn zero() -> Self {
+        [0 as u8; DC_NET_MESSAGE_LENGTH]
+    }
+}
+
+impl Zero for DCMessage {
+    fn zero() -> Self {
+        DCMessage {
+            msg: RawMessage::zero(),
+        }
+    }
+}
+
+use std::ops::Deref;
+
+#[cfg(feature = "trusted")]
+use sgx_rand::{Rand, Rng};
+#[cfg(feature = "trusted")]
+impl Rand for DCMessage {
+    fn rand<R: Rng>(rng: &mut R) -> Self {
+        let mut r = DCMessage::zero();
+        rng.fill_bytes(&mut r.msg);
+
+        r
+    }
+}
+
+impl std::cmp::PartialEq for DCMessage {
+    fn eq(&self, other: &Self) -> bool {
+        self.msg.iter().zip(&other.msg).all(|(x, y)| x == y)
+    }
+}
+
+use std::fmt::{Debug, Formatter, Result as FmtResult};
+
+impl Debug for DCMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(&hex::encode(&self))
+    }
+}
+
+impl From<RawMessage> for DCMessage {
+    fn from(raw: RawMessage) -> Self {
+        return DCMessage { msg: raw };
+    }
+}
+
+impl Deref for DCMessage {
+    type Target = RawMessage;
+
+    fn deref(&self) -> &Self::Target {
+        &self.msg
+    }
+}
+
+impl AsRef<[u8]> for DCMessage {
+    fn as_ref(&self) -> &[u8] {
+        &self.msg
     }
 }

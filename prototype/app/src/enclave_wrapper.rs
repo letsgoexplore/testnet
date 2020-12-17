@@ -22,7 +22,7 @@ extern "C" {
         inp_len: u32,
     ) -> sgx_status_t;
 
-    fn client_submit(
+    fn ecall_client_submit(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
         send_request: *const u8,
@@ -32,6 +32,20 @@ extern "C" {
         output: *mut u8,
         output_size: usize,
         bytes_written: *mut usize,
+    ) -> sgx_status_t;
+
+    fn ecall_aggregate(
+        eid: sgx_enclave_id_t,
+        retval: *mut sgx_status_t,
+        sign_user_msg_ptr: *const u8,
+        sign_user_msg_len: usize,
+        current_aggregation_ptr: *const u8,
+        current_aggregation_len: usize,
+        sealed_tee_prv_key_ptr: *const u8,
+        sealed_tee_prv_key_len: usize,
+        output_aggregation_ptr: *mut u8,
+        output_size: usize,
+        output_bytes_written: *mut usize,
     ) -> sgx_status_t;
 
     fn test_main_entrance(eid: sgx_enclave_id_t, retval: *mut sgx_status_t) -> sgx_status_t;
@@ -132,25 +146,22 @@ impl DcNetEnclave {
         Ok(())
     }
 
-    // TODO: sealed_tee_prv_key should be sealed
     pub fn client_submit(
         &self,
         send_request: &SendRequest,
         sealed_tee_prv_key: &Vec<u8>,
     ) -> SgxResult<SignedUserMessage> {
-        let req_json = serde_cbor::to_vec(&send_request).unwrap();
-        // this should be big enough
-        // TODO: serde_json is very inefficient with [u8]. but who cares for now :-)
+        let marshaled_request = serde_cbor::to_vec(&send_request).unwrap();
         let mut output = vec![0; SignedUserMessage::size_marshalled()];
         let mut output_bytes_written: usize = 0;
 
         let mut ret = sgx_status_t::default();
         let call_ret = unsafe {
-            client_submit(
+            ecall_client_submit(
                 self.enclave.geteid(),
                 &mut ret,
-                req_json.as_ptr(),
-                req_json.len(),
+                marshaled_request.as_ptr(),
+                marshaled_request.len(),
                 sealed_tee_prv_key.as_ptr(),
                 sealed_tee_prv_key.len(),
                 output.as_mut_ptr(),
@@ -179,6 +190,49 @@ impl DcNetEnclave {
         })
     }
 
+    // Note: if marshalled_current_aggregation is empty (len = 0), an empty aggregation is created
+    // and the signed message is aggregated into that.
+    pub fn aggregate(
+        &self,
+        send_request: &SignedUserMessage,
+        marshalled_current_aggregation: &Vec<u8>,
+        sealed_tee_prv_key: &Vec<u8>,
+    ) -> SgxResult<Vec<u8>> {
+        let marshalled_msg = serde_cbor::to_vec(&send_request).unwrap();
+
+        // todo: make sure this is big enough
+        let mut output = vec![0; 10240];
+        let mut output_bytes_written: usize = 0;
+
+        let mut ret = sgx_status_t::default();
+
+        let ecall_ret = unsafe {
+            ecall_aggregate(
+                self.geteid(),
+                &mut ret,
+                marshalled_msg.as_ptr(),
+                marshalled_msg.len(),
+                marshalled_current_aggregation.as_ptr(),
+                marshalled_current_aggregation.len(),
+                sealed_tee_prv_key.as_ptr(),
+                sealed_tee_prv_key.len(),
+                output.as_mut_ptr(),
+                output.len(),
+                &mut output_bytes_written,
+            )
+        };
+
+        if ecall_ret != SGX_SUCCESS {
+            return Err(ecall_ret);
+        }
+
+        if ret != SGX_SUCCESS {
+            return Err(ret);
+        }
+
+        Ok(output[..output_bytes_written].to_vec())
+    }
+
     pub fn run_enclave_tests(&self) -> SgxError {
         let mut retval = SGX_SUCCESS;
         unsafe {
@@ -202,6 +256,19 @@ mod tests {
     use interface::*;
     use sgx_status_t::SGX_SUCCESS;
 
+    fn dummy_send_req() -> SendRequest {
+        SendRequest {
+            user_id: [0 as u8; 32],
+            message: [9 as u8; DC_NET_MESSAGE_LENGTH],
+            round: 0,
+            server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
+        }
+    }
+
+    fn test_signing_key() -> Vec<u8> {
+        base64::decode("BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAIaOkrL+G/tjwqpYb2cPLagU2yBuV2gTFnrQR1YRijjLAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAJAAAAAAAAAAAAAAAAAAAAMcwvJUTIR5owP6OfXybb09woO+S2ZZ1DHRXUFLcu7GfdV+AQ6ddvsqjCZpdA0X+BQECAwQ=").unwrap()
+    }
+
     #[test]
     fn key_seal_unseal() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
@@ -216,15 +283,8 @@ mod tests {
     fn client_submit() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
-        let req_1 = SendRequest {
-            user_id: [0 as u8; 32],
-            message: [9 as u8; DC_NET_MESSAGE_LENGTH],
-            round: 0,
-            server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
-        };
-
-        // using a testing key
-        let sgx_key_sealed = base64::decode("BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAIaOkrL+G/tjwqpYb2cPLagU2yBuV2gTFnrQR1YRijjLAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAJAAAAAAAAAAAAAAAAAAAAMcwvJUTIR5owP6OfXybb09woO+S2ZZ1DHRXUFLcu7GfdV+AQ6ddvsqjCZpdA0X+BQECAwQ=").unwrap();
+        let req_1 = dummy_send_req();
+        let sgx_key_sealed = test_signing_key();
 
         let resp_1 = enc.client_submit(&req_1, &sgx_key_sealed).unwrap();
         let req_2 = SendRequest {
@@ -238,6 +298,28 @@ mod tests {
 
         // resp 2 == req 1 because server's are xor twice
         assert_eq!(resp_2.message, req_1.message);
+
+        enc.destroy();
+    }
+
+    #[test]
+    fn aggregation_init() {
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+
+        let req_1 = dummy_send_req();
+        let sgx_key_sealed = test_signing_key();
+
+        let resp_1 = enc.client_submit(&req_1, &sgx_key_sealed).unwrap();
+        let req_2 = SendRequest {
+            user_id: [0 as u8; 32],
+            message: resp_1.message,
+            round: 0,
+            server_keys: req_1.server_keys,
+        };
+
+        let agg = enc
+            .aggregate(&resp_1, &Vec::new(), &sgx_key_sealed)
+            .unwrap();
 
         enc.destroy();
     }
