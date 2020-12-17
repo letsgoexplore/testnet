@@ -2,7 +2,6 @@ use crate::crypto::*;
 use crate::interface::*;
 use crate::types::*;
 
-use sgx_serialize::{Decoder, Encoder};
 use sgx_types::SgxResult;
 use std::prelude::v1::*;
 

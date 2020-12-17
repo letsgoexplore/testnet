@@ -36,13 +36,12 @@ extern crate sha2;
 #[macro_use]
 extern crate serde;
 extern crate serde_cbor;
+#[macro_use]
+extern crate serde_big_array;
+
+big_array! { BigArray; }
 
 use sgx_types::*;
-
-extern crate sgx_serialize;
-// use sgx_serialize::{DeSerializeHelper, SerializeHelper};
-#[macro_use]
-extern crate sgx_serialize_derive;
 
 extern crate sgx_rand;
 extern crate sgx_tseal;

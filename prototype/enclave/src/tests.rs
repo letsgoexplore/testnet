@@ -122,8 +122,8 @@ fn aggregate() {
     assert_eq!(agg.aggregated_msg, DCMessage::zero());
 }
 
+use serde_cbor;
 use sgx_rand::Rng;
-use sgx_serialize::{DeSerializeHelper, SerializeHelper};
 
 fn serde_dc_message() {
     let mut rand = sgx_rand::SgxRng::new().unwrap();
@@ -131,13 +131,8 @@ fn serde_dc_message() {
     for _i in 0..1000 {
         let sample = rand.gen::<DCMessage>();
 
-        // new a SerializeHelper
-        let helper = SerializeHelper::new();
-        // encode data
-        let data = helper.encode(&sample).unwrap();
-        // decode data
-        let helper = DeSerializeHelper::<DCMessage>::new(data);
-        let c = helper.decode().unwrap();
+        let data = serde_cbor::to_vec(&sample).expect("ser");
+        let c: DCMessage = serde_cbor::from_slice(&data).expect("de");
 
         assert_eq!(c, sample);
     }

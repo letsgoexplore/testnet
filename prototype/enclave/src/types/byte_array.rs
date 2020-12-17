@@ -1,6 +1,5 @@
 use crate::interface::*;
 use crate::types::*;
-use sgx_serialize::{Decoder, Encoder};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::ops::Deref;
 use std::prelude::v1::*;
@@ -30,8 +29,9 @@ impl Xor for Vec<u8> {
 }
 
 // a wrapper around RawMessage so that we can impl traits
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DCMessage {
+    #[serde(with = "BigArray")]
     msg: RawMessage,
 }
 
@@ -68,36 +68,6 @@ impl Deref for DCMessage {
 impl AsRef<[u8]> for DCMessage {
     fn as_ref(&self) -> &[u8] {
         &self.msg
-    }
-}
-
-impl sgx_serialize::Serializable for DCMessage {
-    fn encode<S: sgx_serialize::Encoder>(
-        &self,
-        s: &mut S,
-    ) -> Result<(), <S as sgx_serialize::Encoder>::Error> {
-        s.emit_usize(self.msg.len())?;
-        for elem in &self.msg {
-            s.emit_u8(*elem)?;
-        }
-        Ok(())
-    }
-}
-
-impl sgx_serialize::DeSerializable for DCMessage {
-    fn decode<D: Decoder>(d: &mut D) -> Result<Self, <D as Decoder>::Error> {
-        let mut msg = RawMessage::zero();
-
-        let len = d.read_usize()?;
-        if len != DC_NET_MESSAGE_LENGTH {
-            return Err(d.error("invalid len"));
-        }
-
-        for i in 0..len {
-            msg[i] = d.read_u8()?;
-        }
-
-        Ok(DCMessage { msg })
     }
 }
 
