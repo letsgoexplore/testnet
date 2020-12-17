@@ -1,4 +1,3 @@
-use super::*;
 use crate::interface::*;
 use crypto::Signable;
 use std::vec::Vec;

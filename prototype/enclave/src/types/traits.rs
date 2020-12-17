@@ -1,7 +1,4 @@
 use crate::interface::*;
-use crate::types::*;
-use std::fmt::{Debug, Formatter, Result as FmtResult};
-use std::ops::Deref;
 use std::prelude::v1::*;
 
 // various functions for computing a.xor(b)
@@ -33,12 +30,8 @@ impl Xor for Vec<u8> {
     }
 }
 
-use crate::hex;
-
 impl Xor for DCMessage {
     fn xor(&self, other: &DCMessage) -> Self {
-        DCMessage {
-            msg: self.msg.xor(&other.msg),
-        }
+        DCMessage::from(AsRef::<RawMessage>::as_ref(self).xor(other.as_ref()))
     }
 }

@@ -1,19 +1,21 @@
+extern crate interface;
 extern crate sgx_types;
 
+use serde_cbor;
 use sgx_status_t;
-
-extern crate interface;
-
-use self::interface::*;
+use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
+use sgx_types::*;
 use std::convert::TryInto;
 use std::prelude::v1::*;
-
-use sgx_types::*;
+use std::slice;
 
 use crypto;
-use types::*;
-
 use crypto::SignMutable;
+use ecall::*;
+use types::*;
+use utils;
+
+use self::interface::*;
 
 // the safe version
 fn submit(request: &SendRequest, tee_sk: &PrvKey) -> DcNetResult<SignedUserMessage> {
@@ -31,15 +33,6 @@ fn submit(request: &SendRequest, tee_sk: &PrvKey) -> DcNetResult<SignedUserMessa
 
     Ok(mutable)
 }
-
-use ecall::*;
-use std::slice;
-use std::string;
-use utils;
-
-use serde;
-use serde_cbor;
-use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 
 #[no_mangle]
 pub extern "C" fn ecall_client_submit(

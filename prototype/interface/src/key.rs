@@ -1,9 +1,6 @@
 extern crate sgx_types;
 
-use sgx_types::{
-    sgx_ec256_private_t, sgx_ec256_public_t, sgx_ec256_signature_t, SGX_ECP256_KEY_SIZE,
-    SGX_HMAC256_KEY_SIZE, SGX_NISTP_ECP256_KEY_SIZE,
-};
+use sgx_types::{sgx_ec256_private_t, sgx_ec256_public_t, SGX_ECP256_KEY_SIZE};
 
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
@@ -11,11 +8,6 @@ use core::fmt::{Debug, Display, Formatter};
 use sgx_types::sgx_status_t;
 #[allow(unused_imports)]
 use std::convert::TryFrom;
-
-use crate::params::*;
-
-// use id is sha-256 of some public key (just like)
-pub type UserId = [u8; USER_ID_LENGTH];
 
 // A wrapper around sgx_ec256_public_t
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]

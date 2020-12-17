@@ -4,6 +4,7 @@ use sgx_urts;
 use sgx_types::*;
 use sgx_urts::SgxEnclave;
 
+use interface::Size;
 use interface::*;
 
 extern "C" {
@@ -152,7 +153,7 @@ impl DcNetEnclave {
         sealed_tee_prv_key: &Vec<u8>,
     ) -> SgxResult<SignedUserMessage> {
         let marshaled_request = serde_cbor::to_vec(&send_request).unwrap();
-        let mut output = vec![0; SignedUserMessage::size_marshalled()];
+        let mut output = vec![0; SignedUserMessage::size_marshaled()];
         let mut output_bytes_written: usize = 0;
 
         let mut ret = sgx_status_t::default();
@@ -254,11 +255,10 @@ mod tests {
     extern crate interface;
     extern crate sgx_types;
     use interface::*;
-    use sgx_status_t::SGX_SUCCESS;
 
     fn dummy_send_req() -> SendRequest {
         SendRequest {
-            user_id: [0 as u8; 32],
+            user_id: UserId::default(),
             message: [9 as u8; DC_NET_MESSAGE_LENGTH],
             round: 0,
             server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
@@ -288,7 +288,7 @@ mod tests {
 
         let resp_1 = enc.client_submit(&req_1, &sgx_key_sealed).unwrap();
         let req_2 = SendRequest {
-            user_id: [0 as u8; 32],
+            user_id: UserId::default(),
             message: resp_1.message,
             round: 0,
             server_keys: req_1.server_keys,
@@ -310,14 +310,8 @@ mod tests {
         let sgx_key_sealed = test_signing_key();
 
         let resp_1 = enc.client_submit(&req_1, &sgx_key_sealed).unwrap();
-        let req_2 = SendRequest {
-            user_id: [0 as u8; 32],
-            message: resp_1.message,
-            round: 0,
-            server_keys: req_1.server_keys,
-        };
 
-        let agg = enc
+        let _agg = enc
             .aggregate(&resp_1, &Vec::new(), &sgx_key_sealed)
             .unwrap();
 

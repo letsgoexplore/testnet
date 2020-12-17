@@ -6,7 +6,7 @@ use std::convert::TryInto;
 
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
-use sha2::{Digest, Sha256};
+use sha2::Sha256;
 
 use super::*;
 use types::Xor;

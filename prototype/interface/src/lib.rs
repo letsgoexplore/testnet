@@ -36,10 +36,13 @@ mod footprint_sched;
 mod key;
 mod params;
 mod signature;
+mod traits;
 mod user_request;
 
+#[allow(dead_code)]
 pub use footprint_sched::*;
 pub use key::*;
 pub use params::*;
 pub use signature::*;
+pub use traits::{Size, Zero};
 pub use user_request::*;

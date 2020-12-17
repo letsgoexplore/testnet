@@ -2,7 +2,6 @@ use crypto;
 use types::*;
 
 use crate::sgx_tunittest::*;
-use crate::sgx_types;
 use crate::std::prelude::v1::*;
 
 use sgx_types::sgx_status_t;
@@ -14,7 +13,6 @@ use crate::interface::*;
 use crypto::{SignMutable, Signable};
 
 use crate::ecall;
-use crate::types::*;
 use serde_cbor;
 use sgx_rand::Rng;
 
@@ -81,7 +79,7 @@ fn sign() -> (KeyPair, SignedUserMessage) {
     let keypair = test_keypair().unwrap();
 
     let mut mutable = SignedUserMessage {
-        user_id: [0 as u8; 32],
+        user_id: UserId::default(),
         round: 0,
         message: test_raw_msg(),
         tee_sig: Default::default(),
@@ -111,7 +109,7 @@ fn aggregate() {
 
     // let's use a different user id and submit again
     let mut new_msg = signed_msg;
-    new_msg.user_id = [1 as u8; 32];
+    new_msg.user_id = UserId::from([1 as u8; 32]);
     new_msg.sign_mut(&keypair.prv_key).expect("sig");
     // aggregate same message twice so we should get zero.
     let agg = ecall::aggregate(&new_msg, &agg, &keypair.prv_key).expect("agg");

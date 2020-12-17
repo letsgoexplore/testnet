@@ -1,5 +1,5 @@
 use sgx_types::sgx_status_t;
-use std::string::{String, ToString};
+use std::string::String;
 
 quick_error! {
     #[derive(Debug)]

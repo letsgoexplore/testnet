@@ -20,7 +20,7 @@ impl Signable for SignedUserMessage {
         output.resize(4, 0);
         LittleEndian::write_u32(&mut output, self.round);
 
-        output.extend(&self.user_id[..]);
+        output.extend(self.user_id.as_ref());
         output.extend(&self.message[..]);
 
         output
