@@ -24,9 +24,9 @@ pub struct DCMessage {
 }
 
 #[cfg(feature = "trusted")]
-use sgx_rand::{Rand, Rng};
-#[cfg(feature = "trusted")]
 use crate::traits::Zero;
+#[cfg(feature = "trusted")]
+use sgx_rand::{Rand, Rng};
 #[cfg(feature = "trusted")]
 impl Rand for DCMessage {
     fn rand<R: Rng>(rng: &mut R) -> Self {

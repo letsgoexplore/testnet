@@ -5,7 +5,6 @@ use serde_cbor;
 use sgx_status_t;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 
-
 use std::prelude::v1::*;
 use std::slice;
 

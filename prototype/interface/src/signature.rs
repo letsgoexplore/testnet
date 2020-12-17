@@ -23,14 +23,14 @@ impl From<sgx_ec256_signature_t> for Signature {
     }
 }
 
-use std::fmt::{Debug,Formatter,Result as FmtResult};
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::prelude::v1::*;
 
 impl Debug for Signature {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let hex_u32_vec = |array: &[u32]| {
             let x = Vec::<u8>::with_capacity(4 * self.x.len());
-            let x = array.iter().fold(x, | mut acc,elem | {
+            let x = array.iter().fold(x, |mut acc, elem| {
                 acc.extend(&elem.to_be_bytes());
                 acc
             });

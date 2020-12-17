@@ -20,9 +20,9 @@
 extern crate sgx_types;
 #[macro_use]
 extern crate sgx_tstd as std;
-extern crate sgx_tunittest;
 extern crate interface;
 extern crate sgx_tcrypto;
+extern crate sgx_tunittest;
 
 #[macro_use]
 extern crate quick_error;

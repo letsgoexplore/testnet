@@ -1,16 +1,12 @@
 use sgx_types::{sgx_sealed_data_t, sgx_status_t};
 
-
-
 use sgx_rand::Rng;
-use sgx_tseal::{SgxSealedData};
+use sgx_tseal::SgxSealedData;
 
 use core::convert::TryFrom;
 use interface::{PrvKey, PubKey};
 
-use sgx_types::sgx_status_t::{
-    SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED, SGX_SUCCESS,
-};
+use sgx_types::sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED, SGX_SUCCESS};
 
 #[no_mangle]
 pub extern "C" fn new_tee_signing_key(

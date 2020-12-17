@@ -2,8 +2,6 @@ use interface::*;
 
 use std::prelude::v1::*;
 
-
-
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
 use sha2::Sha256;
