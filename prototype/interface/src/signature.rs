@@ -22,37 +22,3 @@ impl From<sgx_ec256_signature_t> for Signature {
         Self { x: sig.x, y: sig.y }
     }
 }
-
-#[cfg(feature = "trusted")]
-impl sgx_serialize::Serializable for Signature {
-    fn encode<S: sgx_serialize::Encoder>(
-        &self,
-        s: &mut S,
-    ) -> Result<(), <S as sgx_serialize::Encoder>::Error> {
-        for elem in &self.x {
-            s.emit_u32(*elem)?;
-        }
-        for elem in &self.y {
-            s.emit_u32(*elem)?;
-        }
-        Ok(())
-    }
-}
-
-#[cfg(feature = "trusted")]
-impl sgx_serialize::DeSerializable for Signature {
-    fn decode<D: sgx_serialize::Decoder>(
-        d: &mut D,
-    ) -> Result<Self, <D as sgx_serialize::Decoder>::Error> {
-        let mut sig = Signature::default();
-        for i in 0..sig.x.len() {
-            sig.x[i] = d.read_u32()?
-        }
-
-        for i in 0..sig.y.len() {
-            sig.y[i] = d.read_u32()?
-        }
-
-        Ok(sig)
-    }
-}

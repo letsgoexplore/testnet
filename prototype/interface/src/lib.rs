@@ -23,9 +23,6 @@ cfg_if! {
         #[macro_use]
         extern crate sgx_rand_derive;
         extern crate sgx_tcrypto;
-        extern crate sgx_serialize;
-        #[macro_use]
-        extern crate sgx_serialize_derive;
     } else {
         compile_error!{"must be either trusted or untrusted"}
     }

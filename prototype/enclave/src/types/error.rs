@@ -1,5 +1,5 @@
 use sgx_types::sgx_status_t;
-use std::string::ToString;
+use std::string::{String, ToString};
 
 quick_error! {
     #[derive(Debug)]
@@ -12,7 +12,11 @@ quick_error! {
             from()
             cause(err)
         }
-        Other
+        Other(err: String) {
+            description(err)
+            display("Aggregation error {}", err)
+            from()
+        }
     }
 }
 

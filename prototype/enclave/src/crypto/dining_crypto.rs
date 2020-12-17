@@ -62,7 +62,7 @@ pub fn derive_round_secret(
             LittleEndian::write_u32(&mut info, round);
             match hk.expand(&info, &mut round_secret.secret) {
                 Ok(()) => Ok(round_secret),
-                Err(e) => Err(CryptoError::Other),
+                Err(e) => Err(CryptoError::Other(format!("HKDF {}", e))),
             }
         })
         .collect::<CryptoResult<Vec<RoundSecret>>>()?;
