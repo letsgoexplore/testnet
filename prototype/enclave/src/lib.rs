@@ -49,10 +49,8 @@ extern crate sgx_tseal;
 #[macro_use]
 mod macros;
 
-mod aggregation;
 mod crypto;
-mod keygen;
-mod submit;
+mod ecall;
 mod tests;
 mod types;
 

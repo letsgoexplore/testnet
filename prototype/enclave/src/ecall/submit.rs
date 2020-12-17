@@ -32,10 +32,10 @@ fn submit(request: &SendRequest, tee_sk: &PrvKey) -> DcNetResult<SignedUserMessa
     Ok(mutable)
 }
 
+use ecall::*;
 use std::slice;
 use std::string;
 
-use keygen;
 use serde;
 use serde_cbor;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
@@ -57,7 +57,7 @@ pub extern "C" fn client_submit(
 
     // unseal SGX signing key
     let tee_prv_key_unsealed =
-        match keygen::unseal_data::<PrvKey>(sealed_tee_prv_key, sealed_tee_prv_key_len) {
+        match unseal_data::<PrvKey>(sealed_tee_prv_key, sealed_tee_prv_key_len) {
             Ok(k) => k,
             Err(e) => return e,
         };

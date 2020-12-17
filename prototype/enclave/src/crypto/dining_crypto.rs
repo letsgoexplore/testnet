@@ -9,28 +9,29 @@ use hkdf::Hkdf;
 use sha2::{Digest, Sha256};
 
 use super::*;
+use types::{Xor, Zero};
 
 pub struct RoundSecret {
     pub secret: [u8; DC_NET_MESSAGE_LENGTH],
 }
 
-impl RoundSecret {
-    pub fn zero() -> Self {
+impl Zero for RoundSecret {
+    fn zero() -> Self {
         return RoundSecret {
             secret: [0; DC_NET_MESSAGE_LENGTH],
         };
     }
+}
 
-    pub fn xor(a: &RoundSecret, b: &RoundSecret) -> Self {
-        let mut output = RoundSecret::zero();
-
-        for i in 0..DC_NET_MESSAGE_LENGTH {
-            output.secret[i] = a.secret[i] ^ b.secret[i]
+impl Xor for RoundSecret {
+    fn xor(&self, other: &Self) -> Self {
+        RoundSecret {
+            secret: self.secret.xor(&other.secret),
         }
-
-        output
     }
+}
 
+impl RoundSecret {
     pub fn encrypt(&self, msg: &RawMessage) -> RawMessage {
         let raw: Vec<u8> = self.secret.iter().zip(msg).map(|(a, b)| a ^ b).collect();
 

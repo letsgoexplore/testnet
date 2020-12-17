@@ -13,6 +13,11 @@ use sha2::Sha256;
 use crate::interface::*;
 use crypto::{SignMutable, Signable};
 
+use crate::ecall;
+use crate::types::*;
+use serde_cbor;
+use sgx_rand::Rng;
+
 pub fn test_all() -> sgx_status_t {
     // rsgx_unit_tests!(test_agg_msg);
     // rsgx_unit_tests!(scheduler_tests);
@@ -91,39 +96,28 @@ fn sign() -> (KeyPair, SignedUserMessage) {
     (keypair, mutable)
 }
 
-fn round() {
-    // xor in server's key and xor them out
-    unimplemented!()
-}
-
-use crate::aggregation;
-use crate::types::*;
-
 fn aggregate() {
     let (keypair, signed_msg) = sign();
 
-    let agg = aggregation::aggregate(&signed_msg, &AggregatedMessage::zero(), &keypair.prv_key)
-        .expect("agg");
+    let agg =
+        ecall::aggregate(&signed_msg, &AggregatedMessage::zero(), &keypair.prv_key).expect("agg");
     assert!(agg.verify().expect("ver"));
 
     // should not change since we agg in a zero message
     assert_eq!(agg.aggregated_msg, DCMessage::from(signed_msg.message));
 
     // aggregate again the same message should error
-    assert!(aggregation::aggregate(&signed_msg, &agg, &keypair.prv_key).is_err());
+    assert!(ecall::aggregate(&signed_msg, &agg, &keypair.prv_key).is_err());
 
     // let's use a different user id and submit again
     let mut new_msg = signed_msg;
     new_msg.user_id = [1 as u8; 32];
     new_msg.sign_mut(&keypair.prv_key).expect("sig");
     // aggregate same message twice so we should get zero.
-    let agg = aggregation::aggregate(&new_msg, &agg, &keypair.prv_key).expect("agg");
+    let agg = ecall::aggregate(&new_msg, &agg, &keypair.prv_key).expect("agg");
     assert!(agg.verify().expect("ver"));
     assert_eq!(agg.aggregated_msg, DCMessage::zero());
 }
-
-use serde_cbor;
-use sgx_rand::Rng;
 
 fn serde_dc_message() {
     let mut rand = sgx_rand::SgxRng::new().unwrap();
