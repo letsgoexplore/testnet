@@ -27,7 +27,7 @@ quick_error! {
         }
         AggregationError(err: &'static str) {
             description(err)
-            display("Error {}", err)
+            display("Aggregation error {}", err)
             from()
         }
     }

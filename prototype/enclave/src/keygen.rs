@@ -4,12 +4,8 @@ use sgx_types::{
 
 use std::mem::size_of;
 
-extern crate sgx_rand;
-extern crate sgx_tseal;
-
-use self::sgx_rand::Rng;
-
-use self::sgx_tseal::{SgxSealedData, SgxUnsealedData};
+use sgx_rand::Rng;
+use sgx_tseal::{SgxSealedData, SgxUnsealedData};
 
 use core::convert::TryFrom;
 use interface::{PrvKey, PubKey};

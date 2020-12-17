@@ -17,7 +17,7 @@ pub fn test_all() -> sgx_status_t {
     // rsgx_unit_tests!(test_agg_msg);
     // rsgx_unit_tests!(scheduler_tests);
     // rsgx_unit_tests!(test_dc_msg);
-    rsgx_unit_tests!(xor, sign, hkdf);
+    rsgx_unit_tests!(xor, sign, hkdf, aggregate, serde_dc_message);
     sgx_status_t::SGX_SUCCESS
 }
 
@@ -41,17 +41,23 @@ fn hkdf() {
 fn xor() {
     let a: Vec<u8> = vec![1, 2, 3];
 
-    assert_eq!(a, crypto::xor(&a, &vec![0, 0, 0]).unwrap().to_vec());
+    assert_eq!(a, a.xor(&vec![0, 0, 0]).to_vec());
 
     let b: Vec<u8> = vec![5, 6, 7];
     let c: Vec<u8> = vec![1 ^ 5, 2 ^ 6, 3 ^ 7];
 
-    let d = crypto::xor(&a, &b).unwrap();
+    let d = a.xor(&b);
 
     assert_eq!(c, d);
 
+    // xor returns the smallest
     let b = vec![4, 5];
-    assert!(crypto::xor(&a, &b).is_err());
+    assert_eq!(a.xor(&b), vec![1 ^ 4, 2 ^ 5]);
+
+    let mut b_mut: Vec<u8> = vec![4, 5];
+    b_mut.xor_mut(&a);
+
+    assert_eq!(b_mut, vec![1 ^ 4, 2 ^ 5]);
 }
 
 fn test_keypair() -> crypto::CryptoResult<KeyPair> {
@@ -66,7 +72,7 @@ fn test_keypair() -> crypto::CryptoResult<KeyPair> {
     }
 }
 
-fn sign() {
+fn sign() -> (KeyPair, SignedUserMessage) {
     let keypair = test_keypair().unwrap();
 
     let mut mutable = SignedUserMessage {
@@ -77,13 +83,50 @@ fn sign() {
         tee_pk: Default::default(),
     };
 
-    mutable.sign(&keypair.prv_key).expect("sign");
+    mutable.sign_mut(&keypair.prv_key).expect("sign");
 
     assert_eq!(mutable.tee_pk, keypair.pub_key);
     assert!(mutable.verify().expect("verify"));
+
+    (keypair, mutable)
 }
 
 fn round() {
     // xor in server's key and xor them out
     unimplemented!()
+}
+
+use crate::aggregation;
+use crate::types::*;
+
+fn aggregate() {
+    let (keypair, signed_msg) = sign();
+
+    let agg = AggregatedMessage::zero();
+
+    let new_agg = aggregation::aggregate(&signed_msg, &agg).expect("agg");
+
+    // should not change since we agg in a zero message
+    assert_eq!(new_agg.aggregated_msg, DCMessage::from(signed_msg.message));
+}
+
+use sgx_rand::Rng;
+use sgx_serialize::{DeSerializeHelper, SerializeHelper};
+
+fn serde_dc_message() {
+    let mut rand = sgx_rand::SgxRng::new().unwrap();
+
+    for i in 0..1000 {
+        let sample = rand.gen::<DCMessage>();
+
+        // new a SerializeHelper
+        let helper = SerializeHelper::new();
+        // encode data
+        let data = helper.encode(&sample).unwrap();
+        // decode data
+        let helper = DeSerializeHelper::<DCMessage>::new(data);
+        let c = helper.decode().unwrap();
+
+        assert_eq!(c, sample);
+    }
 }

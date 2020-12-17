@@ -44,6 +44,9 @@ use sgx_serialize::{DeSerializeHelper, SerializeHelper};
 #[macro_use]
 extern crate sgx_serialize_derive;
 
+extern crate sgx_rand;
+extern crate sgx_tseal;
+
 #[macro_use]
 mod macros;
 

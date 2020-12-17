@@ -10,13 +10,6 @@ use sha2::{Digest, Sha256};
 
 use super::*;
 
-pub fn xor(a: &[u8], b: &[u8]) -> CryptoResult<Vec<u8>> {
-    if a.len() != b.len() {
-        return Err(CryptoError::XorNotEqualLength);
-    }
-    return Ok(a.iter().zip(b).map(|(x, y)| x ^ y).collect());
-}
-
 pub struct RoundSecret {
     pub secret: [u8; DC_NET_MESSAGE_LENGTH],
 }

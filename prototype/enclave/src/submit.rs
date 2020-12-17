@@ -27,7 +27,7 @@ fn submit(request: &SendRequest, tee_sk: &PrvKey) -> DcNetResult<SignedUserMessa
         tee_pk: Default::default(),
     };
 
-    mutable.sign(tee_sk).map_err(DcNetError::from)?;
+    mutable.sign_mut(tee_sk).map_err(DcNetError::from)?;
 
     Ok(mutable)
 }
