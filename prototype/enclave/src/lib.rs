@@ -40,7 +40,7 @@ extern crate serde_json;
 use sgx_types::*;
 
 extern crate sgx_serialize;
-use sgx_serialize::{DeSerializeHelper, SerializeHelper};
+// use sgx_serialize::{DeSerializeHelper, SerializeHelper};
 #[macro_use]
 extern crate sgx_serialize_derive;
 

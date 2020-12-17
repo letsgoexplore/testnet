@@ -19,6 +19,7 @@ pub type UserId = [u8; USER_ID_LENGTH];
 
 // A wrapper around sgx_ec256_public_t
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+// #[cfg_attr(feature = "trusted", derive(Serializable))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
 pub struct PubKey {
     pub gx: [u8; SGX_ECP256_KEY_SIZE],
@@ -67,6 +68,41 @@ impl Into<sgx_ec256_public_t> for PubKey {
     }
 }
 
+#[cfg(feature = "trusted")]
+impl sgx_serialize::Serializable for PubKey {
+    fn encode<S: sgx_serialize::Encoder>(
+        &self,
+        s: &mut S,
+    ) -> Result<(), <S as sgx_serialize::Encoder>::Error> {
+        for elem in &self.gx {
+            s.emit_u8(*elem)?;
+        }
+        for elem in &self.gy {
+            s.emit_u8(*elem)?;
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "trusted")]
+impl sgx_serialize::DeSerializable for PubKey {
+    fn decode<D: sgx_serialize::Decoder>(
+        d: &mut D,
+    ) -> Result<Self, <D as sgx_serialize::Decoder>::Error> {
+        let mut pk = PubKey::default();
+
+        for i in 0..pk.gx.len() {
+            pk.gx[i] = d.read_u8()?;
+        }
+
+        for i in 0..pk.gy.len() {
+            pk.gy[i] = d.read_u8()?;
+        }
+
+        Ok(pk)
+    }
+}
+
 // A wrapper around sgx_ec256_private_t
 #[derive(Copy, Clone, Default)]
 #[cfg_attr(feature = "trusted", derive(Rand))]
@@ -107,45 +143,4 @@ impl Into<sgx_ec256_private_t> for &PrvKey {
 pub struct KeyPair {
     pub prv_key: PrvKey,
     pub pub_key: PubKey,
-}
-
-// A wrapper around sgx_ec256_signature_t
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
-pub struct Signature {
-    pub x: [u32; SGX_NISTP_ECP256_KEY_SIZE],
-    pub y: [u32; SGX_NISTP_ECP256_KEY_SIZE],
-}
-
-impl Into<sgx_ec256_signature_t> for Signature {
-    fn into(self) -> sgx_ec256_signature_t {
-        return sgx_ec256_signature_t {
-            x: self.x,
-            y: self.y,
-        };
-    }
-}
-
-impl From<sgx_ec256_signature_t> for Signature {
-    fn from(sig: sgx_ec256_signature_t) -> Self {
-        Self { x: sig.x, y: sig.y }
-    }
-}
-
-// secret shared by server & user
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
-pub struct ServerSecret {
-    pub secret: [u8; SGX_HMAC256_KEY_SIZE], // sgx_cmac_128bit_key_t
-                                            // TODO: add server public key & signature
-                                            // pubkey: PubKey,
-                                            // sig: Signature,
-}
-
-impl ServerSecret {
-    pub fn gen_test(byte: u8) -> Self {
-        return ServerSecret {
-            secret: [byte; SGX_HMAC256_KEY_SIZE],
-        };
-    }
 }

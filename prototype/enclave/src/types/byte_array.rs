@@ -32,7 +32,7 @@ impl Xor for Vec<u8> {
 // a wrapper around RawMessage so that we can impl traits
 #[derive(Clone)]
 pub struct DCMessage {
-    pub msg: RawMessage,
+    msg: RawMessage,
 }
 
 use crate::hex;
@@ -52,7 +52,7 @@ impl Xor for DCMessage {
 }
 
 impl From<RawMessage> for DCMessage {
-    fn from(raw: [u8; 1024]) -> Self {
+    fn from(raw: RawMessage) -> Self {
         return DCMessage { msg: raw };
     }
 }

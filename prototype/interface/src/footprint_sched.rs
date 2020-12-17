@@ -1,5 +1,5 @@
-use crate::key::Signature;
 use crate::params::*;
+use crate::Signature;
 
 use std::vec::Vec;
 

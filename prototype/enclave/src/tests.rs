@@ -11,7 +11,7 @@ use hkdf::Hkdf;
 use sha2::Sha256;
 
 use crate::interface::*;
-use crypto::{SignMutable, Verifiable};
+use crypto::{SignMutable, Signable};
 
 pub fn test_all() -> sgx_status_t {
     // rsgx_unit_tests!(test_agg_msg);
@@ -50,7 +50,7 @@ fn xor() {
 
     assert_eq!(c, d);
 
-    // xor returns the smallest
+    // xor returns the shortest
     let b = vec![4, 5];
     assert_eq!(a.xor(&b), vec![1 ^ 4, 2 ^ 5]);
 
@@ -77,7 +77,7 @@ fn sign() -> (KeyPair, SignedUserMessage) {
 
     let mut mutable = SignedUserMessage {
         user_id: [0 as u8; 32],
-        round: 100,
+        round: 0,
         message: test_raw_msg(),
         tee_sig: Default::default(),
         tee_pk: Default::default(),
@@ -102,12 +102,24 @@ use crate::types::*;
 fn aggregate() {
     let (keypair, signed_msg) = sign();
 
-    let agg = AggregatedMessage::zero();
-
-    let new_agg = aggregation::aggregate(&signed_msg, &agg).expect("agg");
+    let agg = aggregation::aggregate(&signed_msg, &AggregatedMessage::zero(), &keypair.prv_key)
+        .expect("agg");
+    assert!(agg.verify().expect("ver"));
 
     // should not change since we agg in a zero message
-    assert_eq!(new_agg.aggregated_msg, DCMessage::from(signed_msg.message));
+    assert_eq!(agg.aggregated_msg, DCMessage::from(signed_msg.message));
+
+    // aggregate again the same message should error
+    assert!(aggregation::aggregate(&signed_msg, &agg, &keypair.prv_key).is_err());
+
+    // let's use a different user id and submit again
+    let mut new_msg = signed_msg;
+    new_msg.user_id = [1 as u8; 32];
+    new_msg.sign_mut(&keypair.prv_key).expect("sig");
+    // aggregate same message twice so we should get zero.
+    let agg = aggregation::aggregate(&new_msg, &agg, &keypair.prv_key).expect("agg");
+    assert!(agg.verify().expect("ver"));
+    assert_eq!(agg.aggregated_msg, DCMessage::zero());
 }
 
 use sgx_rand::Rng;
@@ -116,7 +128,7 @@ use sgx_serialize::{DeSerializeHelper, SerializeHelper};
 fn serde_dc_message() {
     let mut rand = sgx_rand::SgxRng::new().unwrap();
 
-    for i in 0..1000 {
+    for _i in 0..1000 {
         let sample = rand.gen::<DCMessage>();
 
         // new a SerializeHelper

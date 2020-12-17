@@ -23,6 +23,9 @@ cfg_if! {
         #[macro_use]
         extern crate sgx_rand_derive;
         extern crate sgx_tcrypto;
+        extern crate sgx_serialize;
+        #[macro_use]
+        extern crate sgx_serialize_derive;
     } else {
         compile_error!{"must be either trusted or untrusted"}
     }
@@ -34,10 +37,12 @@ big_array! { BigArray; }
 
 mod footprint_sched;
 mod key;
-mod message;
 mod params;
+mod signature;
+mod user_request;
 
 pub use footprint_sched::*;
 pub use key::*;
-pub use message::*;
 pub use params::*;
+pub use signature::*;
+pub use user_request::*;

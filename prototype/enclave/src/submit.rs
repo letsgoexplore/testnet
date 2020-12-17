@@ -13,7 +13,7 @@ use sgx_types::*;
 use crypto;
 use types::*;
 
-use crypto::{SignMutable, Verifiable};
+use crypto::SignMutable;
 
 // the safe version
 fn submit(request: &SendRequest, tee_sk: &PrvKey) -> DcNetResult<SignedUserMessage> {
