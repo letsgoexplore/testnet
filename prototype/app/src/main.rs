@@ -38,7 +38,7 @@ fn main() {
 
     let dc_enclave = match DcNetEnclave::init("enclave.signed.so") {
         Ok(r) => {
-            info!("[+] Init Enclave Successful {}!", r.geteid());
+            println!("[+] Init Enclave Successful {}!", r.geteid());
             r
         }
         Err(x) => {
@@ -54,12 +54,14 @@ fn main() {
         server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
     };
 
-    let sgx_key = vec![1_u8; 128];
+    let sgx_key_sealed = base64::decode("BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAIaOkrL+G/tjwqpYb2cPLagU2yBuV2gTFnrQR1YRijjLAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAJAAAAAAAAAAAAAAAAAAAAMcwvJUTIR5owP6OfXybb09woO+S2ZZ1DHRXUFLcu7GfdV+AQ6ddvsqjCZpdA0X+BQECAwQ=").unwrap();
 
-    match dc_enclave.client_submit(&send_request, &sgx_key) {
+    match dc_enclave.client_submit(&send_request, &sgx_key_sealed) {
         Ok(m) => println!("{:?}", m),
-        Err(e) => println!("Err {}", e),
+        Err(e) => error!("Err {}", e),
     }
+
+    println!("bye-bye");
 
     dc_enclave.destroy();
 }
