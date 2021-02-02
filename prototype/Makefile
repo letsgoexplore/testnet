@@ -18,7 +18,7 @@
 ######## SGX SDK Settings ########
 
 SGX_SDK ?= /opt/intel/sgxsdk
-SGX_MODE ?= SW
+SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 
 include $(CURDIR)/buildenv.mk
