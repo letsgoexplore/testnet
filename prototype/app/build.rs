@@ -17,7 +17,7 @@
 
 use std::env;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdk_dir = env::var("SGX_SDK")
         .unwrap_or_else(|_| "/opt/intel/sgxsdk".to_string());
     let is_sim = env::var("SGX_MODE")
@@ -32,4 +32,7 @@ fn main() {
         "HW" => println!("cargo:rustc-link-lib=dylib=sgx_urts"),
         _ => println!("cargo:rustc-link-lib=dylib=sgx_urts"), // Treat undefined as HW
     }
+
+    tonic_build::compile_protos("src/aggregator.proto")?;
+    Ok(())
 }

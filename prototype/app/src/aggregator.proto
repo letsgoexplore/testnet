@@ -1,0 +1,18 @@
+syntax = "proto3";
+package aggregator;
+
+service Aggregator {
+    rpc SayMessage (SendMessageRequest) returns (SendMessageReply);
+}
+
+message SendMessageRequest {
+   bytes user_id = 1;
+   bytes messages = 2;
+   uint32 round = 3;
+   bytes server_keys_hash = 4;
+}
+
+message SendMessageReply {
+    bool success = 1;
+    string error = 2;
+}
