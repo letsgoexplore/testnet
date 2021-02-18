@@ -15,8 +15,8 @@ use interface::*;
 
 use tonic::{transport::Server, Request, Response, Status};
 
-use self::aggregator_server::{Aggregator, AggregatorServer};
-use self::{SendMessageReply, SendMessageRequest};
+use aggregator::aggregator_server::{Aggregator, AggregatorServer};
+use aggregator::{SendMessageReply, SendMessageRequest};
 
 pub mod aggregator {
     tonic::include_proto!("aggregator");
@@ -26,7 +26,7 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
-fn main() {
+fn main2() {
     pretty_env_logger::init();
 
     let dc_enclave = match DcNetEnclave::init("enclave.signed.so") {
@@ -57,4 +57,39 @@ fn main() {
     println!("bye-bye");
 
     dc_enclave.destroy();
+}
+
+
+#[derive(Debug, Default)]
+pub struct MyAggregator {}
+
+#[tonic::async_trait]
+impl Aggregator for MyAggregator {
+    async fn say_message(
+        &self,
+        request: Request<SendMessageRequest>, // Accept request of type SendMessageRequest
+    ) -> Result<Response<SendMessageReply>, Status> { // Return an instance of type SendMessageReply
+        println!("Got a request to send message: {:?}", request);
+
+        let reply = SendMessageReply {
+            success: true,
+            error: "Error!".to_string(),
+        };
+
+        Ok(Response::new(reply)) // Send back our formatted greeting
+    }
+}
+
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let addr = "127.0.0.1:1338".parse()?;
+    let aggregator = MyAggregator::default();
+
+    Server::builder()
+        .add_service(AggregatorServer::new(aggregator))
+        .serve(addr)
+        .await?;
+
+    Ok(())
 }
