@@ -26,40 +26,6 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
-fn main2() {
-    pretty_env_logger::init();
-
-    let dc_enclave = match DcNetEnclave::init("enclave.signed.so") {
-        Ok(r) => {
-            println!("[+] Init Enclave Successful {}!", r.geteid());
-            r
-        }
-        Err(x) => {
-            error!("[-] Init Enclave Failed {}!", x.as_str());
-            return;
-        }
-    };
-
-    let send_request = SendRequest {
-        user_id: UserId::default(),
-        message: [9 as u8; DC_NET_MESSAGE_LENGTH],
-        round: 0,
-        server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
-    };
-
-    let sgx_key_sealed = base64::decode("BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAIaOkrL+G/tjwqpYb2cPLagU2yBuV2gTFnrQR1YRijjLAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAJAAAAAAAAAAAAAAAAAAAAMcwvJUTIR5owP6OfXybb09woO+S2ZZ1DHRXUFLcu7GfdV+AQ6ddvsqjCZpdA0X+BQECAwQ=").unwrap();
-
-    match dc_enclave.client_submit(&send_request, &sgx_key_sealed) {
-        Ok(m) => println!("{:?}", m),
-        Err(e) => error!("Err {}", e),
-    }
-
-    println!("bye-bye");
-
-    dc_enclave.destroy();
-}
-
-
 #[derive(Debug, Default)]
 pub struct MyAggregator {}
 
@@ -70,8 +36,8 @@ impl Aggregator for MyAggregator {
         request: Request<SendMessageRequest>, // Accept request of type SendMessageRequest
     ) -> Result<Response<SendMessageReply>, Status> { // Return an instance of type SendMessageReply
 
-    let success = true;
-    let error = "".to_string();
+    let success;
+    let error;
 
     println!("Got a request to send message: {:?}", request);
 
@@ -84,8 +50,14 @@ impl Aggregator for MyAggregator {
         }
         Err(x) => {
             error!("[-] Init Enclave Failed {}!", x.as_str());
-            error = "[-] Init Enclave Failed {}!";
+            error = "[-] Init Enclave Failed {}!".to_string();
             success = false;
+            let reply = SendMessageReply {
+                success: success,
+                error: error,
+            };
+
+            return Ok(Response::new(reply)) // Send back our formatted greeting
         }
     };
 
@@ -101,8 +73,8 @@ impl Aggregator for MyAggregator {
     let sgx_key_sealed = base64::decode("BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAIaOkrL+G/tjwqpYb2cPLagU2yBuV2gTFnrQR1YRijjLAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAJAAAAAAAAAAAAAAAAAAAAMcwvJUTIR5owP6OfXybb09woO+S2ZZ1DHRXUFLcu7GfdV+AQ6ddvsqjCZpdA0X+BQECAwQ=").unwrap();
 
     match dc_enclave.client_submit(&send_request, &sgx_key_sealed) {
-        Ok(m) => println!("{:?}", m),
-        Err(e) => error!("Err {}", e),
+        Ok(m) => { println!("{:?}", m); error = format!("{:?}", m); success = true },
+        Err(e) => { error!("Err {}", e); error = e.to_string(); success = false },
     }
 
     println!("bye-bye");
@@ -110,12 +82,12 @@ impl Aggregator for MyAggregator {
     dc_enclave.destroy();
 
 
-        let reply = SendMessageReply {
+    let reply = SendMessageReply {
             success: success,
             error: error,
-        };
+    };
 
-        Ok(Response::new(reply)) // Send back our formatted greeting
+    Ok(Response::new(reply)) // Send back our formatted greeting
     }
 }
 
