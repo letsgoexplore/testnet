@@ -76,8 +76,8 @@ App_Include_Paths := -I ./app -I./include -I$(SGX_SDK)/include -I$(CUSTOM_EDL_PA
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
 
 App_Rust_Path := ${TARGET_DIR}
-App_Enclave_u_Object :=lib/libEnclave_u.a
-App_Name := bin/app
+App_Enclave_u_Object :=$(CUSTOM_LIBRARY_PATH)/libEnclave_u.a
+App_Name := $(CUSTOM_BIN_PATH)/app
 
 ######## Enclave Settings ########
 
@@ -131,13 +131,14 @@ app/Enclave_u.o: $(Enclave_EDL_Files)
 	@echo "CC   <=  $<"
 
 $(App_Enclave_u_Object): app/Enclave_u.o
+	mkdir -p $(CUSTOM_LIBRARY_PATH)
 	$(AR) rcsD $@ $^
 
 $(App_Name): $(App_Enclave_u_Object) $(App_SRC_Files)
 	@cd app && SGX_SDK=$(SGX_SDK) cargo build $(App_Rust_Flags)
 	@echo "Cargo  =>  $@"
-	mkdir -p bin
-	cp $(App_Rust_Path)/app ./bin
+	mkdir -p $(CUSTOM_BIN_PATH)
+	cp $(App_Rust_Path)/app $(CUSTOM_BIN_PATH)
 
 ######## Enclave Objects ########
 
@@ -148,7 +149,7 @@ enclave/Enclave_t.o: $(Enclave_EDL_Files)
 .PHONY: enclave
 enclave:
 	@cd enclave && cargo build
-	@cp ${TARGET_DIR}/libdcnetenclave.a lib/libenclave.a
+	@cp ${TARGET_DIR}/libdcnetenclave.a $(CUSTOM_LIBRARY_PATH)/libenclave.a
 
 $(RustEnclave_Name): enclave enclave/Enclave_t.o
 	@$(CXX) enclave/Enclave_t.o -o $@ $(RustEnclave_Link_Flags)
@@ -161,6 +162,6 @@ $(Signed_RustEnclave_Name): $(RustEnclave_Name)
 
 .PHONY: clean
 clean:
-	@rm -f $(App_Name) $(RustEnclave_Name) $(Signed_RustEnclave_Name) enclave/*_t.* app/*_u.* lib/*.a
+	@rm -f $(App_Name) $(RustEnclave_Name) $(Signed_RustEnclave_Name) enclave/*_t.* app/*_u.* $(CUSTOM_LIBRARY_PATH)/*.a
 	@cd enclave && cargo clean && rm -f Cargo.lock
 	@cd app && cargo clean && rm -f Cargo.lock
