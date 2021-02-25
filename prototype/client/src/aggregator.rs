@@ -1,7 +1,11 @@
-use aggregator::aggregator_client::AggregatorClient;
-use aggregator::HelloRequest;
+extern crate interface;
 
-pub mod hello_world {
+use interface::*;
+
+use aggregator::aggregator_client::AggregatorClient;
+use aggregator::SendMessageRequest;
+
+pub mod aggregator {
     tonic::include_proto!("aggregator");
 }
 
@@ -10,10 +14,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = AggregatorClient::connect("http://127.0.0.1:1338").await?;
 
     let request = tonic::Request::new(SendMessageRequest {
-        name: "Tonic".into(),
+        user_id: "null".into(),
+        messages: [9 as u8; DC_NET_MESSAGE_LENGTH].into(),
+        round: 0,
+        server_keys_hash: "test".into(),
     });
 
-    let response = client.send_message(request).await?;
+    let response = client.say_message(request).await?;
 
     println!("RESPONSE={:?}", response);
 
