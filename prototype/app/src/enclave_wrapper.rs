@@ -1,12 +1,41 @@
 use sgx_types;
 use sgx_urts;
 
+use sgx_status_t::SGX_SUCCESS;
 use sgx_types::*;
 use sgx_urts::SgxEnclave;
+use std::path::PathBuf;
 
 use interface::Size;
 use interface::*;
 
+// error type for enclave operations
+use sgx_types::sgx_status_t;
+use std::error::Error;
+use std::fmt::{Display, Formatter};
+
+#[derive(Debug)]
+pub struct EnclaveError {
+    e: sgx_status_t,
+}
+
+impl From<sgx_status_t> for EnclaveError {
+    fn from(e: sgx_status_t) -> Self {
+        return EnclaveError { e };
+    }
+}
+
+impl Display for EnclaveError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.e.as_str())
+    }
+}
+
+impl Error for EnclaveError {}
+
+pub type EnclaveResult<T> = Result<T, EnclaveError>;
+
+// E calls
 extern "C" {
     fn new_tee_signing_key(
         eid: sgx_enclave_id_t,
@@ -52,16 +81,14 @@ extern "C" {
     fn test_main_entrance(eid: sgx_enclave_id_t, retval: *mut sgx_status_t) -> sgx_status_t;
 }
 
+#[derive(Debug, Default)]
 pub struct DcNetEnclave {
     enclave: sgx_urts::SgxEnclave,
 }
 
-use sgx_status_t::SGX_SUCCESS;
-use std::path::PathBuf;
-
 #[allow(dead_code)]
 impl DcNetEnclave {
-    pub fn init(enclave_file: &'static str) -> SgxResult<Self> {
+    pub fn init(enclave_file: &'static str) -> EnclaveResult<Self> {
         let enclave_path = PathBuf::from(enclave_file);
 
         let mut launch_token: sgx_launch_token_t = [0; 1024];
@@ -82,7 +109,7 @@ impl DcNetEnclave {
             &mut misc_attr,
         )?;
 
-        Ok(Self { enclave: enclave })
+        Ok(Self { enclave })
     }
 
     pub fn destroy(self) {
@@ -94,7 +121,7 @@ impl DcNetEnclave {
     }
 
     // return sealed key
-    pub fn new_tee_signing_key(&self) -> SgxResult<Vec<u8>> {
+    pub fn new_tee_signing_key(&self) -> EnclaveResult<Vec<u8>> {
         // 100 byte should be enough?
         let mut ret = SGX_SUCCESS;
         let mut output = vec![0; 1024];
@@ -111,11 +138,11 @@ impl DcNetEnclave {
         };
 
         if call_ret != SGX_SUCCESS {
-            return Err(call_ret);
+            return Err(EnclaveError::from(call_ret));
         }
 
         if ret != SGX_SUCCESS {
-            return Err(ret);
+            return Err(EnclaveError::from(ret));
         }
 
         output.truncate(output_bytes_written as usize);
@@ -124,7 +151,7 @@ impl DcNetEnclave {
     }
 
     // unseal the key to see its public key
-    pub fn unseal_to_pubkey(&self, sealed_key: &Vec<u8>) -> SgxError {
+    pub fn unseal_to_pubkey(&self, sealed_key: &Vec<u8>) -> EnclaveResult<()> {
         let mut ret = SGX_SUCCESS;
         let mut sealed_key_copy = sealed_key.clone();
         let call_ret = unsafe {
@@ -137,11 +164,11 @@ impl DcNetEnclave {
         };
 
         if call_ret != SGX_SUCCESS {
-            return Err(call_ret);
+            return Err(EnclaveError::from(call_ret));
         }
 
         if ret != SGX_SUCCESS {
-            return Err(ret);
+            return Err(EnclaveError::from(ret));
         }
 
         Ok(())
@@ -151,7 +178,7 @@ impl DcNetEnclave {
         &self,
         send_request: &SendRequest,
         sealed_tee_prv_key: &Vec<u8>,
-    ) -> SgxResult<SignedUserMessage> {
+    ) -> EnclaveResult<SignedUserMessage> {
         let marshaled_request = serde_cbor::to_vec(&send_request).unwrap();
         let mut output = vec![0; SignedUserMessage::size_marshaled()];
         let mut output_bytes_written: usize = 0;
@@ -172,11 +199,11 @@ impl DcNetEnclave {
         };
 
         if call_ret != SGX_SUCCESS {
-            return Err(call_ret);
+            return Err(call_ret.into());
         }
 
         if ret != SGX_SUCCESS {
-            return Err(ret);
+            return Err(ret.into());
         }
 
         println!(
@@ -187,7 +214,7 @@ impl DcNetEnclave {
 
         serde_cbor::from_slice(&output[..output_bytes_written]).map_err(|e| {
             println!("Err {}", e);
-            sgx_status_t::SGX_ERROR_UNEXPECTED
+            EnclaveError::from(sgx_status_t::SGX_ERROR_UNEXPECTED)
         })
     }
 
@@ -198,7 +225,7 @@ impl DcNetEnclave {
         send_request: &SignedUserMessage,
         marshalled_current_aggregation: &Vec<u8>,
         sealed_tee_prv_key: &Vec<u8>,
-    ) -> SgxResult<Vec<u8>> {
+    ) -> EnclaveResult<Vec<u8>> {
         let marshalled_msg = serde_cbor::to_vec(&send_request).unwrap();
 
         // todo: make sure this is big enough
@@ -224,11 +251,11 @@ impl DcNetEnclave {
         };
 
         if ecall_ret != SGX_SUCCESS {
-            return Err(ecall_ret);
+            return Err(ecall_ret.into());
         }
 
         if ret != SGX_SUCCESS {
-            return Err(ret);
+            return Err(ret.into());
         }
 
         Ok(output[..output_bytes_written].to_vec())
