@@ -2,7 +2,7 @@ syntax = "proto3";
 package aggregator;
 
 service UserLocalEncalve{ // the user exposed enclave 
-	rpc setup(SetupMessage) returns (Empty); // setup
+	rpc setup(setupMessage) returns (Empty); // setup
 
 	// how you send a message
 	rpc AuthorMessage(SendMessageRequest) returns (DCMsg_SGXBlob);
@@ -23,17 +23,20 @@ service Aggregator {
 
 // responsible for xoring in key shares 
 service AnyTrustNode{
-	rpc submitAggrigateMesssage(AggMsg_SGXBlob) returns (empty);
-	rpc getResult(ResultReq) returns (AnytrustResult_SGXBlob)
+	rpc submitAggrigateMesssage(AggMsg_SGXBlob) returns (Empty);
+	rpc getResult(ResultReq) returns (AnytrustResult_SGXBlob);
 }
 
 // really just an Aggregator, but operates on the final messages 
 service Broadcast{
-	rpc submitAnytrustResult(AnytrustResult_SGXBlob) returns (empty);
-	rpc getResult(BroadcastReq) returns (broadcast);
+	rpc submitAnytrustResult(AnytrustResult_SGXBlob) returns (Empty);
+	rpc getResult(BroadcastReq) returns (broadcastMsg);
 }
 
 
+
+message setupMessage{ // no idea what goes here 
+}
 message SendMessageRequest {
    bytes user_id = 1;
    bytes messages = 2;
@@ -90,7 +93,7 @@ message AnytrustResult_SGXBlob{
    bytes blob = 1;
    bytes server_keys_hash = 2;
 }
-message Broadcast{
+message broadcastMsg{
 	bytes message = 1;
 	/// FIXME add attestation information.
 }
