@@ -1,9 +1,38 @@
 syntax = "proto3";
 package aggregator;
 
-service Aggregator {
-    rpc SayMessage (SendMessageRequest) returns (SendMessageReply);
+service UserLocalEncalve{ // the user exposed enclave 
+	rpc setup(SetupMessage) returns (Empty); // setup
+
+	// how you send a message
+	rpc AuthorMessage(SendMessageRequest) returns (DCMsg_SGXBlob);
 }
+
+
+/* All of the following services follow a aggregate paradigm.
+Things are submitted, some computation is performed, then we get a result.
+
+*/
+
+// responsible for merging messages
+service Aggregator {
+    rpc SubmitMessage(DCMsg_SGXBlob) returns (Empty);
+    rpc GetAggrigate(AggReq) returns (AggMsg_SGXBlob); 
+}
+
+
+// responsible for xoring in key shares 
+service AnyTrustNode{
+	rpc submitAggrigateMesssage(AggMsg_SGXBlob) returns (empty);
+	rpc getResult(ResultReq) returns (AnytrustResult_SGXBlob)
+}
+
+// really just an Aggregator, but operates on the final messages 
+service Broadcast{
+	rpc submitAnytrustResult(AnytrustResult_SGXBlob) returns (empty);
+	rpc getResult(BroadcastReq) returns (broadcast);
+}
+
 
 message SendMessageRequest {
    bytes user_id = 1;
@@ -12,7 +41,61 @@ message SendMessageRequest {
    bytes server_keys_hash = 4;
 }
 
-message SendMessageReply {
-    bool success = 1;
-    string error = 2;
+
+
+/*message AggMsg{
+    repeated bytes userIDs=1;
+    bytes message = 2;
+    uint32 round = 3;
+    bytes server_keys_hash = 4;
+}*/
+
+//message AnyTrustMessage{
+//   bytes messages = 1;
+//   byetes anyTrustServerId = 2;
+//   uint32 round = 3;
+//   bytes server_keys_hash = 4;
+// }
+
+
+/* messages for getting results. Includes the server keys as a kind of
+Session identifier.
+*/
+
+message AggReq{
+   bytes server_keys_hash = 1;
+}
+
+message ResultReq{
+    bytes server_keys_hash = 4;	
+} 
+message BroadcastReq{
+    bytes server_keys_hash = 4;	
+} 
+
+
+
+
+
+message DCMsg_SGXBlob{
+   bytes blob = 1;
+   bytes server_keys_hash = 2;
+}
+message AggMsg_SGXBlob{
+   bytes blob = 1;
+   bytes server_keys_hash = 2;
+}
+
+message AnytrustResult_SGXBlob{
+   bytes blob = 1;
+   bytes server_keys_hash = 2;
+}
+message Broadcast{
+	bytes message = 1;
+	/// FIXME add attestation information.
+}
+
+
+message Empty {
+
 }
