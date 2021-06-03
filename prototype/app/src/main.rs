@@ -13,7 +13,7 @@ use interface::*;
 use tonic::{transport::Server, Request, Response, Status};
 
 use aggregator::aggregator_server::{Aggregator, AggregatorServer};
-use aggregator::{SendMessageReply, SendMessageRequest};
+use aggregator::{AggMsgSgxBlob, AggReq, DcMsgSgxBlob, SendMessageReply, SendMessageRequest};
 
 pub mod aggregator {
     tonic::include_proto!("aggregator");
@@ -41,14 +41,11 @@ impl MyAggregator {
 
 #[tonic::async_trait]
 impl Aggregator for MyAggregator {
-    async fn say_message(
+    async fn submit_message(
         &self,
-        request: Request<SendMessageRequest>, // Accept request of type SendMessageRequest
+        request: Request<DcMsgSgxBlob>, // Accept request of type SendMessageRequest
     ) -> Result<Response<SendMessageReply>, Status> {
         // Return an instance of type SendMessageReply
-
-        let success;
-        let error;
 
         println!("Got a request to send message: {:?}", request);
 
@@ -59,27 +56,32 @@ impl Aggregator for MyAggregator {
             server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
         };
 
-        match self
+        let error = match self
             .enclave
             .client_submit(&send_request, &self.sgx_key_sealed)
         {
             Ok(m) => {
                 println!("{:?}", m);
-                error = format!("{:?}", m);
-                success = true
+                "".to_string()
             }
             Err(e) => {
                 error!("Err {}", e);
-                error = e.to_string();
-                success = false
+                e.to_string()
             }
-        }
+        };
 
         println!("bye-bye");
 
-        let reply = SendMessageReply { success, error };
+        let reply = SendMessageReply { error };
 
         Ok(Response::new(reply)) // Send back our formatted greeting
+    }
+
+    async fn get_aggregate(
+        &self,
+        request: Request<AggReq>,
+    ) -> Result<Response<AggMsgSgxBlob>, Status> {
+        unimplemented!()
     }
 }
 

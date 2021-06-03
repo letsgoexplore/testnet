@@ -16,8 +16,8 @@ Things are submitted, some computation is performed, then we get a result.
 
 // responsible for merging messages
 service Aggregator {
-    rpc SubmitMessage(DCMsg_SGXBlob) returns (Empty);
-    rpc GetAggrigate(AggReq) returns (AggMsg_SGXBlob); 
+    rpc SubmitMessage(DCMsg_SGXBlob) returns (SendMessageReply);
+    rpc GetAggregate(AggReq) returns (AggMsg_SGXBlob); 
 }
 
 
@@ -42,6 +42,11 @@ message SendMessageRequest {
    bytes messages = 2;
    uint32 round = 3;
    bytes server_keys_hash = 4;
+}
+
+// Error is "" on success
+message SendMessageReply {
+   string error = 1;
 }
 
 
