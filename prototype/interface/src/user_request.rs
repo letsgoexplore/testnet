@@ -9,23 +9,17 @@ use std::fmt::{Debug, Formatter, Result as FmtResult};
 big_array! { BigArray; }
 
 // this is what a user wants to broadcast through DC net
-#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RawMessage(#[serde(with = "BigArray")] pub [u8; DC_NET_MESSAGE_LENGTH]);
-
-impl Debug for RawMessage {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{:x?}", self.0))
-    }
-}
+pub type RawMessage = [u8; DC_NET_MESSAGE_LENGTH];
 
 pub fn test_raw_msg() -> RawMessage {
-    RawMessage([0x9c; DC_NET_MESSAGE_LENGTH])
+    [0x9c; DC_NET_MESSAGE_LENGTH]
 }
 
 // a wrapper around RawMessage so that we can impl traits
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DCMessage {
+    #[serde(with = "BigArray")]
     msg: RawMessage,
 }
 
@@ -43,6 +37,18 @@ impl Rand for DCMessage {
     }
 }
 
+impl std::cmp::PartialEq for DCMessage {
+    fn eq(&self, other: &Self) -> bool {
+        self.msg.iter().zip(&other.msg).all(|(x, y)| x == y)
+    }
+}
+
+impl Debug for DCMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(&hex::encode(&self))
+    }
+}
+
 impl From<RawMessage> for DCMessage {
     fn from(raw: RawMessage) -> Self {
         return DCMessage { msg: raw };
@@ -51,7 +57,7 @@ impl From<RawMessage> for DCMessage {
 
 impl AsRef<[u8]> for DCMessage {
     fn as_ref(&self) -> &[u8] {
-        &self.msg.0
+        &self.msg
     }
 }
 
@@ -62,7 +68,7 @@ impl AsRef<RawMessage> for DCMessage {
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct UserId {
     raw: [u8; USER_ID_LENGTH],
 }
@@ -106,20 +112,45 @@ impl ServerSecret {
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct SendRequest {
     pub user_id: UserId,
     pub round: u32,
+    #[serde(with = "BigArray")]
     pub message: RawMessage,
     pub server_keys: Vec<ServerSecret>,
 }
 
+impl Debug for SendRequest {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SendRequest")
+            .field("userId", &self.user_id)
+            .field("round", &self.round)
+            .field("message", &hex::encode(self.message))
+            .field("server", &self.server_keys)
+            .finish()
+    }
+}
+
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct SignedUserMessage {
     pub user_id: UserId,
     pub round: u32,
+    #[serde(with = "BigArray")]
     pub message: RawMessage,
     pub tee_sig: Signature,
     pub tee_pk: PubKey,
+}
+
+impl Debug for SignedUserMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SignedUserMessage")
+            .field("user_id", &self.user_id)
+            .field("round", &self.round)
+            .field("message", &hex::encode(self.message))
+            .field("tee_sig", &self.tee_sig)
+            .field("tee_pk", &self.tee_pk)
+            .finish()
+    }
 }

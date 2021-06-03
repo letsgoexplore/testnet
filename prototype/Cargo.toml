@@ -1,8 +1,7 @@
 [workspace]
-edition = "2018"
 
 members = [
-    "app",
+    "common",
     "enclave",
     "client",
 ]

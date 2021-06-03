@@ -4,11 +4,10 @@ extern crate sgx_types;
 extern crate sgx_urts;
 extern crate tonic;
 
-mod client;
-mod enclave_wrapper;
+pub mod enclave_wrapper;
 
 use enclave_wrapper::{DcNetEnclave, EnclaveResult};
-use interface::{SendRequest, ServerSecret, UserId, DC_NET_MESSAGE_LENGTH};
+use interface::{RawMessage, SendRequest, ServerSecret, UserId, DC_NET_MESSAGE_LENGTH};
 
 use tonic::{transport::Server, Request, Response, Status};
 
@@ -95,22 +94,4 @@ impl Aggregator for MyAggregator {
     ) -> Result<Response<AggMsgSgxBlob>, Status> {
         unimplemented!()
     }
-}
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    pretty_env_logger::init();
-
-    let addr = "127.0.0.1:1338".parse()?;
-    let aggregator = MyAggregator::init("enclave.signed.so").map_err(|e| {
-        error!("[-] Init Enclave Failed {}!", e);
-        e
-    })?;
-
-    Server::builder()
-        .add_service(AggregatorServer::new(aggregator))
-        .serve(addr)
-        .await?;
-
-    Ok(())
 }

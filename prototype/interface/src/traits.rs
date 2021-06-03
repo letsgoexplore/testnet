@@ -24,7 +24,7 @@ use crate::user_request::{DCMessage, RawMessage};
 
 impl Zero for RawMessage {
     fn zero() -> Self {
-        RawMessage([0 as u8; DC_NET_MESSAGE_LENGTH])
+        [0 as u8; DC_NET_MESSAGE_LENGTH]
     }
 }
 

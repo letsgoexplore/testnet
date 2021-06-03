@@ -1,17 +1,18 @@
 [package]
-name = "client"
+name = "sgxdcnet-client"
 version = "0.1.0"
 edition = "2018"
 
 [[bin]] 
 name = "aggregator-client"
-path = "src/aggregator.rs"
+path = "src/main.rs"
 
 [dependencies]
 tonic = "0.4"
 prost = "0.7"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 interface = { path = "../interface" }
+common = {path = "../common"}
 
 [build-dependencies]
 tonic-build = "0.4"

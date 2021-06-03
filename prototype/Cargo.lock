@@ -16,27 +16,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "afddf7f520a80dbf76e6f50a35bca42a2331ef227a28b3b6dc5c2e2338d114b1"
 
 [[package]]
-name = "app"
-version = "1.0.0"
-dependencies = [
- "base64",
- "hexdump",
- "interface",
- "log",
- "pretty_env_logger",
- "prost",
- "serde 1.0.123",
- "serde_cbor 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "sgx_serialize",
- "sgx_serialize_derive",
- "sgx_types",
- "sgx_urts",
- "tokio",
- "tonic",
- "tonic-build",
-]
-
-[[package]]
 name = "arrayvec"
 version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -158,11 +137,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "client"
-version = "0.1.0"
+name = "common"
+version = "1.0.0"
 dependencies = [
+ "base64",
+ "hexdump",
  "interface",
+ "log",
+ "pretty_env_logger",
  "prost",
+ "serde_cbor 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sgx_serialize",
+ "sgx_serialize_derive",
+ "sgx_types",
+ "sgx_urts",
  "tokio",
  "tonic",
  "tonic-build",
@@ -1107,6 +1095,18 @@ source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.3#a6a172e6
 dependencies = [
  "libc",
  "sgx_types",
+]
+
+[[package]]
+name = "sgxdcnet-client"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "interface",
+ "prost",
+ "tokio",
+ "tonic",
+ "tonic-build",
 ]
 
 [[package]]
