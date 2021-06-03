@@ -23,7 +23,7 @@ service Aggregator {
 
 // responsible for xoring in key shares 
 service AnyTrustNode{
-	rpc submitAggrigateMesssage(AggMsg_SGXBlob) returns (Empty);
+	rpc submitAggregateMesssage(AggMsg_SGXBlob) returns (Empty);
 	rpc getResult(ResultReq) returns (AnytrustResult_SGXBlob);
 }
 
@@ -104,6 +104,4 @@ message broadcastMsg{
 }
 
 
-message Empty {
-
-}
+message Empty {}

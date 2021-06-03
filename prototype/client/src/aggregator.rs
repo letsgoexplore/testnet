@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         server_keys_hash: "test".into(),
     });
 
-    let response = client.say_message(request).await?;
+    let response = client.submit_message(request).await?;
 
     println!("RESPONSE={:?}", response);
 
