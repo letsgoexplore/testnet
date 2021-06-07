@@ -31,6 +31,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => println!("cargo:rustc-link-lib=dylib=sgx_urts"), // Treat undefined as HW
     }
 
-    tonic_build::compile_protos("src/aggregator.proto")?;
+    tonic_build::compile_protos("src/dc_proto.proto")?;
     Ok(())
 }

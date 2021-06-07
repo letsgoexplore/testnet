@@ -1,5 +1,5 @@
 syntax = "proto3";
-package aggregator;
+package dc_proto;
 
 service UserLocalEncalve{ // the user exposed enclave 
 	rpc setup(setupMessage) returns (Empty); // setup

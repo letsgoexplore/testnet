@@ -3,12 +3,11 @@ extern crate interface;
 
 use interface::*;
 
-use aggregator::aggregator_client::AggregatorClient;
-use aggregator::SendMessageRequest;
 use common::enclave_wrapper::DcNetEnclave;
+use dc_proto::{aggregator_client::AggregatorClient, SendMessageRequest};
 
-pub mod aggregator {
-    tonic::include_proto!("aggregator");
+pub mod dc_proto {
+    tonic::include_proto!("dc_proto");
 }
 
 #[tokio::main]

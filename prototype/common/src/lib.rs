@@ -11,11 +11,11 @@ use interface::{RawMessage, SendRequest, ServerSecret, UserId, DC_NET_MESSAGE_LE
 
 use tonic::{transport::Server, Request, Response, Status};
 
-use aggregator::aggregator_server::{Aggregator, AggregatorServer};
-use aggregator::{AggMsgSgxBlob, AggReq, DcMsgSgxBlob, SendMessageReply, SendMessageRequest};
+use dc_proto::aggregator_server::{Aggregator, AggregatorServer};
+use dc_proto::{AggMsgSgxBlob, AggReq, DcMsgSgxBlob, SendMessageReply, SendMessageRequest};
 
-pub mod aggregator {
-    tonic::include_proto!("aggregator");
+pub mod dc_proto {
+    tonic::include_proto!("dc_proto");
 }
 
 extern crate pretty_env_logger;
