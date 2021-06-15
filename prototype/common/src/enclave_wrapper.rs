@@ -14,6 +14,8 @@ use sgx_types::sgx_status_t;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
+use rand::Rng;
+
 #[derive(Debug)]
 pub struct EnclaveError {
     e: sgx_status_t,
@@ -34,6 +36,18 @@ impl Display for EnclaveError {
 impl Error for EnclaveError {}
 
 pub type EnclaveResult<T> = Result<T, EnclaveError>;
+pub type Blob = Vec<u8>;
+
+// TODO: Fill out the actual data this is supposed to hold
+/// A KEM pubkey belonging to an AnyTrust node
+pub struct KemPubKey;
+
+impl KemPubKey {
+    /// Make a new KEM pubkey for testing purposes
+    pub fn rand_placeholder<R: Rng>(rng: &mut R) -> KemPubKey {
+        KemPubKey
+    }
+}
 
 // E calls
 extern "C" {
@@ -120,53 +134,58 @@ impl DcNetEnclave {
         self.enclave.geteid()
     }
 
-    // return sealed key
-    pub fn new_tee_signing_key(&self) -> EnclaveResult<Vec<u8>> {
-        // 100 byte should be enough?
+    // Return sealed key
+    pub fn new_tee_signing_key(&self) -> EnclaveResult<SealedPrvKey> {
+        // TODO: Ensure that 1024 is large enough for any sealed privkey
         let mut ret = SGX_SUCCESS;
-        let mut output = vec![0; 1024];
-        let mut output_bytes_written: u32 = 0;
+        let mut sealed_key_bytes = vec![0; 1024];
+        let mut bytes_written: u32 = 0;
 
+        // Call keygen through FFI
         let call_ret = unsafe {
             new_tee_signing_key(
                 self.enclave.geteid(),
                 &mut ret,
-                output.as_mut_ptr(),
-                output.len() as u32,
-                &mut output_bytes_written,
+                sealed_key_bytes.as_mut_ptr(),
+                sealed_key_bytes.len() as u32,
+                &mut bytes_written,
             )
         };
 
+        // Check for errors
         if call_ret != SGX_SUCCESS {
             return Err(EnclaveError::from(call_ret));
         }
-
         if ret != SGX_SUCCESS {
             return Err(EnclaveError::from(ret));
         }
 
-        output.truncate(output_bytes_written as usize);
+        // Truncate the output to the appropriate number of bytes
+        sealed_key_bytes.truncate(bytes_written as usize);
 
-        Ok(output)
+        // Package the output in the correct type
+        Ok(SealedPrvKey(sealed_key_bytes.to_vec()))
     }
 
     // unseal the key to see its public key
-    pub fn unseal_to_pubkey(&self, sealed_key: &Vec<u8>) -> EnclaveResult<()> {
+    pub fn unseal_to_pubkey(&self, privkey: &SealedPrvKey) -> EnclaveResult<()> {
         let mut ret = SGX_SUCCESS;
-        let mut sealed_key_copy = sealed_key.clone();
+        let mut privkey_copy = privkey.clone();
+
+        // Call unseal_to_pubkey through FFI
         let call_ret = unsafe {
             unseal_to_pubkey(
                 self.enclave.geteid(),
                 &mut ret,
-                sealed_key_copy.as_mut_ptr(),
-                sealed_key_copy.len() as u32,
+                privkey_copy.0.as_mut_ptr(),
+                privkey_copy.0.len() as u32,
             )
         };
 
+        // Check for errors
         if call_ret != SGX_SUCCESS {
             return Err(EnclaveError::from(call_ret));
         }
-
         if ret != SGX_SUCCESS {
             return Err(EnclaveError::from(ret));
         }
@@ -176,32 +195,33 @@ impl DcNetEnclave {
 
     pub fn client_submit(
         &self,
-        send_request: &SendRequest,
-        sealed_tee_prv_key: &Vec<u8>,
+        submission_req: &ClientSubmissionReq,
+        sealed_usk: &SealedPrvKey,
     ) -> EnclaveResult<SignedUserMessage> {
-        let marshaled_request = serde_cbor::to_vec(&send_request).unwrap();
+        let marshaled_req = serde_cbor::to_vec(&submission_req).unwrap();
         let mut output = vec![0; SignedUserMessage::size_marshaled()];
         let mut output_bytes_written: usize = 0;
 
+        // Call client_submit through FFI
         let mut ret = sgx_status_t::default();
         let call_ret = unsafe {
             ecall_client_submit(
                 self.enclave.geteid(),
                 &mut ret,
-                marshaled_request.as_ptr(),
-                marshaled_request.len(),
-                sealed_tee_prv_key.as_ptr(),
-                sealed_tee_prv_key.len(),
+                marshaled_req.as_ptr(),
+                marshaled_req.len(),
+                sealed_usk.0.as_ptr(),
+                sealed_usk.0.len(),
                 output.as_mut_ptr(),
                 output.len(),
                 &mut output_bytes_written,
             )
         };
 
+        // Check for errors
         if call_ret != SGX_SUCCESS {
             return Err(call_ret.into());
         }
-
         if ret != SGX_SUCCESS {
             return Err(ret.into());
         }
@@ -212,6 +232,7 @@ impl DcNetEnclave {
             output_bytes_written
         );
 
+        // Deserialize SGX output into a SignedUserMessage struct
         serde_cbor::from_slice(&output[..output_bytes_written]).map_err(|e| {
             println!("Err {}", e);
             EnclaveError::from(sgx_status_t::SGX_ERROR_UNEXPECTED)
@@ -224,7 +245,7 @@ impl DcNetEnclave {
         &self,
         send_request: &SignedUserMessage,
         marshalled_current_aggregation: &Vec<u8>,
-        sealed_tee_prv_key: &Vec<u8>,
+        sealed_ask: &SealedPrvKey,
     ) -> EnclaveResult<Vec<u8>> {
         let marshalled_msg = serde_cbor::to_vec(&send_request).unwrap();
 
@@ -234,6 +255,7 @@ impl DcNetEnclave {
 
         let mut ret = sgx_status_t::default();
 
+        // Call aggregate through FFI
         let ecall_ret = unsafe {
             ecall_aggregate(
                 self.geteid(),
@@ -242,18 +264,18 @@ impl DcNetEnclave {
                 marshalled_msg.len(),
                 marshalled_current_aggregation.as_ptr(),
                 marshalled_current_aggregation.len(),
-                sealed_tee_prv_key.as_ptr(),
-                sealed_tee_prv_key.len(),
+                sealed_ask.0.as_ptr(),
+                sealed_ask.0.len(),
                 output.as_mut_ptr(),
                 output.len(),
                 &mut output_bytes_written,
             )
         };
 
+        // Check for errors
         if ecall_ret != SGX_SUCCESS {
             return Err(ecall_ret.into());
         }
-
         if ret != SGX_SUCCESS {
             return Err(ret.into());
         }
@@ -271,29 +293,40 @@ impl DcNetEnclave {
         }
         Ok(())
     }
+
+    /// Derives shared secrets with all the given KEM pubkeys, and derives a new user signing
+    /// pubkey. Returns sealed secrets, a sealed private key, and a registration message to send to
+    /// an anytrust node
+    pub fn register_user(
+        &self,
+        pubkeys: &[KemPubKey],
+    ) -> EnclaveResult<(SealedServerSecrets, SealedPrvKey, Blob)> {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     const TEST_ENCLAVE_PATH: &'static str = "/root/sgx/bin/enclave.signed.so";
-    use enclave_wrapper::DcNetEnclave;
+    use super::DcNetEnclave;
+
     extern crate base64;
     extern crate hexdump;
     extern crate interface;
     extern crate sgx_types;
     use interface::*;
 
-    fn dummy_send_req() -> SendRequest {
-        SendRequest {
+    fn placeholder_submission_req() -> ClientSubmissionReq {
+        ClientSubmissionReq {
             user_id: UserId::default(),
-            message: [9 as u8; DC_NET_MESSAGE_LENGTH],
-            round: 0,
-            server_keys: vec![ServerSecret::gen_test(1), ServerSecret::gen_test(2)],
+            round: 0u32,
+            message: DcMessage([9u8; DC_NET_MESSAGE_LENGTH]),
+            sealed_secrets: SealedServerSecrets(vec![7u8; 1024]),
         }
     }
 
-    fn test_signing_key() -> Vec<u8> {
-        base64::decode(
+    fn test_signing_key() -> SealedPrvKey {
+        let bytes = base64::decode(
             "BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAIaOkrL+G/tjwqpYb2cPLagU2yBuV2gTF\
              nrQR1YRijjLAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
              AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
@@ -305,15 +338,17 @@ mod tests {
              AAAgAAAAAAAAAAAAAAAAAAAAJAAAAAAAAAAAAAAAAAAAAMcwvJUTIR5owP6OfXybb09woO+S2ZZ1DHRXUFLcu\
              7GfdV+AQ6ddvsqjCZpdA0X+BQECAwQ=",
         )
-        .unwrap()
+        .unwrap();
+
+        SealedPrvKey(bytes)
     }
 
     #[test]
     fn key_seal_unseal() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
         let sealed = enc.new_tee_signing_key().unwrap();
-        let encoded = base64::encode(&sealed);
-        println!("sealed key len = {}", sealed.len());
+        let encoded = base64::encode(&sealed.0);
+        println!("sealed key len = {}", sealed.0.len());
         println!("base64 encoded: {}", encoded);
         enc.unseal_to_pubkey(&sealed).unwrap();
     }
@@ -322,17 +357,12 @@ mod tests {
     fn client_submit() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
-        let req_1 = dummy_send_req();
+        let req_1 = placeholder_submission_req();
         let sgx_key_sealed = test_signing_key();
 
         let resp_1 = enc.client_submit(&req_1, &sgx_key_sealed).unwrap();
-        let req_2 = SendRequest {
-            user_id: UserId::default(),
-            message: resp_1.message,
-            round: 0,
-            server_keys: req_1.server_keys,
-        };
 
+        let req_2 = req_1.clone();
         let resp_2 = enc.client_submit(&req_2, &sgx_key_sealed).unwrap();
 
         // resp 2 == req 1 because server's are xor twice
@@ -345,7 +375,7 @@ mod tests {
     fn aggregation_init() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
-        let req_1 = dummy_send_req();
+        let req_1 = placeholder_submission_req();
         let sgx_key_sealed = test_signing_key();
 
         let resp_1 = enc.client_submit(&req_1, &sgx_key_sealed).unwrap();

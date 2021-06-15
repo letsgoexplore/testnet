@@ -7,7 +7,7 @@ use core::fmt::{Debug, Display, Formatter};
 #[allow(unused_imports)]
 use sgx_types::sgx_status_t;
 #[allow(unused_imports)]
-use std::convert::TryFrom;
+use std::{convert::TryFrom, vec::Vec};
 
 // A wrapper around sgx_ec256_public_t
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -16,6 +16,11 @@ pub struct PubKey {
     pub gx: [u8; SGX_ECP256_KEY_SIZE],
     pub gy: [u8; SGX_ECP256_KEY_SIZE],
 }
+
+// TODO: Can make this a fixed size byte array if we know an upper bound on the size
+/// An enclave-generated private signing key
+#[derive(Clone)]
+pub struct SealedPrvKey(pub Vec<u8>);
 
 impl Debug for PubKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {

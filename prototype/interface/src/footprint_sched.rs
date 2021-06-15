@@ -16,3 +16,9 @@ pub struct SchedulingState {
     finished: bool,
     tee_sig: Signature,
 }
+
+// TODO: Flesh out these structs
+#[derive(Clone)]
+pub struct FootprintTicket;
+#[derive(Clone)]
+pub struct SealedFootprintTicket;

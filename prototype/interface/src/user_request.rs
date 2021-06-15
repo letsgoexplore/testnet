@@ -3,91 +3,84 @@ use std::prelude::v1::*;
 use crate::key::*;
 use crate::params::*;
 use crate::signature::*;
+
 use sgx_types::SGX_HMAC256_KEY_SIZE;
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 big_array! { BigArray; }
 
-// this is what a user wants to broadcast through DC net
-pub type RawMessage = [u8; DC_NET_MESSAGE_LENGTH];
-
-pub fn test_raw_msg() -> RawMessage {
-    [0x9c; DC_NET_MESSAGE_LENGTH]
-}
-
 // a wrapper around RawMessage so that we can impl traits
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize)]
-pub struct DCMessage {
-    #[serde(with = "BigArray")]
-    msg: RawMessage,
+pub struct DcMessage(#[serde(with = "BigArray")] pub [u8; DC_NET_MESSAGE_LENGTH]);
+
+impl Default for DcMessage {
+    fn default() -> DcMessage {
+        DcMessage([0u8; DC_NET_MESSAGE_LENGTH])
+    }
 }
 
 #[cfg(feature = "trusted")]
-use crate::traits::Zero;
-#[cfg(feature = "trusted")]
 use sgx_rand::{Rand, Rng};
 #[cfg(feature = "trusted")]
-impl Rand for DCMessage {
+impl Rand for DcMessage {
     fn rand<R: Rng>(rng: &mut R) -> Self {
-        let mut r = DCMessage::zero();
-        rng.fill_bytes(&mut r.msg);
+        let mut r = DcMessage::default();
+        rng.fill_bytes(&mut r.0);
 
         r
     }
 }
 
-impl std::cmp::PartialEq for DCMessage {
+impl std::cmp::PartialEq for DcMessage {
     fn eq(&self, other: &Self) -> bool {
-        self.msg.iter().zip(&other.msg).all(|(x, y)| x == y)
+        self.0.iter().zip(&other.0).all(|(x, y)| x == y)
     }
 }
 
-impl Debug for DCMessage {
+impl Debug for DcMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.write_str(&hex::encode(&self))
     }
 }
 
-impl From<RawMessage> for DCMessage {
-    fn from(raw: RawMessage) -> Self {
-        return DCMessage { msg: raw };
+impl From<[u8; DC_NET_MESSAGE_LENGTH]> for DcMessage {
+    fn from(raw: [u8; DC_NET_MESSAGE_LENGTH]) -> Self {
+        DcMessage(raw)
     }
 }
 
-impl AsRef<[u8]> for DCMessage {
+impl AsRef<[u8]> for DcMessage {
     fn as_ref(&self) -> &[u8] {
-        &self.msg
+        &self.0
     }
 }
 
-impl AsRef<RawMessage> for DCMessage {
-    fn as_ref(&self) -> &RawMessage {
-        &self.msg
+impl AsRef<[u8; DC_NET_MESSAGE_LENGTH]> for DcMessage {
+    fn as_ref(&self) -> &[u8; DC_NET_MESSAGE_LENGTH] {
+        &self.0
     }
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct UserId {
-    raw: [u8; USER_ID_LENGTH],
-}
+pub struct UserId([u8; USER_ID_LENGTH]);
 
 impl Debug for UserId {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.write_str(&hex::encode(self.raw))
+        f.write_str(&hex::encode(self.0))
     }
 }
 
 impl AsRef<[u8]> for UserId {
     fn as_ref(&self) -> &[u8] {
-        &self.raw
+        &self.0
     }
 }
 
 impl From<[u8; USER_ID_LENGTH]> for UserId {
     fn from(raw: [u8; USER_ID_LENGTH]) -> Self {
-        Self { raw }
+        UserId(raw)
     }
 }
 
@@ -101,6 +94,10 @@ pub struct ServerSecret {
     sig: Signature,
 }
 
+/// Enclave-generated secrets shared with a set of anytrust servers
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SealedServerSecrets(pub Vec<u8>);
+
 impl ServerSecret {
     pub fn gen_test(byte: u8) -> Self {
         return ServerSecret {
@@ -112,45 +109,22 @@ impl ServerSecret {
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize)]
-pub struct SendRequest {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ClientSubmissionReq {
     pub user_id: UserId,
     pub round: u32,
-    #[serde(with = "BigArray")]
-    pub message: RawMessage,
-    pub server_keys: Vec<ServerSecret>,
-}
-
-impl Debug for SendRequest {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SendRequest")
-            .field("userId", &self.user_id)
-            .field("round", &self.round)
-            .field("message", &hex::encode(self.message))
-            .field("server", &self.server_keys)
-            .finish()
-    }
+    pub message: DcMessage,
+    /// When unsealed, this must have the form (H(kpk_1, ..., kpk_ℓ), s_1, ..., s_ℓ) so that the
+    /// shared secrets are linked to the relevant servers
+    pub sealed_secrets: SealedServerSecrets,
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SignedUserMessage {
     pub user_id: UserId,
     pub round: u32,
-    #[serde(with = "BigArray")]
-    pub message: RawMessage,
+    pub message: DcMessage,
     pub tee_sig: Signature,
     pub tee_pk: PubKey,
-}
-
-impl Debug for SignedUserMessage {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SignedUserMessage")
-            .field("user_id", &self.user_id)
-            .field("round", &self.round)
-            .field("message", &hex::encode(self.message))
-            .field("tee_sig", &self.tee_sig)
-            .field("tee_pk", &self.tee_pk)
-            .finish()
-    }
 }

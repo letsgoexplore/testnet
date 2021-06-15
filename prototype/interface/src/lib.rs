@@ -44,5 +44,5 @@ pub use footprint_sched::*;
 pub use key::*;
 pub use params::*;
 pub use signature::*;
-pub use traits::{Size, Zero};
+pub use traits::Size;
 pub use user_request::*;

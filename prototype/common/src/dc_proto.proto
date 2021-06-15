@@ -1,107 +1,37 @@
 syntax = "proto3";
 package dc_proto;
 
-service UserLocalEncalve{ // the user exposed enclave 
-	rpc setup(setupMessage) returns (Empty); // setup
-
-	// how you send a message
-	rpc AuthorMessage(SendMessageRequest) returns (DCMsg_SGXBlob);
-}
-
-
-/* All of the following services follow a aggregate paradigm.
-Things are submitted, some computation is performed, then we get a result.
-
-*/
-
-// responsible for merging messages
+// Responsible for merging participant messages
 service Aggregator {
-    rpc SubmitMessage(DCMsg_SGXBlob) returns (SendMessageReply);
-    rpc GetAggregate(AggReq) returns (AggMsg_SGXBlob); 
+    rpc SubmitRoundMsg(SgxMsg) returns (Empty);
 }
 
-
-// responsible for xoring in key shares 
-service AnyTrustNode{
-	rpc submitAggregateMesssage(AggMsg_SGXBlob) returns (Empty);
-	rpc getResult(ResultReq) returns (AnytrustResult_SGXBlob);
+// Responsible for xoring in key shares
+service AnytrustNode{
+    rpc RegisterPubkey(SgxMsg) returns (Empty);
+    rpc SubmitAggregate(SgxMsg) returns (Empty);
+    rpc SubmitFinalShare(SgxMsg) returns (Empty);
 }
 
-// really just an Aggregator, but operates on the final messages 
+// A service that stores round results
 service Broadcast{
-	rpc submitAnytrustResult(AnytrustResult_SGXBlob) returns (Empty);
-	rpc getResult(BroadcastReq) returns (broadcastMsg);
+    rpc SubmitRoundResult(SgxMsg) returns (Empty);
+    rpc GetRoundResult(RoundResultReq) returns (RoundResult);
 }
 
-
-
-message setupMessage{ // no idea what goes here 
-}
-message SendMessageRequest {
-   bytes user_id = 1;
-   bytes messages = 2;
-   uint32 round = 3;
-   bytes server_keys_hash = 4;
+// The only thing passed between entities in this protocol is blobs of bytes. The bytes are
+// serialized and deserialized in SGX land, using a format independent of this gRPC protocol.
+message SgxMsg {
+    bytes payload = 1;
 }
 
-// Error is "" on success
-message SendMessageReply {
-   string error = 1;
+message RoundResultReq {
+    bytes server_keys_hash = 2;
+    uint32 epoch = 3;
 }
 
-
-
-/*message AggMsg{
-    repeated bytes userIDs=1;
-    bytes message = 2;
-    uint32 round = 3;
-    bytes server_keys_hash = 4;
-}*/
-
-//message AnyTrustMessage{
-//   bytes messages = 1;
-//   byetes anyTrustServerId = 2;
-//   uint32 round = 3;
-//   bytes server_keys_hash = 4;
-// }
-
-
-/* messages for getting results. Includes the server keys as a kind of
-Session identifier.
-*/
-
-message AggReq{
-   bytes server_keys_hash = 1;
+message RoundResult {
+    bytes msg = 4;
 }
-
-message ResultReq{
-    bytes server_keys_hash = 4;	
-} 
-message BroadcastReq{
-    bytes server_keys_hash = 4;	
-} 
-
-
-
-
-
-message DCMsg_SGXBlob{
-   bytes blob = 1;
-   bytes server_keys_hash = 2;
-}
-message AggMsg_SGXBlob{
-   bytes blob = 1;
-   bytes server_keys_hash = 2;
-}
-
-message AnytrustResult_SGXBlob{
-   bytes blob = 1;
-   bytes server_keys_hash = 2;
-}
-message broadcastMsg{
-	bytes message = 1;
-	/// FIXME add attestation information.
-}
-
 
 message Empty {}
