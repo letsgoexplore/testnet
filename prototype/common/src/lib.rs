@@ -7,7 +7,7 @@ extern crate tonic;
 pub mod enclave_wrapper;
 
 use enclave_wrapper::{DcNetEnclave, EnclaveResult};
-use interface::{ServerSecret, UserId, DC_NET_MESSAGE_LENGTH};
+use interface::{EntityId, ServerSecret, DC_NET_MESSAGE_LENGTH};
 
 use dc_proto::{
     aggregator_server::{Aggregator, AggregatorServer},

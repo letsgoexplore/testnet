@@ -1,10 +1,10 @@
 [package]
-name = "sgxdcnet-client"
+name = "sgxdcnet-aggregator"
 version = "0.1.0"
 edition = "2018"
 
 [[bin]] 
-name = "sgxdcnet-client"
+name = "sgxdcnet-aggregator"
 path = "src/main.rs"
 
 [dependencies]

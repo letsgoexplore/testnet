@@ -32,7 +32,8 @@ fn register_user(
     enclave: &DcNetEnclave,
     pubkeys: Vec<KemPubKey>,
 ) -> Result<(UserState, SgxMsg), Box<dyn Error>> {
-    let (sealed_shared_secrets, sealed_usk, user_id, reg_data) = enclave.register_user(&pubkeys)?;
+    let (sealed_shared_secrets, sealed_usk, user_id, reg_data) =
+        enclave.register_entity(&pubkeys)?;
 
     let state = UserState {
         user_id,

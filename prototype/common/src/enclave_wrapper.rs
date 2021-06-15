@@ -251,6 +251,33 @@ impl DcNetEnclave {
     }
     */
 
+    /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
+    pub fn new_aggregate(
+        &self,
+        round: u32,
+        pubkeys: &[KemPubKey],
+    ) -> EnclaveResult<SealedPartialAggregate> {
+        // The partial aggregate MUST store set of anytrust nodes
+        unimplemented!()
+    }
+
+    /// Adds the given input from a user to the given partial aggregate
+    pub fn add_to_aggregate(
+        &self,
+        agg: &mut SealedPartialAggregate,
+        new_input: &[u8],
+    ) -> EnclaveResult<()> {
+        // This MUST check that the input blob is made wrt the same set of anytrust nodes
+        unimplemented!()
+    }
+
+    /// Constructs an aggregate message from the given state. The returned blob is to be sent to
+    /// the parent aggregator or an anytrust server.
+    pub fn finalize_aggregate(&self, agg: &SealedPartialAggregate) -> EnclaveResult<Blob> {
+        unimplemented!()
+    }
+
+    /*
     // Note: if marshalled_current_aggregation is empty (len = 0), an empty aggregation is created
     // and the signed message is aggregated into that.
     pub fn aggregate(
@@ -294,6 +321,7 @@ impl DcNetEnclave {
 
         Ok(output[..output_bytes_written].to_vec())
     }
+    */
 
     pub fn run_enclave_tests(&self) -> SgxError {
         let mut retval = SGX_SUCCESS;
@@ -306,13 +334,13 @@ impl DcNetEnclave {
         Ok(())
     }
 
-    /// Derives shared secrets with all the given KEM pubkeys, and derives a new user signing
-    /// pubkey. Returns sealed secrets, a sealed private key, and a registration message to send to
-    /// an anytrust node
-    pub fn register_user(
+    /// Derives shared secrets with all the given KEM pubkeys, and derives a new signing pubkey.
+    /// Returns sealed secrets, a sealed private key, and a registration message to send to an
+    /// anytrust node
+    pub fn register_entity(
         &self,
         pubkeys: &[KemPubKey],
-    ) -> EnclaveResult<(SealedServerSecrets, SealedPrvKey, UserId, Blob)> {
+    ) -> EnclaveResult<(SealedServerSecrets, SealedPrvKey, EntityId, Blob)> {
         unimplemented!()
     }
 }
@@ -330,7 +358,7 @@ mod tests {
 
     fn placeholder_submission_req() -> UserSubmissionReq {
         UserSubmissionReq {
-            user_id: UserId::default(),
+            user_id: EntityId::default(),
             round: 0u32,
             msg: DcMessage([9u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket,

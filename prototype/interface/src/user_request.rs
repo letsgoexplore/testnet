@@ -62,23 +62,23 @@ impl AsRef<[u8; DC_NET_MESSAGE_LENGTH]> for DcMessage {
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct UserId([u8; USER_ID_LENGTH]);
+pub struct EntityId([u8; USER_ID_LENGTH]);
 
-impl Debug for UserId {
+impl Debug for EntityId {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.write_str(&hex::encode(self.0))
     }
 }
 
-impl AsRef<[u8]> for UserId {
+impl AsRef<[u8]> for EntityId {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl From<[u8; USER_ID_LENGTH]> for UserId {
+impl From<[u8; USER_ID_LENGTH]> for EntityId {
     fn from(raw: [u8; USER_ID_LENGTH]) -> Self {
-        UserId(raw)
+        EntityId(raw)
     }
 }
 
@@ -109,7 +109,7 @@ impl ServerSecret {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UserSubmissionReq {
-    pub user_id: UserId,
+    pub user_id: EntityId,
     pub round: u32,
     pub msg: DcMessage,
     pub ticket: SealedFootprintTicket,
@@ -121,7 +121,7 @@ pub struct UserSubmissionReq {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignedUserMessage {
-    pub user_id: UserId,
+    pub user_id: EntityId,
     pub round: u32,
     pub msg: DcMessage,
     pub tee_sig: Signature,

@@ -4,4 +4,5 @@ members = [
     "common",
     "enclave",
     "client",
+    "aggregator",
 ]

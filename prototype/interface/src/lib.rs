@@ -32,6 +32,7 @@ use std::prelude::v1::*;
 
 big_array! { BigArray; }
 
+mod aggregation;
 mod footprint_sched;
 mod key;
 mod params;
@@ -39,6 +40,7 @@ mod signature;
 mod traits;
 mod user_request;
 
+pub use aggregation::*;
 #[allow(dead_code)]
 pub use footprint_sched::*;
 pub use key::*;
