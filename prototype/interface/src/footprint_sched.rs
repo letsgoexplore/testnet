@@ -18,7 +18,7 @@ pub struct SchedulingState {
 }
 
 // TODO: Flesh out these structs
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FootprintTicket;
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SealedFootprintTicket;

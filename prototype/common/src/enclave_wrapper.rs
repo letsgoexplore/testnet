@@ -66,7 +66,7 @@ extern "C" {
         inp_len: u32,
     ) -> sgx_status_t;
 
-    fn ecall_client_submit(
+    fn ecall_user_submit(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
         send_request: *const u8,
@@ -193,19 +193,30 @@ impl DcNetEnclave {
         Ok(())
     }
 
-    pub fn client_submit(
+    /// Given a message and the relevant scheduling ticket, constructs a round message for sending
+    /// to an aggregator
+    pub fn user_submit_round_msg(
         &self,
-        submission_req: &ClientSubmissionReq,
+        submission_req: &UserSubmissionReq,
+        sealed_usk: &SealedPrvKey,
+    ) -> EnclaveResult<Blob> {
+        unimplemented!()
+    }
+
+    /*
+    pub fn user_submit(
+        &self,
+        submission_req: &UserSubmissionReq,
         sealed_usk: &SealedPrvKey,
     ) -> EnclaveResult<SignedUserMessage> {
         let marshaled_req = serde_cbor::to_vec(&submission_req).unwrap();
         let mut output = vec![0; SignedUserMessage::size_marshaled()];
         let mut output_bytes_written: usize = 0;
 
-        // Call client_submit through FFI
+        // Call user_submit through FFI
         let mut ret = sgx_status_t::default();
         let call_ret = unsafe {
-            ecall_client_submit(
+            ecall_user_submit(
                 self.enclave.geteid(),
                 &mut ret,
                 marshaled_req.as_ptr(),
@@ -238,6 +249,7 @@ impl DcNetEnclave {
             EnclaveError::from(sgx_status_t::SGX_ERROR_UNEXPECTED)
         })
     }
+    */
 
     // Note: if marshalled_current_aggregation is empty (len = 0), an empty aggregation is created
     // and the signed message is aggregated into that.
@@ -300,7 +312,7 @@ impl DcNetEnclave {
     pub fn register_user(
         &self,
         pubkeys: &[KemPubKey],
-    ) -> EnclaveResult<(SealedServerSecrets, SealedPrvKey, Blob)> {
+    ) -> EnclaveResult<(SealedServerSecrets, SealedPrvKey, UserId, Blob)> {
         unimplemented!()
     }
 }
@@ -316,12 +328,13 @@ mod tests {
     extern crate sgx_types;
     use interface::*;
 
-    fn placeholder_submission_req() -> ClientSubmissionReq {
-        ClientSubmissionReq {
+    fn placeholder_submission_req() -> UserSubmissionReq {
+        UserSubmissionReq {
             user_id: UserId::default(),
             round: 0u32,
-            message: DcMessage([9u8; DC_NET_MESSAGE_LENGTH]),
-            sealed_secrets: SealedServerSecrets(vec![7u8; 1024]),
+            msg: DcMessage([9u8; DC_NET_MESSAGE_LENGTH]),
+            ticket: SealedFootprintTicket,
+            shared_secrets: SealedServerSecrets(vec![7u8; 1024]),
         }
     }
 
@@ -354,19 +367,23 @@ mod tests {
     }
 
     #[test]
-    fn client_submit() {
+    fn user_submit_round_msg() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         let req_1 = placeholder_submission_req();
         let sgx_key_sealed = test_signing_key();
 
-        let resp_1 = enc.client_submit(&req_1, &sgx_key_sealed).unwrap();
+        let resp_1 = enc.user_submit_round_msg(&req_1, &sgx_key_sealed).unwrap();
 
         let req_2 = req_1.clone();
-        let resp_2 = enc.client_submit(&req_2, &sgx_key_sealed).unwrap();
+        let resp_2 = enc.user_submit_round_msg(&req_2, &sgx_key_sealed).unwrap();
 
+        unimplemented!();
+
+        /*
         // resp 2 == req 1 because server's are xor twice
-        assert_eq!(resp_2.message, req_1.message);
+        assert_eq!(resp_2, req_1);
+        */
 
         enc.destroy();
     }
@@ -378,11 +395,16 @@ mod tests {
         let req_1 = placeholder_submission_req();
         let sgx_key_sealed = test_signing_key();
 
-        let resp_1 = enc.client_submit(&req_1, &sgx_key_sealed).unwrap();
+        unimplemented!();
+        /*
+        let resp_1 = enc
+            .user_submit_round_msg(&req_1, &sgx_key_sealed)
+            .unwrap();
 
         let _agg = enc
             .aggregate(&resp_1, &Vec::new(), &sgx_key_sealed)
             .unwrap();
+        */
 
         enc.destroy();
     }

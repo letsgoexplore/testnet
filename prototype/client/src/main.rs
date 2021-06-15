@@ -8,24 +8,34 @@ use dc_proto::{anytrust_node_client::AnytrustNodeClient, SgxMsg};
 pub mod dc_proto {
     tonic::include_proto!("dc_proto");
 }
-use interface::{DcMessage, SealedPrvKey, SealedServerSecrets};
+use interface::{
+    DcMessage, SealedFootprintTicket, SealedPrvKey, SealedServerSecrets, UserId, UserSubmissionReq,
+};
 
 use rand::Rng;
 
 struct UserState<'a> {
+    /// A reference to this machine's enclave
     enclave: &'a DcNetEnclave,
+    /// A unique identifier for this client. Computed as the hash of the client's pubkey.
+    user_id: UserId,
+    /// This client's signing key. Can only be accessed from within the enclave.
     signing_key: SealedPrvKey,
-    shared_secrets: SealedServerSecrets,
+    /// The set anytrust servers that this client is registered with
     server_set: Vec<KemPubKey>,
+    /// The secrets that this client shares with the anytrust servers. Can only be accessed from
+    /// within the enclave.
+    shared_secrets: SealedServerSecrets,
 }
 
 fn register_user(
     enclave: &DcNetEnclave,
     pubkeys: Vec<KemPubKey>,
 ) -> Result<(UserState, SgxMsg), Box<dyn Error>> {
-    let (sealed_shared_secrets, sealed_usk, reg_data) = enclave.register_user(&pubkeys)?;
+    let (sealed_shared_secrets, sealed_usk, user_id, reg_data) = enclave.register_user(&pubkeys)?;
 
     let state = UserState {
+        user_id,
         enclave,
         signing_key: sealed_usk,
         shared_secrets: sealed_shared_secrets,
@@ -37,8 +47,25 @@ fn register_user(
 }
 
 impl<'a> UserState<'a> {
-    fn submit_msg(&self, round: u32, msg: &DcMessage) -> Result<SgxMsg, Box<dyn Error>> {
-        unimplemented!();
+    fn submit_round_msg(
+        &self,
+        round: u32,
+        msg: &DcMessage,
+        ticket: &SealedFootprintTicket,
+    ) -> Result<SgxMsg, Box<dyn Error>> {
+        let req = UserSubmissionReq {
+            user_id: self.user_id,
+            round,
+            msg: msg.clone(),
+            ticket: ticket.clone(),
+            shared_secrets: self.shared_secrets.clone(),
+        };
+
+        let msg_blob = self
+            .enclave
+            .user_submit_round_msg(&req, &self.signing_key)?;
+
+        Ok(SgxMsg { payload: msg_blob })
     }
 }
 

@@ -1,8 +1,6 @@
 use std::prelude::v1::*;
 
-use crate::key::*;
-use crate::params::*;
-use crate::signature::*;
+use crate::{footprint_sched::SealedFootprintTicket, key::*, params::*, signature::*};
 
 use sgx_types::SGX_HMAC256_KEY_SIZE;
 use std::fmt::{Debug, Formatter, Result as FmtResult};
@@ -110,13 +108,14 @@ impl ServerSecret {
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct ClientSubmissionReq {
+pub struct UserSubmissionReq {
     pub user_id: UserId,
     pub round: u32,
-    pub message: DcMessage,
+    pub msg: DcMessage,
+    pub ticket: SealedFootprintTicket,
     /// When unsealed, this must have the form (H(kpk_1, ..., kpk_ℓ), s_1, ..., s_ℓ) so that the
     /// shared secrets are linked to the relevant servers
-    pub sealed_secrets: SealedServerSecrets,
+    pub shared_secrets: SealedServerSecrets,
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -124,7 +123,7 @@ pub struct ClientSubmissionReq {
 pub struct SignedUserMessage {
     pub user_id: UserId,
     pub round: u32,
-    pub message: DcMessage,
+    pub msg: DcMessage,
     pub tee_sig: Signature,
     pub tee_pk: PubKey,
 }
