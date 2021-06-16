@@ -4,6 +4,7 @@ package dc_proto;
 // Responsible for merging participant messages
 service Aggregator {
     rpc SubmitRoundMsg(SgxMsg) returns (Empty);
+    rpc SubmitParitalAggregate(SgxMsg) returns (Empty);
 }
 
 // Responsible for xoring in key shares

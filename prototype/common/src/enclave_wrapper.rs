@@ -6,7 +6,6 @@ use sgx_types::*;
 use sgx_urts::SgxEnclave;
 use std::path::PathBuf;
 
-use interface::Size;
 use interface::*;
 
 // error type for enclave operations
@@ -36,18 +35,19 @@ impl Display for EnclaveError {
 impl Error for EnclaveError {}
 
 pub type EnclaveResult<T> = Result<T, EnclaveError>;
-pub type Blob = Vec<u8>;
 
-// TODO: Fill out the actual data this is supposed to hold
-/// A KEM pubkey belonging to an AnyTrust node
-pub struct KemPubKey;
+/// Describes a partial aggregate. It can consist of a single user's round message (i.e., the
+/// output of `user_submit_round_msg`, or the XOR of multiple user's round messages (i.e., the
+/// output of `finalize_aggregate`).
+pub struct AggregateBlob(pub Vec<u8>);
 
-impl KemPubKey {
-    /// Make a new KEM pubkey for testing purposes
-    pub fn rand_placeholder<R: Rng>(rng: &mut R) -> KemPubKey {
-        KemPubKey
-    }
-}
+/// Describes user registration information. This contains key encapsulations as well as a linkably
+/// attested signature pubkey.
+pub struct UserRegistrationBlob(pub Vec<u8>);
+
+/// Describes aggregator registration information. This contains a linkably attested signature
+/// pubkey.
+pub struct AggRegistrationBlob(pub Vec<u8>);
 
 // E calls
 extern "C" {
@@ -135,7 +135,7 @@ impl DcNetEnclave {
     }
 
     // Return sealed key
-    pub fn new_tee_signing_key(&self) -> EnclaveResult<SealedPrvKey> {
+    pub fn new_tee_signing_key(&self) -> EnclaveResult<SealedSigningKey> {
         // TODO: Ensure that 1024 is large enough for any sealed privkey
         let mut ret = SGX_SUCCESS;
         let mut sealed_key_bytes = vec![0; 1024];
@@ -164,11 +164,11 @@ impl DcNetEnclave {
         sealed_key_bytes.truncate(bytes_written as usize);
 
         // Package the output in the correct type
-        Ok(SealedPrvKey(sealed_key_bytes.to_vec()))
+        Ok(SealedSigningKey(sealed_key_bytes.to_vec()))
     }
 
     // unseal the key to see its public key
-    pub fn unseal_to_pubkey(&self, privkey: &SealedPrvKey) -> EnclaveResult<()> {
+    pub fn unseal_to_pubkey(&self, privkey: &SealedSigningKey) -> EnclaveResult<()> {
         let mut ret = SGX_SUCCESS;
         let mut privkey_copy = privkey.clone();
 
@@ -198,8 +198,8 @@ impl DcNetEnclave {
     pub fn user_submit_round_msg(
         &self,
         submission_req: &UserSubmissionReq,
-        sealed_usk: &SealedPrvKey,
-    ) -> EnclaveResult<Blob> {
+        sealed_usk: &SealedSigningKey,
+    ) -> EnclaveResult<AggregateBlob> {
         unimplemented!()
     }
 
@@ -207,7 +207,7 @@ impl DcNetEnclave {
     pub fn user_submit(
         &self,
         submission_req: &UserSubmissionReq,
-        sealed_usk: &SealedPrvKey,
+        sealed_usk: &SealedSigningKey,
     ) -> EnclaveResult<SignedUserMessage> {
         let marshaled_req = serde_cbor::to_vec(&submission_req).unwrap();
         let mut output = vec![0; SignedUserMessage::size_marshaled()];
@@ -255,7 +255,7 @@ impl DcNetEnclave {
     pub fn new_aggregate(
         &self,
         round: u32,
-        pubkeys: &[KemPubKey],
+        anytrust_group_id: &EntityId,
     ) -> EnclaveResult<SealedPartialAggregate> {
         // The partial aggregate MUST store set of anytrust nodes
         unimplemented!()
@@ -265,15 +265,17 @@ impl DcNetEnclave {
     pub fn add_to_aggregate(
         &self,
         agg: &mut SealedPartialAggregate,
-        new_input: &[u8],
+        new_input: &AggregateBlob,
     ) -> EnclaveResult<()> {
         // This MUST check that the input blob is made wrt the same set of anytrust nodes
         unimplemented!()
     }
 
+    //  TODO: Make these blobs different newtypes
+
     /// Constructs an aggregate message from the given state. The returned blob is to be sent to
     /// the parent aggregator or an anytrust server.
-    pub fn finalize_aggregate(&self, agg: &SealedPartialAggregate) -> EnclaveResult<Blob> {
+    pub fn finalize_aggregate(&self, agg: &SealedPartialAggregate) -> EnclaveResult<AggregateBlob> {
         unimplemented!()
     }
 
@@ -284,7 +286,7 @@ impl DcNetEnclave {
         &self,
         send_request: &SignedUserMessage,
         marshalled_current_aggregation: &Vec<u8>,
-        sealed_ask: &SealedPrvKey,
+        sealed_ask: &SealedSigningKey,
     ) -> EnclaveResult<Vec<u8>> {
         let marshalled_msg = serde_cbor::to_vec(&send_request).unwrap();
 
@@ -337,12 +339,28 @@ impl DcNetEnclave {
     /// Derives shared secrets with all the given KEM pubkeys, and derives a new signing pubkey.
     /// Returns sealed secrets, a sealed private key, and a registration message to send to an
     /// anytrust node
-    pub fn register_entity(
+    pub fn register_user(
         &self,
         pubkeys: &[KemPubKey],
-    ) -> EnclaveResult<(SealedServerSecrets, SealedPrvKey, EntityId, Blob)> {
+    ) -> EnclaveResult<(
+        SealedServerSecrets,
+        SealedSigningKey,
+        EntityId,
+        UserRegistrationBlob,
+    )> {
         unimplemented!()
     }
+
+    /// Derives a new signing pubkey. Returns a sealed private key and a registration message to
+    /// send to an anytrust node
+    pub fn register_aggregator(
+        &self,
+        pubkeys: &[KemPubKey],
+    ) -> EnclaveResult<(SealedSigningKey, EntityId, AggRegistrationBlob)> {
+        unimplemented!()
+    }
+
+    // TODO: Write anytrust node function that receives registration blobs and processes them
 }
 
 #[cfg(test)]
@@ -359,6 +377,7 @@ mod tests {
     fn placeholder_submission_req() -> UserSubmissionReq {
         UserSubmissionReq {
             user_id: EntityId::default(),
+            anytrust_group_id: EntityId::default(),
             round: 0u32,
             msg: DcMessage([9u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket,
@@ -366,7 +385,7 @@ mod tests {
         }
     }
 
-    fn test_signing_key() -> SealedPrvKey {
+    fn test_signing_key() -> SealedSigningKey {
         let bytes = base64::decode(
             "BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAIaOkrL+G/tjwqpYb2cPLagU2yBuV2gTF\
              nrQR1YRijjLAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
@@ -381,7 +400,7 @@ mod tests {
         )
         .unwrap();
 
-        SealedPrvKey(bytes)
+        SealedSigningKey(bytes)
     }
 
     #[test]

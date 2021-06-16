@@ -1,16 +1,16 @@
 extern crate common;
 extern crate interface;
 
-use std::error::Error;
+use std::{collections::BTreeSet, error::Error};
 
-use common::enclave_wrapper::{DcNetEnclave, EnclaveResult, KemPubKey};
+use common::enclave_wrapper::{AggregateBlob, DcNetEnclave, EnclaveResult};
 use dc_proto::{anytrust_node_client::AnytrustNodeClient, SgxMsg};
 pub mod dc_proto {
     tonic::include_proto!("dc_proto");
 }
 use interface::{
-    DcMessage, EntityId, SealedFootprintTicket, SealedPartialAggregate, SealedPrvKey,
-    SealedServerSecrets, UserSubmissionReq,
+    compute_group_id, DcMessage, EntityId, KemPubKey, SealedFootprintTicket,
+    SealedPartialAggregate, SealedServerSecrets, SealedSigningKey, UserSubmissionReq,
 };
 
 use rand::Rng;
@@ -20,13 +20,10 @@ struct AggregatorState<'a> {
     enclave: &'a DcNetEnclave,
     /// A unique identifier for this aggregator. Computed as the hash of the aggregator's pubkey.
     agg_id: EntityId,
+    /// A unique for the set anytrust servers that this aggregator is registered with
+    anytrust_group_id: EntityId,
     /// This aggregator's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedPrvKey,
-    /// The set anytrust servers that this client is registered with
-    server_set: Vec<KemPubKey>,
-    /// The secrets that this client shares with the anytrust servers. Can only be accessed from
-    /// within the enclave.
-    shared_secrets: SealedServerSecrets,
+    signing_key: SealedSigningKey,
     /// A partial aggregate of received user messages
     partial_agg: Option<SealedPartialAggregate>,
 }
@@ -35,18 +32,21 @@ fn register_aggregator(
     enclave: &DcNetEnclave,
     pubkeys: Vec<KemPubKey>,
 ) -> Result<(AggregatorState, SgxMsg), Box<dyn Error>> {
-    let (sealed_shared_secrets, sealed_ask, agg_id, reg_data) =
-        enclave.register_entity(&pubkeys)?;
+    let (sealed_ask, agg_id, reg_data) = enclave.register_aggregator(&pubkeys)?;
+
+    let anytrust_ids: BTreeSet<EntityId> = pubkeys.iter().map(|pk| pk.get_entity_id()).collect();
+    let anytrust_group_id = compute_group_id(&anytrust_ids);
 
     let state = AggregatorState {
         agg_id,
+        anytrust_group_id,
         enclave,
         signing_key: sealed_ask,
-        shared_secrets: sealed_shared_secrets,
-        server_set: pubkeys,
         partial_agg: None,
     };
-    let msg = SgxMsg { payload: reg_data };
+    let msg = SgxMsg {
+        payload: reg_data.0,
+    };
 
     Ok((state, msg))
 }
@@ -55,19 +55,19 @@ impl<'a> AggregatorState<'a> {
     /// Clears whatever aggregate exists and makes an empty one for the given round
     fn new_aggregate(&mut self, round: u32) -> Result<(), Box<dyn Error>> {
         // Make a new partial aggregate and put it in the local state
-        let partial_agg = self.enclave.new_aggregate(round, &self.server_set)?;
+        let partial_agg = self.enclave.new_aggregate(round, &self.anytrust_group_id)?;
         self.partial_agg = Some(partial_agg);
 
         Ok(())
     }
 
     /// Adds the given input to the partial aggregate
-    fn add_to_aggregate(&mut self, input_blob: &[u8]) -> Result<(), Box<dyn Error>> {
+    fn add_to_aggregate(&mut self, input_blob: &AggregateBlob) -> Result<(), Box<dyn Error>> {
         let partial_agg = self
             .partial_agg
             .as_mut()
             .expect("cannot add to aggregate without first calling new_aggregate");
-        let _ = self.enclave.add_to_aggregate(partial_agg, &input_blob)?;
+        let _ = self.enclave.add_to_aggregate(partial_agg, input_blob)?;
         Ok(())
     }
 
@@ -80,7 +80,7 @@ impl<'a> AggregatorState<'a> {
             .expect("cannot finalize aggregate without first calling new_aggregate");
         let msg = self.enclave.finalize_aggregate(partial_agg)?;
 
-        Ok(SgxMsg { payload: msg })
+        Ok(SgxMsg { payload: msg.0 })
     }
 }
 

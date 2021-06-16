@@ -1,5 +1,4 @@
 use crate::params::*;
-use crate::Signature;
 
 use std::vec::Vec;
 
@@ -8,6 +7,7 @@ pub struct Footprint {
     fp: [bool; FOOTPRINT_BIT_SIZE],
 }
 
+/*
 #[allow(dead_code)]
 pub struct SchedulingState {
     round: u32,
@@ -17,8 +17,9 @@ pub struct SchedulingState {
     tee_sig: Signature,
 }
 
-// TODO: Flesh out these structs
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FootprintTicket;
+*/
+// TODO: Flesh out this structs
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SealedFootprintTicket;

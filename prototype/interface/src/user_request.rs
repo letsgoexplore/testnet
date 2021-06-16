@@ -1,8 +1,10 @@
+use std::collections::BTreeSet;
 use std::prelude::v1::*;
 
-use crate::{footprint_sched::SealedFootprintTicket, key::*, params::*, signature::*};
+use crate::{footprint_sched::SealedFootprintTicket, key::*, params::*};
 
 use sgx_types::SGX_HMAC256_KEY_SIZE;
+use sha2::{Digest, Sha256};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 big_array! { BigArray; }
@@ -61,8 +63,8 @@ impl AsRef<[u8; DC_NET_MESSAGE_LENGTH]> for DcMessage {
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq)]
-pub struct EntityId([u8; USER_ID_LENGTH]);
+#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct EntityId(pub [u8; USER_ID_LENGTH]);
 
 impl Debug for EntityId {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
@@ -82,6 +84,40 @@ impl From<[u8; USER_ID_LENGTH]> for EntityId {
     }
 }
 
+/// Computes a group ID given a list of entity IDs
+pub fn compute_group_id(ids: &BTreeSet<EntityId>) -> EntityId {
+    // The group ID of a set of entities is the hash of their IDs, concatenated in ascending order.
+    // There's also the context str of "grp" prepended.
+    let mut hasher = Sha256::new();
+    hasher.update(b"grp");
+    for id in ids {
+        hasher.update(&id.0);
+    }
+    let digest = hasher.finalize();
+
+    let mut id = EntityId::default();
+    id.0.copy_from_slice(&digest);
+    id
+}
+
+/// Enclave-generated secrets shared with a set of anytrust servers
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SealedServerSecrets(pub Vec<u8>);
+
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UserSubmissionReq {
+    pub user_id: EntityId,
+    pub anytrust_group_id: EntityId,
+    pub round: u32,
+    pub msg: DcMessage,
+    pub ticket: SealedFootprintTicket,
+    /// When unsealed, this must have the form (H(kpk_1, ..., kpk_ℓ), s_1, ..., s_ℓ) so that the
+    /// shared secrets are linked to the relevant servers
+    pub shared_secrets: SealedServerSecrets,
+}
+
+/*
 // secret shared by server & user
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
@@ -91,10 +127,6 @@ pub struct ServerSecret {
     pubkey: PubKey,
     sig: Signature,
 }
-
-/// Enclave-generated secrets shared with a set of anytrust servers
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SealedServerSecrets(pub Vec<u8>);
 
 impl ServerSecret {
     pub fn gen_test(byte: u8) -> Self {
@@ -107,18 +139,6 @@ impl ServerSecret {
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UserSubmissionReq {
-    pub user_id: EntityId,
-    pub round: u32,
-    pub msg: DcMessage,
-    pub ticket: SealedFootprintTicket,
-    /// When unsealed, this must have the form (H(kpk_1, ..., kpk_ℓ), s_1, ..., s_ℓ) so that the
-    /// shared secrets are linked to the relevant servers
-    pub shared_secrets: SealedServerSecrets,
-}
-
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SignedUserMessage {
     pub user_id: EntityId,
@@ -127,3 +147,4 @@ pub struct SignedUserMessage {
     pub tee_sig: Signature,
     pub tee_pk: PubKey,
 }
+*/
