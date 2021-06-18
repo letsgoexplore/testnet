@@ -62,7 +62,8 @@ CUSTOM_EDL_PATH := ./vendor/edl
 CUSTOM_COMMON_PATH := ./vendor/common
 
 ######## Cargo Settings ########
-# a tmp dir to hold intermediate compilation output
+# The tmp dir to hold intermediate compilation output
+# this must correspond to .cargo/config.toml
 TARGET_DIR := /tmp/sgxdcnet/target/debug
 
 ######## Enclave Settings ########

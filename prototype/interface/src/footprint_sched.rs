@@ -17,6 +17,7 @@ pub struct SchedulingState {
     tee_sig: Signature,
 }
 
+<<<<<<< Updated upstream
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FootprintTicket;
 */

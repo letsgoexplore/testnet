@@ -252,6 +252,7 @@ impl DcNetEnclave {
     */
 
     /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
+    /// (FZ) can SealedPartialAggregate be just a blob?
     pub fn new_aggregate(
         &self,
         round: u32,

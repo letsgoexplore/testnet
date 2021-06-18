@@ -128,6 +128,11 @@ pub struct ServerSecret {
     sig: Signature,
 }
 
+/// Enclave-generated secrets shared with a set of anytrust servers
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))] // needed for Serialize and Deserialize
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SealedServerSecrets(pub Vec<u8>);
+
 impl ServerSecret {
     pub fn gen_test(byte: u8) -> Self {
         return ServerSecret {

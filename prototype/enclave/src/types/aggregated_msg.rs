@@ -5,6 +5,7 @@ use std::vec::Vec;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AggregatedMessage {
     pub user_ids: Vec<UserId>,
+    // pub group id
     pub aggregated_msg: DCMessage,
     pub round: u32,
     pub tee_sig: Signature,
