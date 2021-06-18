@@ -4,7 +4,7 @@ use sgx_rand::Rng;
 use sgx_tseal::SgxSealedData;
 
 use core::convert::TryFrom;
-use interface::{PrvKey, PubKey};
+use interface::KemPubKey;
 
 use sgx_types::sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED, SGX_SUCCESS};
 
@@ -21,18 +21,18 @@ pub extern "C" fn new_tee_signing_key(
             return SGX_ERROR_UNEXPECTED;
         }
     };
-    let prv_key = rand.gen::<PrvKey>();
+    let prv_key = rand.gen::<SgxSigningKey>();
 
-    let pk = unwrap_or_return!(PubKey::try_from(&prv_key), SGX_ERROR_INVALID_PARAMETER);
+    let pk = unwrap_or_return!(KemPubKey::try_from(&prv_key), SGX_ERROR_INVALID_PARAMETER);
     println!("PK: {}", pk);
 
     // TODO: use a reasonable associated data
     let ad = [1, 2, 3, 4];
-    let sealed = match SgxSealedData::<PrvKey>::seal_data(&ad, &prv_key) {
+    let sealed = match SgxSealedData::<SgxSigningKey>::seal_data(&ad, &prv_key) {
         Ok(s) => s,
         Err(e) => return e,
     };
-    let sealed_len = SgxSealedData::<PrvKey>::calc_raw_sealed_data_size(
+    let sealed_len = SgxSealedData::<SgxSigningKey>::calc_raw_sealed_data_size(
         sealed.get_add_mac_txt_len(),
         sealed.get_encrypt_txt_len(),
     );
@@ -50,17 +50,18 @@ pub extern "C" fn new_tee_signing_key(
     SGX_SUCCESS
 }
 
+use crypto::SgxSigningKey;
 use utils;
 
 #[no_mangle]
 pub extern "C" fn unseal_to_pubkey(inp: *mut u8, inp_len: u32) -> sgx_status_t {
-    let unsealed = match utils::unseal_data::<PrvKey>(inp, inp_len) {
+    let unsealed = match utils::unseal_data::<SgxSigningKey>(inp, inp_len) {
         Ok(u) => u,
         Err(e) => return e,
     };
 
     let prv_key = unsealed.get_decrypt_txt();
-    let pk = unwrap_or_return!(PubKey::try_from(prv_key), SGX_ERROR_INVALID_PARAMETER);
+    let pk = unwrap_or_return!(KemPubKey::try_from(prv_key), SGX_ERROR_INVALID_PARAMETER);
     println!("PK: {}", pk);
     SGX_SUCCESS
 }

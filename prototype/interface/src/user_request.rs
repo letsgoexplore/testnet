@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::prelude::v1::*;
 
-use crate::{footprint_sched::SealedFootprintTicket, key::*, params::*};
+use crate::{params::*, sealed_types::*, sgx_protected_keys::*};
 
 use sgx_types::SGX_HMAC256_KEY_SIZE;
 use sha2::{Digest, Sha256};
@@ -22,6 +22,7 @@ impl Default for DcMessage {
 
 #[cfg(feature = "trusted")]
 use sgx_rand::{Rand, Rng};
+
 #[cfg(feature = "trusted")]
 impl Rand for DcMessage {
     fn rand<R: Rng>(rng: &mut R) -> Self {
@@ -100,9 +101,27 @@ pub fn compute_group_id(ids: &BTreeSet<EntityId>) -> EntityId {
     id
 }
 
-/// Enclave-generated secrets shared with a set of anytrust servers
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SealedServerSecrets(pub Vec<u8>);
+pub fn compute_anytrust_group_id(keys: &Vec<KemPubKey>) -> EntityId {
+    let mut entity_ids: Vec<EntityId> =
+        keys.iter().map(|k: &KemPubKey| k.get_entity_id()).collect();
+
+    // TODO: test if this does the thing
+    entity_ids.sort();
+
+    // hash everything
+    let mut hasher = Sha256::new();
+    hasher.update("dcnetid");
+    for eid in entity_ids.iter() {
+        hasher.update(eid.0);
+    }
+
+    let digest = hasher.finalize();
+
+    let mut id = EntityId::default();
+    id.0.copy_from_slice(&digest);
+
+    id
+}
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -116,40 +135,3 @@ pub struct UserSubmissionReq {
     /// shared secrets are linked to the relevant servers
     pub shared_secrets: SealedServerSecrets,
 }
-
-/*
-// secret shared by server & user
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
-pub struct ServerSecret {
-    pub secret: [u8; SGX_HMAC256_KEY_SIZE],
-    // sgx_cmac_128bit_key_t
-    pubkey: PubKey,
-    sig: Signature,
-}
-
-/// Enclave-generated secrets shared with a set of anytrust servers
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))] // needed for Serialize and Deserialize
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SealedServerSecrets(pub Vec<u8>);
-
-impl ServerSecret {
-    pub fn gen_test(byte: u8) -> Self {
-        return ServerSecret {
-            secret: [byte; SGX_HMAC256_KEY_SIZE],
-            pubkey: PubKey::default(), // dummy values
-            sig: Signature::default(), // dummy values
-        };
-    }
-}
-
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SignedUserMessage {
-    pub user_id: EntityId,
-    pub round: u32,
-    pub msg: DcMessage,
-    pub tee_sig: Signature,
-    pub tee_pk: PubKey,
-}
-*/

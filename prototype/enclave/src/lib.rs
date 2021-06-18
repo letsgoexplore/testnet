@@ -50,6 +50,7 @@ mod macros;
 
 mod crypto;
 mod ecall;
+mod messages_types;
 mod tests;
 mod types;
 mod utils;

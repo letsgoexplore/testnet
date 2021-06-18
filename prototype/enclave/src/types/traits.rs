@@ -1,9 +1,11 @@
-use crate::interface::*;
+use crate::interface::DcMessage;
 use std::prelude::v1::*;
 
 // various functions for computing a.xor(b)
 pub trait Xor {
+    // xor returns xor(self, other)
     fn xor(&self, other: &Self) -> Self;
+    // xor_mut computes and sets self = xor(self, other)
     fn xor_mut(&mut self, other: &Self)
     where
         Self: Sized,
@@ -12,12 +14,11 @@ pub trait Xor {
     }
 }
 
-impl Xor for RawMessage {
+impl Xor for DcMessage {
     fn xor(&self, other: &Self) -> Self {
-        let mut result = RawMessage::zero();
-        let msg: Vec<u8> = self.iter().zip(other).map(|(x, y)| x ^ y).collect();
-        for i in 0..msg.len() {
-            result[i] = msg[i];
+        let mut result = DcMessage::zero();
+        for i in 0..DC_NET_MESSAGE_LENGTH {
+            result.0[i] = self.0[i] ^ other.0[i];
         }
 
         result
@@ -30,8 +31,15 @@ impl Xor for Vec<u8> {
     }
 }
 
-impl Xor for DCMessage {
-    fn xor(&self, other: &DCMessage) -> Self {
-        DCMessage::from(AsRef::<RawMessage>::as_ref(self).xor(other.as_ref()))
+// return a reasonable zero value
+pub trait Zero {
+    fn zero() -> Self;
+}
+
+use interface::DC_NET_MESSAGE_LENGTH;
+
+impl Zero for DcMessage {
+    fn zero() -> Self {
+        DcMessage([0 as u8; DC_NET_MESSAGE_LENGTH])
     }
 }

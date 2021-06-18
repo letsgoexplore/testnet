@@ -81,12 +81,10 @@ extern "C" {
     fn ecall_aggregate(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
-        sign_user_msg_ptr: *const u8,
-        sign_user_msg_len: usize,
+        new_input_ptr: *const u8,
+        new_input_len: usize,
         current_aggregation_ptr: *const u8,
         current_aggregation_len: usize,
-        sealed_tee_prv_key_ptr: *const u8,
-        sealed_tee_prv_key_len: usize,
         output_aggregation_ptr: *mut u8,
         output_size: usize,
         output_bytes_written: *mut usize,
@@ -200,17 +198,11 @@ impl DcNetEnclave {
         submission_req: &UserSubmissionReq,
         sealed_usk: &SealedSigningKey,
     ) -> EnclaveResult<AggregateBlob> {
-        unimplemented!()
-    }
-
-    /*
-    pub fn user_submit(
-        &self,
-        submission_req: &UserSubmissionReq,
-        sealed_usk: &SealedSigningKey,
-    ) -> EnclaveResult<SignedUserMessage> {
         let marshaled_req = serde_cbor::to_vec(&submission_req).unwrap();
-        let mut output = vec![0; SignedUserMessage::size_marshaled()];
+
+        let mut output = Vec::new();
+        const RESERVED_LEN: usize = 5120;
+        output.reserve(RESERVED_LEN); // TODO: estimate AggregateBlob size more intelligently
         let mut output_bytes_written: usize = 0;
 
         // Call user_submit through FFI
@@ -237,19 +229,10 @@ impl DcNetEnclave {
             return Err(ret.into());
         }
 
-        println!(
-            "SignedUserMessage size: unmarshalled {}, marshaled {}",
-            SignedUserMessage::size(),
-            output_bytes_written
-        );
+        output.resize(output_bytes_written, 0);
 
-        // Deserialize SGX output into a SignedUserMessage struct
-        serde_cbor::from_slice(&output[..output_bytes_written]).map_err(|e| {
-            println!("Err {}", e);
-            EnclaveError::from(sgx_status_t::SGX_ERROR_UNEXPECTED)
-        })
+        Ok(AggregateBlob(output))
     }
-    */
 
     /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
     /// (FZ) can SealedPartialAggregate be just a blob?
@@ -259,37 +242,18 @@ impl DcNetEnclave {
         anytrust_group_id: &EntityId,
     ) -> EnclaveResult<SealedPartialAggregate> {
         // The partial aggregate MUST store set of anytrust nodes
-        unimplemented!()
+        Ok(SealedPartialAggregate(Vec::new()))
     }
 
     /// Adds the given input from a user to the given partial aggregate
+    /// Note: if marshalled_current_aggregation is empty (len = 0), an empty aggregation is created
+    //  and the signed message is aggregated into that.
     pub fn add_to_aggregate(
         &self,
         agg: &mut SealedPartialAggregate,
         new_input: &AggregateBlob,
     ) -> EnclaveResult<()> {
         // This MUST check that the input blob is made wrt the same set of anytrust nodes
-        unimplemented!()
-    }
-
-    //  TODO: Make these blobs different newtypes
-
-    /// Constructs an aggregate message from the given state. The returned blob is to be sent to
-    /// the parent aggregator or an anytrust server.
-    pub fn finalize_aggregate(&self, agg: &SealedPartialAggregate) -> EnclaveResult<AggregateBlob> {
-        unimplemented!()
-    }
-
-    /*
-    // Note: if marshalled_current_aggregation is empty (len = 0), an empty aggregation is created
-    // and the signed message is aggregated into that.
-    pub fn aggregate(
-        &self,
-        send_request: &SignedUserMessage,
-        marshalled_current_aggregation: &Vec<u8>,
-        sealed_ask: &SealedSigningKey,
-    ) -> EnclaveResult<Vec<u8>> {
-        let marshalled_msg = serde_cbor::to_vec(&send_request).unwrap();
 
         // todo: make sure this is big enough
         let mut output = vec![0; 10240];
@@ -302,12 +266,10 @@ impl DcNetEnclave {
             ecall_aggregate(
                 self.geteid(),
                 &mut ret,
-                marshalled_msg.as_ptr(),
-                marshalled_msg.len(),
-                marshalled_current_aggregation.as_ptr(),
-                marshalled_current_aggregation.len(),
-                sealed_ask.0.as_ptr(),
-                sealed_ask.0.len(),
+                new_input.0.as_ptr(),
+                new_input.0.len(),
+                agg.0.as_ptr(),
+                agg.0.len(),
                 output.as_mut_ptr(),
                 output.len(),
                 &mut output_bytes_written,
@@ -322,9 +284,21 @@ impl DcNetEnclave {
             return Err(ret.into());
         }
 
-        Ok(output[..output_bytes_written].to_vec())
+        // update agg
+        output.resize(output_bytes_written, 0);
+        agg.0.clear();
+        agg.0.extend_from_slice(&output);
+
+        Ok(())
     }
-    */
+
+    //  TODO: Make these blobs different newtypes
+
+    /// Constructs an aggregate message from the given state. The returned blob is to be sent to
+    /// the parent aggregator or an anytrust server.
+    pub fn finalize_aggregate(&self, agg: &SealedPartialAggregate) -> EnclaveResult<AggregateBlob> {
+        unimplemented!()
+    }
 
     pub fn run_enclave_tests(&self) -> SgxError {
         let mut retval = SGX_SUCCESS;
@@ -367,13 +341,18 @@ impl DcNetEnclave {
 #[cfg(test)]
 mod tests {
     const TEST_ENCLAVE_PATH: &'static str = "/root/sgx/bin/enclave.signed.so";
+
     use super::DcNetEnclave;
 
     extern crate base64;
     extern crate hexdump;
     extern crate interface;
     extern crate sgx_types;
-    use interface::*;
+
+    use interface::{
+        DcMessage, EntityId, SealedFootprintTicket, SealedServerSecrets, SealedSigningKey,
+        UserSubmissionReq, DC_NET_MESSAGE_LENGTH,
+    };
 
     fn placeholder_submission_req() -> UserSubmissionReq {
         UserSubmissionReq {

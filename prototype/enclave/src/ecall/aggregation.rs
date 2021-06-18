@@ -1,15 +1,14 @@
-use crate::crypto::*;
-use crate::interface::*;
-use crate::types::*;
-
+use crypto::*;
+use interface::DcMessage;
+use messages_types::SignedUserMessage;
 use sgx_types::sgx_status_t;
-
 use std::prelude::v1::*;
+use types::*;
 
 pub fn aggregate(
     incoming_msg: &SignedUserMessage,
     agg: &AggregatedMessage,
-    tee_sk: &PrvKey,
+    tee_sk: &SgxSigningKey,
 ) -> DcNetResult<AggregatedMessage> {
     // verify signature
     if !incoming_msg.verify().map_err(DcNetError::from)? {
@@ -30,7 +29,7 @@ pub fn aggregate(
     new_agg.user_ids.push(incoming_msg.user_id);
     new_agg
         .aggregated_msg
-        .xor_mut(&DCMessage::from(incoming_msg.message));
+        .xor_mut(&DcMessage(incoming_msg.msg.0));
 
     let (sig, pk) = new_agg.sign(tee_sk)?;
 
@@ -65,7 +64,7 @@ pub extern "C" fn ecall_aggregate(
         if current_aggregation_len == 0 {
             AggregatedMessage {
                 user_ids: vec![],
-                aggregated_msg: DCMessage::zero(),
+                aggregated_msg: DcMessage::zero(),
                 round: signed_user_msg.round,
                 tee_sig: Default::default(),
                 tee_pk: Default::default(),

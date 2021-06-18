@@ -9,28 +9,33 @@ use std::prelude::v1::*;
 use std::slice;
 
 use crypto;
-use crypto::SignMutable;
+use crypto::{SgxSigningKey, SignMutable};
 
+use self::interface::*;
+use interface::UserSubmissionReq;
+use messages_types::SignedUserMessage;
 use types::*;
 use utils;
 
-use self::interface::*;
-
 // the safe version
-fn submit(request: &SendRequest, tee_sk: &PrvKey) -> DcNetResult<SignedUserMessage> {
-    let round_key = crypto::derive_round_secret(request.round, &request.server_keys)?;
-    let encrypted_msg = round_key.encrypt(&request.message);
-    let mut mutable = SignedUserMessage {
-        user_id: request.user_id,
-        round: request.round,
-        message: encrypted_msg,
-        tee_sig: Default::default(),
-        tee_pk: Default::default(),
-    };
+fn submit(request: &UserSubmissionReq, tee_sk: &SgxSigningKey) -> DcNetResult<SignedUserMessage> {
+    // unseal
+    unimplemented!();
 
-    mutable.sign_mut(tee_sk).map_err(DcNetError::from)?;
-
-    Ok(mutable)
+    // let round_key = crypto::derive_round_secret(
+    //     request.round, &shared_secrets)?;
+    // let encrypted_msg = round_key.encrypt(&request.message);
+    // let mut mutable = SignedUserMessage {
+    //     user_id: request.user_id,
+    //     round: request.round,
+    //     message: encrypted_msg,
+    //     tee_sig: Default::default(),
+    //     tee_pk: Default::default(),
+    // };
+    //
+    // mutable.sign_mut(tee_sk).map_err(DcNetError::from)?;
+    //
+    // Ok(mutable)
 }
 
 #[no_mangle]
@@ -43,7 +48,7 @@ pub extern "C" fn ecall_client_submit(
     output_size: usize,
     output_bytes_written: *mut usize,
 ) -> sgx_status_t {
-    let send_request = unmarshal_or_return!(SendRequest, send_request_ptr, send_request_len);
+    let send_request = unmarshal_or_return!(UserSubmissionReq, send_request_ptr, send_request_len);
     let tee_prv_key = unwrap_or_return!(
         utils::unseal_prv_key(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len),
         SGX_ERROR_UNEXPECTED

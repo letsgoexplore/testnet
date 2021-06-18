@@ -13,3 +13,4 @@ impl<T> Size for T {
         std::mem::size_of::<T>() * 2
     }
 }
+

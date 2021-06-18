@@ -32,19 +32,13 @@ use std::prelude::v1::*;
 
 big_array! { BigArray; }
 
-mod aggregation;
-mod footprint_sched;
-mod key;
 mod params;
-//mod signature;
-//mod traits;
+mod sealed_types;
+mod sgx_protected_keys;
 mod user_request;
 
-pub use aggregation::*;
-#[allow(dead_code)]
-pub use footprint_sched::*;
-pub use key::*;
 pub use params::*;
-//pub use signature::*;
-//pub use traits::Size;
+pub use sealed_types::*;
+#[allow(dead_code)]
+pub use sgx_protected_keys::*;
 pub use user_request::*;

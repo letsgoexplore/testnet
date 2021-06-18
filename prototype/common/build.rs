@@ -18,8 +18,8 @@
 use std::env;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let sdk_dir = env::var("SGX_SDK").unwrap_or_else(|_| "/opt/intel/sgxsdk".to_string());
-    let is_sim = env::var("SGX_MODE").unwrap_or_else(|_| "HW".to_string());
+    let sdk_dir = env::var("SGX_SDK").unwrap_or_else(|_| "/opt/sgxsdk".to_string());
+    let is_sim = env::var("SGX_MODE").unwrap_or_else(|_| "SW".to_string());
 
     println!("cargo:rustc-link-search=native=/sgxdcnet/lib");
     println!("cargo:rustc-link-lib=static=EnclaveWrapper");

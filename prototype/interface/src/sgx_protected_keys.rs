@@ -16,15 +16,14 @@ use sha2::{Digest, Sha256};
 // A wrapper around sgx_ec256_public_t
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
-pub struct KemPubKey {
+pub struct SgxProtectedKeyPub {
     pub gx: [u8; SGX_ECP256_KEY_SIZE],
     pub gy: [u8; SGX_ECP256_KEY_SIZE],
 }
 
-// TODO: Can make this a fixed size byte array if we know an upper bound on the size
-/// An enclave-generated private signing key
-#[derive(Clone)]
-pub struct SealedSigningKey(pub Vec<u8>);
+// KemPubKey and SgxSigningPubKey are just aliases to SgxProtectedKeyPub
+pub type KemPubKey = SgxProtectedKeyPub;
+pub type SgxSigningPubKey = SgxProtectedKeyPub;
 
 impl Debug for KemPubKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -47,15 +46,6 @@ impl From<sgx_ec256_public_t> for KemPubKey {
             gx: sgx_ec_pubkey.gx,
             gy: sgx_ec_pubkey.gy,
         };
-    }
-}
-
-#[cfg(feature = "trusted")]
-impl TryFrom<&KemPrvKey> for KemPubKey {
-    type Error = sgx_status_t;
-
-    fn try_from(prv_key: &KemPrvKey) -> Result<Self, Self::Error> {
-        sgx_tcrypto::rsgx_ecc256_pub_from_priv(&prv_key.into()).map(KemPubKey::from)
     }
 }
 
@@ -95,47 +85,4 @@ impl KemPubKey {
 
         return Self { gx, gy };
     }
-}
-
-// A wrapper around sgx_ec256_private_t
-#[derive(Copy, Clone, Default)]
-#[cfg_attr(feature = "trusted", derive(Rand))]
-pub struct KemPrvKey {
-    pub r: [u8; SGX_ECP256_KEY_SIZE],
-}
-
-#[cfg(feature = "trusted")]
-unsafe impl sgx_types::marker::ContiguousMemory for KemPrvKey {}
-
-#[cfg(test)]
-impl KemPrvKey {
-    pub fn gen_test(byte: u8) -> Self {
-        return Self {
-            r: [byte; SGX_ECP256_KEY_SIZE],
-        };
-    }
-}
-
-impl From<sgx_ec256_private_t> for KemPrvKey {
-    fn from(sgx_prv_key: sgx_ec256_private_t) -> Self {
-        return Self { r: sgx_prv_key.r };
-    }
-}
-
-impl Into<sgx_ec256_private_t> for KemPrvKey {
-    fn into(self) -> sgx_ec256_private_t {
-        return sgx_ec256_private_t { r: self.r };
-    }
-}
-
-impl Into<sgx_ec256_private_t> for &KemPrvKey {
-    fn into(self) -> sgx_ec256_private_t {
-        return sgx_ec256_private_t { r: self.r };
-    }
-}
-
-#[derive(Copy, Clone, Default)]
-pub struct KemKeyPair {
-    pub prv_key: KemPrvKey,
-    pub pub_key: KemPubKey,
 }

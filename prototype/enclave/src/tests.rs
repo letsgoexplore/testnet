@@ -10,7 +10,8 @@ use hkdf::Hkdf;
 use sha2::Sha256;
 
 use crate::interface::*;
-use crypto::{SignMutable, Signable};
+use crypto::{KemKeyPair, SignMutable, Signable};
+use messages_types::SignedUserMessage;
 
 use crate::ecall;
 use serde_cbor;
@@ -63,25 +64,26 @@ fn xor() {
     assert_eq!(b_mut, vec![1 ^ 4, 2 ^ 5]);
 }
 
-fn test_keypair() -> crypto::CryptoResult<KeyPair> {
+fn test_keypair() -> crypto::CryptoResult<KemKeyPair> {
     let handle = sgx_tcrypto::SgxEccHandle::new();
     handle.open().unwrap();
     match handle.create_key_pair() {
-        Ok(pair) => Ok(KeyPair {
-            prv_key: PrvKey::from(pair.0),
-            pub_key: PubKey::from(pair.1),
+        Ok(pair) => Ok(KemKeyPair {
+            prv_key: crypto::KemPrvKey::from(pair.0),
+            pub_key: KemPubKey::from(pair.1),
         }),
-        Err(e) => Err(CryptoError::SgxCryptoError(e)),
+        Err(e) => Err(CryptoError::SgxCryptoLibError(e)),
     }
 }
 
-fn sign() -> (KeyPair, SignedUserMessage) {
+fn sign() -> (KemKeyPair, SignedUserMessage) {
     let keypair = test_keypair().unwrap();
 
     let mut mutable = SignedUserMessage {
-        user_id: UserId::default(),
+        user_id: EntityId::default(),
+        anytrust_group_id: Default::default(),
         round: 0,
-        message: test_raw_msg(),
+        msg: Default::default(),
         tee_sig: Default::default(),
         tee_pk: Default::default(),
     };
@@ -102,29 +104,29 @@ fn aggregate() {
     assert!(agg.verify().expect("ver"));
 
     // should not change since we agg in a zero message
-    assert_eq!(agg.aggregated_msg, DCMessage::from(signed_msg.message));
+    assert_eq!(agg.aggregated_msg, signed_msg.msg);
 
     // aggregate again the same message should error
     assert!(ecall::aggregate(&signed_msg, &agg, &keypair.prv_key).is_err());
 
     // let's use a different user id and submit again
     let mut new_msg = signed_msg;
-    new_msg.user_id = UserId::from([1 as u8; 32]);
+    new_msg.user_id = EntityId::from([1 as u8; 32]);
     new_msg.sign_mut(&keypair.prv_key).expect("sig");
     // aggregate same message twice so we should get zero.
     let agg = ecall::aggregate(&new_msg, &agg, &keypair.prv_key).expect("agg");
     assert!(agg.verify().expect("ver"));
-    assert_eq!(agg.aggregated_msg, DCMessage::zero());
+    assert_eq!(agg.aggregated_msg, DcMessage::zero());
 }
 
 fn serde_dc_message() {
     let mut rand = sgx_rand::SgxRng::new().unwrap();
 
     for _i in 0..1000 {
-        let sample = rand.gen::<DCMessage>();
+        let sample = rand.gen::<DcMessage>();
 
         let data = serde_cbor::to_vec(&sample).expect("ser");
-        let c: DCMessage = serde_cbor::from_slice(&data).expect("de");
+        let c: DcMessage = serde_cbor::from_slice(&data).expect("de");
 
         assert_eq!(c, sample);
     }

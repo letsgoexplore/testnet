@@ -7,67 +7,79 @@ use hkdf::Hkdf;
 use sha2::Sha256;
 
 use super::*;
-use types::Xor;
+use sgx_types::sgx_ec256_dh_shared_t;
+use std::fmt::{Debug, Formatter};
+use types::{Xor, Zero};
 
-pub struct RoundSecret {
-    pub secret: [u8; DC_NET_MESSAGE_LENGTH],
+// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
+#[serde(crate = "serde")]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+pub struct SharedServerSecret {
+    secret: [u8; SGX_ECP256_KEY_SIZE],
+    server_id: EntityId,
 }
 
-impl Zero for RoundSecret {
-    fn zero() -> Self {
-        return RoundSecret {
-            secret: [0; DC_NET_MESSAGE_LENGTH],
-        };
+impl Debug for SharedServerSecret {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PK")
+            .field("secret", &hex::encode(&self.secret))
+            .field("server_id", &hex::encode(&self.server_id))
+            .finish()
     }
 }
 
-impl Xor for RoundSecret {
-    fn xor(&self, other: &Self) -> Self {
-        RoundSecret {
-            secret: self.secret.xor(&other.secret),
+impl SharedServerSecret {
+    pub fn gen_test(byte: u8) -> Self {
+        SharedServerSecret {
+            secret: [byte; SGX_ECP256_KEY_SIZE],
+            server_id: Default::default(),
         }
     }
+}
+
+/// A `RoundSecret` is the one-time pad for a particular round derived from a specific set of
+/// SharedServerSecrets, one for each servers invovled. The set of servers is identified
+/// by `dcnet_id` which is the hash of canonically ordered server public keys.
+pub struct RoundSecret {
+    secret: [u8; DC_NET_MESSAGE_LENGTH],
+    dcnet_id: EntityId, // a hash of all server public keys
 }
 
 impl RoundSecret {
-    pub fn encrypt(&self, msg: &RawMessage) -> RawMessage {
-        let raw: Vec<u8> = self.secret.iter().zip(msg).map(|(a, b)| a ^ b).collect();
-
+    pub fn encrypt(&self, msg: &DcMessage) -> DcMessage {
         let mut output = [0; DC_NET_MESSAGE_LENGTH];
 
         for i in 0..DC_NET_MESSAGE_LENGTH {
-            output[i] = raw[i];
+            output[i] = self.secret[i] ^ msg.0[i];
         }
 
-        output
+        DcMessage(output)
     }
 }
 
+/// Derives a RoundSecret as the XOR of `HKDF(server_secrets[i], round)` for all `i` in `0`...`len(server_secrets)`
 pub fn derive_round_secret(
     round: u32,
-    server_secrets: &Vec<ServerSecret>,
+    server_secrets: &Vec<SharedServerSecret>,
 ) -> CryptoResult<RoundSecret> {
-    // for each key, run KDF
-    let server_round_keys = server_secrets
-        .iter()
-        .map(|s| {
-            let hk = Hkdf::<Sha256>::new(None, &s.secret);
+    let mut round_secret = [0; DC_NET_MESSAGE_LENGTH];
 
-            let mut round_secret = RoundSecret::zero();
+    for server_secret in server_secrets.iter() {
+        let hk = Hkdf::<Sha256>::new(None, &server_secret.secret);
+        let mut derived_secret = [0; DC_NET_MESSAGE_LENGTH];
 
-            // info denotes the input to HKDF
-            // https://tools.ietf.org/html/rfc5869
-            let mut info = [0; 32];
-            LittleEndian::write_u32(&mut info, round);
-            match hk.expand(&info, &mut round_secret.secret) {
-                Ok(()) => Ok(round_secret),
-                Err(e) => Err(CryptoError::Other(format!("HKDF {}", e))),
-            }
-        })
-        .collect::<CryptoResult<Vec<RoundSecret>>>()?;
+        // info contains round
+        let mut info = [0; 32];
+        LittleEndian::write_u32(&mut info, round);
+        hk.expand(&info, &mut derived_secret)?;
 
-    // xor all keys
-    Ok(server_round_keys
-        .iter()
-        .fold(RoundSecret::zero(), |acc, s| RoundSecret::xor(&acc, s)))
+        for i in 0..DC_NET_MESSAGE_LENGTH {
+            round_secret[i] = round_secret[i] ^ derived_secret[i];
+        }
+    }
+
+    Ok(RoundSecret {
+        secret: round_secret,
+        dcnet_id: Default::default(),
+    })
 }

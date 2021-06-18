@@ -8,11 +8,11 @@ description = "data structures shared by trusted & untrusted land"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# both
+# both (must be SGX compatible e.g. no_std)
 cfg-if = "1.0"
 hex = { version = "0.4", default-features = false }
 sgx_types = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sha2 = "0.9"
+sha2 = { rev = "0.9", default-features = false }
 
 # untrusted
 rand_core = "0.6"
@@ -27,7 +27,7 @@ sgx_tstd = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.g
 sgx_rand = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
 sgx_rand_derive = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
 sgx_tcrypto = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
-byteorder = {git = "https://github.com/mesalock-linux/byteorder-sgx", optional = true}
+byteorder = { git = "https://github.com/mesalock-linux/byteorder-sgx", optional = true }
 
 [features]
 default = ["untrusted"]

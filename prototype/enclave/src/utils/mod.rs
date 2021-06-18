@@ -21,15 +21,15 @@ pub fn unseal_data<'a, T: Copy + ContiguousMemory>(
     sealed.unseal_data()
 }
 
-use interface::PrvKey;
+use crypto::{KemPrvKey, SgxSigningKey};
 use utils;
 
 pub fn unseal_prv_key(
     sealed_tee_prv_key_ptr: *mut u8,
     sealed_tee_prv_key_len: usize,
-) -> SgxResult<PrvKey> {
+) -> SgxResult<SgxSigningKey> {
     let tee_prv_key_unsealed =
-        utils::unseal_data::<PrvKey>(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len as u32)?;
+        utils::unseal_data::<SgxSigningKey>(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len as u32)?;
 
     Ok(*tee_prv_key_unsealed.get_decrypt_txt())
 }

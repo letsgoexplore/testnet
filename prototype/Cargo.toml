@@ -1,8 +1,4 @@
 [workspace]
 
-members = [
-    "common",
-    "enclave",
-    "client",
-    "aggregator",
-]
+members = ["common", "enclave", "client", "aggregator", ]
+default-members = ["common", "client", "aggregator", ]

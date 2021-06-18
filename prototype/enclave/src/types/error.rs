@@ -1,12 +1,14 @@
 use sgx_types::sgx_status_t;
 use std::string::String;
 
+use hkdf::InvalidLength;
+
 quick_error! {
     #[derive(Debug)]
     pub enum CryptoError {
         XorNotEqualLength
         KeyError
-        SgxCryptoError(err: sgx_status_t) {
+        SgxCryptoLibError(err: sgx_status_t) {
             description(err.as_str())
             display("Error {}", err)
             from()
@@ -16,6 +18,9 @@ quick_error! {
             description(err)
             display("Aggregation error {}", err)
             from()
+        }
+        HKDFErr {
+            from(InvalidLength)
         }
     }
 }
