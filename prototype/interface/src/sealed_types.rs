@@ -1,3 +1,4 @@
+use crate::params::SEALED_SGX_SIGNING_KEY_LENGTH;
 use std::vec::Vec;
 
 /// The state of an aggregator. This can only be opened from within the enclave.
@@ -12,7 +13,12 @@ pub struct SealedFootprintTicket(pub Vec<u8>);
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SealedServerSecrets(pub Vec<u8>);
 
-// TODO: Can make this a fixed size byte array if we know an upper bound on the size
 /// An enclave-generated private signing key
 #[derive(Clone)]
-pub struct SealedSigningKey(pub Vec<u8>);
+pub struct SealedSigningKey(pub [u8; SEALED_SGX_SIGNING_KEY_LENGTH]); // 512 should be more than enough
+
+impl Default for SealedSigningKey {
+    fn default() -> Self {
+        SealedSigningKey([0; SEALED_SGX_SIGNING_KEY_LENGTH])
+    }
+}

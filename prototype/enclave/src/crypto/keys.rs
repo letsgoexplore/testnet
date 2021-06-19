@@ -2,9 +2,10 @@ use interface::KemPubKey;
 use sgx_rand::{Rand, Rng};
 use sgx_types::{sgx_ec256_private_t, sgx_status_t, SGX_ECP256_KEY_SIZE};
 use std::convert::TryFrom;
+use std::fmt::{Debug, Display, Formatter};
 
 // A wrapper around sgx_ec256_private_t
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct SgxProtectedPrivateKey {
     pub r: [u8; SGX_ECP256_KEY_SIZE],
 }
@@ -15,6 +16,20 @@ impl Rand for SgxProtectedPrivateKey {
         rng.fill_bytes(&mut r);
 
         SgxProtectedPrivateKey { r }
+    }
+}
+
+impl Debug for SgxProtectedPrivateKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SK")
+            .field("r", &hex::encode(&self.r))
+            .finish()
+    }
+}
+
+impl Display for SgxProtectedPrivateKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        std::write!(f, "{}", hex::encode(self.r))
     }
 }
 
@@ -58,7 +73,7 @@ impl TryFrom<&KemPrvKey> for KemPubKey {
     }
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct KemKeyPair {
     pub prv_key: KemPrvKey,
     pub pub_key: KemPubKey,

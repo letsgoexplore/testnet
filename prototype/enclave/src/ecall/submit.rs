@@ -15,7 +15,6 @@ use self::interface::*;
 use interface::UserSubmissionReq;
 use messages_types::SignedUserMessage;
 use types::*;
-use utils;
 
 // the safe version
 fn submit(request: &UserSubmissionReq, tee_sk: &SgxSigningKey) -> DcNetResult<SignedUserMessage> {
@@ -38,8 +37,10 @@ fn submit(request: &UserSubmissionReq, tee_sk: &SgxSigningKey) -> DcNetResult<Si
     // Ok(mutable)
 }
 
+use ecall::seal_unseal::unseal_prv_key;
+
 #[no_mangle]
-pub extern "C" fn ecall_client_submit(
+pub extern "C" fn ecall_user_submit(
     send_request_ptr: *const u8,
     send_request_len: usize,
     sealed_tee_prv_key_ptr: *mut u8,
@@ -50,7 +51,7 @@ pub extern "C" fn ecall_client_submit(
 ) -> sgx_status_t {
     let send_request = unmarshal_or_return!(UserSubmissionReq, send_request_ptr, send_request_len);
     let tee_prv_key = unwrap_or_return!(
-        utils::unseal_prv_key(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len),
+        unseal_prv_key(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len),
         SGX_ERROR_UNEXPECTED
     );
 

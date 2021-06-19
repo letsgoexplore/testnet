@@ -51,19 +51,20 @@ pub struct AggRegistrationBlob(pub Vec<u8>);
 
 // E calls
 extern "C" {
-    fn new_tee_signing_key(
+    fn ecall_new_sgx_signing_key(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
         output: *mut u8,
         output_size: u32,
-        bytewritten: *mut u32,
     ) -> sgx_status_t;
 
-    fn unseal_to_pubkey(
+    fn ecall_unseal_to_pubkey(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
         inp: *mut u8,
         inp_len: u32,
+        out_x: *mut u8,
+        out_y: *mut u8,
     ) -> sgx_status_t;
 
     fn ecall_user_submit(
@@ -98,7 +99,6 @@ pub struct DcNetEnclave {
     enclave: sgx_urts::SgxEnclave,
 }
 
-#[allow(dead_code)]
 impl DcNetEnclave {
     pub fn init(enclave_file: &'static str) -> EnclaveResult<Self> {
         let enclave_path = PathBuf::from(enclave_file);
@@ -133,20 +133,19 @@ impl DcNetEnclave {
     }
 
     // Return sealed key
-    pub fn new_tee_signing_key(&self) -> EnclaveResult<SealedSigningKey> {
+    pub fn new_sgx_signing_key(&self) -> EnclaveResult<SealedSigningKey> {
         // TODO: Ensure that 1024 is large enough for any sealed privkey
         let mut ret = SGX_SUCCESS;
-        let mut sealed_key_bytes = vec![0; 1024];
-        let mut bytes_written: u32 = 0;
+
+        let mut sealed_signing_key = SealedSigningKey::default();
 
         // Call keygen through FFI
         let call_ret = unsafe {
-            new_tee_signing_key(
+            ecall_new_sgx_signing_key(
                 self.enclave.geteid(),
                 &mut ret,
-                sealed_key_bytes.as_mut_ptr(),
-                sealed_key_bytes.len() as u32,
-                &mut bytes_written,
+                sealed_signing_key.0.as_mut_ptr(),
+                sealed_signing_key.0.len() as u32,
             )
         };
 
@@ -158,25 +157,29 @@ impl DcNetEnclave {
             return Err(EnclaveError::from(ret));
         }
 
-        // Truncate the output to the appropriate number of bytes
-        sealed_key_bytes.truncate(bytes_written as usize);
-
         // Package the output in the correct type
-        Ok(SealedSigningKey(sealed_key_bytes.to_vec()))
+        Ok(sealed_signing_key)
     }
 
     // unseal the key to see its public key
-    pub fn unseal_to_pubkey(&self, privkey: &SealedSigningKey) -> EnclaveResult<()> {
+    pub fn unseal_to_pubkey(
+        &self,
+        privkey: &SealedSigningKey,
+    ) -> EnclaveResult<SgxProtectedKeyPub> {
         let mut ret = SGX_SUCCESS;
         let mut privkey_copy = privkey.clone();
 
+        let mut pubkey = SgxProtectedKeyPub::default();
+
         // Call unseal_to_pubkey through FFI
         let call_ret = unsafe {
-            unseal_to_pubkey(
+            ecall_unseal_to_pubkey(
                 self.enclave.geteid(),
                 &mut ret,
                 privkey_copy.0.as_mut_ptr(),
                 privkey_copy.0.len() as u32,
+                pubkey.gx.as_mut_ptr(),
+                pubkey.gy.as_mut_ptr(),
             )
         };
 
@@ -188,7 +191,7 @@ impl DcNetEnclave {
             return Err(EnclaveError::from(ret));
         }
 
-        Ok(())
+        Ok(pubkey)
     }
 
     /// Given a message and the relevant scheduling ticket, constructs a round message for sending
@@ -235,7 +238,6 @@ impl DcNetEnclave {
     }
 
     /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
-    /// (FZ) can SealedPartialAggregate be just a blob?
     pub fn new_aggregate(
         &self,
         round: u32,
@@ -339,20 +341,23 @@ impl DcNetEnclave {
 }
 
 #[cfg(test)]
-mod tests {
-    const TEST_ENCLAVE_PATH: &'static str = "/root/sgx/bin/enclave.signed.so";
+mod enclave_tests {
+    const TEST_ENCLAVE_PATH: &'static str = "/sgxdcnet/lib/enclave.signed.so";
 
     use super::DcNetEnclave;
 
     extern crate base64;
+    extern crate hex;
     extern crate hexdump;
     extern crate interface;
     extern crate sgx_types;
 
+    use hex::FromHex;
     use interface::{
         DcMessage, EntityId, SealedFootprintTicket, SealedServerSecrets, SealedSigningKey,
-        UserSubmissionReq, DC_NET_MESSAGE_LENGTH,
+        UserSubmissionReq, DC_NET_MESSAGE_LENGTH, SEALED_SGX_SIGNING_KEY_LENGTH,
     };
+    use sgx_types::SGX_ECP256_KEY_SIZE;
 
     fn placeholder_submission_req() -> UserSubmissionReq {
         UserSubmissionReq {
@@ -360,37 +365,48 @@ mod tests {
             anytrust_group_id: EntityId::default(),
             round: 0u32,
             msg: DcMessage([9u8; DC_NET_MESSAGE_LENGTH]),
-            ticket: SealedFootprintTicket,
+            ticket: SealedFootprintTicket(vec![0; 1]),
             shared_secrets: SealedServerSecrets(vec![7u8; 1024]),
         }
     }
 
     fn test_signing_key() -> SealedSigningKey {
         let bytes = base64::decode(
-            "BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAIaOkrL+G/tjwqpYb2cPLagU2yBuV2gTF\
-             nrQR1YRijjLAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-             AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-             AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-             AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-             AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-             AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-             AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\
-             AAAgAAAAAAAAAAAAAAAAAAAAJAAAAAAAAAAAAAAAAAAAAMcwvJUTIR5owP6OfXybb09woO+S2ZZ1DHRXUFLcu\
-             7GfdV+AQ6ddvsqjCZpdA0X+BQECAwQ=",
-        )
-        .unwrap();
+            "BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAN7O/UiywRKvGykkz2d1n86F3Ee9cYG212zsM6mkzty2AAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABDAAAAAAAAAAAAAAAAAAAASgAAAAAAAAAAAAAAAAAAALwYU8Fi7XsACgg9uG5vb1hPA5sGF2ssQZdAtstmyMyTfqMwk1r3GLx56xkE8hhFL1DD2jqtzybkJYTrkNoJMvSAxfETQxmA4X5nzQGOT2cj/3GTa2V5cGFpcgAAAAAAAA==")
+            .unwrap();
 
-        SealedSigningKey(bytes)
+        let mut ssk = SealedSigningKey::default();
+        if bytes.len() > SEALED_SGX_SIGNING_KEY_LENGTH {
+            panic!("SealedSigningKey too long")
+        }
+
+        for i in 0..SEALED_SGX_SIGNING_KEY_LENGTH {
+            ssk.0[i] = bytes[i];
+        }
+
+        ssk
     }
 
     #[test]
     fn key_seal_unseal() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
-        let sealed = enc.new_tee_signing_key().unwrap();
+        let sealed = enc.new_sgx_signing_key().unwrap();
+        assert!(sealed.0.len() > 0);
         let encoded = base64::encode(&sealed.0);
-        println!("sealed key len = {}", sealed.0.len());
-        println!("base64 encoded: {}", encoded);
         enc.unseal_to_pubkey(&sealed).unwrap();
+
+        let test_sealed = test_signing_key();
+        let test_pk = enc.unseal_to_pubkey(&test_sealed).expect("unseal");
+        let expected_x = "394b6c980dddb2ad9cc4e6403d433a06b17ab8994343751fc402e786ca584c5d";
+        let expected_y = "0c32869de9005c8a1cc1cfdd0e53d0a530cc31a6585a8784369a6490a124df9f";
+        assert_eq!(
+            test_pk.gx,
+            <[u8; SGX_ECP256_KEY_SIZE]>::from_hex(expected_x).expect("unhex x")
+        );
+        assert_eq!(
+            test_pk.gy,
+            <[u8; SGX_ECP256_KEY_SIZE]>::from_hex(expected_y).expect("unhex y")
+        );
     }
 
     #[test]

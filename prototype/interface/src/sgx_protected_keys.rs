@@ -9,6 +9,7 @@ use sgx_types::sgx_status_t;
 #[allow(unused_imports)]
 use std::{convert::TryFrom, vec::Vec};
 
+use hex::encode_to_slice;
 use rand_core::RngCore;
 use sgx_types::{sgx_ec256_private_t, sgx_ec256_public_t, SGX_ECP256_KEY_SIZE};
 use sha2::{Digest, Sha256};

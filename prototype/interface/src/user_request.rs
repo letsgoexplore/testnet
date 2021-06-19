@@ -131,7 +131,7 @@ pub struct UserSubmissionReq {
     pub round: u32,
     pub msg: DcMessage,
     pub ticket: SealedFootprintTicket,
-    /// When unsealed, this must have the form (H(kpk_1, ..., kpk_ℓ), s_1, ..., s_ℓ) so that the
+    /// When unsealed, this must have the form (kpk_1, ..., kpk_ℓ, s_1, ..., s_ℓ) so that the
     /// shared secrets are linked to the relevant servers
     pub shared_secrets: SealedServerSecrets,
 }

@@ -39,10 +39,10 @@ pub fn aggregate(
     Ok(new_agg)
 }
 
+use ecall::seal_unseal::unseal_prv_key;
 use serde_cbor;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 use std::slice;
-use utils;
 
 #[no_mangle]
 pub extern "C" fn ecall_aggregate(
@@ -78,7 +78,7 @@ pub extern "C" fn ecall_aggregate(
         }
     };
 
-    let tee_prv_key = match utils::unseal_prv_key(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len) {
+    let tee_prv_key = match unseal_prv_key(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len) {
         Ok(k) => k,
         Err(e) => return e,
     };
