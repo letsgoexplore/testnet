@@ -1,0 +1,19 @@
+name: Build
+on: push
+
+jobs:
+  build-everything:
+    runs-on: ubuntu-18.04
+    container:
+      image: baiduxlab/sgx-rust:1804-1.1.3
+      env:
+        SGX_MODE: SW
+        SGX_SDK: /opt/sgxsdk
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build enclave
+        run: PATH=/root/.cargo/bin:$PATH make
+        working-directory: prototype/enclave
+      - name: Build client
+        run: PATH=/root/.cargo/bin:$PATH cargo b
+        working-directory: prototype/enclave
