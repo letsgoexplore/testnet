@@ -1,6 +1,5 @@
 mod aggregation;
 mod keygen;
-mod seal_unseal;
 mod submit;
 
 pub use self::aggregation::aggregate;

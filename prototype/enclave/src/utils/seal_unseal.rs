@@ -9,7 +9,7 @@ use std::boxed::Box;
 use std::error::Error;
 use std::vec::Vec;
 
-pub unsafe fn ser_seal_to_ptr<T: Serialize>(
+pub unsafe fn ser_and_seal_to_ptr<T: Serialize>(
     a: &T,
     ad: &[u8],
     output: *mut u8,
@@ -18,7 +18,7 @@ pub unsafe fn ser_seal_to_ptr<T: Serialize>(
     let bin = match serde_cbor::ser::to_vec(a) {
         Ok(b) => b,
         Err(e) => {
-            println!("Error {}", e);
+            println!("can't serialize {}", e);
             return Err(SGX_ERROR_INVALID_PARAMETER);
         }
     };
@@ -27,19 +27,26 @@ pub unsafe fn ser_seal_to_ptr<T: Serialize>(
     unsafe {
         match sealed.to_raw_sealed_data_t(output as *mut sgx_sealed_data_t, output_cap as u32) {
             Some(_) => Ok(()),
-            None => Err(SGX_ERROR_INVALID_PARAMETER),
+            None => {
+                println!("can't seal. cap {}", output_cap);
+                Err(SGX_ERROR_INVALID_PARAMETER)
+            }
         }
     }
 }
 
-pub unsafe fn deser_unseal_from_ptr<T: DeserializeOwned>(
-    output: *mut u8,
-    output_len: usize,
+pub unsafe fn unseal_from_vec_and_deser<T: DeserializeOwned>(mut input: Vec<u8>) -> SgxResult<T> {
+    unseal_from_ptr_and_deser(input.as_mut_ptr(), input.len())
+}
+
+pub unsafe fn unseal_from_ptr_and_deser<T: DeserializeOwned>(
+    input: *mut u8,
+    input_len: usize,
 ) -> SgxResult<T> {
     let sealed_data = unsafe {
         match SgxSealedData::<[u8]>::from_raw_sealed_data_t(
-            output as *mut sgx_sealed_data_t,
-            output_len as u32,
+            input as *mut sgx_sealed_data_t,
+            input_len as u32,
         ) {
             Some(t) => t,
             None => {

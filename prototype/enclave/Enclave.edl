@@ -16,6 +16,10 @@ enclave {
                         uint32_t inp_len,
                         [out, size=32] uint8_t* outx,
                         [out, size=32] uint8_t* outy);
+      public sgx_status_t ecall_create_test_sealed_server_secrets(
+                        uint32_t num_of_keys_to_create,
+                        [out, size=output_size] uint8_t* output,
+                        uint32_t output_size);
 
       public sgx_status_t test_main_entrance();
 

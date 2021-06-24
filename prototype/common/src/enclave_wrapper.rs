@@ -14,6 +14,7 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 use rand::Rng;
+use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 
 #[derive(Debug)]
 pub struct EnclaveError {
@@ -92,6 +93,14 @@ extern "C" {
     ) -> sgx_status_t;
 
     fn test_main_entrance(eid: sgx_enclave_id_t, retval: *mut sgx_status_t) -> sgx_status_t;
+
+    fn ecall_create_test_sealed_server_secrets(
+        eid: sgx_enclave_id_t,
+        retval: *mut sgx_status_t,
+        num_of_keys: u32,
+        out_buf: *mut u8,
+        out_buf_cap: u32,
+    ) -> sgx_status_t;
 }
 
 #[derive(Debug, Default)]
@@ -194,6 +203,39 @@ impl DcNetEnclave {
         Ok(pubkey)
     }
 
+    ///
+    /// get shared server keys
+    pub fn create_testing_shared_server_secrets(
+        &self,
+        num_of_keys: u32,
+    ) -> EnclaveResult<SealedServerSecrets> {
+        let mut output = Vec::new();
+        output.resize(256 * num_of_keys as usize, 0); // TODO: estimate AggregateBlob size more intelligently
+        println!("output cap {}", output.len());
+
+        // Call user_submit through FFI
+        let mut ret = sgx_status_t::default();
+        let call_ret = unsafe {
+            ecall_create_test_sealed_server_secrets(
+                self.enclave.geteid(),
+                &mut ret,
+                num_of_keys,
+                output.as_mut_ptr(),
+                output.len() as u32,
+            )
+        };
+
+        // Check for errors
+        if call_ret != SGX_SUCCESS {
+            return Err(call_ret.into());
+        }
+        if ret != SGX_SUCCESS {
+            return Err(ret.into());
+        }
+
+        Ok(SealedServerSecrets(output))
+    }
+
     /// Given a message and the relevant scheduling ticket, constructs a round message for sending
     /// to an aggregator
     pub fn user_submit_round_msg(
@@ -201,11 +243,16 @@ impl DcNetEnclave {
         submission_req: &UserSubmissionReq,
         sealed_usk: &SealedSigningKey,
     ) -> EnclaveResult<AggregateBlob> {
-        let marshaled_req = serde_cbor::to_vec(&submission_req).unwrap();
+        let marshaled_req = serde_cbor::to_vec(&submission_req).map_err(|e| {
+            println!("Error marshaling request {}", e);
+            EnclaveError {
+                e: SGX_ERROR_INVALID_PARAMETER,
+            }
+        })?;
 
         let mut output = Vec::new();
         const RESERVED_LEN: usize = 5120;
-        output.reserve(RESERVED_LEN); // TODO: estimate AggregateBlob size more intelligently
+        output.resize(RESERVED_LEN, 0); // TODO: estimate AggregateBlob size more intelligently
         let mut output_bytes_written: usize = 0;
 
         // Call user_submit through FFI
@@ -413,21 +460,20 @@ mod enclave_tests {
     fn user_submit_round_msg() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
-        let req_1 = placeholder_submission_req();
+        // create some testing server keys
+        let sealed_shared_secrets = enc.create_testing_shared_server_secrets(10).unwrap();
+
+        let req_1 = UserSubmissionReq {
+            user_id: EntityId::default(),
+            anytrust_group_id: EntityId::default(),
+            round: 0u32,
+            msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
+            ticket: SealedFootprintTicket(vec![0; 1]),
+            shared_secrets: sealed_shared_secrets,
+        };
+
         let sgx_key_sealed = test_signing_key();
-
         let resp_1 = enc.user_submit_round_msg(&req_1, &sgx_key_sealed).unwrap();
-
-        let req_2 = req_1.clone();
-        let resp_2 = enc.user_submit_round_msg(&req_2, &sgx_key_sealed).unwrap();
-
-        unimplemented!();
-
-        /*
-        // resp 2 == req 1 because server's are xor twice
-        assert_eq!(resp_2, req_1);
-        */
-
         enc.destroy();
     }
 

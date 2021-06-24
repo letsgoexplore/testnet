@@ -124,7 +124,7 @@ pub fn compute_anytrust_group_id(keys: &Vec<KemPubKey>) -> EntityId {
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct UserSubmissionReq {
     pub user_id: EntityId,
     pub anytrust_group_id: EntityId,
@@ -134,4 +134,22 @@ pub struct UserSubmissionReq {
     /// When unsealed, this must have the form (kpk_1, ..., kpk_ℓ, s_1, ..., s_ℓ) so that the
     /// shared secrets are linked to the relevant servers
     pub shared_secrets: SealedServerSecrets,
+}
+
+use std::format;
+
+impl Debug for UserSubmissionReq {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("UserSubmissionReq")
+            .field("user_id", &hex::encode(self.user_id))
+            .field("anytrust_group_id", &hex::encode(self.anytrust_group_id))
+            .field("round", &self.round)
+            .field("msg", &self.msg)
+            .field("ticket", &"empty for now")
+            .field(
+                "shared_secrets",
+                &format!("sealed secrets of length {}", self.shared_secrets.0.len()),
+            )
+            .finish()
+    }
 }

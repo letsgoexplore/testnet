@@ -11,7 +11,7 @@ use sgx_types::sgx_ec256_dh_shared_t;
 use std::fmt::{Debug, Formatter};
 use types::{Xor, Zero};
 
-// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
+/// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[serde(crate = "serde")]
 #[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct SharedServerSecret {
@@ -42,7 +42,7 @@ impl SharedServerSecret {
 /// by `dcnet_id` which is the hash of canonically ordered server public keys.
 pub struct RoundSecret {
     secret: [u8; DC_NET_MESSAGE_LENGTH],
-    dcnet_id: EntityId, // a hash of all server public keys
+    anytrust_group_id: EntityId, // a hash of all server public keys
 }
 
 impl RoundSecret {
@@ -54,6 +54,18 @@ impl RoundSecret {
         }
 
         DcMessage(output)
+    }
+}
+
+use std::fmt::Display;
+use std::fmt::Result as FmtResult;
+
+impl Display for RoundSecret {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("RoundSecret")
+            .field("secret", &hex::encode(&self.secret))
+            .field("anytrust_group_id", &self.anytrust_group_id)
+            .finish()
     }
 }
 
@@ -80,6 +92,6 @@ pub fn derive_round_secret(
 
     Ok(RoundSecret {
         secret: round_secret,
-        dcnet_id: Default::default(),
+        anytrust_group_id: Default::default(),
     })
 }

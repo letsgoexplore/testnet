@@ -39,10 +39,10 @@ pub fn aggregate(
     Ok(new_agg)
 }
 
-use ecall::seal_unseal::unseal_prv_key;
 use serde_cbor;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 use std::slice;
+use utils::unseal_prv_key;
 
 #[no_mangle]
 pub extern "C" fn ecall_aggregate(
