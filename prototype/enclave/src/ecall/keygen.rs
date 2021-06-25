@@ -48,7 +48,6 @@ pub extern "C" fn ecall_new_sgx_signing_key(output: *mut u8, output_size: u32) -
 
 use crypto::SgxSigningKey;
 use interface::KemPubKey;
-use utils::unseal_data;
 
 #[no_mangle]
 pub extern "C" fn ecall_unseal_to_pubkey(
@@ -62,7 +61,7 @@ pub extern "C" fn ecall_unseal_to_pubkey(
         Err(e) => return SGX_ERROR_INVALID_PARAMETER,
     };
 
-    let pk = unwrap_or_return!(SgxSigningPubKey::try_from(&sk), SGX_ERROR_INVALID_PARAMETER);
+    let pk = unwrap_or_abort!(SgxSigningPubKey::try_from(&sk), SGX_ERROR_INVALID_PARAMETER);
     unsafe {
         out_x.copy_from(pk.gx.as_ptr(), pk.gx.len());
         out_y.copy_from(pk.gy.as_ptr(), pk.gy.len());

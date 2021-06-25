@@ -2,7 +2,7 @@ use crate::params::SEALED_SGX_SIGNING_KEY_LENGTH;
 use std::vec::Vec;
 
 /// The state of an aggregator. This can only be opened from within the enclave.
-pub struct SealedPartialAggregate(pub Vec<u8>);
+pub struct MarshalledPartialAggregate(pub Vec<u8>);
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]

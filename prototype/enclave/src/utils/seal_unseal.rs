@@ -35,8 +35,9 @@ pub unsafe fn ser_and_seal_to_ptr<T: Serialize>(
     }
 }
 
-pub unsafe fn unseal_from_vec_and_deser<T: DeserializeOwned>(mut input: Vec<u8>) -> SgxResult<T> {
-    unseal_from_ptr_and_deser(input.as_mut_ptr(), input.len())
+pub unsafe fn unseal_from_vec_and_deser<T: DeserializeOwned>(input: &Vec<u8>) -> SgxResult<T> {
+    let mut bin = input.clone();
+    unseal_from_ptr_and_deser(bin.as_mut_ptr(), bin.len())
 }
 
 pub unsafe fn unseal_from_ptr_and_deser<T: DeserializeOwned>(
@@ -63,30 +64,4 @@ pub unsafe fn unseal_from_ptr_and_deser<T: DeserializeOwned>(
             return Err(SGX_ERROR_INVALID_PARAMETER);
         }
     })
-}
-
-// unseal
-pub fn unseal_data<'a, T: Copy + ContiguousMemory>(
-    sealed_log: *mut u8,
-    sealed_log_size: u32,
-) -> SgxResult<SgxUnsealedData<'a, T>> {
-    let sealed = unsafe {
-        SgxSealedData::<T>::from_raw_sealed_data_t(
-            sealed_log as *mut sgx_sealed_data_t,
-            sealed_log_size,
-        )
-    }
-    .ok_or(SGX_ERROR_INVALID_PARAMETER)?;
-
-    sealed.unseal_data()
-}
-
-pub fn unseal_prv_key(
-    sealed_tee_prv_key_ptr: *mut u8,
-    sealed_tee_prv_key_len: usize,
-) -> SgxResult<SgxSigningKey> {
-    let tee_prv_key_unsealed =
-        unseal_data::<SgxSigningKey>(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len as u32)?;
-
-    Ok(*tee_prv_key_unsealed.get_decrypt_txt())
 }

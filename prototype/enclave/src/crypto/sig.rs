@@ -36,7 +36,7 @@ impl Signable for SignedUserMessage {
 }
 
 impl SignMutable for SignedUserMessage {
-    fn sign_mut(&mut self, tee_prv_key: &SgxSigningKey) -> CryptoResult<()> {
+    fn sign_mut(&mut self, tee_prv_key: &SgxSigningKey) -> SgxError {
         let (sig, pk) = self.sign(tee_prv_key)?;
         self.tee_sig = sig;
         self.tee_pk = pk;

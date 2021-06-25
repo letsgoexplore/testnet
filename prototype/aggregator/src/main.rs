@@ -9,8 +9,8 @@ pub mod dc_proto {
     tonic::include_proto!("dc_proto");
 }
 use interface::{
-    compute_group_id, DcMessage, EntityId, KemPubKey, SealedFootprintTicket,
-    SealedPartialAggregate, SealedServerSecrets, SealedSigningKey, UserSubmissionReq,
+    compute_group_id, DcMessage, EntityId, KemPubKey, MarshalledPartialAggregate,
+    SealedFootprintTicket, SealedServerSecrets, SealedSigningKey, UserSubmissionReq,
 };
 
 use rand::Rng;
@@ -25,7 +25,7 @@ struct AggregatorState<'a> {
     /// This aggregator's signing key. Can only be accessed from within the enclave.
     signing_key: SealedSigningKey,
     /// A partial aggregate of received user messages
-    partial_agg: Option<SealedPartialAggregate>,
+    partial_agg: Option<MarshalledPartialAggregate>,
 }
 
 fn register_aggregator(

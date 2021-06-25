@@ -16,6 +16,7 @@ use crypto::SharedServerSecret;
 use interface::UserSubmissionReq;
 use messages_types::SignedUserMessage;
 use types::*;
+use utils;
 
 // the safe version
 // fn user_submit_internal(request: &UserSubmissionReq, tee_sk: &SgxSigningKey) -> DcNetResult<SignedUserMessage> {
@@ -39,39 +40,23 @@ use types::*;
 // Ok(mutable)
 // }
 
-fn user_submit_internal(
-    send_request_ptr: *const u8,
-    send_request_len: usize,
-    sealed_tee_prv_key_ptr: *mut u8,
-    sealed_tee_prv_key_len: usize,
-    output: *mut u8,
-    output_size: usize,
-    output_bytes_written: *mut usize,
-) -> SgxError {
-    let send_request = serde_cbor::from_slice::<UserSubmissionReq>(unsafe {
-        slice::from_raw_parts(send_request_ptr, send_request_len)
-    })
-    .map_err(|e| SGX_ERROR_INVALID_PARAMETER)?;
-
-    //
+pub fn user_submit_internal(
+    send_request: &UserSubmissionReq,
+    tee_prv_key: &SgxSigningKey,
+    shared_server_secrets: &Vec<SharedServerSecret>,
+) -> SgxResult<SignedUserMessage> {
     println!("got request {:?}", send_request);
 
     // 1) TODO: check ticket first
-    println!("checking ticket");
+    println!("[WARN] NOT checking ticket ATM");
 
     // 2) unseal private key
-    let tee_prv_key = unsafe {
-        unseal_from_ptr_and_deser::<SgxSigningKey>(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len)
-    }?;
     println!(
         "using signing (pub) key {}",
         tee_prv_key.try_get_public_key()?
     );
 
     // 3) derive the round key from shared secrets
-    let shared_server_secrets = unsafe {
-        unseal_from_vec_and_deser::<Vec<SharedServerSecret>>(send_request.shared_secrets.0)
-    }?;
     // TODO: check shared_server_secrets correspond to anytrust_group_id
     println!("using {} servers", shared_server_secrets.len());
 
@@ -102,33 +87,12 @@ fn user_submit_internal(
     })?;
 
     println!("signed use message {:?}", mutable);
-
-    // serialize SignedUserMessage
-    let serialized = serde_cbor::to_vec(&mutable).map_err(|e| {
-        println!("error serializing: {}", e);
-        SGX_ERROR_INVALID_PARAMETER
-    })?;
-
-    if serialized.len() > output_size {
-        println!(
-            "not enough output to write serialized message. need {} got {}",
-            serialized.len(),
-            output_size,
-        );
-        return Err(SGX_ERROR_INVALID_PARAMETER);
-    }
-
-    unsafe {
-        output.copy_from(serialized.as_ptr(), serialized.len());
-        output_bytes_written.write(serialized.len())
-    }
-
-    Ok(())
+    Ok(mutable)
 }
 
 use sgx_types::sgx_status_t::SGX_SUCCESS;
 use sgx_types::{SgxError, SgxResult};
-use utils::{unseal_data, unseal_from_ptr_and_deser, unseal_from_vec_and_deser, unseal_prv_key};
+use utils::{unseal_from_ptr_and_deser, unseal_from_vec_and_deser};
 
 #[no_mangle]
 pub extern "C" fn ecall_user_submit(
@@ -140,16 +104,25 @@ pub extern "C" fn ecall_user_submit(
     output_size: usize,
     output_bytes_written: *mut usize,
 ) -> sgx_status_t {
-    match user_submit_internal(
-        send_request_ptr,
-        send_request_len,
+    // Deser and unseal everything
+    let send_request = unmarshal_or_abort!(UserSubmissionReq, send_request_ptr, send_request_len);
+    let tee_signing_sk = unseal_or_abort!(
+        SgxSigningKey,
         sealed_tee_prv_key_ptr,
-        sealed_tee_prv_key_len,
-        output,
-        output_size,
-        output_bytes_written,
-    ) {
-        Ok(()) => SGX_SUCCESS,
+        sealed_tee_prv_key_len
+    );
+    let shared_server_secrets =
+        unseal_vec_or_abort!(Vec<SharedServerSecret>, &send_request.shared_secrets.0);
+
+    // Forward ecall to the internal call
+    let signed_msg = unwrap_or_abort!(
+        user_submit_internal(&send_request, &tee_signing_sk, &shared_server_secrets,),
+        SGX_ERROR_INVALID_PARAMETER
+    );
+
+    // Write to user land
+    match utils::serialize_to_ptr(&signed_msg, output, output_size, output_bytes_written) {
+        Ok(_) => SGX_SUCCESS,
         Err(e) => e,
     }
 }

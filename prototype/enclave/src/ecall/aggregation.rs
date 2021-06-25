@@ -1,29 +1,106 @@
 use crypto::*;
 use interface::DcMessage;
 use messages_types::SignedUserMessage;
-use sgx_types::sgx_status_t;
+use sgx_types::{sgx_status_t, SgxError, SgxResult};
 use std::prelude::v1::*;
 use types::*;
 
-pub fn aggregate(
+use crate::interface::*;
+use crypto::{SgxSignature, Signable};
+use std::vec::Vec;
+
+use serde_cbor;
+use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
+use std::slice;
+use utils;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AggregatedMessage {
+    pub round: u32,
+    pub anytrust_group_id: EntityId,
+    pub user_ids: Vec<EntityId>,
+    pub aggregated_msg: DcMessage,
+    pub tee_sig: SgxSignature,
+    pub tee_pk: SgxSigningPubKey,
+}
+
+use types::Zero;
+
+impl Zero for AggregatedMessage {
+    fn zero() -> Self {
+        AggregatedMessage {
+            round: 0,
+            anytrust_group_id: EntityId::default(),
+            user_ids: Vec::new(),
+            aggregated_msg: DcMessage::zero(),
+            tee_sig: SgxSignature::default(),
+            tee_pk: SgxSigningPubKey::default(),
+        }
+    }
+}
+
+use sgx_types::sgx_status_t::{SGX_INTERNAL_ERROR_ENCLAVE_CREATE_INTERRUPTED, SGX_SUCCESS};
+use sha2::Digest;
+use sha2::Sha256;
+use types::DcNetError::AggregationError;
+
+impl Signable for AggregatedMessage {
+    fn digest(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        for id in self.user_ids.iter() {
+            hasher.input(id);
+        }
+        hasher.input(&self.aggregated_msg);
+
+        hasher.result().to_vec()
+    }
+
+    fn get_sig(&self) -> SgxSignature {
+        self.tee_sig
+    }
+
+    fn get_pk(&self) -> SgxSigningPubKey {
+        self.tee_pk
+    }
+}
+
+impl SignMutable for AggregatedMessage {
+    fn sign_mut(&mut self, sk: &SgxSigningKey) -> SgxError {
+        let (sig, pk) = self.sign(sk)?;
+        self.tee_pk = pk;
+        self.tee_sig = sig;
+
+        Ok(())
+    }
+}
+
+pub fn aggregate_internal(
     incoming_msg: &SignedUserMessage,
-    agg: &AggregatedMessage,
-    tee_sk: &SgxSigningKey,
-) -> DcNetResult<AggregatedMessage> {
+    current_aggregation: &AggregatedMessage,
+    tee_signing_sk: &SgxSigningKey,
+) -> SgxResult<AggregatedMessage> {
     // verify signature
-    if !incoming_msg.verify().map_err(DcNetError::from)? {
-        return Err(DcNetError::AggregationError("invalid sig"));
+    if !incoming_msg.verify()? {
+        println!("can't verify sig on incoming_msg");
+        return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    if incoming_msg.round != agg.round {
-        return Err(DcNetError::AggregationError("invalid round"));
+    // FIXME: check incoming_msg.pk against a list of accepted public keys
+
+    println!("new input: {:?}", incoming_msg);
+
+    if incoming_msg.round != current_aggregation.round {
+        println!("incoming_msg.round != agg.round");
+        return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    if agg.user_ids.contains(&incoming_msg.user_id) {
-        return Err(DcNetError::AggregationError("user already in"));
+    if current_aggregation.user_ids.contains(&incoming_msg.user_id) {
+        println!("user already in");
+        return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    let mut new_agg = agg.to_owned();
+    // create a new aggregation
+    let mut new_agg = current_aggregation.clone();
 
     // aggregate in the new message
     new_agg.user_ids.push(incoming_msg.user_id);
@@ -31,18 +108,11 @@ pub fn aggregate(
         .aggregated_msg
         .xor_mut(&DcMessage(incoming_msg.msg.0));
 
-    let (sig, pk) = new_agg.sign(tee_sk)?;
-
-    new_agg.tee_sig = sig;
-    new_agg.tee_pk = pk;
+    // sign
+    new_agg.sign_mut(&tee_signing_sk)?;
 
     Ok(new_agg)
 }
-
-use serde_cbor;
-use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
-use std::slice;
-use utils::unseal_prv_key;
 
 #[no_mangle]
 pub extern "C" fn ecall_aggregate(
@@ -56,55 +126,48 @@ pub extern "C" fn ecall_aggregate(
     output_size: usize,
     output_bytes_written: *mut usize,
 ) -> sgx_status_t {
-    let signed_user_msg =
-        unmarshal_or_return!(SignedUserMessage, sign_user_msg_ptr, sign_user_msg_len);
+    let incoming_msg = unmarshal_or_abort!(SignedUserMessage, sign_user_msg_ptr, sign_user_msg_len);
 
-    // if current_aggregation_len == 0, create an empty AggregatedMessage
-    let current_agg = {
-        if current_aggregation_len == 0 {
-            AggregatedMessage {
-                user_ids: vec![],
-                aggregated_msg: DcMessage::zero(),
-                round: signed_user_msg.round,
-                tee_sig: Default::default(),
-                tee_pk: Default::default(),
-            }
-        } else {
-            unmarshal_or_return!(
-                AggregatedMessage,
-                current_aggregation_ptr,
-                current_aggregation_len
-            )
+    let current_agg = if current_aggregation_len == 0 {
+        unmarshal_or_abort!(
+            AggregatedMessage,
+            current_aggregation_ptr,
+            current_aggregation_len
+        )
+    } else {
+        AggregatedMessage {
+            round: incoming_msg.round,
+            anytrust_group_id: incoming_msg.anytrust_group_id,
+            user_ids: vec![],
+            aggregated_msg: DcMessage::default(),
+            tee_sig: Default::default(),
+            tee_pk: Default::default(),
         }
     };
 
-    let tee_prv_key = match unseal_prv_key(sealed_tee_prv_key_ptr, sealed_tee_prv_key_len) {
-        Ok(k) => k,
-        Err(e) => return e,
-    };
+    let tee_signing_sk = unseal_or_abort!(
+        SgxSigningKey,
+        sealed_tee_prv_key_ptr,
+        sealed_tee_prv_key_len
+    );
 
-    println!("sign msg: {:?}", signed_user_msg);
+    // Forward e-call to the internal safe version once deserialization and unmarshalling is done.
+    let new_agg = unwrap_or_abort!(
+        aggregate_internal(&incoming_msg, &current_agg, &tee_signing_sk),
+        SGX_ERROR_INVALID_PARAMETER
+    );
 
-    let new_agg = match aggregate(&signed_user_msg, &current_agg, &tee_prv_key) {
-        Ok(agg) => agg,
+    // Write to user land
+    match utils::serialize_to_ptr(
+        &new_agg,
+        output_aggregation_ptr,
+        output_size,
+        output_bytes_written,
+    ) {
+        Ok(_) => SGX_SUCCESS,
         Err(e) => {
-            println!("Err: {}", e);
-            return sgx_status_t::SGX_ERROR_UNEXPECTED;
+            println!("can serialize {}", e);
+            e
         }
-    };
-
-    println!("new agg: {:?}", new_agg);
-
-    let serialized = unwrap_or_return!(serde_cbor::to_vec(&new_agg), SGX_ERROR_UNEXPECTED);
-    if serialized.len() > output_size {
-        println!("not enough output space. need {}", serialized.len());
-        return SGX_ERROR_INVALID_PARAMETER;
     }
-
-    unsafe {
-        output_aggregation_ptr.copy_from(serialized.as_ptr(), serialized.len());
-        output_bytes_written.write(serialized.len())
-    }
-
-    sgx_status_t::SGX_SUCCESS
 }

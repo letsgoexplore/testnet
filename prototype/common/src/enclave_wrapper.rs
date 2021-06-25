@@ -137,12 +137,14 @@ impl DcNetEnclave {
         self.enclave.destroy();
     }
 
-    pub fn geteid(&self) -> sgx_types::sgx_enclave_id_t {
+    pub fn get_eid(&self) -> sgx_types::sgx_enclave_id_t {
         self.enclave.geteid()
     }
 
-    // Return sealed key
-    pub fn new_sgx_signing_key(&self) -> EnclaveResult<SealedSigningKey> {
+    /// new_sgx_protected_key creates a new key pair on P-256 and returns the sealed secret key.
+    /// This method can be used for creating signing keys and KEM private keys.
+    /// Use unseal_to_pubkey to unseal the key and compute its public key.
+    pub fn new_sgx_protected_secret_key(&self) -> EnclaveResult<SealedSigningKey> {
         // TODO: Ensure that 1024 is large enough for any sealed privkey
         let mut ret = SGX_SUCCESS;
 
@@ -171,12 +173,15 @@ impl DcNetEnclave {
     }
 
     // unseal the key to see its public key
-    pub fn unseal_to_pubkey(
+    pub fn unseal_to_public_key_on_p256(
         &self,
-        privkey: &SealedSigningKey,
+        sealed_private_key: &SealedSigningKey,
     ) -> EnclaveResult<SgxProtectedKeyPub> {
         let mut ret = SGX_SUCCESS;
-        let mut privkey_copy = privkey.clone();
+
+        // make a copy since (for reasons that I don't understand yet) unseal takes a mutable pointer as input
+        // TODO: figure out why.
+        let mut privkey_copy = sealed_private_key.clone();
 
         let mut pubkey = SgxProtectedKeyPub::default();
 
@@ -203,8 +208,8 @@ impl DcNetEnclave {
         Ok(pubkey)
     }
 
-    ///
     /// get shared server keys
+    /// XXX: for testing purposes only
     pub fn create_testing_shared_server_secrets(
         &self,
         num_of_keys: u32,
@@ -289,9 +294,9 @@ impl DcNetEnclave {
         &self,
         round: u32,
         anytrust_group_id: &EntityId,
-    ) -> EnclaveResult<SealedPartialAggregate> {
+    ) -> EnclaveResult<MarshalledPartialAggregate> {
         // The partial aggregate MUST store set of anytrust nodes
-        Ok(SealedPartialAggregate(Vec::new()))
+        Ok(MarshalledPartialAggregate(Vec::new()))
     }
 
     /// Adds the given input from a user to the given partial aggregate
@@ -299,7 +304,7 @@ impl DcNetEnclave {
     //  and the signed message is aggregated into that.
     pub fn add_to_aggregate(
         &self,
-        agg: &mut SealedPartialAggregate,
+        agg: &mut MarshalledPartialAggregate,
         new_input: &AggregateBlob,
     ) -> EnclaveResult<()> {
         // This MUST check that the input blob is made wrt the same set of anytrust nodes
@@ -313,7 +318,7 @@ impl DcNetEnclave {
         // Call aggregate through FFI
         let ecall_ret = unsafe {
             ecall_aggregate(
-                self.geteid(),
+                self.get_eid(),
                 &mut ret,
                 new_input.0.as_ptr(),
                 new_input.0.len(),
@@ -345,7 +350,10 @@ impl DcNetEnclave {
 
     /// Constructs an aggregate message from the given state. The returned blob is to be sent to
     /// the parent aggregator or an anytrust server.
-    pub fn finalize_aggregate(&self, agg: &SealedPartialAggregate) -> EnclaveResult<AggregateBlob> {
+    pub fn finalize_aggregate(
+        &self,
+        agg: &MarshalledPartialAggregate,
+    ) -> EnclaveResult<AggregateBlob> {
         unimplemented!()
     }
 
@@ -437,13 +445,15 @@ mod enclave_tests {
     #[test]
     fn key_seal_unseal() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
-        let sealed = enc.new_sgx_signing_key().unwrap();
+        let sealed = enc.new_sgx_protected_secret_key().unwrap();
         assert!(sealed.0.len() > 0);
         let encoded = base64::encode(&sealed.0);
-        enc.unseal_to_pubkey(&sealed).unwrap();
+        enc.unseal_to_public_key_on_p256(&sealed).unwrap();
 
         let test_sealed = test_signing_key();
-        let test_pk = enc.unseal_to_pubkey(&test_sealed).expect("unseal");
+        let test_pk = enc
+            .unseal_to_public_key_on_p256(&test_sealed)
+            .expect("unseal");
         let expected_x = "394b6c980dddb2ad9cc4e6403d433a06b17ab8994343751fc402e786ca584c5d";
         let expected_y = "0c32869de9005c8a1cc1cfdd0e53d0a530cc31a6585a8784369a6490a124df9f";
         assert_eq!(
@@ -478,22 +488,17 @@ mod enclave_tests {
     }
 
     #[test]
-    fn aggregation_init() {
+    fn aggregation() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         let req_1 = placeholder_submission_req();
         let sgx_key_sealed = test_signing_key();
 
-        unimplemented!();
-        /*
-        let resp_1 = enc
-            .user_submit_round_msg(&req_1, &sgx_key_sealed)
-            .unwrap();
+        let resp_1 = enc.user_submit_round_msg(&req_1, &sgx_key_sealed).unwrap();
 
-        let _agg = enc
-            .aggregate(&resp_1, &Vec::new(), &sgx_key_sealed)
-            .unwrap();
-        */
+        let mut empty_agg = enc.new_aggregate(0, &EntityId::default()).unwrap();
+
+        let _agg = enc.add_to_aggregate(&mut empty_agg, &resp_1).unwrap();
 
         enc.destroy();
     }
