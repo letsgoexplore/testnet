@@ -157,12 +157,6 @@ pub extern "C" fn ecall_aggregate(
     );
 
     // Forward e-call to the internal safe version once deserialization and unmarshalling is done.
-    // let new_agg = match aggregate_internal(&incoming_msg, &current_agg, &tee_signing_sk) {
-    //     Ok(a) => a,
-    //     Err(e) => {
-    //         return SGX_ERROR_INVALID_PARAMETER;
-    //     }
-    // }
     let new_agg = unwrap_or_abort!(
         aggregate_internal(&incoming_msg, &current_agg, &tee_signing_sk),
         SGX_ERROR_INVALID_PARAMETER
