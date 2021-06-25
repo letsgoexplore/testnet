@@ -111,6 +111,8 @@ pub fn aggregate_internal(
     // sign
     new_agg.sign_mut(&tee_signing_sk)?;
 
+    println!("new agg: {:?}", new_agg);
+
     Ok(new_agg)
 }
 
@@ -127,8 +129,9 @@ pub extern "C" fn ecall_aggregate(
     output_bytes_written: *mut usize,
 ) -> sgx_status_t {
     let incoming_msg = unmarshal_or_abort!(SignedUserMessage, sign_user_msg_ptr, sign_user_msg_len);
+    println!("incoming message {:?}", &incoming_msg);
 
-    let current_agg = if current_aggregation_len == 0 {
+    let current_agg = if current_aggregation_len != 0 {
         unmarshal_or_abort!(
             AggregatedMessage,
             current_aggregation_ptr,
@@ -145,6 +148,8 @@ pub extern "C" fn ecall_aggregate(
         }
     };
 
+    println!("current agg: {:?}", current_agg);
+
     let tee_signing_sk = unseal_or_abort!(
         SgxSigningKey,
         sealed_tee_prv_key_ptr,
@@ -152,10 +157,18 @@ pub extern "C" fn ecall_aggregate(
     );
 
     // Forward e-call to the internal safe version once deserialization and unmarshalling is done.
+    // let new_agg = match aggregate_internal(&incoming_msg, &current_agg, &tee_signing_sk) {
+    //     Ok(a) => a,
+    //     Err(e) => {
+    //         return SGX_ERROR_INVALID_PARAMETER;
+    //     }
+    // }
     let new_agg = unwrap_or_abort!(
         aggregate_internal(&incoming_msg, &current_agg, &tee_signing_sk),
         SGX_ERROR_INVALID_PARAMETER
     );
+
+    println!("new agg: {:?}", new_agg);
 
     // Write to user land
     match utils::serialize_to_ptr(
