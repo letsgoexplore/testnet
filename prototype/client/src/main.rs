@@ -11,8 +11,8 @@ pub mod dc_proto {
 }
 
 use interface::{
-    compute_group_id, DcMessage, EntityId, KemPubKey, SealedFootprintTicket, SealedServerSecrets,
-    SealedPrivateKey, UserSubmissionReq,
+    compute_group_id, DcMessage, EntityId, KemPubKey, SealedFootprintTicket, SealedPrivateKey,
+    SealedServerSecrets, UserSubmissionReq,
 };
 
 use rand::Rng;
@@ -51,7 +51,9 @@ fn register_user(
         signing_key: sealed_usk.to_owned(),
         shared_secrets: sealed_shared_secrets.to_owned(),
     };
-    let msg = SgxMsg { payload: reg_data.to_vec() };
+    let msg = SgxMsg {
+        payload: reg_data.to_vec(),
+    };
 
     Ok((state, msg))
 }

@@ -8,9 +8,9 @@ use sha2::Sha256;
 
 use super::*;
 use sgx_types::sgx_ec256_dh_shared_t;
+use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use types::{Xor, Zero};
-use std::collections::BTreeMap;
 
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -67,11 +67,15 @@ impl SharedSecretsWithAnyTrustGroup {
         let mut server_secrets = BTreeMap::new();
 
         for server_pk in server_pks.iter() {
-            let shared_secret = ecc_handle.compute_shared_dhkey(&my_sk.into(), &server_pk.into())?;
-            server_secrets.insert(server_pk.to_owned(), SharedServerSecret {
-                secret: shared_secret.s,
-                server_id: EntityId::from(server_pk),
-            });
+            let shared_secret =
+                ecc_handle.compute_shared_dhkey(&my_sk.into(), &server_pk.into())?;
+            server_secrets.insert(
+                server_pk.to_owned(),
+                SharedServerSecret {
+                    secret: shared_secret.s,
+                    server_id: EntityId::from(server_pk),
+                },
+            );
         }
 
         let my_pk = SgxProtectedKeyPub::try_from(my_sk)?;
@@ -83,7 +87,8 @@ impl SharedSecretsWithAnyTrustGroup {
     }
 
     pub fn anytrust_group_id(&self) -> EntityId {
-        let keys: Vec<SgxProtectedKeyPub> = self.anytrust_group_pairwise_keys.keys().cloned().collect();
+        let keys: Vec<SgxProtectedKeyPub> =
+            self.anytrust_group_pairwise_keys.keys().cloned().collect();
         compute_anytrust_group_id(&keys)
     }
 }

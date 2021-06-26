@@ -10,7 +10,7 @@ pub mod dc_proto {
 }
 use interface::{
     compute_group_id, DcMessage, EntityId, KemPubKey, MarshalledPartialAggregate,
-    SealedFootprintTicket, SealedServerSecrets, SealedPrivateKey, UserSubmissionReq,
+    SealedFootprintTicket, SealedPrivateKey, SealedServerSecrets, UserSubmissionReq,
 };
 
 use rand::Rng;

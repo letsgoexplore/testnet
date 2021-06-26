@@ -104,12 +104,12 @@ pub type SgxSigningPubKey = SgxProtectedKeyPub;
 pub struct SgxProtectedKeyPair {
     pub sealed_sk: SealedPrivateKey,
     pub pk: SgxProtectedKeyPub,
-    pub role: String,  // e.g., "aggregator" "client" "anytrust server"
+    pub role: String, // e.g., "aggregator" "client" "anytrust server"
     pub tee_linkable_attestation: Vec<u8>, // binds this key to an enclave
 }
 
-use std::format;
 use crate::SealedPrivateKey;
+use std::format;
 
 impl Debug for SgxProtectedKeyPair {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -117,7 +117,10 @@ impl Debug for SgxProtectedKeyPair {
             .field("sealed_sk", &format!("{} bytes", self.sealed_sk.0.len()))
             .field("pk", &self.pk)
             .field("role", &self.role)
-            .field("tee_linkable_attestation", &hex::encode(&self.tee_linkable_attestation))
+            .field(
+                "tee_linkable_attestation",
+                &hex::encode(&self.tee_linkable_attestation),
+            )
             .finish()
     }
 }

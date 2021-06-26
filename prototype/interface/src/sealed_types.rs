@@ -29,7 +29,10 @@ impl Debug for SealedServerSecrets {
             .field("anytrust_group_id", &self.anytrust_group_id)
             .field("num_of_servers", &self.server_public_keys.len())
             .field("server_pks", &self.server_public_keys)
-            .field("sealed_server_secrets", &format!("{} bytes", self.sealed_server_secrets.len()))
+            .field(
+                "sealed_server_secrets",
+                &format!("{} bytes", self.sealed_server_secrets.len()),
+            )
             .finish()
     }
 }
@@ -39,9 +42,9 @@ impl Debug for SealedServerSecrets {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SealedPrivateKey(pub Vec<u8>);
 
+use crate::{EntityId, SgxProtectedKeyPub};
 use core::fmt::Formatter;
 use std::fmt::Debug;
-use crate::{EntityId, SgxProtectedKeyPub};
 macro_rules! impl_debug_for_sealed {
     ($t: ty) => {
         impl Debug for $t {

@@ -425,7 +425,11 @@ mod enclave_tests {
     extern crate sgx_types;
 
     use hex::FromHex;
-    use interface::{DcMessage, EntityId, SealedFootprintTicket, SealedServerSecrets, SealedPrivateKey, UserSubmissionReq, DC_NET_MESSAGE_LENGTH, SEALED_SGX_SIGNING_KEY_LENGTH, USER_ID_LENGTH, SgxProtectedKeyPub};
+    use interface::{
+        DcMessage, EntityId, SealedFootprintTicket, SealedPrivateKey, SealedServerSecrets,
+        SgxProtectedKeyPub, UserSubmissionReq, DC_NET_MESSAGE_LENGTH,
+        SEALED_SGX_SIGNING_KEY_LENGTH, USER_ID_LENGTH,
+    };
     use sgx_types::SGX_ECP256_KEY_SIZE;
 
     fn test_signing_key() -> SealedPrivateKey {
@@ -509,7 +513,9 @@ mod enclave_tests {
 
         let sealed_agg_tee_key = test_signing_key();
 
-        let resp_1 = enc.user_submit_round_msg(&req_1, &sealed_agg_tee_key).unwrap();
+        let resp_1 = enc
+            .user_submit_round_msg(&req_1, &sealed_agg_tee_key)
+            .unwrap();
 
         let mut empty_agg = enc.new_aggregate(0, &EntityId::default()).unwrap();
         enc.add_to_aggregate(&mut empty_agg, &resp_1, &sealed_agg_tee_key)
@@ -531,7 +537,9 @@ mod enclave_tests {
             ticket: SealedFootprintTicket(vec![0; 1]),
             shared_secrets: user_reg_2.get_sealed_server_secrets().to_owned(),
         };
-        let resp_2 = enc.user_submit_round_msg(&req_2, &sealed_agg_tee_key).unwrap();
+        let resp_2 = enc
+            .user_submit_round_msg(&req_2, &sealed_agg_tee_key)
+            .unwrap();
 
         enc.add_to_aggregate(&mut empty_agg, &resp_2, &sealed_agg_tee_key)
             .unwrap();

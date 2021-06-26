@@ -9,7 +9,7 @@ use std::prelude::v1::*;
 use std::slice;
 
 use crypto;
-use crypto::{SgxSigningKey, SignMutable, SharedSecretsWithAnyTrustGroup};
+use crypto::{SgxSigningKey, SharedSecretsWithAnyTrustGroup, SignMutable};
 
 use self::interface::*;
 use crypto::SharedServerSecret;
@@ -17,7 +17,6 @@ use interface::UserSubmissionReq;
 use messages_types::SignedUserMessage;
 use types::*;
 use utils;
-
 
 use std::convert::TryFrom;
 
@@ -39,7 +38,10 @@ pub fn user_submit_internal(
 
     // 3) derive the round key from shared secrets
     // TODO: check shared_server_secrets correspond to anytrust_group_id
-    println!("using {} servers", shared_server_secrets.anytrust_group_pairwise_keys.len());
+    println!(
+        "using {} servers",
+        shared_server_secrets.anytrust_group_pairwise_keys.len()
+    );
 
     let round_key = crypto::derive_round_secret(send_request.round, &shared_server_secrets)
         .map_err(|e| SGX_ERROR_INVALID_PARAMETER)?;
@@ -90,8 +92,10 @@ pub extern "C" fn ecall_user_submit(
         sealed_tee_prv_key_ptr,
         sealed_tee_prv_key_len
     );
-    let shared_server_secrets =
-        unseal_vec_or_abort!(SharedSecretsWithAnyTrustGroup, &send_request.shared_secrets.sealed_server_secrets);
+    let shared_server_secrets = unseal_vec_or_abort!(
+        SharedSecretsWithAnyTrustGroup,
+        &send_request.shared_secrets.sealed_server_secrets
+    );
 
     // Forward ecall to the internal call
     let signed_msg = unwrap_or_abort!(

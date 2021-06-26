@@ -120,7 +120,8 @@ pub fn register_user_internal(anytrust_server_pks: &[KemPubKey]) -> SgxResult<Us
     let (user_sk, user_pk) = new_p256_secret_key()?;
 
     // 2. derive server secrets
-    let server_secrets = SharedSecretsWithAnyTrustGroup::derive_server_secrets(&user_sk, anytrust_server_pks)?;
+    let server_secrets =
+        SharedSecretsWithAnyTrustGroup::derive_server_secrets(&user_sk, anytrust_server_pks)?;
 
     Ok(UserRegistration::new(
         SgxProtectedKeyPair {
@@ -132,7 +133,15 @@ pub fn register_user_internal(anytrust_server_pks: &[KemPubKey]) -> SgxResult<Us
         SealedServerSecrets {
             user_id: EntityId::from(&user_pk),
             anytrust_group_id: server_secrets.anytrust_group_id(),
-            server_public_keys: server_secrets.anytrust_group_pairwise_keys.keys().cloned().collect(),
-            sealed_server_secrets: ser_and_seal_to_vec(&server_secrets, "shared secrets".as_bytes())?,
-        }))
+            server_public_keys: server_secrets
+                .anytrust_group_pairwise_keys
+                .keys()
+                .cloned()
+                .collect(),
+            sealed_server_secrets: ser_and_seal_to_vec(
+                &server_secrets,
+                "shared secrets".as_bytes(),
+            )?,
+        },
+    ))
 }

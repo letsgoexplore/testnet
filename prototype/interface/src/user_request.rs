@@ -156,8 +156,7 @@ pub struct UserRegistration {
 }
 
 impl UserRegistration {
-    pub fn new(key: SgxProtectedKeyPair,
-               server_secrets: SealedServerSecrets, ) -> Self {
+    pub fn new(key: SgxProtectedKeyPair, server_secrets: SealedServerSecrets) -> Self {
         UserRegistration {
             key,
             server_secrets,
@@ -178,7 +177,6 @@ impl UserRegistration {
     pub fn get_registration_proof(&self) -> &[u8] {
         &self.key.tee_linkable_attestation
     }
-
 
     pub fn get_anygroup_id(&self) -> EntityId {
         self.server_secrets.anytrust_group_id
