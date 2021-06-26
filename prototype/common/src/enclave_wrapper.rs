@@ -156,7 +156,7 @@ impl DcNetEnclave {
     /// new_sgx_protected_key creates a new key pair on P-256 and returns the sealed secret key.
     /// This method can be used for creating signing keys and KEM private keys.
     /// Use unseal_to_pubkey to unseal the key and compute its public key.
-    pub fn new_sgx_protected_secret_key(&self) -> EnclaveResult<SealedSgxSigningKey> {
+    pub fn new_sgx_protected_secret_key(&self) -> EnclaveResult<SealedPrivateKey> {
         // TODO: Ensure that 1024 is large enough for any sealed privkey
         let mut ret = SGX_SUCCESS;
 
@@ -181,13 +181,13 @@ impl DcNetEnclave {
         }
 
         // Package the output in the correct type
-        Ok(SealedSgxSigningKey(sealed_signing_key))
+        Ok(SealedPrivateKey(sealed_signing_key))
     }
 
     // unseal the key to see its public key
     pub fn unseal_to_public_key_on_p256(
         &self,
-        sealed_private_key: &SealedSgxSigningKey,
+        sealed_private_key: &SealedPrivateKey,
     ) -> EnclaveResult<SgxProtectedKeyPub> {
         let mut ret = SGX_SUCCESS;
 
@@ -220,45 +220,12 @@ impl DcNetEnclave {
         Ok(pubkey)
     }
 
-    /// get shared server keys
-    /// XXX: for testing purposes only
-    pub fn create_testing_shared_server_secrets(
-        &self,
-        num_of_keys: u32,
-    ) -> EnclaveResult<SealedServerSecrets> {
-        let mut output = Vec::new();
-        output.resize(150 * num_of_keys as usize, 0); // TODO: estimate AggregateBlob size more intelligently
-        println!("output cap {}", output.len());
-
-        // Call user_submit through FFI
-        let mut ret = sgx_status_t::default();
-        let call_ret = unsafe {
-            ecall_create_test_sealed_server_secrets(
-                self.enclave.geteid(),
-                &mut ret,
-                num_of_keys,
-                output.as_mut_ptr(),
-                output.len() as u32,
-            )
-        };
-
-        // Check for errors
-        if call_ret != SGX_SUCCESS {
-            return Err(call_ret.into());
-        }
-        if ret != SGX_SUCCESS {
-            return Err(ret.into());
-        }
-
-        Ok(SealedServerSecrets(output))
-    }
-
     /// Given a message and the relevant scheduling ticket, constructs a round message for sending
     /// to an aggregator
     pub fn user_submit_round_msg(
         &self,
         submission_req: &UserSubmissionReq,
-        sealed_usk: &SealedSgxSigningKey,
+        sealed_usk: &SealedPrivateKey,
     ) -> EnclaveResult<AggregateBlob> {
         let marshaled_req = serde_cbor::to_vec(&submission_req).map_err(|e| {
             println!("Error marshaling request {}", e);
@@ -318,7 +285,7 @@ impl DcNetEnclave {
         &self,
         agg: &mut MarshalledPartialAggregate,
         new_input: &AggregateBlob,
-        sealed_tee_signing_key: &SealedSgxSigningKey,
+        sealed_tee_signing_key: &SealedPrivateKey,
     ) -> EnclaveResult<()> {
         // This MUST check that the input blob is made wrt the same set of anytrust nodes
 
@@ -383,9 +350,9 @@ impl DcNetEnclave {
         Ok(())
     }
 
-    /// Derives shared secrets with all the given KEM pubkeys, and derives a new signing pubkey.
-    /// Returns sealed secrets, a sealed private key, and a registration message to send to an
-    /// anytrust node
+    /// Create a new TEE protected secret key. Derives shared secrets with all the given KEM pubkeys.
+    /// Returns UserRegistration that contains sealed secrets, a sealed private key, and attestation
+    /// information to send to anytrust nodes.
     pub fn register_user(&self, pubkeys: &[KemPubKey]) -> EnclaveResult<UserRegistration> {
         let marshaled_pubkeys = serde_cbor::to_vec(&pubkeys.to_vec()).map_err(|e| {
             println!("Error marshaling request {}", e);
@@ -431,12 +398,14 @@ impl DcNetEnclave {
         })?)
     }
 
+    /// Create a new TEE protected secret key. Derives shared secrets with all the given KEM pubkeys.
+    /// Returns UserRegistration that contains sealed secrets, a sealed private key, and attestation
+    /// information to send to anytrust nodes.
     /// Derives a new signing pubkey. Returns a sealed private key and a registration message to
     /// send to an anytrust node
     pub fn register_aggregator(
         &self,
-        pubkeys: &[KemPubKey],
-    ) -> EnclaveResult<(SealedSgxSigningKey, EntityId, AggRegistrationBlob)> {
+    ) -> EnclaveResult<(SealedPrivateKey, EntityId, AggRegistrationBlob)> {
         unimplemented!()
     }
 
@@ -456,21 +425,13 @@ mod enclave_tests {
     extern crate sgx_types;
 
     use hex::FromHex;
-    use interface::{
-        DcMessage, EntityId, SealedFootprintTicket, SealedServerSecrets, SealedSgxSigningKey,
-        UserSubmissionReq, DC_NET_MESSAGE_LENGTH, SEALED_SGX_SIGNING_KEY_LENGTH, USER_ID_LENGTH,
-    };
+    use interface::{DcMessage, EntityId, SealedFootprintTicket, SealedServerSecrets, SealedPrivateKey, UserSubmissionReq, DC_NET_MESSAGE_LENGTH, SEALED_SGX_SIGNING_KEY_LENGTH, USER_ID_LENGTH, SgxProtectedKeyPub};
     use sgx_types::SGX_ECP256_KEY_SIZE;
 
-    fn test_signing_key() -> SealedSgxSigningKey {
-        SealedSgxSigningKey(base64::decode(
+    fn test_signing_key() -> SealedPrivateKey {
+        SealedPrivateKey(base64::decode(
             "BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAN7O/UiywRKvGykkz2d1n86F3Ee9cYG212zsM6mkzty2AAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABDAAAAAAAAAAAAAAAAAAAASgAAAAAAAAAAAAAAAAAAALwYU8Fi7XsACgg9uG5vb1hPA5sGF2ssQZdAtstmyMyTfqMwk1r3GLx56xkE8hhFL1DD2jqtzybkJYTrkNoJMvSAxfETQxmA4X5nzQGOT2cj/3GTa2V5cGFpcgAAAAAAAA==")
             .unwrap())
-    }
-
-    fn test_shared_server_secrets() -> SealedServerSecrets {
-        // created by create_testing_shared_server_secrets(10)
-        SealedServerSecrets(hex::decode("04000200000000004820f3376ae6b2f2034d3b7a4b48a7780b000000000000ff0000000000000000bdd2616ea22efab3d32f46466a9c6cd538bf46a8c98db5e0437b0c1d0a257148000000f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005d0300000000000000000000000000005d030000000000000000000000000000ced52eba72745007790b35d748276c6257469e881d5c8587b1560c3d29781b23d6aacc8a525bcf88d756ebee98759b9f581b5b0519b0a545a04e7b4f160438e7e77e5c520745f6b1744fe17a8a235e58bdfedc6f4c3b176611cdf69356123861d1b4abc11cdfe0fb3ab7e20b2114f55ebcb5a26086791f16e4cb5386db908a4ccc36eba2f6790eb7abc104b365d7a66dd0154d5c56e91f65c932dafaf9a5eb28e0d026f4def2cb5ec0708288055e4ea0a772369343f93b0f37596f10bad8882484f9f0b77ab9947374ec8db320faf70db602a38085bfe53c9c172c47b61dc024a9b94b0efe5279c31bf7fec66c2a8b4c544f75675e57c3e161cdbed35a8cac573a6f7e715ecae7bc6d434ad37e0f42c31618c18875d134c3df5cb7b496c74b2c5b5daf8d1070ca287f16e0f3acdf57408ce5a4586a0d70ac3f3898fd2d3d2ca8f14d442d13b7ad98c338bdc31f7fd267f7d116aeb667a0530fbedee25e96e96b2c6459f7ca7843d8ce70fff6c38170b6afe43716826b413b2056300e23edd37c56bf9832fdc94acefeb036136b3be251a8f56b810d686f3e56b484c225e5ce0c2f99309b8e46f0328140a64fa2aa12ffe6e85c0e1e5c34ed9ae1743961e2c5180ea272592c970aa3e8e463312f10cfe535df6bc8cb74d402c360d30b4f7c26cc76c6d3acb3ea3e5118f2243eaa1c091cff5cae8a7d3b674f73a41342031821dd5370c30edfe262a1a99e74bfe0dd8e93e62d2a102d969a54c457daec3f32c0a3a1b47f083f6a40562b563fb646630bb2fafa8c8a556a165e8d077ee8e79e3272a13df9790147d95af439809ee457bf8de0e2392e385856dd5aaf7482c86aae4bd342c907b111f8a8922293a8085864c6a7c23e32549cf827c3b5cd730c5bf0f3bf455daeefc70d0ff7829e4ac8b4ff09d237c69e87bf85e75f68d3534ff0ca86da7662a5e746038c72ea5d30e04144b0dd1ea8f6e27fece080e34217e6e1c98e77a14d089efbcd12d77b082a6e0057abb980f2b33a31c63c249adcae073315670f56b1bba1020e0774b0499b66614a98b39b51c05444342bb13f754bd2d685dabb6bcc5647d653b91508aa7e329595f253e6b97c9f5d9ef6cb39b1845daf9ccc789cc5f55c883f0ec197225a4517207973e6134298357b4e311ceb333ca6149df00504ee39595ef50b0ae675c84c69ffd9dd5771ec027b46f54b790fb0c22c84270bfadd302288586d09e6cda700000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").unwrap())
     }
 
     #[test]
@@ -500,54 +461,79 @@ mod enclave_tests {
     #[test]
     fn user_submit_round_msg() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+
+        // create server public keys
+        let spks = create_server_pubkeys(&enc, 10);
+        let user_reg = enc.register_user(&spks).unwrap();
+
         let req_1 = UserSubmissionReq {
-            user_id: EntityId::default(),
-            anytrust_group_id: EntityId::default(),
+            user_id: user_reg.get_user_id(),
+            anytrust_group_id: user_reg.get_anygroup_id(),
             round: 0u32,
             msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket(vec![0; 1]),
-            shared_secrets: test_shared_server_secrets(),
+            shared_secrets: user_reg.get_sealed_server_secrets().to_owned(),
         };
         let sgx_key_sealed = test_signing_key();
         let resp_1 = enc.user_submit_round_msg(&req_1, &sgx_key_sealed).unwrap();
         enc.destroy();
     }
 
+    fn create_server_pubkeys(enc: &DcNetEnclave, num_of_servers: i32) -> Vec<SgxProtectedKeyPub> {
+        let mut pks = Vec::new();
+        for i in 0..num_of_servers {
+            let sk = enc.new_sgx_protected_secret_key().expect("key");
+            pks.push(enc.unseal_to_public_key_on_p256(&sk).expect("pk"));
+        }
+
+        pks
+    }
+
     #[test]
     fn aggregation() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
+        // create server public keys
+        let spks = create_server_pubkeys(&enc, 10);
+        let user_reg = enc.register_user(&spks).unwrap();
+        print!("user reg {:?}", user_reg);
+
         let req_1 = UserSubmissionReq {
-            user_id: EntityId::default(),
-            anytrust_group_id: EntityId::default(),
+            user_id: user_reg.get_user_id(),
+            anytrust_group_id: user_reg.get_anygroup_id(),
             round: 0u32,
             msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket(vec![0; 1]),
-            shared_secrets: test_shared_server_secrets(),
+            shared_secrets: user_reg.get_sealed_server_secrets().to_owned(),
         };
-        let sgx_key_sealed = test_signing_key();
 
-        let resp_1 = enc.user_submit_round_msg(&req_1, &sgx_key_sealed).unwrap();
+        let sealed_agg_tee_key = test_signing_key();
+
+        let resp_1 = enc.user_submit_round_msg(&req_1, &sealed_agg_tee_key).unwrap();
 
         let mut empty_agg = enc.new_aggregate(0, &EntityId::default()).unwrap();
-        enc.add_to_aggregate(&mut empty_agg, &resp_1, &sgx_key_sealed)
+        enc.add_to_aggregate(&mut empty_agg, &resp_1, &sealed_agg_tee_key)
             .unwrap();
 
         // this should error because user is already in
         assert!(enc
-            .add_to_aggregate(&mut empty_agg, &resp_1, &sgx_key_sealed)
+            .add_to_aggregate(&mut empty_agg, &resp_1, &sealed_agg_tee_key)
             .is_err());
 
+        let user_reg_2 = enc.register_user(&spks).unwrap();
+        print!("user reg 2 {:?}", user_reg_2);
+
         let req_2 = UserSubmissionReq {
-            user_id: EntityId::from([0xffu8; USER_ID_LENGTH]),
-            anytrust_group_id: EntityId::default(),
+            user_id: user_reg_2.get_user_id(),
+            anytrust_group_id: user_reg_2.get_anygroup_id(),
             round: 0u32,
             msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket(vec![0; 1]),
-            shared_secrets: test_shared_server_secrets(),
+            shared_secrets: user_reg_2.get_sealed_server_secrets().to_owned(),
         };
-        let resp_2 = enc.user_submit_round_msg(&req_2, &sgx_key_sealed).unwrap();
-        enc.add_to_aggregate(&mut empty_agg, &resp_2, &sgx_key_sealed)
+        let resp_2 = enc.user_submit_round_msg(&req_2, &sealed_agg_tee_key).unwrap();
+
+        enc.add_to_aggregate(&mut empty_agg, &resp_2, &sealed_agg_tee_key)
             .unwrap();
 
         enc.destroy();

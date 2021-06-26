@@ -10,10 +10,10 @@ use super::*;
 use sgx_types::sgx_ec256_dh_shared_t;
 use std::fmt::{Debug, Formatter};
 use types::{Xor, Zero};
+use std::collections::BTreeMap;
 
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
-#[serde(crate = "serde")]
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SharedServerSecret {
     secret: [u8; SGX_ECP256_KEY_SIZE],
     server_id: EntityId,
@@ -44,19 +44,47 @@ impl SharedServerSecret {
             server_id: Default::default(),
         }
     }
+}
 
-    pub fn derive_shared_server_secret(
-        my_sk: &SgxProtectedKeyPrivate,
-        server_pk: &SgxProtectedKeyPub,
-    ) -> SgxResult<SharedServerSecret> {
+/// A ServerSecrets consists of an array of shared secrets established between a user and with a
+/// group of any-trust server
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct SharedSecretsWithAnyTrustGroup {
+    pub user_id: EntityId,
+    pub anytrust_group_pairwise_keys: BTreeMap<SgxProtectedKeyPub, SharedServerSecret>,
+}
+
+use std::convert::TryFrom;
+
+impl SharedSecretsWithAnyTrustGroup {
+    pub fn derive_server_secrets(
+        my_sk: &SgxPrivateKey,
+        server_pks: &[SgxProtectedKeyPub],
+    ) -> SgxResult<Self> {
         let ecc_handle = SgxEccHandle::new();
         ecc_handle.open()?;
 
-        let shared_secret = ecc_handle.compute_shared_dhkey(&my_sk.into(), &server_pk.into())?;
-        Ok(SharedServerSecret {
-            secret: shared_secret.s,
-            server_id: EntityId::from(server_pk),
+        let mut server_secrets = BTreeMap::new();
+
+        for server_pk in server_pks.iter() {
+            let shared_secret = ecc_handle.compute_shared_dhkey(&my_sk.into(), &server_pk.into())?;
+            server_secrets.insert(server_pk.to_owned(), SharedServerSecret {
+                secret: shared_secret.s,
+                server_id: EntityId::from(server_pk),
+            });
+        }
+
+        let my_pk = SgxProtectedKeyPub::try_from(my_sk)?;
+
+        Ok(SharedSecretsWithAnyTrustGroup {
+            user_id: EntityId::from(&my_pk),
+            anytrust_group_pairwise_keys: server_secrets,
         })
+    }
+
+    pub fn anytrust_group_id(&self) -> EntityId {
+        let keys: Vec<SgxProtectedKeyPub> = self.anytrust_group_pairwise_keys.keys().cloned().collect();
+        compute_anytrust_group_id(&keys)
     }
 }
 
@@ -96,11 +124,11 @@ impl Display for RoundSecret {
 /// Derives a RoundSecret as the XOR of `HKDF(server_secrets[i], round)` for all `i` in `0`...`len(server_secrets)`
 pub fn derive_round_secret(
     round: u32,
-    server_secrets: &Vec<SharedServerSecret>,
+    server_secrets: &SharedSecretsWithAnyTrustGroup,
 ) -> CryptoResult<RoundSecret> {
     let mut round_secret = [0; DC_NET_MESSAGE_LENGTH];
 
-    for server_secret in server_secrets.iter() {
+    for (_, server_secret) in server_secrets.anytrust_group_pairwise_keys.iter() {
         let hk = Hkdf::<Sha256>::new(None, &server_secret.secret);
         let mut derived_secret = [0; DC_NET_MESSAGE_LENGTH];
 

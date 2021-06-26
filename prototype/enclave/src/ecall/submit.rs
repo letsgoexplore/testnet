@@ -9,7 +9,7 @@ use std::prelude::v1::*;
 use std::slice;
 
 use crypto;
-use crypto::{SgxSigningKey, SignMutable};
+use crypto::{SgxSigningKey, SignMutable, SharedSecretsWithAnyTrustGroup};
 
 use self::interface::*;
 use crypto::SharedServerSecret;
@@ -18,34 +18,13 @@ use messages_types::SignedUserMessage;
 use types::*;
 use utils;
 
-// the safe version
-// fn user_submit_internal(request: &UserSubmissionReq, tee_sk: &SgxSigningKey) -> DcNetResult<SignedUserMessage> {
-// unseal shared server secrets
-
-// derive the round key from shared secrets
-// let round_key = crypto::derive_round_secret(
-//     request.round, &request.shared_secrets)?;
-// unimplemented!();
-// let encrypted_msg = round_key.encrypt(&request.message);
-// let mut mutable = SignedUserMessage {
-//     user_id: request.user_id,
-//     round: request.round,
-//     message: encrypted_msg,
-//     tee_sig: Default::default(),
-//     tee_pk: Default::default(),
-// };
-//
-// mutable.sign_mut(tee_sk).map_err(DcNetError::from)?;
-//
-// Ok(mutable)
-// }
 
 use std::convert::TryFrom;
 
 pub fn user_submit_internal(
     send_request: &UserSubmissionReq,
     tee_prv_key: &SgxSigningKey,
-    shared_server_secrets: &Vec<SharedServerSecret>,
+    shared_server_secrets: &SharedSecretsWithAnyTrustGroup,
 ) -> SgxResult<SignedUserMessage> {
     println!("got request {:?}", send_request);
 
@@ -60,7 +39,7 @@ pub fn user_submit_internal(
 
     // 3) derive the round key from shared secrets
     // TODO: check shared_server_secrets correspond to anytrust_group_id
-    println!("using {} servers", shared_server_secrets.len());
+    println!("using {} servers", shared_server_secrets.anytrust_group_pairwise_keys.len());
 
     let round_key = crypto::derive_round_secret(send_request.round, &shared_server_secrets)
         .map_err(|e| SGX_ERROR_INVALID_PARAMETER)?;
@@ -69,8 +48,6 @@ pub fn user_submit_internal(
 
     // encrypt the message with round_key
     let encrypted_msg = round_key.encrypt(&send_request.msg);
-
-    println!("encrypted message {}", hex::encode(encrypted_msg.0));
 
     // FIXME: add missing default fields
     let mut mutable = SignedUserMessage {
@@ -114,7 +91,7 @@ pub extern "C" fn ecall_user_submit(
         sealed_tee_prv_key_len
     );
     let shared_server_secrets =
-        unseal_vec_or_abort!(Vec<SharedServerSecret>, &send_request.shared_secrets.0);
+        unseal_vec_or_abort!(SharedSecretsWithAnyTrustGroup, &send_request.shared_secrets.sealed_server_secrets);
 
     // Forward ecall to the internal call
     let signed_msg = unwrap_or_abort!(

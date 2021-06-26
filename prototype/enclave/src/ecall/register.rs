@@ -8,9 +8,10 @@ use sgx_types::{sgx_sealed_data_t, sgx_status_t};
 use sgx_rand::Rng;
 use sgx_tseal::SgxSealedData;
 use std::slice;
+use std::string::ToString;
 
 use core::convert::TryFrom;
-use crypto::{KemKeyPair, SgxProtectedKeyPrivate, SharedServerSecret};
+use crypto::{KemKeyPair, SgxPrivateKey, SharedSecretsWithAnyTrustGroup, SharedServerSecret};
 
 use sgx_types::sgx_status_t::{
     SGX_ERROR_FAAS_BUFFER_TOO_SHORT, SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED,
@@ -19,13 +20,13 @@ use sgx_types::sgx_status_t::{
 
 use utils;
 
-pub fn new_p256_secret_key() -> SgxResult<(SgxProtectedKeyPrivate, SgxProtectedKeyPub)> {
+pub fn new_p256_secret_key() -> SgxResult<(SgxPrivateKey, SgxProtectedKeyPub)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
         println!("cant create rand {}", e);
         SGX_ERROR_UNEXPECTED
     })?;
     // generate a random secret key
-    let sk = rand.gen::<SgxProtectedKeyPrivate>();
+    let sk = rand.gen::<SgxPrivateKey>();
 
     // make sure sk is a valid private key
     let pk = SgxSigningPubKey::try_from(&sk)?;
@@ -56,7 +57,7 @@ pub extern "C" fn ecall_unseal_to_pubkey(
     out_x: *mut u8,
     out_y: *mut u8,
 ) -> sgx_status_t {
-    let sk = unseal_or_abort!(SgxProtectedKeyPrivate, inp, inp_len as usize);
+    let sk = unseal_or_abort!(SgxPrivateKey, inp, inp_len as usize);
     let pk = unwrap_or_abort!(SgxSigningPubKey::try_from(&sk), SGX_ERROR_INVALID_PARAMETER);
     unsafe {
         out_x.copy_from(pk.gx.as_ptr(), pk.gx.len());
@@ -118,30 +119,20 @@ pub fn register_user_internal(anytrust_server_pks: &[KemPubKey]) -> SgxResult<Us
     // 1. generate a SGX protected key. used for both signing and round key derivation
     let (user_sk, user_pk) = new_p256_secret_key()?;
 
-    // 2. derive shared keys
-    let shared_server_secrets_result: SgxResult<Vec<_>> = anytrust_server_pks
-        .iter()
-        .map(|pk| SharedServerSecret::derive_shared_server_secret(&user_sk, pk))
-        .collect();
+    // 2. derive server secrets
+    let server_secrets = SharedSecretsWithAnyTrustGroup::derive_server_secrets(&user_sk, anytrust_server_pks)?;
 
-    let shared_server_secrets = match shared_server_secrets_result {
-        Ok(sss) => sss,
-        Err(e) => {
-            println!("can't derived shared server secrets {}", e);
-            return Err(e);
-        }
-    };
-
-    // serialize
-    let sealed_shared_server_secrets =
-        ser_and_seal_to_vec(&shared_server_secrets, "shared secrets".as_bytes())?;
-
-    Ok(UserRegistration {
-        user_id: EntityId::from(&user_pk),
-        sealed_shared_server_secrets: SealedServerSecrets(sealed_shared_server_secrets),
-        anytrust_group_id: interface::compute_anytrust_group_id(anytrust_server_pks),
-        sealed_sk: SealedSgxSigningKey(utils::ser_and_seal_secret_key(&user_sk)?),
-        attestation: vec![], // TODO: add attestation
-        anytrust_group_pks: anytrust_server_pks.iter().cloned().collect(),
-    })
+    Ok(UserRegistration::new(
+        SgxProtectedKeyPair {
+            sealed_sk: SealedPrivateKey(utils::ser_and_seal_secret_key(&user_sk)?),
+            pk: user_pk,
+            role: "client".to_string(),
+            tee_linkable_attestation: vec![],
+        },
+        SealedServerSecrets {
+            user_id: EntityId::from(&user_pk),
+            anytrust_group_id: server_secrets.anytrust_group_id(),
+            server_public_keys: server_secrets.anytrust_group_pairwise_keys.keys().cloned().collect(),
+            sealed_server_secrets: ser_and_seal_to_vec(&server_secrets, "shared secrets".as_bytes())?,
+        }))
 }

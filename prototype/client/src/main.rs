@@ -12,7 +12,7 @@ pub mod dc_proto {
 
 use interface::{
     compute_group_id, DcMessage, EntityId, KemPubKey, SealedFootprintTicket, SealedServerSecrets,
-    SealedSgxSigningKey, UserSubmissionReq,
+    SealedPrivateKey, UserSubmissionReq,
 };
 
 use rand::Rng;
@@ -25,7 +25,7 @@ struct UserState<'a> {
     /// A unique for the set anytrust servers that this client is registered with
     anytrust_group_id: EntityId,
     /// This client's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedSgxSigningKey,
+    signing_key: SealedPrivateKey,
     /// The secrets that this client shares with the anytrust servers. Can only be accessed from
     /// within the enclave.
     shared_secrets: SealedServerSecrets,
@@ -36,10 +36,10 @@ fn register_user(
     pubkeys: Vec<KemPubKey>,
 ) -> Result<(UserState, SgxMsg), Box<dyn Error>> {
     let user_registration = enclave.register_user(&pubkeys)?;
-    let sealed_shared_secrets = user_registration.sealed_shared_server_secrets;
-    let sealed_usk = user_registration.sealed_sk;
-    let user_id = user_registration.user_id;
-    let reg_data = user_registration.attestation;
+    let sealed_shared_secrets = user_registration.get_sealed_server_secrets();
+    let sealed_usk = user_registration.get_sealed_usk();
+    let user_id = user_registration.get_user_id();
+    let reg_data = user_registration.get_registration_proof();
 
     let anytrust_ids: BTreeSet<EntityId> = pubkeys.iter().map(|pk| pk.get_entity_id()).collect();
     let anytrust_group_id = compute_group_id(&anytrust_ids);
@@ -48,10 +48,10 @@ fn register_user(
         user_id,
         anytrust_group_id,
         enclave,
-        signing_key: sealed_usk,
-        shared_secrets: sealed_shared_secrets,
+        signing_key: sealed_usk.to_owned(),
+        shared_secrets: sealed_shared_secrets.to_owned(),
     };
-    let msg = SgxMsg { payload: reg_data };
+    let msg = SgxMsg { payload: reg_data.to_vec() };
 
     Ok((state, msg))
 }

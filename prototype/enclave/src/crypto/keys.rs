@@ -6,20 +6,20 @@ use std::fmt::{Debug, Display, Formatter};
 
 // A wrapper around sgx_ec256_private_t
 #[derive(Copy, Clone, Default, Serialize, Deserialize)]
-pub struct SgxProtectedKeyPrivate {
+pub struct SgxPrivateKey {
     pub r: [u8; SGX_ECP256_KEY_SIZE],
 }
 
-impl Rand for SgxProtectedKeyPrivate {
+impl Rand for SgxPrivateKey {
     fn rand<R: Rng>(rng: &mut R) -> Self {
         let mut r = [0 as u8; SGX_ECP256_KEY_SIZE];
         rng.fill_bytes(&mut r);
 
-        SgxProtectedKeyPrivate { r }
+        SgxPrivateKey { r }
     }
 }
 
-impl Debug for SgxProtectedKeyPrivate {
+impl Debug for SgxPrivateKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SK")
             .field("r", &hex::encode(&self.r))
@@ -27,31 +27,31 @@ impl Debug for SgxProtectedKeyPrivate {
     }
 }
 
-impl Display for SgxProtectedKeyPrivate {
+impl Display for SgxPrivateKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         std::write!(f, "{}", hex::encode(self.r))
     }
 }
 
-impl From<sgx_ec256_private_t> for SgxProtectedKeyPrivate {
+impl From<sgx_ec256_private_t> for SgxPrivateKey {
     fn from(sgx_prv_key: sgx_ec256_private_t) -> Self {
         return Self { r: sgx_prv_key.r };
     }
 }
 
-impl Into<sgx_ec256_private_t> for SgxProtectedKeyPrivate {
+impl Into<sgx_ec256_private_t> for SgxPrivateKey {
     fn into(self) -> sgx_ec256_private_t {
         return sgx_ec256_private_t { r: self.r };
     }
 }
 
-impl Into<sgx_ec256_private_t> for &SgxProtectedKeyPrivate {
+impl Into<sgx_ec256_private_t> for &SgxPrivateKey {
     fn into(self) -> sgx_ec256_private_t {
         return sgx_ec256_private_t { r: self.r };
     }
 }
 
-impl TryFrom<&SgxProtectedKeyPrivate> for SgxProtectedKeyPub {
+impl TryFrom<&SgxPrivateKey> for SgxProtectedKeyPub {
     type Error = sgx_status_t;
 
     fn try_from(prv_key: &KemPrvKey) -> Result<Self, Self::Error> {
@@ -60,8 +60,8 @@ impl TryFrom<&SgxProtectedKeyPrivate> for SgxProtectedKeyPub {
 }
 
 // KemPrvKey and SgxSigningKey are aliases to SgxProtectedPrivateKey
-pub type KemPrvKey = SgxProtectedKeyPrivate;
-pub type SgxSigningKey = SgxProtectedKeyPrivate;
+pub type KemPrvKey = SgxPrivateKey;
+pub type SgxSigningKey = SgxPrivateKey;
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize)]
 pub struct KemKeyPair {

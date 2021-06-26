@@ -1,4 +1,4 @@
-use crypto::{KemPrvKey, SgxProtectedKeyPrivate, SgxSigningKey};
+use crypto::{KemPrvKey, SgxPrivateKey, SgxSigningKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
@@ -93,6 +93,6 @@ pub unsafe fn unseal_ptr_and_deser<T: DeserializeOwned>(
 
 // ser/de for specific types
 
-pub fn ser_and_seal_secret_key(sk: &SgxProtectedKeyPrivate) -> SgxResult<Vec<u8>> {
+pub fn ser_and_seal_secret_key(sk: &SgxPrivateKey) -> SgxResult<Vec<u8>> {
     ser_and_seal_to_vec(sk, "private key".as_bytes())
 }

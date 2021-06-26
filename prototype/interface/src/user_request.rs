@@ -143,10 +143,7 @@ impl Debug for UserSubmissionReq {
             .field("round", &self.round)
             .field("msg", &self.msg)
             .field("ticket", &"empty for now")
-            .field(
-                "shared_secrets",
-                &format!("sealed secrets of length {}", self.shared_secrets.0.len()),
-            )
+            .field("shared_secrets", &self.shared_secrets)
             .finish()
     }
 }
@@ -154,10 +151,36 @@ impl Debug for UserSubmissionReq {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct UserRegistration {
-    pub user_id: EntityId,
-    pub sealed_sk: SealedSgxSigningKey,
-    pub sealed_shared_server_secrets: SealedServerSecrets,
-    pub anytrust_group_id: EntityId,
-    pub attestation: Vec<u8>,
-    pub anytrust_group_pks: BTreeSet<KemPubKey>,
+    key: SgxProtectedKeyPair,
+    server_secrets: SealedServerSecrets,
+}
+
+impl UserRegistration {
+    pub fn new(key: SgxProtectedKeyPair,
+               server_secrets: SealedServerSecrets, ) -> Self {
+        UserRegistration {
+            key,
+            server_secrets,
+        }
+    }
+    pub fn get_user_id(&self) -> EntityId {
+        EntityId::from(&self.key.pk)
+    }
+
+    pub fn get_sealed_server_secrets(&self) -> &SealedServerSecrets {
+        &self.server_secrets
+    }
+
+    pub fn get_sealed_usk(&self) -> &SealedPrivateKey {
+        &self.key.sealed_sk
+    }
+
+    pub fn get_registration_proof(&self) -> &[u8] {
+        &self.key.tee_linkable_attestation
+    }
+
+
+    pub fn get_anygroup_id(&self) -> EntityId {
+        self.server_secrets.anytrust_group_id
+    }
 }
