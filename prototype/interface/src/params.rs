@@ -11,5 +11,5 @@ pub const SERVER_KEY_LENGTH: usize = DC_NET_MESSAGE_LENGTH;
 pub const FOOTPRINT_BIT_SIZE: usize = 3;
 
 /// The size of a sealed secret key. Although the secret key is only 32-byte, the sealed version is
-/// quite large and we can't go much smaller than 640.
-pub const SEALED_SGX_SIGNING_KEY_LENGTH: usize = 640;
+/// quite large and we can't go much smaller than 1024.
+pub const SEALED_SGX_SIGNING_KEY_LENGTH: usize = 1024;

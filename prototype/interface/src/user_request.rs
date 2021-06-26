@@ -85,6 +85,21 @@ impl From<[u8; USER_ID_LENGTH]> for EntityId {
     }
 }
 
+impl From<&SgxProtectedKeyPub> for EntityId {
+    fn from(pk: &SgxProtectedKeyPub) -> Self {
+        let mut hasher = Sha256::new();
+        hasher.update("anytrust_group_id");
+        hasher.update(pk.gx);
+        hasher.update(pk.gy);
+
+        let digest = hasher.finalize();
+
+        let mut id = EntityId::default();
+        id.0.copy_from_slice(&digest);
+        id
+    }
+}
+
 /// Computes a group ID given a list of entity IDs
 pub fn compute_group_id(ids: &BTreeSet<EntityId>) -> EntityId {
     // The group ID of a set of entities is the hash of their IDs, concatenated in ascending order.
@@ -101,26 +116,8 @@ pub fn compute_group_id(ids: &BTreeSet<EntityId>) -> EntityId {
     id
 }
 
-pub fn compute_anytrust_group_id(keys: &Vec<KemPubKey>) -> EntityId {
-    let mut entity_ids: Vec<EntityId> =
-        keys.iter().map(|k: &KemPubKey| k.get_entity_id()).collect();
-
-    // TODO: test if this does the thing
-    entity_ids.sort();
-
-    // hash everything
-    let mut hasher = Sha256::new();
-    hasher.update("dcnetid");
-    for eid in entity_ids.iter() {
-        hasher.update(eid.0);
-    }
-
-    let digest = hasher.finalize();
-
-    let mut id = EntityId::default();
-    id.0.copy_from_slice(&digest);
-
-    id
+pub fn compute_anytrust_group_id(keys: &[KemPubKey]) -> EntityId {
+    compute_group_id(&keys.iter().map(|pk| EntityId::from(pk)).collect())
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -152,4 +149,15 @@ impl Debug for UserSubmissionReq {
             )
             .finish()
     }
+}
+
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Debug, Deserialize)]
+pub struct UserRegistration {
+    pub user_id: EntityId,
+    pub sealed_sk: SealedSgxSigningKey,
+    pub sealed_shared_server_secrets: SealedServerSecrets,
+    pub anytrust_group_id: EntityId,
+    pub attestation: Vec<u8>,
+    pub anytrust_group_pks: BTreeSet<KemPubKey>,
 }

@@ -103,6 +103,16 @@ extern "C" {
         out_buf: *mut u8,
         out_buf_cap: u32,
     ) -> sgx_status_t;
+
+    fn ecall_register_user(
+        eid: sgx_enclave_id_t,
+        retval: *mut sgx_status_t,
+        marshalled_server_pks_ptr: *const u8,
+        marshalled_server_pks_len: usize,
+        output_buf: *mut u8,
+        output_buf_cap: usize,
+        output_buf_used: *mut usize,
+    ) -> sgx_status_t;
 }
 
 #[derive(Debug, Default)]
@@ -146,19 +156,19 @@ impl DcNetEnclave {
     /// new_sgx_protected_key creates a new key pair on P-256 and returns the sealed secret key.
     /// This method can be used for creating signing keys and KEM private keys.
     /// Use unseal_to_pubkey to unseal the key and compute its public key.
-    pub fn new_sgx_protected_secret_key(&self) -> EnclaveResult<SealedSigningKey> {
+    pub fn new_sgx_protected_secret_key(&self) -> EnclaveResult<SealedSgxSigningKey> {
         // TODO: Ensure that 1024 is large enough for any sealed privkey
         let mut ret = SGX_SUCCESS;
 
-        let mut sealed_signing_key = SealedSigningKey::default();
+        let mut sealed_signing_key = vec![0u8; 1024];
 
         // Call keygen through FFI
         let call_ret = unsafe {
             ecall_new_sgx_signing_key(
                 self.enclave.geteid(),
                 &mut ret,
-                sealed_signing_key.0.as_mut_ptr(),
-                sealed_signing_key.0.len() as u32,
+                sealed_signing_key.as_mut_ptr(),
+                sealed_signing_key.len() as u32,
             )
         };
 
@@ -171,13 +181,13 @@ impl DcNetEnclave {
         }
 
         // Package the output in the correct type
-        Ok(sealed_signing_key)
+        Ok(SealedSgxSigningKey(sealed_signing_key))
     }
 
     // unseal the key to see its public key
     pub fn unseal_to_public_key_on_p256(
         &self,
-        sealed_private_key: &SealedSigningKey,
+        sealed_private_key: &SealedSgxSigningKey,
     ) -> EnclaveResult<SgxProtectedKeyPub> {
         let mut ret = SGX_SUCCESS;
 
@@ -248,7 +258,7 @@ impl DcNetEnclave {
     pub fn user_submit_round_msg(
         &self,
         submission_req: &UserSubmissionReq,
-        sealed_usk: &SealedSigningKey,
+        sealed_usk: &SealedSgxSigningKey,
     ) -> EnclaveResult<AggregateBlob> {
         let marshaled_req = serde_cbor::to_vec(&submission_req).map_err(|e| {
             println!("Error marshaling request {}", e);
@@ -308,7 +318,7 @@ impl DcNetEnclave {
         &self,
         agg: &mut MarshalledPartialAggregate,
         new_input: &AggregateBlob,
-        sealed_tee_signing_key: &SealedSigningKey,
+        sealed_tee_signing_key: &SealedSgxSigningKey,
     ) -> EnclaveResult<()> {
         // This MUST check that the input blob is made wrt the same set of anytrust nodes
 
@@ -351,10 +361,10 @@ impl DcNetEnclave {
         Ok(())
     }
 
-    //  TODO: Make these blobs different newtypes
-
     /// Constructs an aggregate message from the given state. The returned blob is to be sent to
     /// the parent aggregator or an anytrust server.
+    /// TODO: 1) what is this supposed to achieve? i.e., no why just send partial aggregate to the any trust server?
+    /// TODO: 2) should AggregateBlob contain all of the user ids? If so, AggregateBlob is also the result of user_submit which contains only one user id.
     pub fn finalize_aggregate(
         &self,
         agg: &MarshalledPartialAggregate,
@@ -376,16 +386,49 @@ impl DcNetEnclave {
     /// Derives shared secrets with all the given KEM pubkeys, and derives a new signing pubkey.
     /// Returns sealed secrets, a sealed private key, and a registration message to send to an
     /// anytrust node
-    pub fn register_user(
-        &self,
-        pubkeys: &[KemPubKey],
-    ) -> EnclaveResult<(
-        SealedServerSecrets,
-        SealedSigningKey,
-        EntityId,
-        UserRegistrationBlob,
-    )> {
-        unimplemented!()
+    pub fn register_user(&self, pubkeys: &[KemPubKey]) -> EnclaveResult<UserRegistration> {
+        let marshaled_pubkeys = serde_cbor::to_vec(&pubkeys.to_vec()).map_err(|e| {
+            println!("Error marshaling request {}", e);
+            EnclaveError {
+                e: SGX_ERROR_INVALID_PARAMETER,
+            }
+        })?;
+
+        // todo: make sure this is big enough
+        let mut output = vec![0; 10240];
+        let mut output_bytes_written: usize = 0;
+
+        let mut ret = sgx_status_t::default();
+
+        // Call aggregate through FFI
+        let ecall_ret = unsafe {
+            ecall_register_user(
+                self.get_eid(),
+                &mut ret,
+                marshaled_pubkeys.as_ptr(),
+                marshaled_pubkeys.len(),
+                output.as_mut_ptr(),
+                output.len(),
+                &mut output_bytes_written,
+            )
+        };
+
+        // Check for errors
+        if ecall_ret != SGX_SUCCESS {
+            return Err(ecall_ret.into());
+        }
+        if ret != SGX_SUCCESS {
+            return Err(ret.into());
+        }
+
+        output.resize(output_bytes_written, 0);
+
+        Ok(serde_cbor::from_slice(&output).map_err(|e| {
+            println!("Error marshaling request {}", e);
+            EnclaveError {
+                e: SGX_ERROR_INVALID_PARAMETER,
+            }
+        })?)
     }
 
     /// Derives a new signing pubkey. Returns a sealed private key and a registration message to
@@ -393,7 +436,7 @@ impl DcNetEnclave {
     pub fn register_aggregator(
         &self,
         pubkeys: &[KemPubKey],
-    ) -> EnclaveResult<(SealedSigningKey, EntityId, AggRegistrationBlob)> {
+    ) -> EnclaveResult<(SealedSgxSigningKey, EntityId, AggRegistrationBlob)> {
         unimplemented!()
     }
 
@@ -414,26 +457,15 @@ mod enclave_tests {
 
     use hex::FromHex;
     use interface::{
-        DcMessage, EntityId, SealedFootprintTicket, SealedServerSecrets, SealedSigningKey,
+        DcMessage, EntityId, SealedFootprintTicket, SealedServerSecrets, SealedSgxSigningKey,
         UserSubmissionReq, DC_NET_MESSAGE_LENGTH, SEALED_SGX_SIGNING_KEY_LENGTH, USER_ID_LENGTH,
     };
     use sgx_types::SGX_ECP256_KEY_SIZE;
 
-    fn test_signing_key() -> SealedSigningKey {
-        let bytes = base64::decode(
+    fn test_signing_key() -> SealedSgxSigningKey {
+        SealedSgxSigningKey(base64::decode(
             "BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAN7O/UiywRKvGykkz2d1n86F3Ee9cYG212zsM6mkzty2AAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABDAAAAAAAAAAAAAAAAAAAASgAAAAAAAAAAAAAAAAAAALwYU8Fi7XsACgg9uG5vb1hPA5sGF2ssQZdAtstmyMyTfqMwk1r3GLx56xkE8hhFL1DD2jqtzybkJYTrkNoJMvSAxfETQxmA4X5nzQGOT2cj/3GTa2V5cGFpcgAAAAAAAA==")
-            .unwrap();
-
-        let mut ssk = SealedSigningKey::default();
-        if bytes.len() > SEALED_SGX_SIGNING_KEY_LENGTH {
-            panic!("SealedSigningKey too long")
-        }
-
-        for i in 0..SEALED_SGX_SIGNING_KEY_LENGTH {
-            ssk.0[i] = bytes[i];
-        }
-
-        ssk
+            .unwrap())
     }
 
     fn test_shared_server_secrets() -> SealedServerSecrets {
@@ -517,6 +549,24 @@ mod enclave_tests {
         let resp_2 = enc.user_submit_round_msg(&req_2, &sgx_key_sealed).unwrap();
         enc.add_to_aggregate(&mut empty_agg, &resp_2, &sgx_key_sealed)
             .unwrap();
+
+        enc.destroy();
+    }
+
+    use rand;
+
+    #[test]
+    fn register() {
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+
+        let mut pks = Vec::new();
+        for i in 0..10 {
+            let sk = enc.new_sgx_protected_secret_key().expect("key");
+            pks.push(enc.unseal_to_public_key_on_p256(&sk).expect("pk"));
+        }
+
+        let user_reg = enc.register_user(&pks).unwrap();
+        print!("user reg {:?}", user_reg);
 
         enc.destroy();
     }

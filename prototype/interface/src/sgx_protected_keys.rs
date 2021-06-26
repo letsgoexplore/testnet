@@ -16,17 +16,13 @@ use sha2::{Digest, Sha256};
 
 // A wrapper around sgx_ec256_public_t
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
 pub struct SgxProtectedKeyPub {
     pub gx: [u8; SGX_ECP256_KEY_SIZE],
     pub gy: [u8; SGX_ECP256_KEY_SIZE],
 }
 
-// KemPubKey and SgxSigningPubKey are just aliases to SgxProtectedKeyPub
-pub type KemPubKey = SgxProtectedKeyPub;
-pub type SgxSigningPubKey = SgxProtectedKeyPub;
-
-impl Debug for KemPubKey {
+impl Debug for SgxProtectedKeyPub {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("PK")
             .field("x", &hex::encode(&self.gx))
@@ -35,13 +31,13 @@ impl Debug for KemPubKey {
     }
 }
 
-impl Display for KemPubKey {
+impl Display for SgxProtectedKeyPub {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         std::write!(f, "({}, {})", hex::encode(self.gx), hex::encode(self.gy))
     }
 }
 
-impl From<sgx_ec256_public_t> for KemPubKey {
+impl From<sgx_ec256_public_t> for SgxProtectedKeyPub {
     fn from(sgx_ec_pubkey: sgx_ec256_public_t) -> Self {
         return Self {
             gx: sgx_ec_pubkey.gx,
@@ -50,7 +46,7 @@ impl From<sgx_ec256_public_t> for KemPubKey {
     }
 }
 
-impl Into<sgx_ec256_public_t> for KemPubKey {
+impl Into<sgx_ec256_public_t> for SgxProtectedKeyPub {
     fn into(self) -> sgx_ec256_public_t {
         sgx_ec256_public_t {
             gx: self.gx,
@@ -59,7 +55,16 @@ impl Into<sgx_ec256_public_t> for KemPubKey {
     }
 }
 
-impl KemPubKey {
+impl Into<sgx_ec256_public_t> for &SgxProtectedKeyPub {
+    fn into(self) -> sgx_ec256_public_t {
+        sgx_ec256_public_t {
+            gx: self.gx,
+            gy: self.gy,
+        }
+    }
+}
+
+impl SgxProtectedKeyPub {
     /// Computes the entity ID corresponding to this KEM pubkey
     pub fn get_entity_id(&self) -> EntityId {
         // The entity ID is just H("ent" || x || y).
@@ -87,3 +92,7 @@ impl KemPubKey {
         return Self { gx, gy };
     }
 }
+
+// KemPubKey and SgxSigningPubKey are just aliases to SgxProtectedKeyPub
+pub type KemPubKey = SgxProtectedKeyPub;
+pub type SgxSigningPubKey = SgxProtectedKeyPub;

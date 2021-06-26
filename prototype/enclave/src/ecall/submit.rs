@@ -40,6 +40,8 @@ use utils;
 // Ok(mutable)
 // }
 
+use std::convert::TryFrom;
+
 pub fn user_submit_internal(
     send_request: &UserSubmissionReq,
     tee_prv_key: &SgxSigningKey,
@@ -53,7 +55,7 @@ pub fn user_submit_internal(
     // 2) unseal private key
     println!(
         "using signing (pub) key {}",
-        tee_prv_key.try_get_public_key()?
+        SgxProtectedKeyPub::try_from(tee_prv_key)?
     );
 
     // 3) derive the round key from shared secrets
@@ -92,7 +94,7 @@ pub fn user_submit_internal(
 
 use sgx_types::sgx_status_t::SGX_SUCCESS;
 use sgx_types::{SgxError, SgxResult};
-use utils::{unseal_from_ptr_and_deser, unseal_from_vec_and_deser};
+use utils::{unseal_ptr_and_deser, unseal_vec_and_deser};
 
 #[no_mangle]
 pub extern "C" fn ecall_user_submit(

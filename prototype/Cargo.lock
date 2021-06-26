@@ -196,6 +196,7 @@ dependencies = [
  "sgx_rand",
  "sgx_tcrypto",
  "sgx_trts",
+ "sgx_tse",
  "sgx_tseal",
  "sgx_tstd",
  "sgx_tunittest",

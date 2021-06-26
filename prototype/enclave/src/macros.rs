@@ -1,3 +1,5 @@
+use std::slice;
+
 #[macro_export]
 macro_rules! unwrap_or_abort {
     ( $e:expr, $return: expr ) => {
@@ -26,7 +28,7 @@ macro_rules! unmarshal_or_abort {
 
 macro_rules! unseal_or_abort {
     ( $T:ty, $ptr:expr,$len:expr ) => {
-        match unsafe { utils::unseal_from_ptr_and_deser::<$T>($ptr, $len) } {
+        match unsafe { utils::unseal_ptr_and_deser::<$T>($ptr, $len) } {
             Ok(x) => x,
             Err(e) => {
                 println!("can't unseal {}", e);
@@ -38,7 +40,7 @@ macro_rules! unseal_or_abort {
 
 macro_rules! unseal_vec_or_abort {
     ( $T:ty, $vec:expr) => {
-        match unsafe { utils::unseal_from_vec_and_deser::<$T>($vec) } {
+        match unsafe { utils::unseal_vec_and_deser::<$T>($vec) } {
             Ok(x) => x,
             Err(e) => {
                 println!("can't unseal {}", e);

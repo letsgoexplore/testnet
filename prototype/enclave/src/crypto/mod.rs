@@ -45,5 +45,5 @@ mod sgx_signature;
 mod sig;
 
 pub use self::dining_crypto::{derive_round_secret, SharedServerSecret};
-pub use self::keys::{KemKeyPair, KemPrvKey, SgxSigningKey};
+pub use self::keys::*;
 pub use self::sgx_signature::SgxSignature;

@@ -5,6 +5,7 @@ extern crate sgx_types;
 extern crate sgx_tstd as std;
 extern crate interface;
 extern crate sgx_tcrypto;
+extern crate sgx_tse;
 extern crate sgx_tunittest;
 
 #[macro_use]
@@ -26,6 +27,7 @@ big_array! { BigArray; }
 use sgx_types::*;
 
 extern crate sgx_rand;
+extern crate sgx_trts;
 extern crate sgx_tseal;
 
 #[macro_use]

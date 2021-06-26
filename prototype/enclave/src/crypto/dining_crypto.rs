@@ -19,6 +19,15 @@ pub struct SharedServerSecret {
     server_id: EntityId,
 }
 
+impl From<sgx_ec256_dh_shared_t> for SharedServerSecret {
+    fn from(s: sgx_ec256_dh_shared_t) -> Self {
+        Self {
+            secret: s.s,
+            server_id: Default::default(),
+        }
+    }
+}
+
 impl Debug for SharedServerSecret {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("PK")
@@ -34,6 +43,20 @@ impl SharedServerSecret {
             secret: [byte; SGX_ECP256_KEY_SIZE],
             server_id: Default::default(),
         }
+    }
+
+    pub fn derive_shared_server_secret(
+        my_sk: &SgxProtectedKeyPrivate,
+        server_pk: &SgxProtectedKeyPub,
+    ) -> SgxResult<SharedServerSecret> {
+        let ecc_handle = SgxEccHandle::new();
+        ecc_handle.open()?;
+
+        let shared_secret = ecc_handle.compute_shared_dhkey(&my_sk.into(), &server_pk.into())?;
+        Ok(SharedServerSecret {
+            secret: shared_secret.s,
+            server_id: EntityId::from(server_pk),
+        })
     }
 }
 
@@ -57,6 +80,7 @@ impl RoundSecret {
     }
 }
 
+use sgx_tcrypto::SgxEccHandle;
 use std::fmt::Display;
 use std::fmt::Result as FmtResult;
 
