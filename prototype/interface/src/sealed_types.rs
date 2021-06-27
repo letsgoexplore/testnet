@@ -1,11 +1,11 @@
 use crate::params::SEALED_SGX_SIGNING_KEY_LENGTH;
-use std::vec::Vec;
-use std::vec;
-use std::format;
-use std::string::{String, ToString};
 use crate::{EntityId, SgxProtectedKeyPub};
 use core::fmt::Formatter;
 use std::fmt::Debug;
+use std::format;
+use std::string::{String, ToString};
+use std::vec;
+use std::vec::Vec;
 
 /// The state of an aggregator. This can only be opened from within the enclave.
 pub struct MarshalledPartialAggregate(pub Vec<u8>);
@@ -61,7 +61,7 @@ impl Default for SealedKey {
             sealed_sk: vec![0u8; 1024], // 1024 seems enough
             pk: SgxProtectedKeyPub::default(),
             role: "".to_string(),
-            tee_linkable_attestation: vec![],  // TODO: implement this
+            tee_linkable_attestation: vec![], // TODO: implement this
         }
     }
 }
@@ -79,7 +79,6 @@ impl Debug for SealedKey {
             .finish()
     }
 }
-
 
 // macro_rules! impl_debug_for_sealed {
 //     ($t: ty) => {

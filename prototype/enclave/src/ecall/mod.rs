@@ -2,27 +2,12 @@ mod aggregation;
 mod register;
 mod submit;
 
-use utils::serialize_to_ptr;
-use sgx_types::{SgxResult, sgx_status_t};
-use sgx_status_t::{SGX_SUCCESS, SGX_ERROR_INVALID_PARAMETER};
-use std::slice;
-
-enum EcallId {
-    Keygen = 1,
-}
-
+use interface::*;
+use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_SUCCESS};
+use sgx_types::{sgx_status_t, SgxResult};
 use std::convert::TryFrom;
-
-impl TryFrom<u8> for EcallId {
-    type Error = ();
-
-    fn try_from(v: u8) -> Result<Self, Self::Error> {
-        match v {
-            x if x == EcallId::Keygen as u8 => Ok(EcallId::Keygen),
-            _ => Err(()),
-        }
-    }
-}
+use std::slice;
+use utils::serialize_to_ptr;
 
 #[no_mangle]
 pub extern "C" fn ecall_entrypoint(
@@ -33,25 +18,52 @@ pub extern "C" fn ecall_entrypoint(
     output_cap: usize,
     output_used: *mut usize,
 ) -> sgx_status_t {
-    let ecall_id = match EcallId::try_from(ecall_id_raw) {
-        Ok(i) => i,
-        Err(_) => return SGX_ERROR_INVALID_PARAMETER,
+    let ecall_id = match EcallId::from_repr(ecall_id_raw) {
+        Some(i) => i,
+        None => return SGX_ERROR_INVALID_PARAMETER,
     };
 
     match ecall_id {
-        EcallId::Keygen => {
-            generic_ecall(inp, inp_len, output, output_cap, output_used, register::new_sgx_keypair_internal_2)
-        }
+        EcallId::EcallNewSgxKeypair => generic_ecall(
+            inp,
+            inp_len,
+            output,
+            output_cap,
+            output_used,
+            register::new_sgx_keypair_internal,
+        ),
+        EcallId::EcallUnsealToPublicKey => generic_ecall(
+            inp,
+            inp_len,
+            output,
+            output_cap,
+            output_used,
+            register::unseal_to_pubkey_internal,
+        ),
+        EcallId::EcallRegisterUser => generic_ecall(
+            inp,
+            inp_len,
+            output,
+            output_cap,
+            output_used,
+            register::register_user_internal,
+        ),
     }
 }
 
-
-fn generic_ecall<I, O>(inp: *const u8,
-                       inp_len: usize,
-                       output: *mut u8,
-                       output_cap: usize,
-                       output_used: *mut usize, internal_fn: fn(&I) -> SgxResult<O>) -> sgx_status_t
-    where I: serde::de::DeserializeOwned, O: serde::Serialize {
+fn generic_ecall<I, O>(
+    inp: *const u8,
+    inp_len: usize,
+    output: *mut u8,
+    output_cap: usize,
+    output_used: *mut usize,
+    internal_fn: fn(&I) -> SgxResult<O>,
+) -> sgx_status_t
+where
+    I: serde::de::DeserializeOwned,
+    O: serde::Serialize,
+{
+    println!("================== IN ENCLAVE ==================");
     let input: I = unmarshal_or_abort!(I, inp, inp_len);
     let result = match internal_fn(&input) {
         Ok(o) => o,
@@ -68,6 +80,5 @@ fn generic_ecall<I, O>(inp: *const u8,
 }
 
 pub use self::aggregation::*;
-pub use self::register::{ecall_new_sgx_keypair, ecall_unseal_to_pubkey};
 pub use self::submit::ecall_user_submit;
 use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;

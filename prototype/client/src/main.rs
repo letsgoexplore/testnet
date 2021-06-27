@@ -35,11 +35,7 @@ fn register_user(
     enclave: &DcNetEnclave,
     pubkeys: Vec<KemPubKey>,
 ) -> Result<(UserState, SgxMsg), Box<dyn Error>> {
-    let user_registration = enclave.register_user(&pubkeys)?;
-    let sealed_shared_secrets = user_registration.get_sealed_server_secrets();
-    let sealed_usk = user_registration.get_sealed_usk();
-    let user_id = user_registration.get_user_id();
-    let reg_data = user_registration.get_registration_proof();
+    let (sealed_shared_secrets, sealed_usk, user_id, reg_data) = enclave.register_user(&pubkeys)?;
 
     let anytrust_ids: BTreeSet<EntityId> = pubkeys.iter().map(|pk| pk.get_entity_id()).collect();
     let anytrust_group_id = compute_group_id(&anytrust_ids);

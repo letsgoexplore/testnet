@@ -108,7 +108,6 @@ pub type SgxSigningPubKey = SgxProtectedKeyPub;
 //     pub tee_linkable_attestation: Vec<u8>, // binds this key to an enclave
 // }
 
-
 // use crate::SealedKey;
 // use std::format;
 

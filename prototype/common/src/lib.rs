@@ -1,10 +1,11 @@
 extern crate interface;
+extern crate serde;
 extern crate serde_cbor;
 extern crate sgx_types;
 extern crate sgx_urts;
 extern crate tonic;
-extern crate serde;
-#[macro_use] extern crate quick_error;
+#[macro_use]
+extern crate quick_error;
 
 pub mod enclave_wrapper;
 

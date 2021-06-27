@@ -25,7 +25,11 @@ pub fn serialize_to_ptr<T: Serialize>(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    println!("[IN] writing {} bytes to (cap {})", serialized.len(), outbuf_cap);
+    println!(
+        "[IN] writing {} bytes to (cap {})",
+        serialized.len(),
+        outbuf_cap
+    );
 
     unsafe {
         outbuf.copy_from(serialized.as_ptr(), serialized.len());
