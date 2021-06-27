@@ -99,28 +99,29 @@ use std::string::String;
 pub type KemPubKey = SgxProtectedKeyPub;
 pub type SgxSigningPubKey = SgxProtectedKeyPub;
 
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Deserialize)]
-pub struct SgxProtectedKeyPair {
-    pub sealed_sk: SealedPrivateKey,
-    pub pk: SgxProtectedKeyPub,
-    pub role: String, // e.g., "aggregator" "client" "anytrust server"
-    pub tee_linkable_attestation: Vec<u8>, // binds this key to an enclave
-}
+// #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+// #[derive(Clone, Serialize, Deserialize)]
+// pub struct SgxProtectedKeyPair {
+//     pub sealed_sk: SealedKey,
+//     pub pk: SgxProtectedKeyPub,
+//     pub role: String, // e.g., "aggregator" "client" "anytrust server"
+//     pub tee_linkable_attestation: Vec<u8>, // binds this key to an enclave
+// }
 
-use crate::SealedPrivateKey;
-use std::format;
 
-impl Debug for SgxProtectedKeyPair {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SgxProtectedKeyPair")
-            .field("sealed_sk", &format!("{} bytes", self.sealed_sk.0.len()))
-            .field("pk", &self.pk)
-            .field("role", &self.role)
-            .field(
-                "tee_linkable_attestation",
-                &hex::encode(&self.tee_linkable_attestation),
-            )
-            .finish()
-    }
-}
+// use crate::SealedKey;
+// use std::format;
+
+// impl Debug for SgxProtectedKeyPair {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         f.debug_struct("SgxProtectedKeyPair")
+//             .field("sealed_sk", &format!("{} bytes", self.sealed_sk.0.len()))
+//             .field("pk", &self.pk)
+//             .field("role", &self.role)
+//             .field(
+//                 "tee_linkable_attestation",
+//                 &hex::encode(&self.tee_linkable_attestation),
+//             )
+//             .finish()
+//     }
+// }

@@ -15,7 +15,7 @@ macro_rules! unwrap_or_abort {
 
 #[macro_export]
 macro_rules! unmarshal_or_abort {
-    ( $T:ty, $ptr:ident,$len:ident ) => {
+    ( $T:ty, $ptr:expr,$len:expr ) => {
         match serde_cbor::from_slice::<$T>(unsafe { slice::from_raw_parts($ptr, $len) }) {
             Ok(x) => x,
             Err(e) => {

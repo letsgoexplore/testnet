@@ -14,26 +14,25 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 use rand::Rng;
-use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
+use sgx_types::sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
+use sgx_types::sgx_device_status_t::SGX_DISABLED_UNSUPPORTED_CPU;
+use quick_error::quick_error;
+use serde;
 
-#[derive(Debug)]
-pub struct EnclaveError {
-    e: sgx_status_t,
-}
-
-impl From<sgx_status_t> for EnclaveError {
-    fn from(e: sgx_status_t) -> Self {
-        return EnclaveError { e };
+quick_error! {
+    #[derive(Debug)]
+    pub enum EnclaveError {
+        SgxError(err: sgx_status_t) {
+            from(sgx_status_t)
+        }
+        EnclaveLogicError(err: sgx_status_t) {
+            from(sgx_status_t)
+        }
+        MarshallError(e: serde_cbor::Error) {
+            from(e: serde_cbor::Error) -> (e)
+        }
     }
 }
-
-impl Display for EnclaveError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.e.as_str())
-    }
-}
-
-impl Error for EnclaveError {}
 
 pub type EnclaveResult<T> = Result<T, EnclaveError>;
 
@@ -50,22 +49,36 @@ pub struct UserRegistrationBlob(pub Vec<u8>);
 /// pubkey.
 pub struct AggRegistrationBlob(pub Vec<u8>);
 
+type GenericEcallFn = unsafe extern "C" fn(
+    eid: sgx_enclave_id_t,
+    retval: *mut sgx_status_t,
+    inp: *const u8,
+    inp_len: usize,
+    output: *mut u8,
+    output_size: usize,
+    output_used: *mut usize,
+) -> sgx_status_t;
+
 // E calls
 extern "C" {
-    fn ecall_new_sgx_signing_key(
+    fn ecall_new_sgx_keypair(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
+        inp: *const u8,
+        inp_len: usize,
         output: *mut u8,
-        output_size: u32,
+        output_size: usize,
+        output_used: *mut usize,
     ) -> sgx_status_t;
 
     fn ecall_unseal_to_pubkey(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
-        inp: *mut u8,
-        inp_len: u32,
-        out_x: *mut u8,
-        out_y: *mut u8,
+        inp: *const u8,
+        inp_len: usize,
+        output: *mut u8,
+        output_size: usize,
+        output_used: *mut usize,
     ) -> sgx_status_t;
 
     fn ecall_user_submit(
@@ -115,9 +128,12 @@ extern "C" {
     ) -> sgx_status_t;
 }
 
-#[derive(Debug, Default)]
+const ENCLAVE_OUTPUT_BUF_SIZE: usize = 1024000;
+
+#[derive(Debug)]
 pub struct DcNetEnclave {
     enclave: sgx_urts::SgxEnclave,
+    ecall_out_buf: Vec<u8>,
 }
 
 impl DcNetEnclave {
@@ -140,9 +156,12 @@ impl DcNetEnclave {
             &mut launch_token,
             &mut launch_token_updated,
             &mut misc_attr,
-        )?;
+        ).map_err(EnclaveError::SgxError)?;
 
-        Ok(Self { enclave })
+        Ok(Self {
+            enclave: enclave,
+            ecall_out_buf: vec![0; ENCLAVE_OUTPUT_BUF_SIZE],
+        })
     }
 
     pub fn destroy(self) {
@@ -153,71 +172,68 @@ impl DcNetEnclave {
         self.enclave.geteid()
     }
 
-    /// new_sgx_protected_key creates a new key pair on P-256 and returns the sealed secret key.
-    /// This method can be used for creating signing keys and KEM private keys.
-    /// Use unseal_to_pubkey to unseal the key and compute its public key.
-    pub fn new_sgx_protected_secret_key(&self) -> EnclaveResult<SealedPrivateKey> {
-        // TODO: Ensure that 1024 is large enough for any sealed privkey
+    pub fn make_generic_ecall<I,O>(&mut self, ecall: GenericEcallFn, inp: &I) -> EnclaveResult<O>
+    where I: serde::Serialize, O: serde::de::DeserializeOwned {
+        let marshaled_input = serde_cbor::to_vec(&inp)?;
+
+        println!("marshalled inp len {}", marshaled_input.len());
+        println!("outbuf len {}", self.ecall_out_buf.len());
+
         let mut ret = SGX_SUCCESS;
+        let mut outbuf_used = 0usize;
 
-        let mut sealed_signing_key = vec![0u8; 1024];
-
-        // Call keygen through FFI
+        // Call FFI
         let call_ret = unsafe {
-            ecall_new_sgx_signing_key(
+            ecall(
                 self.enclave.geteid(),
                 &mut ret,
-                sealed_signing_key.as_mut_ptr(),
-                sealed_signing_key.len() as u32,
+                marshaled_input.as_ptr(),
+                marshaled_input.len(),
+                self.ecall_out_buf.as_mut_ptr(),
+                self.ecall_out_buf.len(),
+                &mut outbuf_used,
             )
         };
 
         // Check for errors
         if call_ret != SGX_SUCCESS {
-            return Err(EnclaveError::from(call_ret));
+            return Err(EnclaveError::SgxError(call_ret));
         }
         if ret != SGX_SUCCESS {
-            return Err(EnclaveError::from(ret));
+            return Err(EnclaveError::SgxError(ret));
         }
 
-        // Package the output in the correct type
-        Ok(SealedPrivateKey(sealed_signing_key))
+        println!("ecall succeed. buf used {}", outbuf_used);
+
+        let output: O = serde_cbor::from_slice(&self.ecall_out_buf[..outbuf_used]).map_err(|e| {
+            println!("can't unmarshal: {}", e);
+            EnclaveError::MarshallError(e)
+        })?;
+
+        Ok(output)
+    }
+
+    /// new_sgx_protected_key creates a new key pair on P-256 and returns the sealed secret key.
+    /// This method can be used for creating signing keys and KEM private keys.
+    /// Use unseal_to_pubkey to unseal the key and compute its public key.
+    pub fn new_sgx_protected_key(&mut self, role: &str) -> EnclaveResult<SealedKey> {
+        let inp = EcallNewSgxKeypairInput {
+            role: role.to_string(),
+        };
+
+        println!("===================");
+        let output: EcallNewSgxKeypairOutput = self.make_generic_ecall(ecall_new_sgx_keypair, &inp)?;
+        println!("output {:?}", output.sk);
+        Ok(output.sk)
     }
 
     // unseal the key to see its public key
     pub fn unseal_to_public_key_on_p256(
-        &self,
-        sealed_private_key: &SealedPrivateKey,
+        &mut self,
+        sealed_private_key: &SealedKey,
     ) -> EnclaveResult<SgxProtectedKeyPub> {
-        let mut ret = SGX_SUCCESS;
-
-        // make a copy since (for reasons that I don't understand yet) unseal takes a mutable pointer as input
-        // TODO: figure out why.
-        let mut privkey_copy = sealed_private_key.clone();
-
-        let mut pubkey = SgxProtectedKeyPub::default();
-
-        // Call unseal_to_pubkey through FFI
-        let call_ret = unsafe {
-            ecall_unseal_to_pubkey(
-                self.enclave.geteid(),
-                &mut ret,
-                privkey_copy.0.as_mut_ptr(),
-                privkey_copy.0.len() as u32,
-                pubkey.gx.as_mut_ptr(),
-                pubkey.gy.as_mut_ptr(),
-            )
-        };
-
-        // Check for errors
-        if call_ret != SGX_SUCCESS {
-            return Err(EnclaveError::from(call_ret));
-        }
-        if ret != SGX_SUCCESS {
-            return Err(EnclaveError::from(ret));
-        }
-
-        Ok(pubkey)
+        let output: SgxProtectedKeyPub = self.make_generic_ecall(ecall_unseal_to_pubkey, &sealed_private_key)?;
+        Ok(output)
     }
 
     /// Given a message and the relevant scheduling ticket, constructs a round message for sending
@@ -225,13 +241,11 @@ impl DcNetEnclave {
     pub fn user_submit_round_msg(
         &self,
         submission_req: &UserSubmissionReq,
-        sealed_usk: &SealedPrivateKey,
+        sealed_usk: &SealedKey,
     ) -> EnclaveResult<AggregateBlob> {
         let marshaled_req = serde_cbor::to_vec(&submission_req).map_err(|e| {
             println!("Error marshaling request {}", e);
-            EnclaveError {
-                e: SGX_ERROR_INVALID_PARAMETER,
-            }
+            EnclaveError::SgxError(SGX_ERROR_INVALID_PARAMETER)
         })?;
 
         let mut output = Vec::new();
@@ -247,8 +261,8 @@ impl DcNetEnclave {
                 &mut ret,
                 marshaled_req.as_ptr(),
                 marshaled_req.len(),
-                sealed_usk.0.as_ptr(),
-                sealed_usk.0.len(),
+                sealed_usk.sealed_sk.as_ptr(),
+                sealed_usk.sealed_sk.len(),
                 output.as_mut_ptr(),
                 output.len(),
                 &mut output_bytes_written,
@@ -257,10 +271,10 @@ impl DcNetEnclave {
 
         // Check for errors
         if call_ret != SGX_SUCCESS {
-            return Err(call_ret.into());
+            return Err(EnclaveError::SgxError(call_ret));
         }
         if ret != SGX_SUCCESS {
-            return Err(ret.into());
+            return Err(EnclaveError::EnclaveLogicError(call_ret));
         }
 
         output.resize(output_bytes_written, 0);
@@ -285,7 +299,7 @@ impl DcNetEnclave {
         &self,
         agg: &mut MarshalledPartialAggregate,
         new_input: &AggregateBlob,
-        sealed_tee_signing_key: &SealedPrivateKey,
+        sealed_tee_signing_key: &SealedKey,
     ) -> EnclaveResult<()> {
         // This MUST check that the input blob is made wrt the same set of anytrust nodes
 
@@ -296,7 +310,7 @@ impl DcNetEnclave {
         let mut ret = sgx_status_t::default();
 
         // Call aggregate through FFI
-        let ecall_ret = unsafe {
+        let call_ret = unsafe {
             ecall_aggregate(
                 self.get_eid(),
                 &mut ret,
@@ -304,8 +318,8 @@ impl DcNetEnclave {
                 new_input.0.len(),
                 agg.0.as_ptr(),
                 agg.0.len(),
-                sealed_tee_signing_key.0.as_ptr(),
-                sealed_tee_signing_key.0.len(),
+                sealed_tee_signing_key.sealed_sk.as_ptr(),
+                sealed_tee_signing_key.sealed_sk.len(),
                 output.as_mut_ptr(),
                 output.len(),
                 &mut output_bytes_written,
@@ -313,11 +327,11 @@ impl DcNetEnclave {
         };
 
         // Check for errors
-        if ecall_ret != SGX_SUCCESS {
-            return Err(ecall_ret.into());
+        if call_ret != SGX_SUCCESS {
+            return Err(EnclaveError::SgxError(call_ret));
         }
         if ret != SGX_SUCCESS {
-            return Err(ret.into());
+            return Err(EnclaveError::EnclaveLogicError(call_ret));
         }
 
         // update agg
@@ -356,9 +370,7 @@ impl DcNetEnclave {
     pub fn register_user(&self, pubkeys: &[KemPubKey]) -> EnclaveResult<UserRegistration> {
         let marshaled_pubkeys = serde_cbor::to_vec(&pubkeys.to_vec()).map_err(|e| {
             println!("Error marshaling request {}", e);
-            EnclaveError {
-                e: SGX_ERROR_INVALID_PARAMETER,
-            }
+            EnclaveError::SgxError(SGX_ERROR_INVALID_PARAMETER)
         })?;
 
         // todo: make sure this is big enough
@@ -368,7 +380,7 @@ impl DcNetEnclave {
         let mut ret = sgx_status_t::default();
 
         // Call aggregate through FFI
-        let ecall_ret = unsafe {
+        let call_ret = unsafe {
             ecall_register_user(
                 self.get_eid(),
                 &mut ret,
@@ -381,32 +393,29 @@ impl DcNetEnclave {
         };
 
         // Check for errors
-        if ecall_ret != SGX_SUCCESS {
-            return Err(ecall_ret.into());
+        if call_ret != SGX_SUCCESS {
+            return Err(EnclaveError::SgxError(call_ret));
         }
         if ret != SGX_SUCCESS {
-            return Err(ret.into());
+            return Err(EnclaveError::EnclaveLogicError(call_ret));
         }
 
         output.resize(output_bytes_written, 0);
 
         Ok(serde_cbor::from_slice(&output).map_err(|e| {
             println!("Error marshaling request {}", e);
-            EnclaveError {
-                e: SGX_ERROR_INVALID_PARAMETER,
-            }
+            EnclaveError::SgxError(SGX_ERROR_INVALID_PARAMETER)
         })?)
     }
 
-    /// Create a new TEE protected secret key. Derives shared secrets with all the given KEM pubkeys.
-    /// Returns UserRegistration that contains sealed secrets, a sealed private key, and attestation
-    /// information to send to anytrust nodes.
-    /// Derives a new signing pubkey. Returns a sealed private key and a registration message to
-    /// send to an anytrust node
+    /// Create a new TEE protected secret key. Returns AggregatorRegistration that contains the sealed private key and attestation information to send to anytrust nodes.
     pub fn register_aggregator(
         &self,
-    ) -> EnclaveResult<(SealedPrivateKey, EntityId, AggRegistrationBlob)> {
+    ) -> EnclaveResult<(SealedKey, EntityId, AggRegistrationBlob)> {
         unimplemented!()
+        // let pair = self.new_sgx_protected_key()?;
+        //
+        // Ok((pair.sealed_sk, EntityId::from(&pair.pk), AggRegistrationBlob(pair.tee_linkable_attestation)))
     }
 
     // TODO: Write anytrust node function that receives registration blobs and processes them
@@ -426,48 +435,33 @@ mod enclave_tests {
 
     use hex::FromHex;
     use interface::{
-        DcMessage, EntityId, SealedFootprintTicket, SealedPrivateKey, SealedServerSecrets,
+        DcMessage, EntityId, SealedFootprintTicket, SealedKey, SealedServerSecrets,
         SgxProtectedKeyPub, UserSubmissionReq, DC_NET_MESSAGE_LENGTH,
         SEALED_SGX_SIGNING_KEY_LENGTH, USER_ID_LENGTH,
     };
     use sgx_types::SGX_ECP256_KEY_SIZE;
 
-    fn test_signing_key() -> SealedPrivateKey {
-        SealedPrivateKey(base64::decode(
-            "BAACAAAAAABIIPM3auay8gNNO3pLSKd4CwAAAAAAAP8AAAAAAAAAAN7O/UiywRKvGykkz2d1n86F3Ee9cYG212zsM6mkzty2AAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABDAAAAAAAAAAAAAAAAAAAASgAAAAAAAAAAAAAAAAAAALwYU8Fi7XsACgg9uG5vb1hPA5sGF2ssQZdAtstmyMyTfqMwk1r3GLx56xkE8hhFL1DD2jqtzybkJYTrkNoJMvSAxfETQxmA4X5nzQGOT2cj/3GTa2V5cGFpcgAAAAAAAA==")
-            .unwrap())
+    fn test_signing_key() -> SealedKey {
+        SealedKey::default()
     }
 
     #[test]
     fn key_seal_unseal() {
-        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
-        let sealed = enc.new_sgx_protected_secret_key().unwrap();
-        assert!(sealed.0.len() > 0);
-        let encoded = base64::encode(&sealed.0);
-        enc.unseal_to_public_key_on_p256(&sealed).unwrap();
+        let mut enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+        let sealed = enc.new_sgx_protected_key("test").unwrap();
 
-        let test_sealed = test_signing_key();
-        let test_pk = enc
-            .unseal_to_public_key_on_p256(&test_sealed)
-            .expect("unseal");
-        let expected_x = "394b6c980dddb2ad9cc4e6403d433a06b17ab8994343751fc402e786ca584c5d";
-        let expected_y = "0c32869de9005c8a1cc1cfdd0e53d0a530cc31a6585a8784369a6490a124df9f";
-        assert_eq!(
-            test_pk.gx,
-            <[u8; SGX_ECP256_KEY_SIZE]>::from_hex(expected_x).expect("unhex x")
-        );
-        assert_eq!(
-            test_pk.gy,
-            <[u8; SGX_ECP256_KEY_SIZE]>::from_hex(expected_y).expect("unhex y")
-        );
+        println!("hererererer");
+        let pk_unsealed = enc.unseal_to_public_key_on_p256(&sealed).unwrap();
+
+        assert_eq!(pk_unsealed, sealed.pk);
     }
 
     #[test]
     fn user_submit_round_msg() {
-        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+        let mut enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         // create server public keys
-        let spks = create_server_pubkeys(&enc, 10);
+        let spks = create_server_pubkeys(&mut enc, 10);
         let user_reg = enc.register_user(&spks).unwrap();
 
         let req_1 = UserSubmissionReq {
@@ -483,10 +477,10 @@ mod enclave_tests {
         enc.destroy();
     }
 
-    fn create_server_pubkeys(enc: &DcNetEnclave, num_of_servers: i32) -> Vec<SgxProtectedKeyPub> {
+    fn create_server_pubkeys(enc: &mut DcNetEnclave, num_of_servers: i32) -> Vec<SgxProtectedKeyPub> {
         let mut pks = Vec::new();
         for i in 0..num_of_servers {
-            let sk = enc.new_sgx_protected_secret_key().expect("key");
+            let sk = enc.new_sgx_protected_key("test").expect("key");
             pks.push(enc.unseal_to_public_key_on_p256(&sk).expect("pk"));
         }
 
@@ -495,10 +489,10 @@ mod enclave_tests {
 
     #[test]
     fn aggregation() {
-        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+        let mut enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         // create server public keys
-        let spks = create_server_pubkeys(&enc, 10);
+        let spks = create_server_pubkeys(&mut enc, 10);
         let user_reg = enc.register_user(&spks).unwrap();
         print!("user reg {:?}", user_reg);
 
@@ -551,11 +545,11 @@ mod enclave_tests {
 
     #[test]
     fn register() {
-        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+        let mut enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         let mut pks = Vec::new();
         for i in 0..10 {
-            let sk = enc.new_sgx_protected_secret_key().expect("key");
+            let sk = enc.new_sgx_protected_key("user").expect("key");
             pks.push(enc.unseal_to_public_key_on_p256(&sk).expect("pk"));
         }
 

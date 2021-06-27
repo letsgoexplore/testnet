@@ -8,14 +8,25 @@ enclave {
     include "sgx_tcrypto.h"
 
     trusted {
-      public sgx_status_t ecall_new_sgx_signing_key(
-                        [out, size=output_size] uint8_t* output,
-                        uint32_t output_size);
+          public sgx_status_t ecall_entrypoint(
+                            [in, size=inp_len] uint8_t* inp,
+                            size_t inp_len,
+                            [user_check] uint8_t* output,
+                            size_t output_size,
+                            [out] size_t *bytewritten);
+
+      public sgx_status_t ecall_new_sgx_keypair(
+                        [in, size=inp_len] uint8_t* inp,
+                        size_t inp_len,
+                        [user_check] uint8_t* output,
+                        size_t output_size,
+                        [out] size_t *bytewritten);
       public sgx_status_t ecall_unseal_to_pubkey(
                         [in, size=inp_len] uint8_t* inp,
-                        uint32_t inp_len,
-                        [out, size=32] uint8_t* outx,
-                        [out, size=32] uint8_t* outy);
+                        size_t inp_len,
+                        [user_check] uint8_t* output,
+                        size_t output_size,
+                        [out] size_t *bytewritten);
       public sgx_status_t ecall_create_test_sealed_server_secrets(
                         uint32_t num_of_keys_to_create,
                         [out, size=output_size] uint8_t* output,

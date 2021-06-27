@@ -33,6 +33,7 @@ use std::prelude::v1::*;
 big_array! { BigArray; }
 
 mod params;
+mod ecall_interface;
 mod sealed_types;
 mod sgx_protected_keys;
 mod user_request;
@@ -42,3 +43,4 @@ pub use sealed_types::*;
 #[allow(dead_code)]
 pub use sgx_protected_keys::*;
 pub use user_request::*;
+pub use ecall_interface::*;

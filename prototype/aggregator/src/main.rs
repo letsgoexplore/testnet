@@ -10,7 +10,7 @@ pub mod dc_proto {
 }
 use interface::{
     compute_group_id, DcMessage, EntityId, KemPubKey, MarshalledPartialAggregate,
-    SealedFootprintTicket, SealedPrivateKey, SealedServerSecrets, UserSubmissionReq,
+    SealedFootprintTicket, SealedKey, SealedServerSecrets, UserSubmissionReq,
 };
 
 use rand::Rng;
@@ -23,7 +23,7 @@ struct AggregatorState<'a> {
     /// A unique for the set anytrust servers that this aggregator is registered with
     anytrust_group_id: EntityId,
     /// This aggregator's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedPrivateKey,
+    signing_key: SealedKey,
     /// A partial aggregate of received user messages
     partial_agg: Option<MarshalledPartialAggregate>,
 }

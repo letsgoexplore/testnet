@@ -19,8 +19,9 @@ use sgx_types::sgx_status_t::{
 };
 
 use utils;
+use std::string::String;
 
-pub fn new_p256_secret_key() -> SgxResult<(SgxPrivateKey, SgxProtectedKeyPub)> {
+fn new_sgx_keypair_internal(role: String) -> SgxResult<(SgxPrivateKey, SgxProtectedKeyPub, SealedKey)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
         println!("cant create rand {}", e);
         SGX_ERROR_UNEXPECTED
@@ -28,23 +29,50 @@ pub fn new_p256_secret_key() -> SgxResult<(SgxPrivateKey, SgxProtectedKeyPub)> {
     // generate a random secret key
     let sk = rand.gen::<SgxPrivateKey>();
 
-    // make sure sk is a valid private key
+    // make sure sk is a valid private key by computing its public key
     let pk = SgxSigningPubKey::try_from(&sk)?;
 
-    Ok((sk, pk))
+    let tee_linkable_attestation = vec![];
+    Ok((sk, pk, SealedKey {
+        sealed_sk: ser_and_seal_to_vec(&sk, "key".as_bytes())?,
+        pk,
+        role,
+        tee_linkable_attestation,
+    }))
+}
+
+
+pub fn new_sgx_keypair_internal_2(
+    i: &EcallNewSgxKeypairInput
+) -> SgxResult<EcallNewSgxKeypairOutput> {
+    println!("[IN] unmarshalled input {:?}", i);
+    let o = EcallNewSgxKeypairOutput {
+        sk: new_sgx_keypair_internal(i.role.clone())?.2,
+    };
+    println!("[IN] output {:?}", o);
+    Ok(o)
 }
 
 #[no_mangle]
-pub extern "C" fn ecall_new_sgx_signing_key(output: *mut u8, output_cap: u32) -> sgx_status_t {
-    let sk = match new_p256_secret_key() {
-        Ok((sk, _)) => sk,
-        Err(e) => return e,
+pub extern "C" fn ecall_new_sgx_keypair(
+    inp: *const u8,
+    inp_len: usize,
+    output: *mut u8,
+    output_cap: usize,
+    output_used: *mut usize,
+) -> sgx_status_t {
+    println!("================[IN]");
+    let i = unmarshal_or_abort!(EcallNewSgxKeypairInput, inp, inp_len);
+    println!("[IN] unmarshalled input {:?}", i);
+    let o = EcallNewSgxKeypairOutput {
+        sk: unwrap_or_abort!(new_sgx_keypair_internal(i.role), SGX_ERROR_UNEXPECTED).2
     };
+    println!("[IN] output {:?}", o);
 
-    match unsafe { ser_and_seal_to_ptr(&sk, "keypair".as_bytes(), output, output_cap as usize) } {
+    match unsafe { serialize_to_ptr(&o, output, output_cap, output_used) } {
         Ok(_) => SGX_SUCCESS,
         Err(e) => {
-            println!("can't seal {}", e);
+            println!("[IN] can't write to untrusted land {}", e);
             e
         }
     }
@@ -52,19 +80,23 @@ pub extern "C" fn ecall_new_sgx_signing_key(output: *mut u8, output_cap: u32) ->
 
 #[no_mangle]
 pub extern "C" fn ecall_unseal_to_pubkey(
-    inp: *mut u8,
-    inp_len: u32,
-    out_x: *mut u8,
-    out_y: *mut u8,
+    inp: *const u8,
+    inp_len: usize,
+    output: *mut u8,
+    output_cap: usize,
+    output_used: *mut usize,
 ) -> sgx_status_t {
-    let sk = unseal_or_abort!(SgxPrivateKey, inp, inp_len as usize);
+    let sealed_sk: SealedKey = unmarshal_or_abort!(SealedKey, inp, inp_len as usize);
+    let sk = unseal_vec_or_abort!(SgxPrivateKey, &sealed_sk.sealed_sk);
     let pk = unwrap_or_abort!(SgxSigningPubKey::try_from(&sk), SGX_ERROR_INVALID_PARAMETER);
-    unsafe {
-        out_x.copy_from(pk.gx.as_ptr(), pk.gx.len());
-        out_y.copy_from(pk.gy.as_ptr(), pk.gy.len());
-    }
 
-    SGX_SUCCESS
+    match unsafe { serialize_to_ptr(&pk, output, output_cap, output_used) } {
+        Ok(_) => SGX_SUCCESS,
+        Err(e) => {
+            println!("[IN] can't write to untrusted land {}", e);
+            e
+        }
+    }
 }
 
 #[no_mangle]
@@ -117,21 +149,17 @@ pub extern "C" fn ecall_register_user(
 /// anytrust node
 pub fn register_user_internal(anytrust_server_pks: &[KemPubKey]) -> SgxResult<UserRegistration> {
     // 1. generate a SGX protected key. used for both signing and round key derivation
-    let (user_sk, user_pk) = new_p256_secret_key()?;
+    let (sk, pk, sealed_key) = new_sgx_keypair_internal("user".to_string())?;
 
     // 2. derive server secrets
     let server_secrets =
-        SharedSecretsWithAnyTrustGroup::derive_server_secrets(&user_sk, anytrust_server_pks)?;
+        SharedSecretsWithAnyTrustGroup::derive_server_secrets(&sk, anytrust_server_pks)?;
+
 
     Ok(UserRegistration::new(
-        SgxProtectedKeyPair {
-            sealed_sk: SealedPrivateKey(utils::ser_and_seal_secret_key(&user_sk)?),
-            pk: user_pk,
-            role: "client".to_string(),
-            tee_linkable_attestation: vec![],
-        },
+        sealed_key,
         SealedServerSecrets {
-            user_id: EntityId::from(&user_pk),
+            user_id: EntityId::from(&pk),
             anytrust_group_id: server_secrets.anytrust_group_id(),
             server_public_keys: server_secrets
                 .anytrust_group_pairwise_keys

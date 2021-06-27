@@ -151,12 +151,12 @@ impl Debug for UserSubmissionReq {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct UserRegistration {
-    key: SgxProtectedKeyPair,
+    key: SealedKey,
     server_secrets: SealedServerSecrets,
 }
 
 impl UserRegistration {
-    pub fn new(key: SgxProtectedKeyPair, server_secrets: SealedServerSecrets) -> Self {
+    pub fn new(key: SealedKey, server_secrets: SealedServerSecrets) -> Self {
         UserRegistration {
             key,
             server_secrets,
@@ -170,8 +170,8 @@ impl UserRegistration {
         &self.server_secrets
     }
 
-    pub fn get_sealed_usk(&self) -> &SealedPrivateKey {
-        &self.key.sealed_sk
+    pub fn get_sealed_usk(&self) -> &SealedKey {
+        &self.key
     }
 
     pub fn get_registration_proof(&self) -> &[u8] {

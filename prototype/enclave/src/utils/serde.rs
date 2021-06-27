@@ -12,22 +12,26 @@ pub fn serialize_to_ptr<T: Serialize>(
 ) -> SgxError {
     // serialize SignedUserMessage
     let serialized = serde_cbor::to_vec(v).map_err(|e| {
-        println!("error serializing: {}", e);
+        println!("[IN] error serializing: {}", e);
         SGX_ERROR_INVALID_PARAMETER
     })?;
 
     if serialized.len() > outbuf_cap {
         println!(
-            "not enough output to write serialized message. need {} got {}",
+            "[IN] not enough output to write serialized message. need {} got {}",
             serialized.len(),
             outbuf_cap,
         );
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
+    println!("[IN] writing {} bytes to (cap {})", serialized.len(), outbuf_cap);
+
     unsafe {
         outbuf.copy_from(serialized.as_ptr(), serialized.len());
+        println!("bytes written");
         *outbuf_used = serialized.len();
+        println!("outbuf_used written");
     }
 
     Ok(())

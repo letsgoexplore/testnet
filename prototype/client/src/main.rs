@@ -11,7 +11,7 @@ pub mod dc_proto {
 }
 
 use interface::{
-    compute_group_id, DcMessage, EntityId, KemPubKey, SealedFootprintTicket, SealedPrivateKey,
+    compute_group_id, DcMessage, EntityId, KemPubKey, SealedFootprintTicket, SealedKey,
     SealedServerSecrets, UserSubmissionReq,
 };
 
@@ -25,7 +25,7 @@ struct UserState<'a> {
     /// A unique for the set anytrust servers that this client is registered with
     anytrust_group_id: EntityId,
     /// This client's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedPrivateKey,
+    signing_key: SealedKey,
     /// The secrets that this client shares with the anytrust servers. Can only be accessed from
     /// within the enclave.
     shared_secrets: SealedServerSecrets,
