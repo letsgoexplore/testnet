@@ -1,29 +1,30 @@
 extern crate interface;
 extern crate sgx_types;
 
-use serde_cbor;
-use sgx_status_t;
+
+
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 
 use std::prelude::v1::*;
-use std::slice;
+
 use sgx_types::SgxResult;
 
 use crypto;
-use crypto::{SgxSigningKey, SharedSecretsWithAnyTrustGroup, SignMutable, SgxPrivateKey};
+use crypto::{SharedSecretsWithAnyTrustGroup, SignMutable, SgxPrivateKey};
 
 use self::interface::*;
-use crypto::SharedServerSecret;
+
 use interface::UserSubmissionReq;
 use messages_types::SignedUserMessage;
-use types::*;
+
 use utils;
 
 use std::convert::TryFrom;
+use utils::serialize_to_vec;
 
 pub fn user_submit_internal(
     input: &(UserSubmissionReq, SealedKey),
-) -> SgxResult<Vec<u8>> {
+) -> SgxResult<MarshalledSignedUserMessage> {
     let (send_request, sealed_key) = input;
     println!("got request {:?}", send_request);
 
@@ -60,7 +61,7 @@ pub fn user_submit_internal(
     );
 
     let round_key = crypto::derive_round_secret(send_request.round, &server_secrets)
-        .map_err(|e| SGX_ERROR_INVALID_PARAMETER)?;
+        .map_err(|_e| SGX_ERROR_INVALID_PARAMETER)?;
 
     println!("round_key derived: {}", round_key);
 
@@ -86,9 +87,5 @@ pub fn user_submit_internal(
     println!("signed user message {:?}", mutable);
 
     // serialized
-    let serialized = serde_cbor::to_vec(&mutable).map_err(|e| {
-        println!("can't serialized {}", e);
-        SGX_ERROR_UNEXPECTED
-    })?;
-    Ok(serialized)
+    Ok(MarshalledSignedUserMessage(serialize_to_vec(&mutable)?))
 }

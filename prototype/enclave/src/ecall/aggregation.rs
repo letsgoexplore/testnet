@@ -1,16 +1,14 @@
 use crypto::*;
 use interface::*;
 use messages_types::SignedUserMessage;
-use sgx_types::{sgx_status_t, SgxError, SgxResult};
+use sgx_types::{SgxError, SgxResult};
 use std::prelude::v1::*;
 use types::*;
 
 use crypto::{SgxSignature, Signable};
 use std::vec::Vec;
 
-use serde_cbor;
-use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
-use std::slice;
+use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER};
 use utils;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -38,10 +36,9 @@ impl Zero for AggregatedMessage {
     }
 }
 
-use sgx_types::sgx_status_t::{SGX_INTERNAL_ERROR_ENCLAVE_CREATE_INTERRUPTED, SGX_SUCCESS};
 use sha2::Digest;
 use sha2::Sha256;
-use types::DcNetError::AggregationError;
+
 use utils::{unseal_vec_and_deser, serialize_to_vec};
 
 impl Signable for AggregatedMessage {
@@ -135,51 +132,51 @@ pub fn add_to_aggregate_internal(
     Ok(MarshalledPartialAggregate(serialize_to_vec(&new_agg)?))
 }
 
-#[no_mangle]
-pub extern "C" fn ecall_finalize_aggregate(
-    current_aggregation_ptr: *const u8,
-    current_aggregation_len: usize,
-    sealed_tee_prv_key_ptr: *mut u8,
-    sealed_tee_prv_key_len: usize,
-    output_buf: *mut u8,
-    output_buf_cap: usize,
-    output_buf_used: *mut usize,
-) -> sgx_status_t {
-    let current_agg = unmarshal_or_abort!(
-        AggregatedMessage,
-        current_aggregation_ptr,
-        current_aggregation_len
-    );
-
-    let tee_signing_sk = unseal_or_abort!(
-        SgxSigningKey,
-        sealed_tee_prv_key_ptr,
-        sealed_tee_prv_key_len
-    );
-
-    let mut final_aggregation = SignedUserMessage {
-        user_id: Default::default(),
-        anytrust_group_id: current_agg.anytrust_group_id,
-        round: current_agg.round,
-        msg: current_agg.aggregated_msg,
-        tee_sig: Default::default(),
-        tee_pk: Default::default(),
-    };
-
-    // sign the final message
-    final_aggregation.sign_mut(&tee_signing_sk);
-
-    // Write to user land
-    match utils::serialize_to_ptr(
-        &final_aggregation,
-        output_buf,
-        output_buf_cap,
-        output_buf_used,
-    ) {
-        Ok(_) => SGX_SUCCESS,
-        Err(e) => {
-            println!("can serialize {}", e);
-            e
-        }
-    }
-}
+// #[no_mangle]
+// pub extern "C" fn ecall_finalize_aggregate(
+//     current_aggregation_ptr: *const u8,
+//     current_aggregation_len: usize,
+//     sealed_tee_prv_key_ptr: *mut u8,
+//     sealed_tee_prv_key_len: usize,
+//     output_buf: *mut u8,
+//     output_buf_cap: usize,
+//     output_buf_used: *mut usize,
+// ) -> sgx_status_t {
+//     let current_agg = unmarshal_or_abort!(
+//         AggregatedMessage,
+//         current_aggregation_ptr,
+//         current_aggregation_len
+//     );
+//
+//     let tee_signing_sk = unseal_or_abort!(
+//         SgxSigningKey,
+//         sealed_tee_prv_key_ptr,
+//         sealed_tee_prv_key_len
+//     );
+//
+//     let mut final_aggregation = SignedUserMessage {
+//         user_id: Default::default(),
+//         anytrust_group_id: current_agg.anytrust_group_id,
+//         round: current_agg.round,
+//         msg: current_agg.aggregated_msg,
+//         tee_sig: Default::default(),
+//         tee_pk: Default::default(),
+//     };
+//
+//     // sign the final message
+//     final_aggregation.sign_mut(&tee_signing_sk);
+//
+//     // Write to user land
+//     match utils::serialize_to_ptr(
+//         &final_aggregation,
+//         output_buf,
+//         output_buf_cap,
+//         output_buf_used,
+//     ) {
+//         Ok(_) => SGX_SUCCESS,
+//         Err(e) => {
+//             println!("can serialize {}", e);
+//             e
+//         }
+//     }
+// }

@@ -10,7 +10,7 @@ use super::*;
 use sgx_types::sgx_ec256_dh_shared_t;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
-use types::{Xor, Zero};
+
 
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -34,15 +34,6 @@ impl Debug for SharedServerSecret {
             .field("secret", &hex::encode(&self.secret))
             .field("server_id", &hex::encode(&self.server_id))
             .finish()
-    }
-}
-
-impl SharedServerSecret {
-    pub fn gen_test(byte: u8) -> Self {
-        SharedServerSecret {
-            secret: [byte; SGX_ECP256_KEY_SIZE],
-            server_id: Default::default(),
-        }
     }
 }
 

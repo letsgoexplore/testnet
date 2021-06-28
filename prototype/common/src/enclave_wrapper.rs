@@ -59,20 +59,6 @@ extern "C" {
         output_used: *mut usize,
     ) -> sgx_status_t;
 
-    fn ecall_aggregate(
-        eid: sgx_enclave_id_t,
-        retval: *mut sgx_status_t,
-        new_input_ptr: *const u8,
-        new_input_len: usize,
-        current_aggregation_ptr: *const u8,
-        current_aggregation_len: usize,
-        sealed_tee_prv_ptr: *const u8,
-        sealed_tee_prv_len: usize,
-        output_aggregation_ptr: *mut u8,
-        output_size: usize,
-        output_bytes_written: *mut usize,
-    ) -> sgx_status_t;
-
     fn test_main_entrance(eid: sgx_enclave_id_t, retval: *mut sgx_status_t) -> sgx_status_t;
 }
 
@@ -105,7 +91,7 @@ impl DcNetEnclave {
             &mut launch_token_updated,
             &mut misc_attr,
         )
-        .map_err(EnclaveError::SgxError)?;
+            .map_err(EnclaveError::SgxError)?;
 
         Ok(Self {
             enclave: enclave,
@@ -122,9 +108,9 @@ impl DcNetEnclave {
     }
 
     fn make_generic_ecall<I, O>(&mut self, ecall_id: EcallId, inp: &I) -> EnclaveResult<O>
-    where
-        I: serde::Serialize,
-        O: serde::de::DeserializeOwned,
+        where
+            I: serde::Serialize,
+            O: serde::de::DeserializeOwned,
     {
         let marshaled_input = serde_cbor::to_vec(&inp)?;
 
@@ -194,9 +180,7 @@ impl DcNetEnclave {
         submission_req: &UserSubmissionReq,
         sealed_usk: &SealedKey,
     ) -> EnclaveResult<MarshalledSignedUserMessage> {
-        let marshaled_signed_msg: Vec<u8> =
-            self.make_generic_ecall(EcallId::EcallUserSubmit, &(submission_req, sealed_usk))?;
-        Ok(MarshalledSignedUserMessage(marshaled_signed_msg))
+        Ok(self.make_generic_ecall(EcallId::EcallUserSubmit, &(submission_req, sealed_usk))?)
     }
 
     /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
@@ -231,8 +215,7 @@ impl DcNetEnclave {
 
     /// Constructs an aggregate message from the given state. The returned blob is to be sent to
     /// the parent aggregator or an anytrust server.
-    /// TODO: 1) what is this supposed to achieve? i.e., no why just send partial aggregate to the any trust server?
-    /// TODO: 2) should AggregateBlob contain all of the user ids? If so, AggregateBlob is also the result of user_submit which contains only one user id.
+    /// TODO: what is this supposed to achieve? i.e., no why just send partial aggregate to the any trust server?
     pub fn finalize_aggregate(
         &self,
         agg: &MarshalledPartialAggregate,

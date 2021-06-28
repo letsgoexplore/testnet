@@ -1,12 +1,11 @@
-use crypto::{KemPrvKey, SgxPrivateKey, SgxSigningKey};
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
-use sgx_tseal::{SgxSealedData, SgxUnsealedData};
-use sgx_types::marker::ContiguousMemory;
+use sgx_tseal::{SgxSealedData};
+
 use sgx_types::{sgx_sealed_data_t, SgxError, SgxResult};
-use std::boxed::Box;
-use std::error::Error;
+
+
 use std::vec::Vec;
 
 pub fn ser_and_seal_to_vec<T: Serialize>(a: &T, ad: &[u8]) -> SgxResult<Vec<u8>> {
@@ -49,13 +48,11 @@ pub unsafe fn ser_and_seal_to_ptr<T: Serialize>(
     };
 
     let sealed = SgxSealedData::<[u8]>::seal_data(ad, &bin)?;
-    unsafe {
-        match sealed.to_raw_sealed_data_t(output as *mut sgx_sealed_data_t, output_cap as u32) {
-            Some(_) => Ok(()),
-            None => {
-                println!("can't seal. cap {}", output_cap);
-                Err(SGX_ERROR_INVALID_PARAMETER)
-            }
+    match sealed.to_raw_sealed_data_t(output as *mut sgx_sealed_data_t, output_cap as u32) {
+        Some(_) => Ok(()),
+        None => {
+            println!("can't seal. cap {}", output_cap);
+            Err(SGX_ERROR_INVALID_PARAMETER)
         }
     }
 }
@@ -69,7 +66,7 @@ pub unsafe fn unseal_ptr_and_deser<T: DeserializeOwned>(
     input: *mut u8,
     input_len: usize,
 ) -> SgxResult<T> {
-    let sealed_data = unsafe {
+    let sealed_data =
         match SgxSealedData::<[u8]>::from_raw_sealed_data_t(
             input as *mut sgx_sealed_data_t,
             input_len as u32,
@@ -78,21 +75,14 @@ pub unsafe fn unseal_ptr_and_deser<T: DeserializeOwned>(
             None => {
                 return Err(SGX_ERROR_INVALID_PARAMETER);
             }
-        }
-    };
+        };
 
     let unsealed = sealed_data.unseal_data()?;
     let unsealed_slice = unsealed.get_decrypt_txt();
     Ok(match serde_cbor::de::from_slice(unsealed_slice) {
         Ok(t) => t,
-        Err(e) => {
+        Err(_e) => {
             return Err(SGX_ERROR_INVALID_PARAMETER);
         }
     })
-}
-
-// ser/de for specific types
-
-pub fn ser_and_seal_secret_key(sk: &SgxPrivateKey) -> SgxResult<Vec<u8>> {
-    ser_and_seal_to_vec(sk, "private key".as_bytes())
 }

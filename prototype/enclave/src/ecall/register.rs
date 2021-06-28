@@ -1,23 +1,12 @@
 use interface::*;
-use sgx_types::{sgx_get_quote, sgx_get_target_info, sgx_qe_get_target_info, SgxResult};
+use sgx_types::{SgxResult};
 use std::vec::Vec;
-use utils::{ser_and_seal_to_ptr, ser_and_seal_to_vec, serialize_to_ptr};
-
-use sgx_types::{sgx_sealed_data_t, sgx_status_t};
-
+use utils::{ser_and_seal_to_vec};
 use sgx_rand::Rng;
-use sgx_tseal::SgxSealedData;
-use std::slice;
 use std::string::ToString;
-
 use core::convert::TryFrom;
-use crypto::{KemKeyPair, SgxPrivateKey, SharedSecretsWithAnyTrustGroup, SharedServerSecret};
-
-use sgx_types::sgx_status_t::{
-    SGX_ERROR_FAAS_BUFFER_TOO_SHORT, SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED,
-    SGX_INTERNAL_ERROR_ENCLAVE_CREATE_INTERRUPTED, SGX_SUCCESS,
-};
-
+use crypto::{SgxPrivateKey, SharedSecretsWithAnyTrustGroup};
+use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;
 use std::string::String;
 use utils;
 
@@ -52,7 +41,7 @@ pub fn new_sgx_keypair_internal(role: &String) -> SgxResult<SealedKey> {
 }
 
 pub fn unseal_to_pubkey_internal(sealed_sk: &SealedKey) -> SgxResult<SgxProtectedKeyPub> {
-    let sk = unsafe { utils::unseal_vec_and_deser::<SgxPrivateKey>(&sealed_sk.sealed_sk) }?;
+    let sk = utils::unseal_vec_and_deser::<SgxPrivateKey>(&sealed_sk.sealed_sk)?;
     SgxProtectedKeyPub::try_from(&sk)
 }
 

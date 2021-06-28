@@ -1,5 +1,5 @@
 use crypto::SgxSignature;
-use interface::{DcMessage, EntityId, SgxSigningPubKey, UserSubmissionReq};
+use interface::{DcMessage, EntityId, SgxSigningPubKey};
 
 #[serde(crate = "serde")]
 #[derive(Debug, Serialize, Deserialize)]

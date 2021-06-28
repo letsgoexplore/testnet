@@ -1,6 +1,6 @@
 use interface::{KemPubKey, SgxProtectedKeyPub};
 use sgx_rand::{Rand, Rng};
-use sgx_types::{sgx_ec256_private_t, sgx_status_t, SgxResult, SGX_ECP256_KEY_SIZE};
+use sgx_types::{sgx_ec256_private_t, sgx_status_t, SGX_ECP256_KEY_SIZE};
 use std::convert::TryFrom;
 use std::fmt::{Debug, Display, Formatter};
 

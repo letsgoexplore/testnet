@@ -1,7 +1,7 @@
-use crate::interface::{KemPubKey, SgxSigningPubKey};
+use crate::interface::{SgxSigningPubKey};
 use crate::types::CryptoError;
 use sgx_types::{
-    sgx_ec256_private_t, sgx_ec256_public_t, SgxError, SgxResult, SGX_ECP256_KEY_SIZE,
+    SgxError, SgxResult, SGX_ECP256_KEY_SIZE,
 };
 use std::vec::Vec;
 

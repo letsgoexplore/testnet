@@ -30,8 +30,6 @@ extern crate sgx_rand;
 extern crate sgx_trts;
 extern crate sgx_tseal;
 
-#[macro_use]
-mod macros;
 
 mod crypto;
 mod ecall;

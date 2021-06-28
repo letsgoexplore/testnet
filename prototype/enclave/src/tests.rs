@@ -13,8 +13,8 @@ use crate::interface::*;
 use crypto::{KemKeyPair, SignMutable, Signable};
 use messages_types::SignedUserMessage;
 
-use crate::ecall;
-use ecall::*;
+
+
 use serde_cbor;
 use sgx_rand::Rng;
 
