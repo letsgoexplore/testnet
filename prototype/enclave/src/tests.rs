@@ -10,7 +10,7 @@ use hkdf::Hkdf;
 use sha2::Sha256;
 
 use crate::interface::*;
-use crypto::{KemKeyPair, SignMutable, Signable};
+use crypto::{SignMutable, Signable, SgxSigningKey};
 use messages_types::SignedUserMessage;
 
 
@@ -65,20 +65,20 @@ fn xor() {
     assert_eq!(b_mut, vec![1 ^ 4, 2 ^ 5]);
 }
 
-fn test_keypair() -> crypto::CryptoResult<KemKeyPair> {
+fn test_keypair() -> crypto::CryptoResult<(SgxSigningKey,SgxSigningPubKey)> {
     let handle = sgx_tcrypto::SgxEccHandle::new();
     handle.open().unwrap();
     match handle.create_key_pair() {
-        Ok(pair) => Ok(KemKeyPair {
-            prv_key: crypto::KemPrvKey::from(pair.0),
-            pub_key: KemPubKey::from(pair.1),
-        }),
+        Ok(pair) => Ok((
+            crypto::KemPrvKey::from(pair.0),
+            KemPubKey::from(pair.1),
+        )),
         Err(e) => Err(CryptoError::SgxCryptoLibError(e)),
     }
 }
 
-fn sign() -> (KemKeyPair, SignedUserMessage) {
-    let keypair = test_keypair().unwrap();
+fn sign() -> () {
+    let (sk,pk) = test_keypair().unwrap();
 
     let mut mutable = SignedUserMessage {
         user_id: EntityId::default(),
@@ -89,12 +89,10 @@ fn sign() -> (KemKeyPair, SignedUserMessage) {
         tee_pk: Default::default(),
     };
 
-    mutable.sign_mut(&keypair.prv_key).expect("sign");
+    mutable.sign_mut(&sk).expect("sign");
 
-    assert_eq!(mutable.tee_pk, keypair.pub_key);
+    assert_eq!(mutable.tee_pk, pk);
     assert!(mutable.verify().expect("verify"));
-
-    (keypair, mutable)
 }
 
 fn aggregate() {

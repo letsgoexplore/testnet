@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::prelude::v1::*;
 
-use crate::{params::*, sealed_types::*, sgx_protected_keys::*};
+use crate::{params::*, ecall_interface_types::*, sgx_protected_keys::*};
 
 use sgx_types::SGX_HMAC256_KEY_SIZE;
 use sha2::{Digest, Sha256};

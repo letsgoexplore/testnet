@@ -62,9 +62,3 @@ impl TryFrom<&SgxPrivateKey> for SgxProtectedKeyPub {
 // KemPrvKey and SgxSigningKey are aliases to SgxProtectedPrivateKey
 pub type KemPrvKey = SgxPrivateKey;
 pub type SgxSigningKey = SgxPrivateKey;
-
-#[derive(Copy, Clone, Default, Serialize, Deserialize)]
-pub struct KemKeyPair {
-    pub prv_key: KemPrvKey,
-    pub pub_key: KemPubKey,
-}
