@@ -3,7 +3,7 @@ extern crate interface;
 
 use std::{collections::BTreeSet, error::Error};
 
-use common::enclave_wrapper::{AggregateBlob, DcNetEnclave, EnclaveResult};
+use common::enclave_wrapper::{DcNetEnclave, EnclaveResult, MarshalledSignedUserMessage};
 use dc_proto::{anytrust_node_client::AnytrustNodeClient, SgxMsg};
 pub mod dc_proto {
     tonic::include_proto!("dc_proto");
@@ -62,7 +62,10 @@ impl<'a> AggregatorState<'a> {
     }
 
     /// Adds the given input to the partial aggregate
-    fn add_to_aggregate(&mut self, input_blob: &AggregateBlob) -> Result<(), Box<dyn Error>> {
+    fn add_to_aggregate(
+        &mut self,
+        input_blob: &MarshalledSignedUserMessage,
+    ) -> Result<(), Box<dyn Error>> {
         let partial_agg = self
             .partial_agg
             .as_mut()

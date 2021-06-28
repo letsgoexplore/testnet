@@ -60,9 +60,9 @@ pub unsafe fn ser_and_seal_to_ptr<T: Serialize>(
     }
 }
 
-pub unsafe fn unseal_vec_and_deser<T: DeserializeOwned>(input: &Vec<u8>) -> SgxResult<T> {
+pub fn unseal_vec_and_deser<T: DeserializeOwned>(input: &Vec<u8>) -> SgxResult<T> {
     let mut bin = input.clone();
-    unseal_ptr_and_deser(bin.as_mut_ptr(), bin.len())
+    unsafe { unseal_ptr_and_deser(bin.as_mut_ptr(), bin.len()) }
 }
 
 pub unsafe fn unseal_ptr_and_deser<T: DeserializeOwned>(

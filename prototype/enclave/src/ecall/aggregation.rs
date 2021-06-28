@@ -1,11 +1,10 @@
 use crypto::*;
-use interface::DcMessage;
+use interface::*;
 use messages_types::SignedUserMessage;
 use sgx_types::{sgx_status_t, SgxError, SgxResult};
 use std::prelude::v1::*;
 use types::*;
 
-use crate::interface::*;
 use crypto::{SgxSignature, Signable};
 use std::vec::Vec;
 
@@ -43,6 +42,7 @@ use sgx_types::sgx_status_t::{SGX_INTERNAL_ERROR_ENCLAVE_CREATE_INTERRUPTED, SGX
 use sha2::Digest;
 use sha2::Sha256;
 use types::DcNetError::AggregationError;
+use utils::{unseal_vec_and_deser, serialize_to_vec};
 
 impl Signable for AggregatedMessage {
     fn digest(&self) -> Vec<u8> {
@@ -74,11 +74,30 @@ impl SignMutable for AggregatedMessage {
     }
 }
 
-pub fn aggregate_internal(
-    incoming_msg: &SignedUserMessage,
-    current_aggregation: &AggregatedMessage,
-    tee_signing_sk: &SgxSigningKey,
-) -> SgxResult<AggregatedMessage> {
+
+pub fn add_to_aggregate_internal(
+    input: &(MarshalledSignedUserMessage, MarshalledPartialAggregate, SealedKey)
+) -> SgxResult<MarshalledPartialAggregate> {
+    // let (incoming_msg, current_aggregation, sealed_sk) = input;
+
+    let incoming_msg: SignedUserMessage = utils::deserialize_from_vec(&input.0.0)?;
+
+    // if input.1.0.is_empty(), we create a new aggregation
+    let current_aggregation = if !input.1.0.is_empty() {
+        utils::deserialize_from_vec(&input.1.0)?
+    } else {
+        AggregatedMessage {
+            round: incoming_msg.round,
+            anytrust_group_id: incoming_msg.anytrust_group_id,
+            user_ids: vec![],
+            aggregated_msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
+            tee_sig: Default::default(),
+            tee_pk: Default::default(),
+        }
+    };
+
+    let tee_signing_sk: SgxSigningKey = unseal_vec_and_deser(&input.2.sealed_sk)?;
+
     // verify signature
     if !incoming_msg.verify()? {
         println!("can't verify sig on incoming_msg");
@@ -113,70 +132,7 @@ pub fn aggregate_internal(
 
     println!("new agg: {:?}", new_agg);
 
-    Ok(new_agg)
-}
-
-#[no_mangle]
-pub extern "C" fn ecall_aggregate(
-    sign_user_msg_ptr: *const u8,
-    sign_user_msg_len: usize,
-    current_aggregation_ptr: *const u8,
-    current_aggregation_len: usize,
-    sealed_tee_prv_key_ptr: *mut u8,
-    sealed_tee_prv_key_len: usize,
-    output_aggregation_ptr: *mut u8,
-    output_size: usize,
-    output_bytes_written: *mut usize,
-) -> sgx_status_t {
-    let incoming_msg = unmarshal_or_abort!(SignedUserMessage, sign_user_msg_ptr, sign_user_msg_len);
-    println!("incoming message {:?}", &incoming_msg);
-
-    let current_agg = if current_aggregation_len != 0 {
-        unmarshal_or_abort!(
-            AggregatedMessage,
-            current_aggregation_ptr,
-            current_aggregation_len
-        )
-    } else {
-        AggregatedMessage {
-            round: incoming_msg.round,
-            anytrust_group_id: incoming_msg.anytrust_group_id,
-            user_ids: vec![],
-            aggregated_msg: DcMessage::default(),
-            tee_sig: Default::default(),
-            tee_pk: Default::default(),
-        }
-    };
-
-    println!("current agg: {:?}", current_agg);
-
-    let tee_signing_sk = unseal_or_abort!(
-        SgxSigningKey,
-        sealed_tee_prv_key_ptr,
-        sealed_tee_prv_key_len
-    );
-
-    // Forward e-call to the internal safe version once deserialization and unmarshalling is done.
-    let new_agg = unwrap_or_abort!(
-        aggregate_internal(&incoming_msg, &current_agg, &tee_signing_sk),
-        SGX_ERROR_INVALID_PARAMETER
-    );
-
-    println!("new agg: {:?}", new_agg);
-
-    // Write to user land
-    match utils::serialize_to_ptr(
-        &new_agg,
-        output_aggregation_ptr,
-        output_size,
-        output_bytes_written,
-    ) {
-        Ok(_) => SGX_SUCCESS,
-        Err(e) => {
-            println!("can serialize {}", e);
-            e
-        }
-    }
+    Ok(MarshalledPartialAggregate(serialize_to_vec(&new_agg)?))
 }
 
 #[no_mangle]

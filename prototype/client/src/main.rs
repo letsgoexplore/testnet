@@ -67,7 +67,7 @@ impl<'a> UserState<'a> {
             round,
             msg: msg.clone(),
             ticket: ticket.clone(),
-            shared_secrets: self.shared_secrets.clone(),
+            server_secrets: self.shared_secrets.clone(),
         };
 
         let msg_blob = self

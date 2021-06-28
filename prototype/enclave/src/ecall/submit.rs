@@ -7,9 +7,10 @@ use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 
 use std::prelude::v1::*;
 use std::slice;
+use sgx_types::SgxResult;
 
 use crypto;
-use crypto::{SgxSigningKey, SharedSecretsWithAnyTrustGroup, SignMutable};
+use crypto::{SgxSigningKey, SharedSecretsWithAnyTrustGroup, SignMutable, SgxPrivateKey};
 
 use self::interface::*;
 use crypto::SharedServerSecret;
@@ -21,29 +22,44 @@ use utils;
 use std::convert::TryFrom;
 
 pub fn user_submit_internal(
-    send_request: &UserSubmissionReq,
-    tee_prv_key: &SgxSigningKey,
-    shared_server_secrets: &SharedSecretsWithAnyTrustGroup,
-) -> SgxResult<SignedUserMessage> {
+    input: &(UserSubmissionReq, SealedKey),
+) -> SgxResult<Vec<u8>> {
+    let (send_request, sealed_key) = input;
     println!("got request {:?}", send_request);
 
     // 1) TODO: check ticket first
     println!("[WARN] NOT checking ticket ATM");
 
     // 2) unseal private key
-    println!(
-        "using signing (pub) key {}",
-        SgxProtectedKeyPub::try_from(tee_prv_key)?
-    );
+    let sk: SgxPrivateKey = utils::unseal_vec_and_deser(&sealed_key.sealed_sk)?;
+    let pk = SgxProtectedKeyPub::try_from(&sk)?;
+    println!("using signing (pub) key {}", pk);
+
+    if send_request.user_id != EntityId::from(&pk) {
+        println!("send_request.user_id != EntityId::from(&pk)");
+        return Err(SGX_ERROR_INVALID_PARAMETER);
+    }
 
     // 3) derive the round key from shared secrets
-    // TODO: check shared_server_secrets correspond to anytrust_group_id
+    let server_secrets: SharedSecretsWithAnyTrustGroup = utils::unseal_vec_and_deser(
+        &send_request.server_secrets.sealed_server_secrets)?;
+
+    if server_secrets.user_id != send_request.user_id {
+        println!("server_secrets.user_id != send_request.user_id");
+        return Err(SGX_ERROR_INVALID_PARAMETER);
+    }
+
+    if server_secrets.anytrust_group_id() != send_request.anytrust_group_id {
+        println!("server_secrets.anytrust_group_id() != send_request.anytrust_group_id");
+        return Err(SGX_ERROR_INVALID_PARAMETER);
+    }
+
     println!(
         "using {} servers",
-        shared_server_secrets.anytrust_group_pairwise_keys.len()
+        server_secrets.anytrust_group_pairwise_keys.len()
     );
 
-    let round_key = crypto::derive_round_secret(send_request.round, &shared_server_secrets)
+    let round_key = crypto::derive_round_secret(send_request.round, &server_secrets)
         .map_err(|e| SGX_ERROR_INVALID_PARAMETER)?;
 
     println!("round_key derived: {}", round_key);
@@ -62,50 +78,17 @@ pub fn user_submit_internal(
     };
 
     // sign
-    mutable.sign_mut(&tee_prv_key).map_err(|e| {
-        println!("error signing: {}", e);
-        SGX_ERROR_INVALID_PARAMETER
-    })?;
-
-    println!("signed use message {:?}", mutable);
-    Ok(mutable)
-}
-
-use sgx_types::sgx_status_t::SGX_SUCCESS;
-use sgx_types::{SgxError, SgxResult};
-use utils::{unseal_ptr_and_deser, unseal_vec_and_deser};
-
-#[no_mangle]
-pub extern "C" fn ecall_user_submit(
-    send_request_ptr: *const u8,
-    send_request_len: usize,
-    sealed_tee_prv_key_ptr: *mut u8,
-    sealed_tee_prv_key_len: usize,
-    output: *mut u8,
-    output_size: usize,
-    output_bytes_written: *mut usize,
-) -> sgx_status_t {
-    // Deser and unseal everything
-    let send_request = unmarshal_or_abort!(UserSubmissionReq, send_request_ptr, send_request_len);
-    let tee_signing_sk = unseal_or_abort!(
-        SgxSigningKey,
-        sealed_tee_prv_key_ptr,
-        sealed_tee_prv_key_len
-    );
-    let shared_server_secrets = unseal_vec_or_abort!(
-        SharedSecretsWithAnyTrustGroup,
-        &send_request.shared_secrets.sealed_server_secrets
-    );
-
-    // Forward ecall to the internal call
-    let signed_msg = unwrap_or_abort!(
-        user_submit_internal(&send_request, &tee_signing_sk, &shared_server_secrets,),
-        SGX_ERROR_INVALID_PARAMETER
-    );
-
-    // Write to user land
-    match utils::serialize_to_ptr(&signed_msg, output, output_size, output_bytes_written) {
-        Ok(_) => SGX_SUCCESS,
-        Err(e) => e,
+    if mutable.sign_mut(&sk).is_err() {
+        println!("can't sign");
+        return Err(SGX_ERROR_UNEXPECTED);
     }
+
+    println!("signed user message {:?}", mutable);
+
+    // serialized
+    let serialized = serde_cbor::to_vec(&mutable).map_err(|e| {
+        println!("can't serialized {}", e);
+        SGX_ERROR_UNEXPECTED
+    })?;
+    Ok(serialized)
 }

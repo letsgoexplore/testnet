@@ -130,7 +130,7 @@ pub struct UserSubmissionReq {
     pub ticket: SealedFootprintTicket,
     /// When unsealed, this must have the form (kpk_1, ..., kpk_ℓ, s_1, ..., s_ℓ) so that the
     /// shared secrets are linked to the relevant servers
-    pub shared_secrets: SealedServerSecrets,
+    pub server_secrets: SealedServerSecrets,
 }
 
 use std::format;
@@ -143,7 +143,7 @@ impl Debug for UserSubmissionReq {
             .field("round", &self.round)
             .field("msg", &self.msg)
             .field("ticket", &"empty for now")
-            .field("shared_secrets", &self.shared_secrets)
+            .field("shared_secrets", &self.server_secrets)
             .finish()
     }
 }

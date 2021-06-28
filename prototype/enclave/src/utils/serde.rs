@@ -1,8 +1,17 @@
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_cbor;
-use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
+use sgx_types::sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 use sgx_types::SgxError;
+
+use std::vec::Vec;
+
+pub fn serialize_to_vec<T: Serialize>(v: &T) -> SgxResult<Vec<u8>> {
+    serde_cbor::to_vec(v).map_err(|e| {
+        println!("can't serialize_to_vec {}", e);
+        SGX_ERROR_UNEXPECTED
+    })
+}
 
 pub fn serialize_to_ptr<T: Serialize>(
     v: &T,
@@ -46,5 +55,15 @@ use std::slice::from_raw_parts;
 
 pub fn deserialize_from_ptr<T: DeserializeOwned>(inp: *const u8, inp_len: usize) -> SgxResult<T> {
     let bin = unsafe { from_raw_parts(inp, inp_len) };
-    serde_cbor::from_slice::<T>(bin).map_err(|e| SGX_ERROR_INVALID_PARAMETER)
+    serde_cbor::from_slice::<T>(bin).map_err(|e| {
+        println!("can't deserialize_from_ptr {}", e);
+        SGX_ERROR_INVALID_PARAMETER
+    })
+}
+
+pub fn deserialize_from_vec<T: DeserializeOwned>(bin: &[u8]) -> SgxResult<T> {
+    serde_cbor::from_slice::<T>(bin).map_err(|e| {
+        println!("can't deserialize_from_vec {}", e);
+        SGX_ERROR_INVALID_PARAMETER
+    })
 }

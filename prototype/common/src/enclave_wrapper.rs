@@ -36,19 +36,6 @@ quick_error! {
 
 pub type EnclaveResult<T> = Result<T, EnclaveError>;
 
-/// Describes a partial aggregate. It can consist of a single user's round message (i.e., the
-/// output of `user_submit_round_msg`, or the XOR of multiple user's round messages (i.e., the
-/// output of `finalize_aggregate`).
-pub struct AggregateBlob(pub Vec<u8>);
-
-/// Describes user registration information. This contains key encapsulations as well as a linkably
-/// attested signature pubkey.
-pub struct UserRegistrationBlob(pub Vec<u8>);
-
-/// Describes aggregator registration information. This contains a linkably attested signature
-/// pubkey.
-pub struct AggRegistrationBlob(pub Vec<u8>);
-
 type GenericEcallFn = unsafe extern "C" fn(
     eid: sgx_enclave_id_t,
     retval: *mut sgx_status_t,
@@ -72,18 +59,6 @@ extern "C" {
         output_used: *mut usize,
     ) -> sgx_status_t;
 
-    fn ecall_user_submit(
-        eid: sgx_enclave_id_t,
-        retval: *mut sgx_status_t,
-        send_request: *const u8,
-        send_request_len: usize,
-        sealed_tee_prv_key: *const u8,
-        sealed_tee_prv_key_len: usize,
-        output: *mut u8,
-        output_size: usize,
-        bytes_written: *mut usize,
-    ) -> sgx_status_t;
-
     fn ecall_aggregate(
         eid: sgx_enclave_id_t,
         retval: *mut sgx_status_t,
@@ -99,14 +74,6 @@ extern "C" {
     ) -> sgx_status_t;
 
     fn test_main_entrance(eid: sgx_enclave_id_t, retval: *mut sgx_status_t) -> sgx_status_t;
-
-    fn ecall_create_test_sealed_server_secrets(
-        eid: sgx_enclave_id_t,
-        retval: *mut sgx_status_t,
-        num_of_keys: u32,
-        out_buf: *mut u8,
-        out_buf_cap: u32,
-    ) -> sgx_status_t;
 }
 
 const ENCLAVE_OUTPUT_BUF_SIZE: usize = 1024000;
@@ -223,47 +190,13 @@ impl DcNetEnclave {
     /// Given a message and the relevant scheduling ticket, constructs a round message for sending
     /// to an aggregator
     pub fn user_submit_round_msg(
-        &self,
+        &mut self,
         submission_req: &UserSubmissionReq,
         sealed_usk: &SealedKey,
-    ) -> EnclaveResult<AggregateBlob> {
-        let marshaled_req = serde_cbor::to_vec(&submission_req).map_err(|e| {
-            println!("Error marshaling request {}", e);
-            EnclaveError::SgxError(SGX_ERROR_INVALID_PARAMETER)
-        })?;
-
-        let mut output = Vec::new();
-        const RESERVED_LEN: usize = 5120;
-        output.resize(RESERVED_LEN, 0); // TODO: estimate AggregateBlob size more intelligently
-        let mut output_bytes_written: usize = 0;
-
-        // Call user_submit through FFI
-        let mut ret = sgx_status_t::default();
-        let call_ret = unsafe {
-            ecall_user_submit(
-                self.enclave.geteid(),
-                &mut ret,
-                marshaled_req.as_ptr(),
-                marshaled_req.len(),
-                sealed_usk.sealed_sk.as_ptr(),
-                sealed_usk.sealed_sk.len(),
-                output.as_mut_ptr(),
-                output.len(),
-                &mut output_bytes_written,
-            )
-        };
-
-        // Check for errors
-        if call_ret != SGX_SUCCESS {
-            return Err(EnclaveError::SgxError(call_ret));
-        }
-        if ret != SGX_SUCCESS {
-            return Err(EnclaveError::EnclaveLogicError(call_ret));
-        }
-
-        output.resize(output_bytes_written, 0);
-
-        Ok(AggregateBlob(output))
+    ) -> EnclaveResult<MarshalledSignedUserMessage> {
+        let marshaled_signed_msg: Vec<u8> =
+            self.make_generic_ecall(EcallId::EcallUserSubmit, &(submission_req, sealed_usk))?;
+        Ok(MarshalledSignedUserMessage(marshaled_signed_msg))
     }
 
     /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
@@ -272,7 +205,7 @@ impl DcNetEnclave {
         round: u32,
         anytrust_group_id: &EntityId,
     ) -> EnclaveResult<MarshalledPartialAggregate> {
-        // The partial aggregate MUST store set of anytrust nodes
+        // add_to_aggregate will create a new_aggregate when given an empty blob
         Ok(MarshalledPartialAggregate(Vec::new()))
     }
 
@@ -280,48 +213,18 @@ impl DcNetEnclave {
     /// Note: if marshalled_current_aggregation is empty (len = 0), an empty aggregation is created
     //  and the signed message is aggregated into that.
     pub fn add_to_aggregate(
-        &self,
+        &mut self,
         agg: &mut MarshalledPartialAggregate,
-        new_input: &AggregateBlob,
+        new_input: &MarshalledSignedUserMessage,
         sealed_tee_signing_key: &SealedKey,
     ) -> EnclaveResult<()> {
-        // This MUST check that the input blob is made wrt the same set of anytrust nodes
+        let new_agg: MarshalledPartialAggregate = self.make_generic_ecall(
+            EcallId::EcallAddToAggregate,
+            &(new_input, agg.clone(), sealed_tee_signing_key),
+        )?;
 
-        // todo: make sure this is big enough
-        let mut output = vec![0; 10240];
-        let mut output_bytes_written: usize = 0;
-
-        let mut ret = sgx_status_t::default();
-
-        // Call aggregate through FFI
-        let call_ret = unsafe {
-            ecall_aggregate(
-                self.get_eid(),
-                &mut ret,
-                new_input.0.as_ptr(),
-                new_input.0.len(),
-                agg.0.as_ptr(),
-                agg.0.len(),
-                sealed_tee_signing_key.sealed_sk.as_ptr(),
-                sealed_tee_signing_key.sealed_sk.len(),
-                output.as_mut_ptr(),
-                output.len(),
-                &mut output_bytes_written,
-            )
-        };
-
-        // Check for errors
-        if call_ret != SGX_SUCCESS {
-            return Err(EnclaveError::SgxError(call_ret));
-        }
-        if ret != SGX_SUCCESS {
-            return Err(EnclaveError::EnclaveLogicError(call_ret));
-        }
-
-        // update agg
-        output.resize(output_bytes_written, 0);
         agg.0.clear();
-        agg.0.extend_from_slice(&output);
+        agg.0.extend_from_slice(&new_agg.0);
 
         Ok(())
     }
@@ -333,7 +236,7 @@ impl DcNetEnclave {
     pub fn finalize_aggregate(
         &self,
         agg: &MarshalledPartialAggregate,
-    ) -> EnclaveResult<AggregateBlob> {
+    ) -> EnclaveResult<MarshalledSignedUserMessage> {
         unimplemented!()
     }
 
@@ -407,10 +310,6 @@ mod enclave_tests {
     };
     use sgx_types::SGX_ECP256_KEY_SIZE;
 
-    fn test_signing_key() -> SealedKey {
-        SealedKey::default()
-    }
-
     #[test]
     fn key_seal_unseal() {
         let mut enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
@@ -437,10 +336,12 @@ mod enclave_tests {
             round: 0u32,
             msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket(vec![0; 1]),
-            shared_secrets: user_reg_server_secrets,
+            server_secrets: user_reg_server_secrets,
         };
-        let sgx_key_sealed = test_signing_key();
-        let resp_1 = enc.user_submit_round_msg(&req_1, &sgx_key_sealed).unwrap();
+        let resp_1 = enc
+            .user_submit_round_msg(&req_1, &user_reg_sealed_key)
+            .unwrap();
+
         enc.destroy();
     }
 
@@ -451,7 +352,7 @@ mod enclave_tests {
         let mut pks = Vec::new();
         for i in 0..num_of_servers {
             let sk = enc.new_sgx_protected_key("test".to_string()).expect("key");
-            pks.push(enc.unseal_to_public_key_on_p256(&sk).expect("pk"));
+            pks.push(sk.pk);
         }
 
         pks
@@ -463,6 +364,8 @@ mod enclave_tests {
 
         // create server public keys
         let spks = create_server_pubkeys(&mut enc, 10);
+
+        // create a fake user
         let (user_reg_server_secrets, user_reg_sealed_key, user_reg_uid, user_reg_proof) =
             enc.register_user(&spks).unwrap();
 
@@ -472,40 +375,37 @@ mod enclave_tests {
             round: 0u32,
             msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket(vec![0; 1]),
-            shared_secrets: user_reg_server_secrets,
+            server_secrets: user_reg_server_secrets,
         };
 
-        let sealed_agg_tee_key = test_signing_key();
-
         let resp_1 = enc
-            .user_submit_round_msg(&req_1, &sealed_agg_tee_key)
+            .user_submit_round_msg(&req_1, &user_reg_sealed_key)
             .unwrap();
 
+        let agg = enc.register_aggregator().expect("agg");
+
         let mut empty_agg = enc.new_aggregate(0, &EntityId::default()).unwrap();
-        enc.add_to_aggregate(&mut empty_agg, &resp_1, &sealed_agg_tee_key)
+        enc.add_to_aggregate(&mut empty_agg, &resp_1, &agg.0)
             .unwrap();
 
         // this should error because user is already in
         assert!(enc
-            .add_to_aggregate(&mut empty_agg, &resp_1, &sealed_agg_tee_key)
+            .add_to_aggregate(&mut empty_agg, &resp_1, &agg.0)
             .is_err());
 
-        let (user_reg_2_server_secrets, user_reg_2_sealed_key, user_reg_2_uid, _) =
-            enc.register_user(&spks).unwrap();
+        let user_2 = enc.register_user(&spks).unwrap();
 
         let req_2 = UserSubmissionReq {
-            user_id: user_reg_2_uid,
-            anytrust_group_id: user_reg_2_server_secrets.anytrust_group_id,
+            user_id: user_2.2,
+            anytrust_group_id: user_2.0.anytrust_group_id,
             round: 0u32,
             msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket(vec![0; 1]),
-            shared_secrets: user_reg_2_server_secrets,
+            server_secrets: user_2.0,
         };
-        let resp_2 = enc
-            .user_submit_round_msg(&req_2, &sealed_agg_tee_key)
-            .unwrap();
+        let resp_2 = enc.user_submit_round_msg(&req_2, &user_2.1).unwrap();
 
-        enc.add_to_aggregate(&mut empty_agg, &resp_2, &sealed_agg_tee_key)
+        enc.add_to_aggregate(&mut empty_agg, &resp_2, &agg.0)
             .unwrap();
 
         enc.destroy();
