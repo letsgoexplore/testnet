@@ -1,8 +1,6 @@
 extern crate interface;
 extern crate sgx_types;
 
-
-
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 
 use std::prelude::v1::*;
@@ -10,7 +8,7 @@ use std::prelude::v1::*;
 use sgx_types::SgxResult;
 
 use crypto;
-use crypto::{SharedSecretsWithAnyTrustGroup, SignMutable, SgxPrivateKey};
+use crypto::{SgxPrivateKey, SharedSecretsWithAnyTrustGroup, SignMutable};
 
 use self::interface::*;
 
@@ -42,25 +40,25 @@ pub fn user_submit_internal(
     }
 
     // 3) derive the round key from shared secrets
-    let server_secrets: SharedSecretsWithAnyTrustGroup = utils::unseal_vec_and_deser(
-        &send_request.server_secrets.sealed_server_secrets)?;
+    let shared_secrets: SharedSecretsWithAnyTrustGroup =
+        utils::unseal_vec_and_deser(&send_request.shared_secrets.sealed_server_secrets)?;
 
-    if server_secrets.user_id != send_request.user_id {
-        println!("server_secrets.user_id != send_request.user_id");
+    if shared_secrets.user_id != send_request.user_id {
+        println!("shared_secrets.user_id != send_request.user_id");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    if server_secrets.anytrust_group_id() != send_request.anytrust_group_id {
-        println!("server_secrets.anytrust_group_id() != send_request.anytrust_group_id");
+    if shared_secrets.anytrust_group_id() != send_request.anytrust_group_id {
+        println!("shared_secrets.anytrust_group_id() != send_request.anytrust_group_id");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
     println!(
         "using {} servers",
-        server_secrets.anytrust_group_pairwise_keys.len()
+        shared_secrets.anytrust_group_pairwise_keys.len()
     );
 
-    let round_key = crypto::derive_round_secret(send_request.round, &server_secrets)
+    let round_key = crypto::derive_round_secret(send_request.round, &shared_secrets)
         .map_err(|_e| SGX_ERROR_INVALID_PARAMETER)?;
 
     println!("round_key derived: {}", round_key);

@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::prelude::v1::*;
 
-use crate::{params::*, ecall_interface_types::*, sgx_protected_keys::*};
+use crate::{ecall_interface_types::*, params::*, sgx_protected_keys::*};
 
 use sgx_types::SGX_HMAC256_KEY_SIZE;
 use sha2::{Digest, Sha256};
@@ -128,9 +128,8 @@ pub struct UserSubmissionReq {
     pub round: u32,
     pub msg: DcMessage,
     pub ticket: SealedFootprintTicket,
-    /// When unsealed, this must have the form (kpk_1, ..., kpk_ℓ, s_1, ..., s_ℓ) so that the
-    /// shared secrets are linked to the relevant servers
-    pub server_secrets: SealedServerSecrets,
+    /// A sealed map from entity ID to shared secret
+    pub shared_secrets: SealedSharedSecretDb,
 }
 
 use std::format;
@@ -143,7 +142,7 @@ impl Debug for UserSubmissionReq {
             .field("round", &self.round)
             .field("msg", &self.msg)
             .field("ticket", &"empty for now")
-            .field("shared_secrets", &self.server_secrets)
+            .field("shared_secrets", &self.shared_secrets)
             .finish()
     }
 }
@@ -152,22 +151,22 @@ impl Debug for UserSubmissionReq {
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct UserRegistration {
     key: SealedKey,
-    server_secrets: SealedServerSecrets,
+    shared_secrets: SealedSharedSecretDb,
 }
 
 impl UserRegistration {
-    pub fn new(key: SealedKey, server_secrets: SealedServerSecrets) -> Self {
+    pub fn new(key: SealedKey, shared_secrets: SealedSharedSecretDb) -> Self {
         UserRegistration {
             key,
-            server_secrets,
+            shared_secrets,
         }
     }
     pub fn get_user_id(&self) -> EntityId {
         EntityId::from(&self.key.pk)
     }
 
-    pub fn get_sealed_server_secrets(&self) -> &SealedServerSecrets {
-        &self.server_secrets
+    pub fn get_sealed_shared_secrets(&self) -> &SealedSharedSecretDb {
+        &self.shared_secrets
     }
 
     pub fn get_sealed_usk(&self) -> &SealedKey {
@@ -179,6 +178,6 @@ impl UserRegistration {
     }
 
     pub fn get_anygroup_id(&self) -> EntityId {
-        self.server_secrets.anytrust_group_id
+        self.shared_secrets.anytrust_group_id
     }
 }

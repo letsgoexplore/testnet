@@ -3,14 +3,14 @@ extern crate interface;
 
 use std::{collections::BTreeSet, error::Error};
 
-use common::enclave_wrapper::{DcNetEnclave, EnclaveResult, MarshalledSignedUserMessage};
+use common::enclave_wrapper::{DcNetEnclave, EnclaveResult};
 use dc_proto::{anytrust_node_client::AnytrustNodeClient, SgxMsg};
 pub mod dc_proto {
     tonic::include_proto!("dc_proto");
 }
 use interface::{
-    compute_group_id, DcMessage, EntityId, KemPubKey, MarshalledPartialAggregate,
-    SealedFootprintTicket, SealedKey, SealedServerSecrets, UserSubmissionReq,
+    compute_group_id, DcMessage, EntityId, KemPubKey, RoundSubmissionBlob, SealedFootprintTicket,
+    SealedSigPrivKey, SignedPartialAggregate, UserSubmissionReq,
 };
 
 use rand::Rng;
@@ -23,16 +23,16 @@ struct AggregatorState<'a> {
     /// A unique for the set anytrust servers that this aggregator is registered with
     anytrust_group_id: EntityId,
     /// This aggregator's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedKey,
+    signing_key: SealedSigPrivKey,
     /// A partial aggregate of received user messages
-    partial_agg: Option<MarshalledPartialAggregate>,
+    partial_agg: Option<SignedPartialAggregate>,
 }
 
 fn register_aggregator(
     enclave: &DcNetEnclave,
     pubkeys: Vec<KemPubKey>,
 ) -> Result<(AggregatorState, SgxMsg), Box<dyn Error>> {
-    let (sealed_ask, agg_id, reg_data) = enclave.register_aggregator(&pubkeys)?;
+    let (sealed_ask, agg_id, reg_data) = enclave.new_aggregator()?;
 
     let anytrust_ids: BTreeSet<EntityId> = pubkeys.iter().map(|pk| pk.get_entity_id()).collect();
     let anytrust_group_id = compute_group_id(&anytrust_ids);
@@ -62,15 +62,14 @@ impl<'a> AggregatorState<'a> {
     }
 
     /// Adds the given input to the partial aggregate
-    fn add_to_aggregate(
-        &mut self,
-        input_blob: &MarshalledSignedUserMessage,
-    ) -> Result<(), Box<dyn Error>> {
+    fn add_to_aggregate(&mut self, input_blob: &RoundSubmissionBlob) -> Result<(), Box<dyn Error>> {
         let partial_agg = self
             .partial_agg
             .as_mut()
             .expect("cannot add to aggregate without first calling new_aggregate");
-        let _ = self.enclave.add_to_aggregate(partial_agg, input_blob)?;
+        let _ = self
+            .enclave
+            .add_to_aggregate(partial_agg, input_blob, &self.signing_key)?;
         Ok(())
     }
 

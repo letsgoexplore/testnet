@@ -1,13 +1,13 @@
+use crate::sgx_protected_keys::SgxProtectedKeyPub;
+use crate::user_request::EntityId;
 use sgx_types::sgx_status_t;
 use std::convert::TryFrom;
-use std::string::String;
-use std::vec::Vec;
-use crate::user_request::EntityId;
-use crate::sgx_protected_keys::SgxProtectedKeyPub;
 use std::fmt::{Debug, Formatter};
 use std::format;
+use std::string::String;
 use std::string::ToString;
 use std::vec;
+use std::vec::Vec;
 
 macro_rules! impl_enum {
     (
@@ -62,10 +62,21 @@ impl EcallId {
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct MarshalledSignedUserMessage(pub Vec<u8>);
 
+/// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to
+/// aggregators of all levels as well as anytrust nodes.
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Debug, Deserialize)]
+pub struct RoundSubmissionBlob(pub Vec<u8>);
+
+/// The unblinded aggregate output by a single anytrust node
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Debug, Deserialize)]
+pub struct UnblindedAggregateShare(pub Vec<u8>);
+
 /// The state of an aggregator. This can only be opened from within the enclave.
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct MarshalledPartialAggregate(pub Vec<u8>);
+pub struct SignedPartialAggregate(pub Vec<u8>);
 
 /// Describes user registration information. This contains key encapsulations as well as a linkably
 /// attested signature pubkey.
@@ -75,16 +86,19 @@ pub struct UserRegistrationBlob(pub Vec<u8>);
 /// pubkey.
 pub struct AggRegistrationBlob(pub Vec<u8>);
 
+/// Describes anytrust server registration information. This contains a linkably attested signature
+/// pubkey.
+pub struct ServerRegistrationBlob(pub Vec<u8>);
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SealedFootprintTicket(pub Vec<u8>);
 
-
 /// Enclave-protected secrets shared with a set of anytrust servers
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Deserialize)]
-pub struct SealedServerSecrets {
+#[derive(Default, Clone, Serialize, Deserialize)]
+// TODO: Make this a map from entity ID to shared secret
+pub struct SealedSharedSecretDb {
     /// The user and the anytrust_group that these keys belongs to.
     pub anytrust_group_id: EntityId,
     pub user_id: EntityId,
@@ -93,7 +107,7 @@ pub struct SealedServerSecrets {
     pub server_public_keys: Vec<SgxProtectedKeyPub>,
 }
 
-impl Debug for SealedServerSecrets {
+impl Debug for SealedSharedSecretDb {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SealedServerSecrets")
             .field("user_id", &self.user_id)
@@ -146,3 +160,19 @@ impl Debug for SealedKey {
             .finish()
     }
 }
+
+/// A signing keypair is an ECDSA keypair
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct SealedSigPrivKey(pub SealedKey);
+
+/// A KEM keypair is also ECDSA keypair
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct SealedKemPrivKey(pub SealedKey);
+
+#[derive(Default)]
+pub struct SignedPubKeyDb;
+
+// TODO: Figure out what this should contain. Probably just a long bitstring.
+pub struct RoundOutput;

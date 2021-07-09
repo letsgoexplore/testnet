@@ -9,7 +9,6 @@ use sgx_types::{sgx_status_t, SgxResult};
 use std::slice;
 use utils::serialize_to_ptr;
 
-
 macro_rules! match_ecall_ids {
     (
         $ecall_id_raw:ident,$inp:ident,$inp_len:ident,$out:ident,$out_cap:ident,$out_used:ident,
@@ -60,8 +59,8 @@ pub extern "C" fn ecall_entrypoint(
             submit::user_submit_internal),
 
         (EcallAddToAggregate,
-            (MarshalledSignedUserMessage,MarshalledPartialAggregate,SealedKey),
-            MarshalledPartialAggregate,
+            (MarshalledSignedUserMessage,SignedPartialAggregate,SealedKey),
+            SignedPartialAggregate,
             aggregation::add_to_aggregate_internal),
     }
 }
@@ -99,11 +98,14 @@ fn generic_ecall<I, O>(
     output_used: *mut usize,
     internal_fn: fn(&I) -> SgxResult<O>,
 ) -> sgx_status_t
-    where
-        I: serde::de::DeserializeOwned,
-        O: serde::Serialize,
+where
+    I: serde::de::DeserializeOwned,
+    O: serde::Serialize,
 {
-    println!("================== IN ENCLAVE {} ==================", ecall_id.as_str());
+    println!(
+        "================== IN ENCLAVE {} ==================",
+        ecall_id.as_str()
+    );
     let input: I = unmarshal_or_abort!(I, inp, inp_len);
     let result = match internal_fn(&input) {
         Ok(o) => o,
@@ -117,10 +119,12 @@ fn generic_ecall<I, O>(
             e
         }
     };
-    println!("================== LEAVING ENCLAVE {} ==================", ecall_id.as_str());
+    println!(
+        "================== LEAVING ENCLAVE {} ==================",
+        ecall_id.as_str()
+    );
 
     ret
 }
 
 pub use self::aggregation::*;
-

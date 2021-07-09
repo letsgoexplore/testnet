@@ -73,8 +73,8 @@ impl SignMutable for AggregatedMessage {
 
 
 pub fn add_to_aggregate_internal(
-    input: &(MarshalledSignedUserMessage, MarshalledPartialAggregate, SealedKey)
-) -> SgxResult<MarshalledPartialAggregate> {
+    input: &(MarshalledSignedUserMessage, SignedPartialAggregate, SealedKey)
+) -> SgxResult<SignedPartialAggregate> {
     // let (incoming_msg, current_aggregation, sealed_sk) = input;
 
     let incoming_msg: SignedUserMessage = utils::deserialize_from_vec(&input.0.0)?;
@@ -129,7 +129,7 @@ pub fn add_to_aggregate_internal(
 
     println!("new agg: {:?}", new_agg);
 
-    Ok(MarshalledPartialAggregate(serialize_to_vec(&new_agg)?))
+    Ok(SignedPartialAggregate(serialize_to_vec(&new_agg)?))
 }
 
 // #[no_mangle]

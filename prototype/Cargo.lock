@@ -1129,6 +1129,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "sgxdcnet-server"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "interface",
+ "prost",
+ "rand",
+ "tokio",
+ "tonic",
+ "tonic-build",
+]
+
+[[package]]
 name = "sha2"
 version = "0.8.0"
 source = "git+https://github.com/mesalock-linux/rustcrypto-hashes-sgx#54ac4af765ec6b424add4e7559e82328bd052060"

@@ -1,14 +1,14 @@
-use interface::*;
-use sgx_types::{SgxResult};
-use std::vec::Vec;
-use utils::{ser_and_seal_to_vec};
-use sgx_rand::Rng;
-use std::string::ToString;
 use core::convert::TryFrom;
 use crypto::{SgxPrivateKey, SharedSecretsWithAnyTrustGroup};
+use interface::*;
+use sgx_rand::Rng;
 use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;
+use sgx_types::SgxResult;
 use std::string::String;
+use std::string::ToString;
+use std::vec::Vec;
 use utils;
+use utils::ser_and_seal_to_vec;
 
 fn new_sgx_keypair_ext_internal(
     role: &str,
@@ -58,7 +58,7 @@ pub fn register_user_internal(anytrust_server_pks: &Vec<KemPubKey>) -> SgxResult
 
     Ok(UserRegistration::new(
         sealed_key,
-        SealedServerSecrets {
+        SealedSharedSecretDb {
             user_id: EntityId::from(&pk),
             anytrust_group_id: server_secrets.anytrust_group_id(),
             server_public_keys: server_secrets
