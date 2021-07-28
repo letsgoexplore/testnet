@@ -80,6 +80,8 @@ pub fn add_to_aggregate_internal(
     let incoming_msg: SignedUserMessage = utils::deserialize_from_vec(&input.0.0)?;
 
     // if input.1.0.is_empty(), we create a new aggregation
+    // input.1 is a MarshalledSignedUserMessage
+    // input.1.0 is the vec contained in a MarshalledSignedUserMessage
     let current_aggregation = if !input.1.0.is_empty() {
         utils::deserialize_from_vec(&input.1.0)?
     } else {
@@ -97,21 +99,19 @@ pub fn add_to_aggregate_internal(
 
     // verify signature
     if !incoming_msg.verify()? {
-        println!("can't verify sig on incoming_msg");
+        error!("can't verify sig on incoming_msg");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
     // FIXME: check incoming_msg.pk against a list of accepted public keys
 
-    println!("new input: {:?}", incoming_msg);
-
     if incoming_msg.round != current_aggregation.round {
-        println!("incoming_msg.round != agg.round");
+        error!("incoming_msg.round != agg.round");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
     if current_aggregation.user_ids.contains(&incoming_msg.user_id) {
-        println!("user already in");
+        error!("user already in");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
@@ -127,56 +127,7 @@ pub fn add_to_aggregate_internal(
     // sign
     new_agg.sign_mut(&tee_signing_sk)?;
 
-    println!("new agg: {:?}", new_agg);
+    debug!("new agg: {:?}", new_agg.user_ids);
 
     Ok(SignedPartialAggregate(serialize_to_vec(&new_agg)?))
 }
-
-// #[no_mangle]
-// pub extern "C" fn ecall_finalize_aggregate(
-//     current_aggregation_ptr: *const u8,
-//     current_aggregation_len: usize,
-//     sealed_tee_prv_key_ptr: *mut u8,
-//     sealed_tee_prv_key_len: usize,
-//     output_buf: *mut u8,
-//     output_buf_cap: usize,
-//     output_buf_used: *mut usize,
-// ) -> sgx_status_t {
-//     let current_agg = unmarshal_or_abort!(
-//         AggregatedMessage,
-//         current_aggregation_ptr,
-//         current_aggregation_len
-//     );
-//
-//     let tee_signing_sk = unseal_or_abort!(
-//         SgxSigningKey,
-//         sealed_tee_prv_key_ptr,
-//         sealed_tee_prv_key_len
-//     );
-//
-//     let mut final_aggregation = SignedUserMessage {
-//         user_id: Default::default(),
-//         anytrust_group_id: current_agg.anytrust_group_id,
-//         round: current_agg.round,
-//         msg: current_agg.aggregated_msg,
-//         tee_sig: Default::default(),
-//         tee_pk: Default::default(),
-//     };
-//
-//     // sign the final message
-//     final_aggregation.sign_mut(&tee_signing_sk);
-//
-//     // Write to user land
-//     match utils::serialize_to_ptr(
-//         &final_aggregation,
-//         output_buf,
-//         output_buf_cap,
-//         output_buf_used,
-//     ) {
-//         Ok(_) => SGX_SUCCESS,
-//         Err(e) => {
-//             println!("can serialize {}", e);
-//             e
-//         }
-//     }
-// }

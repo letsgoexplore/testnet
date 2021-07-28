@@ -17,6 +17,7 @@ macro_rules! impl_enum {
         }
     ) => (
         #[repr($repr)]
+        #[derive(Debug,Copy,Clone)]
         pub enum $name {
             $($key = $val,)+
         }
@@ -74,6 +75,7 @@ pub struct RoundSubmissionBlob(pub Vec<u8>);
 pub struct UnblindedAggregateShare(pub Vec<u8>);
 
 /// The state of an aggregator. This can only be opened from within the enclave.
+/// Inside an enclave this is deserialized to an AggregatedMessage 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct SignedPartialAggregate(pub Vec<u8>);
@@ -86,8 +88,8 @@ pub struct UserRegistrationBlob(pub Vec<u8>);
 /// pubkey.
 pub struct AggRegistrationBlob(pub Vec<u8>);
 
-/// Describes anytrust server registration information. This contains a linkably attested signature
-/// pubkey.
+/// Describes anytrust server registration information. This contains two linkable attestations
+/// for sig key and kem key.
 pub struct ServerRegistrationBlob(pub Vec<u8>);
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]

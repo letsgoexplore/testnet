@@ -5,7 +5,7 @@ use crate::{ecall_interface_types::*, params::*, sgx_protected_keys::*};
 
 use sgx_types::SGX_HMAC256_KEY_SIZE;
 use sha2::{Digest, Sha256};
-use std::fmt::{Debug, Formatter, Result as FmtResult};
+use std::fmt::{Debug, Formatter, Result as FmtResult, Display};
 
 big_array! { BigArray; }
 
@@ -66,6 +66,12 @@ impl AsRef<[u8; DC_NET_MESSAGE_LENGTH]> for DcMessage {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EntityId(pub [u8; USER_ID_LENGTH]);
+
+impl Display for EntityId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(&hex::encode(self.0))
+    }
+}
 
 impl Debug for EntityId {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {

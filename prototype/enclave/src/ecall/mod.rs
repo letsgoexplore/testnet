@@ -89,6 +89,8 @@ macro_rules! unmarshal_or_abort {
     };
 }
 
+use env_logger::{Builder,Target, Env};
+
 fn generic_ecall<I, O>(
     ecall_id: EcallId,
     inp: *const u8,
@@ -102,10 +104,13 @@ where
     I: serde::de::DeserializeOwned,
     O: serde::Serialize,
 {
-    println!(
-        "================== IN ENCLAVE {} ==================",
-        ecall_id.as_str()
-    );
+    let env = Env::default()
+        .filter_or("ENCLAVE_LOG_LEVEL", "debug")
+        .write_style_or("ENCLAVE_LOG_STYLE", "always");
+    let _ = Builder::from_env(env).target(Target::Stdout).try_init();
+
+    debug!("starting {}",ecall_id.as_str());
+    
     let input: I = unmarshal_or_abort!(I, inp, inp_len);
     let result = match internal_fn(&input) {
         Ok(o) => o,
@@ -115,16 +120,11 @@ where
     let ret = match serialize_to_ptr(&result, output, output_cap, output_used) {
         Ok(_) => SGX_SUCCESS,
         Err(e) => {
-            println!("[IN] can't write to untrusted land {}", e);
+            error!("[IN] can't write to untrusted land {}", e);
             e
         }
     };
-    println!(
-        "================== LEAVING ENCLAVE {} ==================",
-        ecall_id.as_str()
-    );
+    debug!("done ecall {}",ecall_id.as_str());
 
     ret
 }
-
-pub use self::aggregation::*;

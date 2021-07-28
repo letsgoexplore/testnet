@@ -13,13 +13,13 @@ pub fn serialize_to_vec<T: Serialize>(v: &T) -> SgxResult<Vec<u8>> {
     })
 }
 
+/// serialize v to outbuf. Return error if outbuf_cap is too small.
 pub fn serialize_to_ptr<T: Serialize>(
     v: &T,
     outbuf: *mut u8,
     outbuf_cap: usize,
     outbuf_used: *mut usize,
 ) -> SgxError {
-    // serialize SignedUserMessage
     let serialized = serde_cbor::to_vec(v).map_err(|e| {
         println!("[IN] error serializing: {}", e);
         SGX_ERROR_INVALID_PARAMETER
@@ -34,17 +34,10 @@ pub fn serialize_to_ptr<T: Serialize>(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    println!(
-        "[IN] writing {} bytes to (cap {})",
-        serialized.len(),
-        outbuf_cap
-    );
-
     unsafe {
+        // write serialized output to outbuf
         outbuf.copy_from(serialized.as_ptr(), serialized.len());
-        println!("bytes written");
         *outbuf_used = serialized.len();
-        println!("outbuf_used written");
     }
 
     Ok(())

@@ -26,5 +26,6 @@ hkdf = {branch = "v0.8.0-sgx", git="https://github.com/bl4ck5un/KDFs"}
 byteorder = {git = "https://github.com/mesalock-linux/byteorder-sgx"}
 serde = { git = "https://github.com/mesalock-linux/serde-sgx", features = ["derive"] }
 serde_cbor = {git = "https://github.com/mesalock-linux/cbor-sgx"}
-serde-big-array = { git = "https://github.com/mesalock-linux/serde-big-array-sgx" }
 interface = { path = "../interface", default-features = false, features = ["trusted"] }
+log = { git = "https://github.com/mesalock-linux/log-sgx" }
+env_logger = { git = "https://github.com/mesalock-linux/env_logger-sgx" }
