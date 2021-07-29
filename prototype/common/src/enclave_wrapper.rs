@@ -69,6 +69,22 @@ pub struct DcNetEnclave {
     enclave: sgx_urts::SgxEnclave,
 }
 
+
+// /// This macro generates a bunch of functions that will check the ecall is given the right types
+// macro_rules! match_ecall_ids {
+//     (
+//         $self:ident,
+//         $ecall_id:ident, $inp:ident,
+//         $(($name:ident, $type_i:ty, $type_o: ty), )+
+//     ) => {
+//         match $ecall_id {
+//             $(EcallId::$name => {
+//                 let o = $self.make_generic_ecall::<$type_i,$type_o>($ecall_id,$inp);
+//             },)+
+//         }
+//     }
+// }
+
 impl DcNetEnclave {
     pub fn init(enclave_file: &'static str) -> EnclaveResult<Self> {
         let enclave_path = PathBuf::from(enclave_file);
@@ -98,6 +114,36 @@ impl DcNetEnclave {
     pub fn destroy(self) {
         self.enclave.destroy();
     }
+
+    // fn make_generic_ecall_v2<I, O>(&self, ecall_id: EcallId, inp: &I) -> EnclaveResult<O>
+    // where
+    //     I: serde::Serialize,
+    //     O: serde::de::DeserializeOwned 
+    // {
+    //     match_ecall_ids! {
+    //         self, ecall_id, inp,
+    //         (EcallNewSgxKeypair,
+    //             String,
+    //             SealedKey),
+    //         (EcallUnsealToPublicKey,
+    //             SealedKey,
+    //             SgxProtectedKeyPub),
+    //         (EcallRegisterUser,
+    //             Vec<SgxProtectedKeyPub>,
+    //             UserRegistration),
+    //         (EcallUserSubmit,
+    //             (UserSubmissionReq,SealedKey),
+    //             RoundSubmissionBlob),
+    //         (EcallAddToAggregate,
+    //             (MarshalledSignedUserMessage,SignedPartialAggregate,SealedKey),
+    //             SignedPartialAggregate),
+    //         (EcallRecvUserRegistration,
+    //             // input: 
+    //             (SignedPubKeyDb, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob),
+    //             // output: updated SignedPubKeyDb, SealedSharedSecretDb
+    //             (SignedPubKeyDb, SealedSharedSecretDb)),
+    //     }
+    // }
 
     fn make_generic_ecall<I, O>(&self, ecall_id: EcallId, inp: &I) -> EnclaveResult<O>
     where
@@ -201,14 +247,13 @@ impl DcNetEnclave {
 
     /// Constructs an aggregate message from the given state. The returned blob is to be sent to
     /// the parent aggregator or an anytrust server.
-    /// XXX: why do we convert SignedPartialAggregate to RoundSubmissionBlob?
-    /// can we give agg to the parent aggregator or an anytrust server?
-    /// RoundSubmissionBlob assumes a single user id.
+    /// Note: this is an identity function because SignedPartialAggregate and RoundSubmissionBlob
+    /// are exact the same thing.
     pub fn finalize_aggregate(
         &self,
         agg: &SignedPartialAggregate,
     ) -> EnclaveResult<RoundSubmissionBlob> {
-        unimplemented!()
+        return Ok(RoundSubmissionBlob(agg.0.clone()))
     }
 
     /// XORs the shared secrets into the given aggregate. Returns the server's share of the
@@ -229,17 +274,6 @@ impl DcNetEnclave {
         server_aggs: &[UnblindedAggregateShare],
     ) -> EnclaveResult<RoundOutput> {
         unimplemented!()
-    }
-
-    pub fn run_enclave_tests(&self) -> SgxError {
-        let mut retval = SGX_SUCCESS;
-        unsafe {
-            test_main_entrance(self.enclave.geteid(), &mut retval);
-        }
-        if retval != SGX_SUCCESS {
-            return Err(retval);
-        }
-        Ok(())
     }
 
     /// Create a new TEE protected secret key. Derives shared secrets with all the given KEM pubkeys.
@@ -311,6 +345,7 @@ impl DcNetEnclave {
 
     /// Verifies and adds the given user registration blob to the database of pubkeys and
     /// shared secrets
+    /// Called by a server
     pub fn recv_user_registration(
         &self,
         pubkeys: &mut SignedPubKeyDb,
@@ -338,6 +373,17 @@ impl DcNetEnclave {
     ) -> EnclaveResult<()> {
         unimplemented!()
     }
+
+    pub fn run_enclave_tests(&self) -> SgxError {
+        let mut retval = SGX_SUCCESS;
+        unsafe {
+            test_main_entrance(self.enclave.geteid(), &mut retval);
+        }
+        if retval != SGX_SUCCESS {
+            return Err(retval);
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -362,7 +408,7 @@ mod enclave_tests {
     };
     use sgx_types::SGX_ECP256_KEY_SIZE;
 
-    fn init() {
+    fn init_logger() {
         let env = Env::default()
             .filter_or("RUST_LOG", "debug")
             .write_style_or("RUST_LOG_STYLE", "always");
@@ -374,7 +420,7 @@ mod enclave_tests {
 
     #[test]
     fn key_seal_unseal() {
-        init();
+        init_logger();
 
         log::info!("log in test");
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
@@ -420,9 +466,8 @@ mod enclave_tests {
 
     #[test]
     fn aggregation() {
-        init();
-
-        let mut enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+        init_logger();
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         // create server public keys
         let num_of_servers = 10;
@@ -488,8 +533,6 @@ mod enclave_tests {
         enc.destroy();
     }
 
-    use rand;
-
     #[test]
     fn new_user() {
         let mut enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
@@ -513,7 +556,7 @@ mod enclave_tests {
 
     #[test]
     fn register_agg() {
-        let mut enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         let (agg_sealed_key, agg_id, agg_reg_proof) = enc.new_aggregator().unwrap();
 
@@ -521,6 +564,13 @@ mod enclave_tests {
         assert_eq!(EntityId::from(&pk), agg_id);
 
         enc.destroy();
+    }
+
+    #[test]
+    fn server_recv_user_reg() {
+        init_logger();
+
+
     }
 
     #[test]

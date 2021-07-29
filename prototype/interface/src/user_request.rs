@@ -138,8 +138,6 @@ pub struct UserSubmissionReq {
     pub shared_secrets: SealedSharedSecretDb,
 }
 
-use std::format;
-
 impl Debug for UserSubmissionReq {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_struct("UserSubmissionReq")

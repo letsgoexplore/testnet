@@ -1,5 +1,6 @@
 mod aggregation;
 mod register;
+mod server;
 mod submit;
 
 use interface::*;
@@ -55,26 +56,21 @@ pub extern "C" fn ecall_entrypoint(
 
         (EcallUserSubmit,
             (UserSubmissionReq,SealedKey),
-            MarshalledSignedUserMessage,
+            RoundSubmissionBlob,
             submit::user_submit_internal),
 
         (EcallAddToAggregate,
             (MarshalledSignedUserMessage,SignedPartialAggregate,SealedKey),
             SignedPartialAggregate,
             aggregation::add_to_aggregate_internal),
-    }
-}
 
-macro_rules! unwrap_or_abort {
-    ( $e:expr, $return: expr ) => {
-        match $e {
-            Ok(x) => x,
-            Err(e) => {
-                println!("Err {}", e);
-                return $return;
-            }
-        }
-    };
+        (EcallRecvUserRegistration,
+            // input: 
+            (SignedPubKeyDb, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob),
+            // output: updated SignedPubKeyDb, SealedSharedSecretDb
+            (SignedPubKeyDb, SealedSharedSecretDb),
+            server::recv_user_registration),
+    }
 }
 
 macro_rules! unmarshal_or_abort {
@@ -89,7 +85,7 @@ macro_rules! unmarshal_or_abort {
     };
 }
 
-use env_logger::{Builder,Target, Env};
+use env_logger::{Builder, Env, Target};
 
 fn generic_ecall<I, O>(
     ecall_id: EcallId,
@@ -109,8 +105,8 @@ where
         .write_style_or("ENCLAVE_LOG_STYLE", "always");
     let _ = Builder::from_env(env).target(Target::Stdout).try_init();
 
-    debug!("starting {}",ecall_id.as_str());
-    
+    debug!("starting {}", ecall_id.as_str());
+
     let input: I = unmarshal_or_abort!(I, inp, inp_len);
     let result = match internal_fn(&input) {
         Ok(o) => o,
@@ -124,7 +120,7 @@ where
             e
         }
     };
-    debug!("done ecall {}",ecall_id.as_str());
+    debug!("done ecall {}", ecall_id.as_str());
 
     ret
 }

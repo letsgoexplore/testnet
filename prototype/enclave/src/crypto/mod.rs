@@ -42,7 +42,6 @@ pub trait SignMutable {
 mod dining_crypto;
 mod keys;
 mod sgx_signature;
-mod sig;
 
 pub use self::dining_crypto::*;
 pub use self::keys::*;

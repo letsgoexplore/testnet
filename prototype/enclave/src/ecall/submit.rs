@@ -1,28 +1,20 @@
 extern crate interface;
 extern crate sgx_types;
-
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
-
 use std::prelude::v1::*;
-
 use sgx_types::SgxResult;
-
 use crypto;
 use crypto::{SgxPrivateKey, SharedSecretsWithAnyTrustGroup, SignMutable};
-
+use crate::messages_types::AggregatedMessage;
 use self::interface::*;
-
 use interface::UserSubmissionReq;
-use messages_types::SignedUserMessage;
-
 use utils;
-
 use std::convert::TryFrom;
 use utils::serialize_to_vec;
 
 pub fn user_submit_internal(
     input: &(UserSubmissionReq, SealedKey),
-) -> SgxResult<MarshalledSignedUserMessage> {
+) -> SgxResult<RoundSubmissionBlob> {
     let (send_request, sealed_key) = input;
 
     // 1) TODO: check ticket first
@@ -59,13 +51,13 @@ pub fn user_submit_internal(
     let encrypted_msg = round_key.encrypt(&send_request.msg);
 
     // FIXME: add missing default fields
-    let mut mutable = SignedUserMessage {
-        user_id: send_request.user_id,
+    let mut mutable = AggregatedMessage {
+        user_ids: vec![send_request.user_id],
         anytrust_group_id: send_request.anytrust_group_id,
         round: send_request.round,
         tee_sig: Default::default(),
         tee_pk: Default::default(),
-        msg: encrypted_msg,
+        aggregated_msg: encrypted_msg,
     };
 
     // sign
@@ -75,5 +67,5 @@ pub fn user_submit_internal(
     }
 
     // serialized
-    Ok(MarshalledSignedUserMessage(serialize_to_vec(&mutable)?))
+    Ok(RoundSubmissionBlob(serialize_to_vec(&mutable)?))
 }

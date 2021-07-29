@@ -1,7 +1,5 @@
 use crate::sgx_protected_keys::SgxProtectedKeyPub;
 use crate::user_request::EntityId;
-use sgx_types::sgx_status_t;
-use std::convert::TryFrom;
 use std::fmt::{Debug, Formatter};
 use std::format;
 use std::string::String;
@@ -41,6 +39,7 @@ impl_enum! {
         EcallRegisterUser = 3,
         EcallUserSubmit = 4,
         EcallAddToAggregate = 5,
+        EcallRecvUserRegistration = 6,
     }
 }
 
@@ -52,6 +51,7 @@ impl EcallId {
             EcallId::EcallRegisterUser => "EcallRegisterUser",
             EcallId::EcallUserSubmit => "EcallUserSubmit",
             EcallId::EcallAddToAggregate => "EcallAddToAggregate",
+            EcallId::EcallRecvUserRegistration => "EcallRecvUserRegistration",
         }
     }
 }
@@ -59,12 +59,14 @@ impl EcallId {
 /// Describes a partial aggregate. It can consist of a single user's round message (i.e., the
 /// output of `user_submit_round_msg`, or the XOR of multiple user's round messages (i.e., the
 /// output of `finalize_aggregate`).
+/// Inside an enclave this is deserialized to an AggregatedMessage
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct MarshalledSignedUserMessage(pub Vec<u8>);
 
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to
 /// aggregators of all levels as well as anytrust nodes.
+/// Inside an enclave this is deserialized to an AggregatedMessage
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct RoundSubmissionBlob(pub Vec<u8>);
@@ -75,13 +77,16 @@ pub struct RoundSubmissionBlob(pub Vec<u8>);
 pub struct UnblindedAggregateShare(pub Vec<u8>);
 
 /// The state of an aggregator. This can only be opened from within the enclave.
-/// Inside an enclave this is deserialized to an AggregatedMessage 
+/// Inside an enclave this is deserialized to an AggregatedMessage
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct SignedPartialAggregate(pub Vec<u8>);
 
 /// Describes user registration information. This contains key encapsulations as well as a linkably
 /// attested signature pubkey.
+/// In enclave this is deserialized to a SgxProtectedKeyPair (defined in enclave::crypto::keys).
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct UserRegistrationBlob(pub Vec<u8>);
 
 /// Describes aggregator registration information. This contains a linkably attested signature
@@ -173,7 +178,10 @@ pub struct SealedSigPrivKey(pub SealedKey);
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SealedKemPrivKey(pub SealedKey);
 
-#[derive(Default)]
+
+/// SignedPubKeyDb is a signed mapping between entity id and public key
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct SignedPubKeyDb;
 
 // TODO: Figure out what this should contain. Probably just a long bitstring.

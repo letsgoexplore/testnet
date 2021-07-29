@@ -1,75 +1,14 @@
 use crypto::*;
 use interface::*;
-use messages_types::SignedUserMessage;
-use sgx_types::{SgxError, SgxResult};
+use messages_types::AggregatedMessage;
+use sgx_types::SgxResult;
 use std::prelude::v1::*;
 use types::*;
-
-use crypto::{SgxSignature, Signable};
-use std::vec::Vec;
+use crypto::Signable;
 
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER};
 use utils;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct AggregatedMessage {
-    pub round: u32,
-    pub anytrust_group_id: EntityId,
-    pub user_ids: Vec<EntityId>,
-    pub aggregated_msg: DcMessage,
-    pub tee_sig: SgxSignature,
-    pub tee_pk: SgxSigningPubKey,
-}
-
-use types::Zero;
-
-impl Zero for AggregatedMessage {
-    fn zero() -> Self {
-        AggregatedMessage {
-            round: 0,
-            anytrust_group_id: EntityId::default(),
-            user_ids: Vec::new(),
-            aggregated_msg: DcMessage::zero(),
-            tee_sig: SgxSignature::default(),
-            tee_pk: SgxSigningPubKey::default(),
-        }
-    }
-}
-
-use sha2::Digest;
-use sha2::Sha256;
-
-use utils::{unseal_vec_and_deser, serialize_to_vec};
-
-impl Signable for AggregatedMessage {
-    fn digest(&self) -> Vec<u8> {
-        let mut hasher = Sha256::new();
-        for id in self.user_ids.iter() {
-            hasher.input(id);
-        }
-        hasher.input(&self.aggregated_msg);
-
-        hasher.result().to_vec()
-    }
-
-    fn get_sig(&self) -> SgxSignature {
-        self.tee_sig
-    }
-
-    fn get_pk(&self) -> SgxSigningPubKey {
-        self.tee_pk
-    }
-}
-
-impl SignMutable for AggregatedMessage {
-    fn sign_mut(&mut self, sk: &SgxSigningKey) -> SgxError {
-        let (sig, pk) = self.sign(sk)?;
-        self.tee_pk = pk;
-        self.tee_sig = sig;
-
-        Ok(())
-    }
-}
 
 
 pub fn add_to_aggregate_internal(
@@ -77,7 +16,11 @@ pub fn add_to_aggregate_internal(
 ) -> SgxResult<SignedPartialAggregate> {
     // let (incoming_msg, current_aggregation, sealed_sk) = input;
 
-    let incoming_msg: SignedUserMessage = utils::deserialize_from_vec(&input.0.0)?;
+    let incoming_msg: AggregatedMessage = utils::deserialize_from_vec(&input.0.0)?;
+    if incoming_msg.user_ids.len() != 1 {
+        error!("incoming message is already aggregated. This interface only accept user submission");
+        return Err(SGX_ERROR_INVALID_PARAMETER);
+    }
 
     // if input.1.0.is_empty(), we create a new aggregation
     // input.1 is a MarshalledSignedUserMessage
@@ -95,7 +38,7 @@ pub fn add_to_aggregate_internal(
         }
     };
 
-    let tee_signing_sk: SgxSigningKey = unseal_vec_and_deser(&input.2.sealed_sk)?;
+    let tee_signing_sk: SgxSigningKey = utils::unseal_vec_and_deser(&input.2.sealed_sk)?;
 
     // verify signature
     if !incoming_msg.verify()? {
@@ -110,7 +53,8 @@ pub fn add_to_aggregate_internal(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    if current_aggregation.user_ids.contains(&incoming_msg.user_id) {
+    // we already checked that incoming_msg.user_ids has only one element
+    if current_aggregation.user_ids.contains(&incoming_msg.user_ids[0]) {
         error!("user already in");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
@@ -119,15 +63,15 @@ pub fn add_to_aggregate_internal(
     let mut new_agg = current_aggregation.clone();
 
     // aggregate in the new message
-    new_agg.user_ids.push(incoming_msg.user_id);
+    new_agg.user_ids.push(incoming_msg.user_ids[0]);
     new_agg
         .aggregated_msg
-        .xor_mut(&DcMessage(incoming_msg.msg.0));
+        .xor_mut(&DcMessage(incoming_msg.aggregated_msg.0));
 
     // sign
     new_agg.sign_mut(&tee_signing_sk)?;
 
     debug!("new agg: {:?}", new_agg.user_ids);
 
-    Ok(SignedPartialAggregate(serialize_to_vec(&new_agg)?))
+    Ok(SignedPartialAggregate(utils::serialize_to_vec(&new_agg)?))
 }

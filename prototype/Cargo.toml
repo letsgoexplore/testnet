@@ -1,4 +1,4 @@
 [workspace]
 
-members = ["common", "enclave", "client", "aggregator", "server" ]
-default-members = ["common", "client", "aggregator", "server" ]
+members = ["common", "client", "interface", "aggregator", "server" ]
+exclude = ["enclave"]

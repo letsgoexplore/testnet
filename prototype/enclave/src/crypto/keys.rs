@@ -62,3 +62,25 @@ impl TryFrom<&SgxPrivateKey> for SgxProtectedKeyPub {
 // KemPrvKey and SgxSigningKey are aliases to SgxProtectedPrivateKey
 pub type KemPrvKey = SgxPrivateKey;
 pub type SgxSigningKey = SgxPrivateKey;
+
+
+/// SgxProtectedKeyPair is pk + attestation
+#[derive(Clone, Serialize, Deserialize)]
+pub struct AttestedPublicKey {
+    pub pk: SgxProtectedKeyPub,
+    pub role: std::string::String, // e.g., "aggregator" "client" "anytrust server"
+    pub tee_linkable_attestation: std::vec::Vec<u8>, // binds this key to an enclave
+}
+
+impl Debug for AttestedPublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SgxProtectedKeyPair")
+            .field("pk", &self.pk)
+            .field("role", &self.role)
+            .field(
+                "tee_linkable_attestation",
+                &hex::encode(&self.tee_linkable_attestation),
+            )
+            .finish()
+    }
+}

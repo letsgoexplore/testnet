@@ -1,20 +1,13 @@
 use crypto;
 use types::*;
-
+use crate::messages_types::AggregatedMessage;
 use crate::sgx_tunittest::*;
 use crate::std::prelude::v1::*;
-
 use sgx_types::sgx_status_t;
-
 use hkdf::Hkdf;
 use sha2::Sha256;
-
 use crate::interface::*;
 use crypto::{SignMutable, Signable, SgxSigningKey};
-use messages_types::SignedUserMessage;
-
-
-
 use serde_cbor;
 use sgx_rand::Rng;
 
@@ -80,11 +73,11 @@ fn test_keypair() -> crypto::CryptoResult<(SgxSigningKey,SgxSigningPubKey)> {
 fn sign() -> () {
     let (sk,pk) = test_keypair().unwrap();
 
-    let mut mutable = SignedUserMessage {
-        user_id: EntityId::default(),
+    let mut mutable = AggregatedMessage {
+        user_ids: vec![EntityId::default()],
         anytrust_group_id: Default::default(),
         round: 0,
-        msg: Default::default(),
+        aggregated_msg: Default::default(),
         tee_sig: Default::default(),
         tee_pk: Default::default(),
     };
