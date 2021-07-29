@@ -69,7 +69,6 @@ pub struct DcNetEnclave {
     enclave: sgx_urts::SgxEnclave,
 }
 
-
 // /// This macro generates a bunch of functions that will check the ecall is given the right types
 // macro_rules! match_ecall_ids {
 //     (
@@ -118,7 +117,7 @@ impl DcNetEnclave {
     // fn make_generic_ecall_v2<I, O>(&self, ecall_id: EcallId, inp: &I) -> EnclaveResult<O>
     // where
     //     I: serde::Serialize,
-    //     O: serde::de::DeserializeOwned 
+    //     O: serde::de::DeserializeOwned
     // {
     //     match_ecall_ids! {
     //         self, ecall_id, inp,
@@ -138,7 +137,7 @@ impl DcNetEnclave {
     //             (MarshalledSignedUserMessage,SignedPartialAggregate,SealedKey),
     //             SignedPartialAggregate),
     //         (EcallRecvUserRegistration,
-    //             // input: 
+    //             // input:
     //             (SignedPubKeyDb, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob),
     //             // output: updated SignedPubKeyDb, SealedSharedSecretDb
     //             (SignedPubKeyDb, SealedSharedSecretDb)),
@@ -253,7 +252,7 @@ impl DcNetEnclave {
         &self,
         agg: &SignedPartialAggregate,
     ) -> EnclaveResult<RoundSubmissionBlob> {
-        return Ok(RoundSubmissionBlob(agg.0.clone()))
+        return Ok(RoundSubmissionBlob(agg.0.clone()));
     }
 
     /// XORs the shared secrets into the given aggregate. Returns the server's share of the
@@ -569,8 +568,6 @@ mod enclave_tests {
     #[test]
     fn server_recv_user_reg() {
         init_logger();
-
-
     }
 
     #[test]

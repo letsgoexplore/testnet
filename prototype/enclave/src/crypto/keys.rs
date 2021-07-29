@@ -63,7 +63,6 @@ impl TryFrom<&SgxPrivateKey> for SgxProtectedKeyPub {
 pub type KemPrvKey = SgxPrivateKey;
 pub type SgxSigningKey = SgxPrivateKey;
 
-
 /// SgxProtectedKeyPair is pk + attestation
 #[derive(Clone, Serialize, Deserialize)]
 pub struct AttestedPublicKey {

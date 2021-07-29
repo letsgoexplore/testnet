@@ -178,7 +178,6 @@ pub struct SealedSigPrivKey(pub SealedKey);
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SealedKemPrivKey(pub SealedKey);
 
-
 /// SignedPubKeyDb is a signed mapping between entity id and public key
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]

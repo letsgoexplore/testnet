@@ -11,7 +11,6 @@ use sgx_types::sgx_ec256_dh_shared_t;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 
-
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SharedServerSecret {

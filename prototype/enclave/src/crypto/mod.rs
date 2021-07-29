@@ -1,8 +1,6 @@
-use crate::interface::{SgxSigningPubKey};
+use crate::interface::SgxSigningPubKey;
 use crate::types::CryptoError;
-use sgx_types::{
-    SgxError, SgxResult, SGX_ECP256_KEY_SIZE,
-};
+use sgx_types::{SgxError, SgxResult, SGX_ECP256_KEY_SIZE};
 use std::vec::Vec;
 
 pub type CryptoResult<T> = Result<T, CryptoError>;
