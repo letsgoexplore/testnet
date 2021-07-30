@@ -13,7 +13,7 @@ use std::convert::TryFrom;
 use utils::serialize_to_vec;
 
 pub fn user_submit_internal(
-    input: &(UserSubmissionReq, SealedKey),
+    input: &(UserSubmissionReq, SealedSigPrivKey),
 ) -> SgxResult<RoundSubmissionBlob> {
     let (send_request, sealed_key) = input;
 
@@ -21,7 +21,7 @@ pub fn user_submit_internal(
     warn!("NOT checking ticket ATM");
 
     // 2) unseal private key
-    let sk: SgxPrivateKey = utils::unseal_vec_and_deser(&sealed_key.sealed_sk)?;
+    let sk: SgxPrivateKey = utils::unseal_vec_and_deser(&sealed_key.0.sealed_sk)?;
     let pk = SgxProtectedKeyPub::try_from(&sk)?;
     debug!("using signing (pub) key {}", pk);
 

@@ -17,7 +17,10 @@ macro_rules! match_ecall_ids {
     ) => {
         let ecall_id = match EcallId::from_repr($ecall_id_raw) {
             Some(i) => i,
-            None => return SGX_ERROR_INVALID_PARAMETER,
+            None => {
+                error!("wrong ecall id {}", $ecall_id_raw);
+                return SGX_ERROR_INVALID_PARAMETER
+            },
         };
         match ecall_id {
             $(EcallId::$name => generic_ecall::<$type_i,$type_o>(ecall_id,$inp,$inp_len,$out,$out_cap,$out_used,$impl),)+
@@ -37,30 +40,32 @@ pub extern "C" fn ecall_entrypoint(
     output_cap: usize,
     output_used: *mut usize,
 ) -> sgx_status_t {
+    let env = Env::default()
+    .filter_or("ENCLAVE_LOG_LEVEL", "debug")
+    .write_style_or("ENCLAVE_LOG_STYLE", "always");
+    let _ = Builder::from_env(env).target(Target::Stdout).try_init();
+
+    // make sure this matches exact with that in enclave_wrapper.rs
     match_ecall_ids! {
         ecall_id_raw, inp, inp_len, output, output_cap, output_used,
         (EcallNewSgxKeypair,
             String,
             SealedKey,
             register::new_sgx_keypair_internal),
-
         (EcallUnsealToPublicKey,
             SealedKey,
             SgxProtectedKeyPub,
             register::unseal_to_pubkey_internal),
-
         (EcallRegisterUser,
             Vec<SgxProtectedKeyPub>,
             UserRegistration,
             register::register_user_internal),
-
         (EcallUserSubmit,
-            (UserSubmissionReq,SealedKey),
+            (UserSubmissionReq, SealedSigPrivKey),
             RoundSubmissionBlob,
             submit::user_submit_internal),
-
         (EcallAddToAggregate,
-            (MarshalledSignedUserMessage,SignedPartialAggregate,SealedKey),
+            (RoundSubmissionBlob,SignedPartialAggregate,SealedSigPrivKey),
             SignedPartialAggregate,
             aggregation::add_to_aggregate_internal),
 
@@ -100,11 +105,6 @@ where
     I: serde::de::DeserializeOwned,
     O: serde::Serialize,
 {
-    let env = Env::default()
-        .filter_or("ENCLAVE_LOG_LEVEL", "debug")
-        .write_style_or("ENCLAVE_LOG_STYLE", "always");
-    let _ = Builder::from_env(env).target(Target::Stdout).try_init();
-
     debug!("starting {}", ecall_id.as_str());
 
     let input: I = unmarshal_or_abort!(I, inp, inp_len);

@@ -12,7 +12,7 @@ use utils;
 
 
 pub fn add_to_aggregate_internal(
-    input: &(MarshalledSignedUserMessage, SignedPartialAggregate, SealedKey)
+    input: &(RoundSubmissionBlob, SignedPartialAggregate, SealedSigPrivKey)
 ) -> SgxResult<SignedPartialAggregate> {
     // let (incoming_msg, current_aggregation, sealed_sk) = input;
 
@@ -38,7 +38,7 @@ pub fn add_to_aggregate_internal(
         }
     };
 
-    let tee_signing_sk: SgxSigningKey = utils::unseal_vec_and_deser(&input.2.sealed_sk)?;
+    let tee_signing_sk: SgxSigningKey = utils::unseal_vec_and_deser(&input.2.0.sealed_sk)?;
 
     // verify signature
     if !incoming_msg.verify()? {
