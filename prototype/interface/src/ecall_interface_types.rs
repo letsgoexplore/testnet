@@ -1,5 +1,6 @@
 use crate::sgx_protected_keys::SgxProtectedKeyPub;
 use crate::user_request::EntityId;
+use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::format;
 use std::string::String;
@@ -181,7 +182,13 @@ pub struct SealedKemPrivKey(pub SealedKey);
 /// SignedPubKeyDb is a signed mapping between entity id and public key
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
-pub struct SignedPubKeyDb;
+pub struct SignedPubKeyDbBlob(pub Vec<u8>);
+
+impl AsRef<[u8]> for SignedPubKeyDbBlob {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 // TODO: Figure out what this should contain. Probably just a long bitstring.
 pub struct RoundOutput;

@@ -1,5 +1,5 @@
 use core::convert::TryFrom;
-use crypto::{SgxPrivateKey, SharedSecretsWithAnyTrustGroup};
+use crypto::{SgxPrivateKey, SharedSecretsDb};
 use interface::*;
 use sgx_rand::Rng;
 use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;
@@ -41,7 +41,7 @@ pub fn new_sgx_keypair_internal(role: &String) -> SgxResult<SealedKey> {
 }
 
 pub fn unseal_to_pubkey_internal(sealed_sk: &SealedKey) -> SgxResult<SgxProtectedKeyPub> {
-    let sk = utils::unseal_vec_and_deser::<SgxPrivateKey>(&sealed_sk.sealed_sk)?;
+    let sk: SgxPrivateKey = utils::unseal_vec_and_deser(&sealed_sk.sealed_sk)?;
     SgxProtectedKeyPub::try_from(&sk)
 }
 
@@ -54,7 +54,7 @@ pub fn register_user_internal(anytrust_server_pks: &Vec<SgxProtectedKeyPub>) -> 
 
     // 2. derive server secrets
     let server_secrets =
-        SharedSecretsWithAnyTrustGroup::derive_server_secrets(&sk, anytrust_server_pks)?;
+        SharedSecretsDb::derive_server_secrets(&sk, anytrust_server_pks)?;
 
     Ok(UserRegistration::new(
         sealed_key,
@@ -62,7 +62,7 @@ pub fn register_user_internal(anytrust_server_pks: &Vec<SgxProtectedKeyPub>) -> 
             user_id: EntityId::from(&pk),
             anytrust_group_id: server_secrets.anytrust_group_id(),
             server_public_keys: server_secrets
-                .anytrust_group_pairwise_keys
+                .pk_secret_map
                 .keys()
                 .cloned()
                 .collect(),

@@ -4,7 +4,7 @@ use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 use std::prelude::v1::*;
 use sgx_types::SgxResult;
 use crypto;
-use crypto::{SgxPrivateKey, SharedSecretsWithAnyTrustGroup, SignMutable};
+use crypto::{SgxPrivateKey, SharedSecretsDb, SignMutable};
 use crate::messages_types::AggregatedMessage;
 use self::interface::*;
 use interface::UserSubmissionReq;
@@ -20,7 +20,7 @@ pub fn user_submit_internal(
     // 1) TODO: check ticket first
     warn!("NOT checking ticket ATM");
 
-    // 2) unseal private key
+    // 2) unseal signing key
     let sk: SgxPrivateKey = utils::unseal_vec_and_deser(&sealed_key.0.sealed_sk)?;
     let pk = SgxProtectedKeyPub::try_from(&sk)?;
     debug!("using signing (pub) key {}", pk);
@@ -31,10 +31,10 @@ pub fn user_submit_internal(
     }
 
     // 3) derive the round key from shared secrets
-    let shared_secrets: SharedSecretsWithAnyTrustGroup =
+    let shared_secrets: SharedSecretsDb =
         utils::unseal_vec_and_deser(&send_request.shared_secrets.sealed_server_secrets)?;
 
-    if shared_secrets.user_id != send_request.user_id {
+    if shared_secrets.my_id != send_request.user_id {
         error!("shared_secrets.user_id != send_request.user_id");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }

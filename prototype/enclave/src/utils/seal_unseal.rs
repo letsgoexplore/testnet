@@ -57,6 +57,7 @@ pub unsafe fn ser_and_seal_to_ptr<T: Serialize>(
     }
 }
 
+// TODO: make input generic AsRef<[u8]>
 pub fn unseal_vec_and_deser<T: DeserializeOwned>(input: &Vec<u8>) -> SgxResult<T> {
     let mut bin = input.clone();
     unsafe { unseal_ptr_and_deser(bin.as_mut_ptr(), bin.len()) }

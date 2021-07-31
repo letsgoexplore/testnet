@@ -68,12 +68,11 @@ pub extern "C" fn ecall_entrypoint(
             (RoundSubmissionBlob,SignedPartialAggregate,SealedSigPrivKey),
             SignedPartialAggregate,
             aggregation::add_to_aggregate_internal),
-
         (EcallRecvUserRegistration,
             // input: 
-            (SignedPubKeyDb, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob),
+            (SignedPubKeyDbBlob, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob),
             // output: updated SignedPubKeyDb, SealedSharedSecretDb
-            (SignedPubKeyDb, SealedSharedSecretDb),
+            (SignedPubKeyDbBlob, SealedSharedSecretDb),
             server::recv_user_registration),
     }
 }

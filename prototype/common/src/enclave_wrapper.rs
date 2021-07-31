@@ -1,5 +1,3 @@
-#![feature(concat_idents)]
-
 use sgx_types;
 use sgx_urts;
 
@@ -11,15 +9,8 @@ use std::path::PathBuf;
 use interface::*;
 
 // error type for enclave operations
-use sgx_types::sgx_status_t;
-use std::error::Error;
-use std::fmt::{Display, Formatter};
-
 use quick_error::quick_error;
-use rand::Rng;
-use serde;
-use sgx_types::sgx_device_status_t::SGX_DISABLED_UNSUPPORTED_CPU;
-use sgx_types::sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
+use sgx_types::sgx_status_t;
 
 quick_error! {
     #[derive(Debug)]
@@ -38,17 +29,7 @@ quick_error! {
 
 pub type EnclaveResult<T> = Result<T, EnclaveError>;
 
-type GenericEcallFn = unsafe extern "C" fn(
-    eid: sgx_enclave_id_t,
-    retval: *mut sgx_status_t,
-    inp: *const u8,
-    inp_len: usize,
-    output: *mut u8,
-    output_size: usize,
-    output_used: *mut usize,
-) -> sgx_status_t;
-
-// E calls
+// Ecalls
 extern "C" {
     fn ecall_entrypoint(
         eid: sgx_enclave_id_t,
@@ -160,9 +141,9 @@ mod ecall_allowed {
         (
             EcallRecvUserRegistration,
             // input:
-            (&SignedPubKeyDb, &SealedSharedSecretDb, &SealedKemPrivKey, &UserRegistrationBlob),
+            (&SignedPubKeyDbBlob, &SealedSharedSecretDb, &SealedKemPrivKey, &UserRegistrationBlob),
             // output: updated SignedPubKeyDb, SealedSharedSecretDb
-            (SignedPubKeyDb, SealedSharedSecretDb),
+            (SignedPubKeyDbBlob, SealedSharedSecretDb),
             recv_user_reg),
     }
 }
@@ -356,18 +337,26 @@ impl DcNetEnclave {
     /// Called by a server
     pub fn recv_user_registration(
         &self,
-        pubkeys: &mut SignedPubKeyDb,
+        pubkeys: &mut SignedPubKeyDbBlob,
         shared_secrets: &mut SealedSharedSecretDb,
         decap_key: &SealedKemPrivKey,
         input_blob: &UserRegistrationBlob,
     ) -> EnclaveResult<()> {
-        unimplemented!()
+        let (new_pubkey_db, new_secrets_db) = ecall_allowed::recv_user_reg(
+            self.enclave.geteid(),
+            (pubkeys, shared_secrets, decap_key, input_blob),
+        )?;
+
+        pubkeys.0.clear();
+        pubkeys.0.extend(new_pubkey_db.0);
+
+        Ok(())
     }
 
     /// Verifies and adds the given aggregator registration blob to the database of pubkeys
     pub fn recv_aggregator_registration(
         &self,
-        pubkeys: &mut SignedPubKeyDb,
+        pubkeys: &mut SignedPubKeyDbBlob,
         input_blob: &AggRegistrationBlob,
     ) -> EnclaveResult<()> {
         unimplemented!()
@@ -376,7 +365,7 @@ impl DcNetEnclave {
     /// Verifies and adds the given server registration blob to the database of pubkeys
     pub fn recv_server_registration(
         &self,
-        pubkeys: &mut SignedPubKeyDb,
+        pubkeys: &mut SignedPubKeyDbBlob,
         input_blob: &ServerRegistrationBlob,
     ) -> EnclaveResult<()> {
         unimplemented!()
