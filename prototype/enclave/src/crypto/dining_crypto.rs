@@ -14,7 +14,6 @@ use std::fmt::{Debug, Formatter};
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DiffieHellmanSharedSecret([u8; SGX_ECP256_KEY_SIZE]);
 
-
 impl Debug for DiffieHellmanSharedSecret {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(&hex::encode(&self.0))
@@ -46,7 +45,8 @@ impl SharedSecretsDb {
                 ecc_handle.compute_shared_dhkey(&my_sk.into(), &server_pk.into())?;
             server_secrets.insert(
                 server_pk.to_owned(),
-                DiffieHellmanSharedSecret(shared_secret.s));
+                DiffieHellmanSharedSecret(shared_secret.s),
+            );
         }
 
         let my_pk = SgxProtectedKeyPub::try_from(my_sk)?;
@@ -58,8 +58,7 @@ impl SharedSecretsDb {
     }
 
     pub fn anytrust_group_id(&self) -> EntityId {
-        let keys: Vec<SgxProtectedKeyPub> =
-            self.pk_secret_map.keys().cloned().collect();
+        let keys: Vec<SgxProtectedKeyPub> = self.pk_secret_map.keys().cloned().collect();
         compute_anytrust_group_id(&keys)
     }
 }
