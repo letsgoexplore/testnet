@@ -1,15 +1,15 @@
-use crypto;
-use types::*;
+use crate::interface::*;
 use crate::messages_types::AggregatedMessage;
 use crate::sgx_tunittest::*;
 use crate::std::prelude::v1::*;
-use sgx_types::sgx_status_t;
+use crypto;
+use crypto::{SgxSigningKey, SignMutable, Signable};
 use hkdf::Hkdf;
-use sha2::Sha256;
-use crate::interface::*;
-use crypto::{SignMutable, Signable, SgxSigningKey};
 use serde_cbor;
 use sgx_rand::Rng;
+use sgx_types::sgx_status_t;
+use sha2::Sha256;
+use types::*;
 
 pub fn test_all() -> sgx_status_t {
     // rsgx_unit_tests!(test_agg_msg);
@@ -58,20 +58,17 @@ fn xor() {
     assert_eq!(b_mut, vec![1 ^ 4, 2 ^ 5]);
 }
 
-fn test_keypair() -> crypto::CryptoResult<(SgxSigningKey,SgxSigningPubKey)> {
+fn test_keypair() -> crypto::CryptoResult<(SgxSigningKey, SgxSigningPubKey)> {
     let handle = sgx_tcrypto::SgxEccHandle::new();
     handle.open().unwrap();
     match handle.create_key_pair() {
-        Ok(pair) => Ok((
-            crypto::KemPrvKey::from(pair.0),
-            KemPubKey::from(pair.1),
-        )),
+        Ok(pair) => Ok((crypto::KemPrvKey::from(pair.0), KemPubKey::from(pair.1))),
         Err(e) => Err(CryptoError::SgxCryptoLibError(e)),
     }
 }
 
 fn sign() -> () {
-    let (sk,pk) = test_keypair().unwrap();
+    let (sk, pk) = test_keypair().unwrap();
 
     let mut mutable = AggregatedMessage {
         user_ids: vec![EntityId::default()],

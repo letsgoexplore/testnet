@@ -1,66 +1,49 @@
-use std::collections::BTreeMap;
-use interface::*;
-use sgx_types::SgxResult;
-use crate::crypto::{AttestedPublicKey, Signable, SignMutable, SgxPrivateKey};
+use crate::crypto::{KemPrvKey, SgxPrivateKey, SharedSecretsDb, SignMutable, Signable};
 use crate::utils;
+use interface::*;
 use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
+use sgx_types::SgxResult;
+use std::borrow::ToOwned;
+use std::collections::BTreeMap;
+use std::{debug, vec};
 
 /// This file implements ecalls used by an anytrust server
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct SignedPubKeyDb {
-    pub db: BTreeMap<EntityId, KemPubKey>
-}
-
-impl Signable for SignedPubKeyDb {
-    fn digest(&self) -> std::vec::Vec<u8> {
-        todo!()
-    }
-
-    fn get_sig(&self) -> crate::crypto::SgxSignature {
-        todo!()
-    }
-
-    fn get_pk(&self) -> SgxSigningPubKey {
-        todo!()
-    }
-}
-
-impl SignMutable for SignedPubKeyDb {
-    fn sign_mut(&mut self, _: &crate::crypto::SgxSigningKey) -> sgx_types::SgxError {
-        todo!()
-    }
-}
-
 
 /// Verifies and adds the given user registration blob to the database of pubkeys and
 /// shared secrets
 /// Called by a server
-pub fn recv_user_registration(input: &(SignedPubKeyDbBlob, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob))
--> SgxResult<(SignedPubKeyDbBlob, SealedSharedSecretDb)> {
-    let (pk_db, shared_secret_db, my_kem_sk, user_pk) = input;
+pub fn recv_user_registration(
+    input: &(
+        SignedPubKeyDb,
+        SealedSharedSecretDb,
+        SealedKemPrivKey,
+        UserRegistrationBlob,
+    ),
+) -> SgxResult<(SignedPubKeyDb, SealedSharedSecretDb)> {
+    let (_, shared_secret_db, _my_kem_sk, user_pk) = input;
+    let mut pk_db = input.0.clone();
 
     // verify user key
-    let attested_pk: AttestedPublicKey = utils::unseal_vec_and_deser(&user_pk.0)?;
-    warn!("skipping attestation verificatio for now");
+    let attested_pk = &user_pk.0;
+    warn!("skipping verifying attestation for now");
 
     // add user key to pubkey db
-    let pk_db : SignedPubKeyDb = utils::unseal_vec_and_deser(&pk_db.0)?;
-    // verify existing sig
-    if ! pk_db.verify()?  {
-        return Err(SGX_ERROR_INVALID_PARAMETER);
+    pk_db
+        .db
+        .insert(EntityId::from(&attested_pk.pk), attested_pk.to_owned());
+
+    // Derive secrets
+    let my_kem_sk: KemPrvKey = utils::unseal_vec_and_deser(&_my_kem_sk.0.sealed_sk)?;
+    debug!("my_kem_sk {:?}", my_kem_sk);
+
+    let mut others_kem_pks = vec![];
+    for (_, k) in pk_db.db.iter() {
+        others_kem_pks.push(k.pk);
     }
-    // insert new key
-    let mut pk_db_new = pk_db.clone();
-    pk_db_new.db.insert(EntityId::from(&attested_pk.pk), attested_pk.pk);
-    // unseal signing key
-    // XXX: should we pass a separate signing key??
-    let sig_sk: SgxPrivateKey = utils::unseal_vec_and_deser(&my_kem_sk.0.sealed_sk)?;
-    // update sig
-    pk_db_new.sign_mut(&sig_sk)?;
 
-    // TODO: derive secrets
-    
+    debug!("others_kem_pks {:?}", others_kem_pks);
 
-    unimplemented!()
+    let shared_secrets = SharedSecretsDb::derive_shared_secrets(&my_kem_sk, &others_kem_pks)?;
+
+    Ok((pk_db, shared_secrets.to_sealed_db()?))
 }

@@ -1,10 +1,9 @@
 use serde::de::DeserializeOwned;
-use serde::{Serialize};
+use serde::Serialize;
 use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
-use sgx_tseal::{SgxSealedData};
+use sgx_tseal::SgxSealedData;
 
 use sgx_types::{sgx_sealed_data_t, SgxError, SgxResult};
-
 
 use std::vec::Vec;
 
@@ -58,25 +57,29 @@ pub unsafe fn ser_and_seal_to_ptr<T: Serialize>(
 }
 
 // TODO: make input generic AsRef<[u8]>
-pub fn unseal_vec_and_deser<T: DeserializeOwned>(input: &Vec<u8>) -> SgxResult<T> {
+pub fn unseal_vec_and_deser<T: DeserializeOwned + Default>(input: &Vec<u8>) -> SgxResult<T> {
     let mut bin = input.clone();
     unsafe { unseal_ptr_and_deser(bin.as_mut_ptr(), bin.len()) }
 }
 
-pub unsafe fn unseal_ptr_and_deser<T: DeserializeOwned>(
+pub unsafe fn unseal_ptr_and_deser<T: DeserializeOwned + Default>(
     input: *mut u8,
     input_len: usize,
 ) -> SgxResult<T> {
-    let sealed_data =
-        match SgxSealedData::<[u8]>::from_raw_sealed_data_t(
-            input as *mut sgx_sealed_data_t,
-            input_len as u32,
-        ) {
-            Some(t) => t,
-            None => {
-                return Err(SGX_ERROR_INVALID_PARAMETER);
-            }
-        };
+    if input_len == 0 {
+        warn!("empty sealed data");
+        return Ok(Default::default());
+    }
+
+    let sealed_data = match SgxSealedData::<[u8]>::from_raw_sealed_data_t(
+        input as *mut sgx_sealed_data_t,
+        input_len as u32,
+    ) {
+        Some(t) => t,
+        None => {
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
+    };
 
     let unsealed = sealed_data.unseal_data()?;
     let unsealed_slice = unsealed.get_decrypt_txt();

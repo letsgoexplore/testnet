@@ -134,7 +134,7 @@ pub struct UserSubmissionReq {
     pub round: u32,
     pub msg: DcMessage,
     pub ticket: SealedFootprintTicket,
-    /// A sealed map from entity ID to shared secret
+    /// A map from server public key to sealed shared secret
     pub shared_secrets: SealedSharedSecretDb,
 }
 
@@ -165,8 +165,9 @@ impl UserRegistration {
             shared_secrets,
         }
     }
+
     pub fn get_user_id(&self) -> EntityId {
-        EntityId::from(&self.key.pk)
+        EntityId::from(&self.key.attested_pk.pk)
     }
 
     pub fn get_sealed_shared_secrets(&self) -> &SealedSharedSecretDb {
@@ -177,11 +178,11 @@ impl UserRegistration {
         &self.key
     }
 
-    pub fn get_registration_proof(&self) -> &[u8] {
-        &self.key.tee_linkable_attestation
+    pub fn get_registration_blob(&self) -> UserRegistrationBlob {
+        UserRegistrationBlob(self.key.attested_pk.clone())
     }
 
-    pub fn get_anygroup_id(&self) -> EntityId {
-        self.shared_secrets.anytrust_group_id
-    }
+    // pub fn get_anygroup_id(&self) -> EntityId {
+    //     self.shared_secrets.anytrust_group_id
+    // }
 }

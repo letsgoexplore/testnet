@@ -11,7 +11,7 @@ pub mod dc_proto {
 use interface::{
     compute_group_id, AggRegistrationBlob, DcMessage, EntityId, KemPubKey, RoundOutput,
     RoundSubmissionBlob, SealedFootprintTicket, SealedKemPrivKey, SealedSharedSecretDb,
-    SealedSigPrivKey, ServerRegistrationBlob, SignedPartialAggregate, SignedPubKeyDbBlob,
+    SealedSigPrivKey, ServerRegistrationBlob, SignedPartialAggregate, SignedPubKeyDb,
     UnblindedAggregateShare, UserRegistrationBlob, UserSubmissionReq,
 };
 
@@ -32,7 +32,7 @@ struct ServerState<'a> {
     /// be accessed from within the enclave.
     pub shared_secrets: SealedSharedSecretDb,
     /// A map of EntityIds to the corresponding public key
-    pub pubkeys: SignedPubKeyDbBlob,
+    pub pubkeys: SignedPubKeyDb,
 }
 
 impl<'a> ServerState<'a> {
@@ -46,10 +46,10 @@ impl<'a> ServerState<'a> {
             decap_key: sealed_ksk,
             partial_agg: None,
             shared_secrets: SealedSharedSecretDb::default(),
-            pubkeys: SignedPubKeyDbBlob::default(),
+            pubkeys: SignedPubKeyDb::default(),
         };
         let msg = SgxMsg {
-            payload: reg_data.0,
+            payload: reg_data.kem_key.tee_linkable_attestation,
         };
 
         Ok((state, msg))

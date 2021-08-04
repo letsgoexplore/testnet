@@ -41,8 +41,8 @@ pub extern "C" fn ecall_entrypoint(
     output_used: *mut usize,
 ) -> sgx_status_t {
     let env = Env::default()
-    .filter_or("ENCLAVE_LOG_LEVEL", "debug")
-    .write_style_or("ENCLAVE_LOG_STYLE", "always");
+        .filter_or("ENCLAVE_LOG_LEVEL", "debug")
+        .write_style_or("ENCLAVE_LOG_STYLE", "always");
     let _ = Builder::from_env(env).target(Target::Stdout).try_init();
 
     // make sure this matches exact with that in enclave_wrapper.rs
@@ -69,10 +69,10 @@ pub extern "C" fn ecall_entrypoint(
             SignedPartialAggregate,
             aggregation::add_to_aggregate_internal),
         (EcallRecvUserRegistration,
-            // input: 
-            (SignedPubKeyDbBlob, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob),
+            // input:
+            (SignedPubKeyDb, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob),
             // output: updated SignedPubKeyDb, SealedSharedSecretDb
-            (SignedPubKeyDbBlob, SealedSharedSecretDb),
+            (SignedPubKeyDb, SealedSharedSecretDb),
             server::recv_user_registration),
     }
 }
@@ -82,7 +82,7 @@ macro_rules! unmarshal_or_abort {
         match serde_cbor::from_slice::<$T>(unsafe { slice::from_raw_parts($ptr, $len) }) {
             Ok(x) => x,
             Err(e) => {
-                println!("Err {}", e);
+                error!("Err unmarshal: {}", e);
                 return SGX_ERROR_INVALID_PARAMETER;
             }
         }

@@ -43,3 +43,20 @@ impl Zero for DcMessage {
         DcMessage([0 as u8; DC_NET_MESSAGE_LENGTH])
     }
 }
+
+pub trait Sealable {
+    fn seal(&self) -> SgxResult<Vec<u8>>;
+}
+
+use serde::Serialize;
+use sgx_types::SgxResult;
+use utils::ser_and_seal_to_vec;
+
+impl<T> Sealable for T
+where
+    T: Serialize,
+{
+    fn seal(&self) -> SgxResult<Vec<u8>> {
+        ser_and_seal_to_vec(self, b"")
+    }
+}

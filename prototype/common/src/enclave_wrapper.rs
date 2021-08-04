@@ -141,9 +141,9 @@ mod ecall_allowed {
         (
             EcallRecvUserRegistration,
             // input:
-            (&SignedPubKeyDbBlob, &SealedSharedSecretDb, &SealedKemPrivKey, &UserRegistrationBlob),
+            (&SignedPubKeyDb, &SealedSharedSecretDb, &SealedKemPrivKey, &UserRegistrationBlob),
             // output: updated SignedPubKeyDb, SealedSharedSecretDb
-            (SignedPubKeyDbBlob, SealedSharedSecretDb),
+            (SignedPubKeyDb, SealedSharedSecretDb),
             recv_user_reg),
     }
 }
@@ -273,19 +273,19 @@ impl DcNetEnclave {
     /// information to send to anytrust nodes.
     pub fn new_user(
         &self,
-        server_pubkeys: &[KemPubKey],
+        server_kem_pks: &[KemPubKey],
     ) -> EnclaveResult<(
         SealedSharedSecretDb,
         SealedSigPrivKey,
         EntityId,
         UserRegistrationBlob,
     )> {
-        let output = ecall_allowed::register_user(self.enclave.geteid(), server_pubkeys)?;
+        let output = ecall_allowed::register_user(self.enclave.geteid(), server_kem_pks)?;
 
         let secrets = output.get_sealed_shared_secrets().to_owned();
         let privkey = SealedSigPrivKey(output.get_sealed_usk().to_owned());
         let uid = output.get_user_id();
-        let reg_blob = UserRegistrationBlob(output.get_registration_proof().to_vec());
+        let reg_blob = output.get_registration_blob();
 
         Ok((secrets, privkey, uid, reg_blob))
     }
@@ -299,8 +299,8 @@ impl DcNetEnclave {
         let sealed_sk = self.new_sgx_protected_key("agg".to_string())?;
         Ok((
             SealedSigPrivKey(sealed_sk.clone()),
-            EntityId::from(&sealed_sk.pk),
-            AggRegistrationBlob(sealed_sk.tee_linkable_attestation),
+            EntityId::from(&sealed_sk.attested_pk.pk),
+            AggRegistrationBlob(sealed_sk.attested_pk),
         ))
     }
 
@@ -317,18 +317,17 @@ impl DcNetEnclave {
         let sealed_sig_key = self.new_sgx_protected_key("server_sig".to_string())?;
         let sealed_kem_key = self.new_sgx_protected_key("server_kem".to_string())?;
 
-        // attestation is a concat of two attestations
-        let mut attestation = sealed_sig_key.tee_linkable_attestation.clone();
-        attestation.extend(&sealed_kem_key.tee_linkable_attestation);
-
         // todo: double check that the entity id is derived from the signing key, not the KEM
-        let entity_id = EntityId::from(&sealed_sig_key.pk);
+        let entity_id = EntityId::from(&sealed_sig_key.attested_pk.pk);
 
         Ok((
-            SealedSigPrivKey(sealed_sig_key),
-            SealedKemPrivKey(sealed_kem_key),
+            SealedSigPrivKey(sealed_sig_key.clone()),
+            SealedKemPrivKey(sealed_kem_key.clone()),
             entity_id,
-            ServerRegistrationBlob(attestation),
+            ServerRegistrationBlob {
+                sig_key: sealed_sig_key.attested_pk,
+                kem_key: sealed_kem_key.attested_pk,
+            },
         ))
     }
 
@@ -337,7 +336,7 @@ impl DcNetEnclave {
     /// Called by a server
     pub fn recv_user_registration(
         &self,
-        pubkeys: &mut SignedPubKeyDbBlob,
+        pubkeys: &mut SignedPubKeyDb,
         shared_secrets: &mut SealedSharedSecretDb,
         decap_key: &SealedKemPrivKey,
         input_blob: &UserRegistrationBlob,
@@ -347,8 +346,11 @@ impl DcNetEnclave {
             (pubkeys, shared_secrets, decap_key, input_blob),
         )?;
 
-        pubkeys.0.clear();
-        pubkeys.0.extend(new_pubkey_db.0);
+        pubkeys.db.clear();
+        pubkeys.db.extend(new_pubkey_db.db);
+
+        shared_secrets.db.clear();
+        shared_secrets.db.extend(new_secrets_db.db);
 
         Ok(())
     }
@@ -356,7 +358,7 @@ impl DcNetEnclave {
     /// Verifies and adds the given aggregator registration blob to the database of pubkeys
     pub fn recv_aggregator_registration(
         &self,
-        pubkeys: &mut SignedPubKeyDbBlob,
+        pubkeys: &mut SignedPubKeyDb,
         input_blob: &AggRegistrationBlob,
     ) -> EnclaveResult<()> {
         unimplemented!()
@@ -365,7 +367,7 @@ impl DcNetEnclave {
     /// Verifies and adds the given server registration blob to the database of pubkeys
     pub fn recv_server_registration(
         &self,
-        pubkeys: &mut SignedPubKeyDbBlob,
+        pubkeys: &mut SignedPubKeyDb,
         input_blob: &ServerRegistrationBlob,
     ) -> EnclaveResult<()> {
         unimplemented!()
@@ -434,7 +436,7 @@ mod enclave_tests {
 
         let req_1 = UserSubmissionReq {
             user_id: user_reg_uid,
-            anytrust_group_id: user_reg_shared_secrets.anytrust_group_id,
+            anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
             round: 0u32,
             msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket(vec![0; 1]),
@@ -455,7 +457,7 @@ mod enclave_tests {
 
         for i in 0..num_of_servers {
             let sk = enc.new_sgx_protected_key("test".to_string()).expect("key");
-            pks.push(sk.pk);
+            pks.push(sk.attested_pk.pk);
         }
 
         pks
@@ -471,7 +473,7 @@ mod enclave_tests {
         let mut spks = vec![];
         for _ in 0..num_of_servers {
             let (sealed_sigkey, sealed_kemkey, sever_id, _) = enc.new_server().unwrap();
-            spks.push(sealed_kemkey.0.pk)
+            spks.push(sealed_kemkey.0.attested_pk.pk)
         }
         log::info!("created {} server keys", num_of_servers);
 
@@ -483,7 +485,7 @@ mod enclave_tests {
 
         let req_1 = UserSubmissionReq {
             user_id: user_reg_uid,
-            anytrust_group_id: user_reg_shared_secrets.anytrust_group_id,
+            anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
             round: 0u32,
             msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket(vec![0; 1]),
@@ -516,7 +518,7 @@ mod enclave_tests {
 
         let req_2 = UserSubmissionReq {
             user_id: user_2.2,
-            anytrust_group_id: user_2.0.anytrust_group_id,
+            anytrust_group_id: user_2.0.anytrust_group_id(),
             round: 0u32,
             msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
             ticket: SealedFootprintTicket(vec![0; 1]),
@@ -539,7 +541,7 @@ mod enclave_tests {
         let mut pks = Vec::new();
         for i in 0..10 {
             let sk = enc.new_sgx_protected_key("user".to_string()).expect("key");
-            pks.push(sk.pk);
+            pks.push(sk.attested_pk.pk);
         }
 
         let (user_reg_shared_secrets, user_reg_sealed_key, user_reg_uid, user_reg_proof) =
@@ -554,7 +556,7 @@ mod enclave_tests {
     }
 
     #[test]
-    fn register_agg() {
+    fn new_aggregator() {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         let (agg_sealed_key, agg_id, agg_reg_proof) = enc.new_aggregator().unwrap();
@@ -565,9 +567,48 @@ mod enclave_tests {
         enc.destroy();
     }
 
+    use interface::*;
+
+    fn create_n_servers(
+        n: i32,
+        enclave: &DcNetEnclave,
+    ) -> Vec<(
+        SealedSigPrivKey,
+        SealedKemPrivKey,
+        EntityId,
+        ServerRegistrationBlob,
+    )> {
+        let mut servers = Vec::new();
+        for i in 0..n {
+            servers.push(enclave.new_server().unwrap());
+        }
+
+        servers
+    }
+
     #[test]
     fn server_recv_user_reg() {
         init_logger();
+
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+        let servers = create_n_servers(2, &enc);
+
+        let mut server_kem_pks = Vec::new();
+        for (_, kem_key, _, _) in servers.iter() {
+            server_kem_pks.push(kem_key.0.attested_pk.pk)
+        }
+
+        let user = enc.new_user(&server_kem_pks).expect("user");
+
+        info!("user created {:?}", user.2);
+
+        let server_1 = &servers[0];
+
+        let mut pk_db = Default::default();
+        let mut secret_db = Default::default();
+
+        enc.recv_user_registration(&mut pk_db, &mut secret_db, &server_1.1, &user.3)
+            .unwrap();
     }
 
     #[test]

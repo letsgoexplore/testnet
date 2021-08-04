@@ -1,15 +1,16 @@
 extern crate interface;
 extern crate sgx_types;
-use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
-use std::prelude::v1::*;
-use sgx_types::SgxResult;
+use self::interface::*;
+use crate::messages_types::AggregatedMessage;
+use core::convert::TryInto;
 use crypto;
 use crypto::{SgxPrivateKey, SharedSecretsDb, SignMutable};
-use crate::messages_types::AggregatedMessage;
-use self::interface::*;
 use interface::UserSubmissionReq;
-use utils;
+use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
+use sgx_types::SgxResult;
 use std::convert::TryFrom;
+use std::prelude::v1::*;
+use utils;
 use utils::serialize_to_vec;
 
 pub fn user_submit_internal(
@@ -31,14 +32,7 @@ pub fn user_submit_internal(
     }
 
     // 3) derive the round key from shared secrets
-    let shared_secrets: SharedSecretsDb =
-        utils::unseal_vec_and_deser(&send_request.shared_secrets.sealed_server_secrets)?;
-
-    if shared_secrets.my_id != send_request.user_id {
-        error!("shared_secrets.user_id != send_request.user_id");
-        return Err(SGX_ERROR_INVALID_PARAMETER);
-    }
-
+    let shared_secrets = SharedSecretsDb::try_from(&send_request.shared_secrets)?;
     if shared_secrets.anytrust_group_id() != send_request.anytrust_group_id {
         error!("shared_secrets.anytrust_group_id() != send_request.anytrust_group_id");
         return Err(SGX_ERROR_INVALID_PARAMETER);

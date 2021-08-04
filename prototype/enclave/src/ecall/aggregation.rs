@@ -1,32 +1,36 @@
+use crypto::Signable;
 use crypto::*;
 use interface::*;
 use messages_types::AggregatedMessage;
 use sgx_types::SgxResult;
 use std::prelude::v1::*;
 use types::*;
-use crypto::Signable;
 
-use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER};
+use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 use utils;
 
-
-
 pub fn add_to_aggregate_internal(
-    input: &(RoundSubmissionBlob, SignedPartialAggregate, SealedSigPrivKey)
+    input: &(
+        RoundSubmissionBlob,
+        SignedPartialAggregate,
+        SealedSigPrivKey,
+    ),
 ) -> SgxResult<SignedPartialAggregate> {
-    // let (incoming_msg, current_aggregation, sealed_sk) = input;
+    let (incoming_msg, current_aggregation, sealed_sk) = input;
 
-    let incoming_msg: AggregatedMessage = utils::deserialize_from_vec(&input.0.0)?;
+    let incoming_msg: AggregatedMessage = utils::deserialize_from_vec(&incoming_msg.0)?;
     if incoming_msg.user_ids.len() != 1 {
-        error!("incoming message is already aggregated. This interface only accept user submission");
+        error!(
+            "incoming message is already aggregated. This interface only accept user submission"
+        );
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
     // if input.1.0.is_empty(), we create a new aggregation
     // input.1 is a MarshalledSignedUserMessage
     // input.1.0 is the vec contained in a MarshalledSignedUserMessage
-    let current_aggregation = if !input.1.0.is_empty() {
-        utils::deserialize_from_vec(&input.1.0)?
+    let current_aggregation = if !current_aggregation.0.is_empty() {
+        utils::deserialize_from_vec(&current_aggregation.0)?
     } else {
         AggregatedMessage {
             round: incoming_msg.round,
@@ -38,7 +42,7 @@ pub fn add_to_aggregate_internal(
         }
     };
 
-    let tee_signing_sk: SgxSigningKey = utils::unseal_vec_and_deser(&input.2.0.sealed_sk)?;
+    let tee_signing_sk: SgxSigningKey = utils::unseal_vec_and_deser(&sealed_sk.0.sealed_sk)?;
 
     // verify signature
     if !incoming_msg.verify()? {
@@ -54,7 +58,10 @@ pub fn add_to_aggregate_internal(
     }
 
     // we already checked that incoming_msg.user_ids has only one element
-    if current_aggregation.user_ids.contains(&incoming_msg.user_ids[0]) {
+    if current_aggregation
+        .user_ids
+        .contains(&incoming_msg.user_ids[0])
+    {
         error!("user already in");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }

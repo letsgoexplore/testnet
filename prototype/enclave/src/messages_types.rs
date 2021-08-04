@@ -28,11 +28,11 @@ impl Zero for AggregatedMessage {
     }
 }
 
+use crypto::SgxSigningKey;
+use crypto::{SignMutable, Signable};
+use sgx_types::SgxError;
 use sha2::Digest;
 use sha2::Sha256;
-use crypto::{Signable,SignMutable};
-use crypto::SgxSigningKey;
-use sgx_types::SgxError;
 
 impl Signable for AggregatedMessage {
     fn digest(&self) -> Vec<u8> {

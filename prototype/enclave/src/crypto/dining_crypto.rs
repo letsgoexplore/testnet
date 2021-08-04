@@ -1,10 +1,13 @@
 use interface::*;
+use sgx_types::sgx_status_t;
 
 use std::prelude::v1::*;
 
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
 use sha2::Sha256;
+use types::Sealable;
+use utils;
 
 use super::*;
 use std::collections::BTreeMap;
@@ -22,27 +25,60 @@ impl Debug for DiffieHellmanSharedSecret {
 
 /// A ServerSecrets consists of an array of shared secrets established between a user and with a
 /// group of any-trust server
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize, Debug)]
 pub struct SharedSecretsDb {
-    pub my_id: EntityId,
-    pub pk_secret_map: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret>,
+    pub db: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret>,
 }
 
 use std::convert::TryFrom;
 
+impl TryFrom<&SealedSharedSecretDb> for SharedSecretsDb {
+    type Error = sgx_status_t;
+    fn try_from(sealed_db: &SealedSharedSecretDb) -> SgxResult<Self> {
+        let mut db = Self::default();
+        for (k, v) in sealed_db.db.iter() {
+            db.db.insert(k.to_owned(), utils::unseal_vec_and_deser(&v)?);
+        }
+
+        Ok(db)
+    }
+}
+
 impl SharedSecretsDb {
-    pub fn derive_server_secrets(
+    pub fn to_sealed_db(&self) -> SgxResult<SealedSharedSecretDb> {
+        let mut sealed_shared_secrets = SealedSharedSecretDb::default();
+        for (k, s) in self.db.iter() {
+            sealed_shared_secrets.db.insert(k.to_owned(), s.seal()?);
+        }
+
+        Ok(sealed_shared_secrets)
+    }
+
+    pub fn derive_shared_secrets(
         my_sk: &SgxPrivateKey,
-        server_pks: &[SgxProtectedKeyPub],
+        other_pks: &[SgxProtectedKeyPub],
     ) -> SgxResult<Self> {
         let ecc_handle = SgxEccHandle::new();
         ecc_handle.open()?;
 
         let mut server_secrets = BTreeMap::new();
 
-        for server_pk in server_pks.iter() {
+        for server_pk in other_pks.iter() {
+            if !ecc_handle.check_point(&server_pk.into())? {
+                error!("pk{} not on curve", server_pk);
+                return Err(sgx_status_t::SGX_ERROR_INVALID_PARAMETER);
+            }
             let shared_secret =
-                ecc_handle.compute_shared_dhkey(&my_sk.into(), &server_pk.into())?;
+                match ecc_handle.compute_shared_dhkey(&my_sk.into(), &server_pk.into()) {
+                    Ok(ss) => ss,
+                    Err(e) => {
+                        error!(
+                            "error compute_shared_dhkey: err={} sk={} pk={}",
+                            e, my_sk, server_pk
+                        );
+                        return Err(e);
+                    }
+                };
             server_secrets.insert(
                 server_pk.to_owned(),
                 DiffieHellmanSharedSecret(shared_secret.s),
@@ -51,21 +87,17 @@ impl SharedSecretsDb {
 
         let my_pk = SgxProtectedKeyPub::try_from(my_sk)?;
 
-        Ok(SharedSecretsDb {
-            my_id: EntityId::from(&my_pk),
-            pk_secret_map: server_secrets,
-        })
+        Ok(SharedSecretsDb { db: server_secrets })
     }
 
     pub fn anytrust_group_id(&self) -> EntityId {
-        let keys: Vec<SgxProtectedKeyPub> = self.pk_secret_map.keys().cloned().collect();
+        let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
         compute_anytrust_group_id(&keys)
     }
 }
 
-/// A `RoundSecret` is the one-time pad for a particular round derived from a specific set of
-/// SharedServerSecrets, one for each servers invovled. The set of servers is identified
-/// by `dcnet_id` which is the hash of canonically ordered server public keys.
+/// A RoundSecret is an one-time pad for a given round derived from a set of
+/// DiffieHellmanSharedSecret, one for each anytrust server.
 pub struct RoundSecret {
     secret: [u8; DC_NET_MESSAGE_LENGTH],
     anytrust_group_id: EntityId, // a hash of all server public keys
@@ -103,7 +135,7 @@ pub fn derive_round_secret(
 ) -> CryptoResult<RoundSecret> {
     let mut round_secret = [0; DC_NET_MESSAGE_LENGTH];
 
-    for (_, server_secret) in server_secrets.pk_secret_map.iter() {
+    for (_, server_secret) in server_secrets.db.iter() {
         let hk = Hkdf::<Sha256>::new(None, &server_secret.0);
         let mut derived_secret = [0; DC_NET_MESSAGE_LENGTH];
 

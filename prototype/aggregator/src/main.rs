@@ -45,7 +45,7 @@ fn register_aggregator(
         partial_agg: None,
     };
     let msg = SgxMsg {
-        payload: reg_data.0,
+        payload: reg_data.0.tee_linkable_attestation,
     };
 
     Ok((state, msg))

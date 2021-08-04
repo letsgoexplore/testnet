@@ -20,7 +20,8 @@ extern crate sha2;
 extern crate serde;
 extern crate serde_cbor;
 
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 extern crate env_logger;
 
 use sgx_types::*;
@@ -28,7 +29,6 @@ use sgx_types::*;
 extern crate sgx_rand;
 extern crate sgx_trts;
 extern crate sgx_tseal;
-
 
 mod crypto;
 mod ecall;
