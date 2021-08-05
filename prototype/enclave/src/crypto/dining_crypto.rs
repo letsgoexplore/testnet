@@ -32,18 +32,6 @@ pub struct SharedSecretsDb {
 
 use std::convert::TryFrom;
 
-impl TryFrom<&SealedSharedSecretDb> for SharedSecretsDb {
-    type Error = sgx_status_t;
-    fn try_from(sealed_db: &SealedSharedSecretDb) -> SgxResult<Self> {
-        let mut db = Self::default();
-        for (k, v) in sealed_db.db.iter() {
-            db.db.insert(k.to_owned(), utils::unseal_vec_and_deser(&v)?);
-        }
-
-        Ok(db)
-    }
-}
-
 impl SharedSecretsDb {
     pub fn to_sealed_db(&self) -> SgxResult<SealedSharedSecretDb> {
         let mut sealed_shared_secrets = SealedSharedSecretDb::default();
@@ -125,6 +113,12 @@ impl Display for RoundSecret {
             .field("secret", &hex::encode(&self.secret))
             .field("anytrust_group_id", &self.anytrust_group_id)
             .finish()
+    }
+}
+
+impl Into<DcMessage> for RoundSecret {
+    fn into(self) -> DcMessage {
+        DcMessage(self.secret)
     }
 }
 

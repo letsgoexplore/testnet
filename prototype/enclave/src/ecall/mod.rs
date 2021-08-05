@@ -74,6 +74,28 @@ pub extern "C" fn ecall_entrypoint(
             // output: updated SignedPubKeyDb, SealedSharedSecretDb
             (SignedPubKeyDb, SealedSharedSecretDb),
             server::recv_user_registration),
+        (EcallUnblindAggregate,
+            (RoundSubmissionBlob,SealedSigPrivKey,SealedSharedSecretDb),
+            UnblindedAggregateShareBlob,
+            server::unblind_aggregate),
+        (
+            EcallDeriveRoundOutput,
+            Vec<UnblindedAggregateShareBlob>,
+            RoundOutput,
+            server::derive_round_output
+        ),
+        (
+            EcallRecvAggregatorRegistration,
+            (SignedPubKeyDb, AggRegistrationBlob),
+            SignedPubKeyDb,
+            server::recv_aggregator_registration
+        ),
+        (
+            EcallRecvServerRegistration,
+            (SignedPubKeyDb, ServerRegistrationBlob),
+            SignedPubKeyDb,
+            server::recv_server_registration
+        ),
     }
 }
 

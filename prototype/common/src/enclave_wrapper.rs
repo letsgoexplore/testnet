@@ -64,8 +64,6 @@ macro_rules! gen_ecall_stub {
             let mut out_buf = vec![0u8; crate::enclave_wrapper::ENCLAVE_OUTPUT_BUF_SIZE];
             let mut outbuf_used = 0usize;
 
-            info!("before ecall {}", $name.as_str());
-
             // Call FFI
             let call_ret = unsafe {
                 crate::enclave_wrapper::ecall_entrypoint(
@@ -79,8 +77,6 @@ macro_rules! gen_ecall_stub {
                     &mut outbuf_used,
                 )
             };
-
-            info!("after ecall");
 
             // Check for errors
             if call_ret != crate::enclave_wrapper::sgx_status_t::SGX_SUCCESS {
@@ -123,30 +119,59 @@ mod ecall_allowed {
             new_sgx_keypair
         ),
         (
-        EcallUnsealToPublicKey,
+            EcallUnsealToPublicKey,
             &SealedKey,
             SgxProtectedKeyPub,unseal_to_public_key),
         (
-        EcallRegisterUser,
+            EcallRegisterUser,
             &[SgxProtectedKeyPub],
-            UserRegistration,register_user),
+            UserRegistration,register_user
+        ),
         (
             EcallUserSubmit,
             (&UserSubmissionReq, &SealedSigPrivKey),
-            RoundSubmissionBlob,user_submit),
+            RoundSubmissionBlob,user_submit
+        ),
         (
             EcallAddToAggregate,
             (&RoundSubmissionBlob, &SignedPartialAggregate, &SealedSigPrivKey),
-            SignedPartialAggregate,add_to_agg),
+            SignedPartialAggregate,add_to_agg
+        ),
         (
             EcallRecvUserRegistration,
             // input:
             (&SignedPubKeyDb, &SealedSharedSecretDb, &SealedKemPrivKey, &UserRegistrationBlob),
             // output: updated SignedPubKeyDb, SealedSharedSecretDb
             (SignedPubKeyDb, SealedSharedSecretDb),
-            recv_user_reg),
+            recv_user_reg
+        ),
+        (
+            EcallUnblindAggregate,
+            (&RoundSubmissionBlob,&SealedSigPrivKey,&SealedSharedSecretDb),
+            UnblindedAggregateShareBlob,
+            unblind_aggregate
+        ),
+        (
+            EcallDeriveRoundOutput,
+            &[UnblindedAggregateShareBlob],
+            RoundOutput,
+            derive_round_output
+        ),
+        (
+            EcallRecvAggregatorRegistration,
+            (&SignedPubKeyDb, &AggRegistrationBlob),
+            SignedPubKeyDb,
+            recv_aggregator_registration
+        ),
+        (
+            EcallRecvServerRegistration,
+            (&SignedPubKeyDb, &ServerRegistrationBlob),
+            SignedPubKeyDb,
+            recv_server_registration
+        ),
     }
 }
+
 
 impl DcNetEnclave {
     pub fn init(enclave_file: &'static str) -> EnclaveResult<Self> {
@@ -211,11 +236,9 @@ impl DcNetEnclave {
     /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
     pub fn new_aggregate(
         &self,
-        round: u32,
-        anytrust_group_id: &EntityId,
+        _round: u32,
+        _anytrust_group_id: &EntityId,
     ) -> EnclaveResult<SignedPartialAggregate> {
-        let _ = round;
-        let _ = anytrust_group_id;
         // A new aggregator is simply an empty blob
         Ok(SignedPartialAggregate(Vec::new()))
     }
@@ -257,16 +280,19 @@ impl DcNetEnclave {
         toplevel_agg: &RoundSubmissionBlob,
         signing_key: &SealedSigPrivKey,
         shared_secrets: &SealedSharedSecretDb,
-    ) -> EnclaveResult<UnblindedAggregateShare> {
-        unimplemented!()
+    ) -> EnclaveResult<UnblindedAggregateShareBlob> {
+        ecall_allowed::unblind_aggregate(
+            self.enclave.geteid(),
+            (toplevel_agg, signing_key, shared_secrets),
+        )
     }
 
     /// Derives the final round output given all the shares of the unblinded aggregates
     pub fn derive_round_output(
         &self,
-        server_aggs: &[UnblindedAggregateShare],
+        server_aggs: &[UnblindedAggregateShareBlob],
     ) -> EnclaveResult<RoundOutput> {
-        unimplemented!()
+       ecall_allowed::derive_round_output(self.enclave.geteid(), server_aggs)
     }
 
     /// Create a new TEE protected secret key. Derives shared secrets with all the given KEM pubkeys.
@@ -361,7 +387,13 @@ impl DcNetEnclave {
         pubkeys: &mut SignedPubKeyDb,
         input_blob: &AggRegistrationBlob,
     ) -> EnclaveResult<()> {
-        unimplemented!()
+        let new_db = ecall_allowed::recv_aggregator_registration(
+            self.enclave.geteid(), (pubkeys, input_blob))?;
+
+        pubkeys.db.clear();
+        pubkeys.db.extend(new_db.db);
+
+        Ok(())
     }
 
     /// Verifies and adds the given server registration blob to the database of pubkeys
@@ -370,7 +402,13 @@ impl DcNetEnclave {
         pubkeys: &mut SignedPubKeyDb,
         input_blob: &ServerRegistrationBlob,
     ) -> EnclaveResult<()> {
-        unimplemented!()
+        let new_db = ecall_allowed::recv_server_registration(
+            self.enclave.geteid(), (pubkeys, input_blob))?;
+
+        pubkeys.db.clear();
+        pubkeys.db.extend(new_db.db);
+
+        Ok(())
     }
 
     pub fn run_enclave_tests(&self) -> SgxError {
@@ -609,6 +647,79 @@ mod enclave_tests {
 
         enc.recv_user_registration(&mut pk_db, &mut secret_db, &server_1.1, &user.3)
             .unwrap();
+    }
+
+    #[test]
+    fn whole_thing() {
+        init_logger();
+
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+
+        // create server public keys
+        let num_of_servers = 1;
+        let servers = create_n_servers(num_of_servers, &enc);
+
+        let mut server_kem_pks = Vec::new();
+        for (_, kem_key, _, _) in servers.iter() {
+            server_kem_pks.push(kem_key.0.attested_pk.pk)
+        }
+
+        log::info!("created {} server keys", num_of_servers);
+
+        // create a fake user
+        let user = enc.new_user(&server_kem_pks).unwrap();
+
+        log::info!("user {:?} created", user.2);
+
+        let req_1 = UserSubmissionReq {
+            user_id: user.2,
+            anytrust_group_id: user.0.anytrust_group_id(),
+            round: 0u32,
+            msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
+            ticket: SealedFootprintTicket(vec![0; 1]),
+            shared_secrets: user.0,
+        };
+
+        log::info!("submitting {:?}", req_1.msg);
+
+        let resp_1 = enc
+            .user_submit_round_msg(&req_1, &user.1)
+            .unwrap();
+
+        // SealedSigPrivKey, EntityId, AggRegistrationBlob
+        let aggregator = enc.new_aggregator().expect("agg");
+
+        log::info!("aggregator {:?} created", aggregator.1);
+
+        let mut empty_agg = enc.new_aggregate(0, &EntityId::default()).unwrap();
+        enc.add_to_aggregate(&mut empty_agg, &resp_1, &aggregator.0)
+            .unwrap();
+
+        // finalize the aggregate
+        let final_agg = enc.finalize_aggregate(&empty_agg).unwrap();
+
+        // decryption
+        let mut decryption_shares = Vec::new();
+
+        for s in servers.iter() {
+            let mut pk_db = Default::default();
+            let mut secret_db = Default::default();
+    
+            // register users
+            enc.recv_user_registration(&mut pk_db, &mut secret_db, &s.1, &user.3).unwrap();
+            // register the aggregator
+            enc.recv_aggregator_registration(&mut pk_db, &aggregator.2).unwrap();
+            // unblind
+            let unblined_agg = enc.unblind_aggregate(&final_agg, &s.0, &secret_db).unwrap();
+            decryption_shares.push(unblined_agg);
+        }
+
+        // aggregate final shares
+        let round_output = enc.derive_round_output(&decryption_shares).unwrap();
+
+        info!("round_output {:?}", round_output);
+
+        assert_eq!(round_output.0, req_1.msg);
     }
 
     #[test]

@@ -1,5 +1,6 @@
 use crate::sgx_protected_keys::SgxProtectedKeyPub;
 use crate::user_request::EntityId;
+use crate::DcMessage;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::format;
@@ -41,6 +42,10 @@ impl_enum! {
         EcallUserSubmit = 4,
         EcallAddToAggregate = 5,
         EcallRecvUserRegistration = 6,
+        EcallUnblindAggregate = 7,
+        EcallDeriveRoundOutput = 8,
+        EcallRecvAggregatorRegistration = 9,
+        EcallRecvServerRegistration = 10,
     }
 }
 
@@ -53,6 +58,10 @@ impl EcallId {
             EcallId::EcallUserSubmit => "EcallUserSubmit",
             EcallId::EcallAddToAggregate => "EcallAddToAggregate",
             EcallId::EcallRecvUserRegistration => "EcallRecvUserRegistration",
+            EcallId::EcallUnblindAggregate => "EcallUnblindAgg",
+            EcallId::EcallDeriveRoundOutput => "EcallDeriveRoundOutput",
+            EcallId::EcallRecvAggregatorRegistration => "EcallRecvAggregatorRegistration",
+            EcallId::EcallRecvServerRegistration => "EcallRecvServerRegistration",
         }
     }
 }
@@ -73,9 +82,10 @@ pub struct MarshalledSignedUserMessage(pub Vec<u8>);
 pub struct RoundSubmissionBlob(pub Vec<u8>);
 
 /// The unblinded aggregate output by a single anytrust node
+/// This serialized to a UnblindedAggregateShare defined in enclave/message_types.rs
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct UnblindedAggregateShare(pub Vec<u8>);
+pub struct UnblindedAggregateShareBlob(pub Vec<u8>);
 
 /// The state of an aggregator. This can only be opened from within the enclave.
 /// Inside an enclave this is deserialized to an AggregatedMessage
@@ -92,10 +102,14 @@ pub struct UserRegistrationBlob(pub AttestedPublicKey);
 
 /// Describes aggregator registration information. This contains a linkably attested signature
 /// pubkey.
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct AggRegistrationBlob(pub AttestedPublicKey);
 
 /// Describes anytrust server registration information. This contains two linkable attestations
 /// for sig key and kem key.
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct ServerRegistrationBlob {
     pub sig_key: AttestedPublicKey,
     pub kem_key: AttestedPublicKey,
@@ -107,7 +121,7 @@ pub struct SealedFootprintTicket(pub Vec<u8>);
 
 /// Enclave-protected secrets shared with a set of anytrust servers
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Default, Clone, Serialize, Deserialize, Debug)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 // TODO: Make this a map from entity ID to shared secret
 pub struct SealedSharedSecretDb {
     pub db: BTreeMap<SgxProtectedKeyPub, Vec<u8>>,
@@ -120,12 +134,22 @@ impl SealedSharedSecretDb {
     }
 }
 
+impl Debug for SealedSharedSecretDb {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let pks: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        f.debug_struct("SealedSharedSecretDb")
+            .field("pks", &pks)
+            .finish()
+    }
+}
+
 /// SgxProtectedKeyPair is pk + attestation
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct AttestedPublicKey {
     pub pk: SgxProtectedKeyPub,
-    pub role: std::string::String, /// role denotes the intended use of this key e.g., "aggregator" "client" "anytrust server"
+    pub role: std::string::String,
+    /// role denotes the intended use of this key e.g., "aggregator" "client" "anytrust server"
     pub tee_linkable_attestation: std::vec::Vec<u8>, // binds this key to an enclave
 }
 
@@ -141,7 +165,6 @@ impl Debug for AttestedPublicKey {
             .finish()
     }
 }
-
 
 /// An enclave-generated private signing key
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -182,12 +205,20 @@ pub struct SealedSigPrivKey(pub SealedKey);
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SealedKemPrivKey(pub SealedKey);
 
+impl AsRef<SealedKey> for SealedKemPrivKey {
+    fn as_ref(&self) -> &SealedKey {
+        &self.0
+    }
+}
+
 /// SignedPubKeyDb is a signed mapping between entity id and public key
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct SignedPubKeyDb {
-    pub db: BTreeMap<EntityId, AttestedPublicKey>
+    pub db: BTreeMap<EntityId, AttestedPublicKey>,
 }
 
 // TODO: Figure out what this should contain. Probably just a long bitstring.
-pub struct RoundOutput;
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Default, Serialize, Debug, Deserialize)]
+pub struct RoundOutput(pub DcMessage);

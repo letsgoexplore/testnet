@@ -1,5 +1,6 @@
 use crypto::SgxSignature;
 use interface::{DcMessage, EntityId, SgxSigningPubKey};
+use sgx_tcrypto::SgxRsaPubKey;
 use std::vec::Vec;
 
 /// A (potentially aggregated) message that's produced by an enclaave
@@ -59,6 +60,46 @@ impl SignMutable for AggregatedMessage {
         let (sig, pk) = self.sign(sk)?;
         self.tee_pk = pk;
         self.tee_sig = sig;
+
+        Ok(())
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UnblindedAggregateShare {
+    pub msg: AggregatedMessage,
+    pub sig: SgxSignature,
+    pub pk: SgxSigningPubKey,
+}
+
+impl Signable for UnblindedAggregateShare {
+    fn digest(&self) -> Vec<u8> {
+        Default::default()
+    }
+
+    fn get_sig(&self) -> SgxSignature {
+        Default::default()
+    }
+
+    fn get_pk(&self) -> SgxSigningPubKey {
+        Default::default()
+    }
+
+    fn sign(&self, _ssk: &SgxSigningKey) -> sgx_types::SgxResult<(SgxSignature, SgxSigningPubKey)> {
+        warn!("sig not implemented");
+        Ok((Default::default(), Default::default()))
+    }
+
+    fn verify(&self) -> sgx_types::SgxResult<bool> {
+        Ok(true)
+    }
+}
+
+impl SignMutable for UnblindedAggregateShare {
+    fn sign_mut(&mut self, ssk: &SgxSigningKey) -> SgxError {
+        let (sig, pk) = self.sign(ssk)?;
+        self.sig = sig;
+        self.pk = pk;
 
         Ok(())
     }

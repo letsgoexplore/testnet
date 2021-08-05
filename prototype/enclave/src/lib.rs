@@ -35,6 +35,7 @@ mod ecall;
 mod messages_types;
 mod tests;
 mod types;
+mod unseal;
 mod utils;
 
 #[no_mangle]

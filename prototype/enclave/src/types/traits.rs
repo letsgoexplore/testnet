@@ -60,3 +60,19 @@ where
         ser_and_seal_to_vec(self, b"")
     }
 }
+
+pub trait UnsealableAs<T> {
+    fn unseal(&self) -> SgxResult<T>;
+}
+
+pub trait UnmarshallableAs<T> {
+    fn unmarshal(&self) -> SgxResult<T>;
+}
+
+pub trait MarshallAs<T> {
+    fn marshal(&self) -> SgxResult<T>;
+}
+
+pub trait SealAs<T> {
+    fn seal(&self) -> SgxResult<T>;
+}

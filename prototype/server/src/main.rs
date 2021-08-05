@@ -12,7 +12,7 @@ use interface::{
     compute_group_id, AggRegistrationBlob, DcMessage, EntityId, KemPubKey, RoundOutput,
     RoundSubmissionBlob, SealedFootprintTicket, SealedKemPrivKey, SealedSharedSecretDb,
     SealedSigPrivKey, ServerRegistrationBlob, SignedPartialAggregate, SignedPubKeyDb,
-    UnblindedAggregateShare, UserRegistrationBlob, UserSubmissionReq,
+    UnblindedAggregateShareBlob, UserRegistrationBlob, UserSubmissionReq,
 };
 
 use rand::Rng;
@@ -60,7 +60,7 @@ impl<'a> ServerState<'a> {
     fn unblind_aggregate(
         &self,
         toplevel_agg: &RoundSubmissionBlob,
-    ) -> Result<UnblindedAggregateShare, Box<dyn Error>> {
+    ) -> Result<UnblindedAggregateShareBlob, Box<dyn Error>> {
         let share = self.enclave.unblind_aggregate(
             toplevel_agg,
             &self.signing_key,
@@ -73,7 +73,7 @@ impl<'a> ServerState<'a> {
     /// Derives the final round output given all the shares of the unblinded aggregates
     pub fn derive_round_output(
         &self,
-        server_aggs: &[UnblindedAggregateShare],
+        server_aggs: &[UnblindedAggregateShareBlob],
     ) -> Result<RoundOutput, Box<dyn Error>> {
         let output = self.enclave.derive_round_output(server_aggs)?;
 
