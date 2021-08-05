@@ -26,7 +26,7 @@ impl Debug for SgxProtectedKeyPub {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("PK")
             .field("x", &hex::encode(&self.gx))
-            .field("y", &hex::encode(&self.gx))
+            .field("y", &hex::encode(&self.gy))
             .finish()
     }
 }

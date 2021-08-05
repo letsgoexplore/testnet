@@ -6,7 +6,7 @@ use std::prelude::v1::*;
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
 use sha2::Sha256;
-use types::Sealable;
+use types::{Sealable, Xor};
 use utils;
 
 use super::*;
@@ -25,9 +25,17 @@ impl Debug for DiffieHellmanSharedSecret {
 
 /// A ServerSecrets consists of an array of shared secrets established between a user and with a
 /// group of any-trust server
-#[derive(Clone, Default, Serialize, Deserialize, Debug)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct SharedSecretsDb {
     pub db: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret>,
+}
+
+impl Debug for SharedSecretsDb {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("SharedSecretsDb")
+            .field("db", &self.db)
+            .finish()
+    }
 }
 
 use std::convert::TryFrom;
@@ -86,65 +94,32 @@ impl SharedSecretsDb {
 
 /// A RoundSecret is an one-time pad for a given round derived from a set of
 /// DiffieHellmanSharedSecret, one for each anytrust server.
-pub struct RoundSecret {
-    secret: [u8; DC_NET_MESSAGE_LENGTH],
-    anytrust_group_id: EntityId, // a hash of all server public keys
-}
-
-impl RoundSecret {
-    pub fn encrypt(&self, msg: &DcMessage) -> DcMessage {
-        let mut output = [0; DC_NET_MESSAGE_LENGTH];
-
-        for i in 0..DC_NET_MESSAGE_LENGTH {
-            output[i] = self.secret[i] ^ msg.0[i];
-        }
-
-        DcMessage(output)
-    }
-}
+pub type RoundSecret = DcMessage;
 
 use sgx_tcrypto::SgxEccHandle;
 use std::fmt::Display;
 use std::fmt::Result as FmtResult;
-
-impl Display for RoundSecret {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.debug_struct("RoundSecret")
-            .field("secret", &hex::encode(&self.secret))
-            .field("anytrust_group_id", &self.anytrust_group_id)
-            .finish()
-    }
-}
-
-impl Into<DcMessage> for RoundSecret {
-    fn into(self) -> DcMessage {
-        DcMessage(self.secret)
-    }
-}
 
 /// Derives a RoundSecret as the XOR of `HKDF(server_secrets[i], round)` for all `i` in `0`...`len(server_secrets)`
 pub fn derive_round_secret(
     round: u32,
     server_secrets: &SharedSecretsDb,
 ) -> CryptoResult<RoundSecret> {
-    let mut round_secret = [0; DC_NET_MESSAGE_LENGTH];
+    let mut round_secret = DcMessage::default();
 
     for (_, server_secret) in server_secrets.db.iter() {
         let hk = Hkdf::<Sha256>::new(None, &server_secret.0);
-        let mut derived_secret = [0; DC_NET_MESSAGE_LENGTH];
+        let mut derived_secret = DcMessage::default();
 
         // info contains round
         let mut info = [0; 32];
         LittleEndian::write_u32(&mut info, round);
-        hk.expand(&info, &mut derived_secret)?;
+        hk.expand(&info, &mut derived_secret.0)?;
 
-        for i in 0..DC_NET_MESSAGE_LENGTH {
-            round_secret[i] = round_secret[i] ^ derived_secret[i];
-        }
+        round_secret.xor_mut(&derived_secret);
     }
 
-    Ok(RoundSecret {
-        secret: round_secret,
-        anytrust_group_id: Default::default(),
-    })
+    // info!("derived secrets for round {} from {:?}. secret {:?}", round, server_secrets, round_secret);
+
+    Ok(round_secret)
 }

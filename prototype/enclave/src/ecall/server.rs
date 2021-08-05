@@ -36,16 +36,15 @@ pub fn recv_user_registration(
 
     // Derive secrets
     let my_kem_sk: KemPrvKey = utils::unseal_vec_and_deser(&_my_kem_sk.0.sealed_sk)?;
-    debug!("my_kem_sk {:?}", my_kem_sk);
 
     let mut others_kem_pks = vec![];
     for (_, k) in pk_db.db.iter() {
         others_kem_pks.push(k.pk);
     }
 
-    debug!("others_kem_pks {:?}", others_kem_pks);
-
     let shared_secrets = SharedSecretsDb::derive_shared_secrets(&my_kem_sk, &others_kem_pks)?;
+
+    info!("shared_secrets {:?}", shared_secrets);
 
     Ok((pk_db, shared_secrets.to_sealed_db()?))
 }
@@ -94,7 +93,7 @@ use types::{UnmarshallableAs, UnsealableAs};
 pub fn unblind_aggregate(
     input: &(RoundSubmissionBlob, SealedSigPrivKey, SealedSharedSecretDb),
 ) -> SgxResult<UnblindedAggregateShareBlob> {
-    let mut round_msg = input.0.unmarshal()?;
+    let round_msg = input.0.unmarshal()?;
     let sig_key = input.1.unseal()?;
     let secret_db = input.2.unseal()?;
 
@@ -103,15 +102,12 @@ pub fn unblind_aggregate(
         SGX_ERROR_INVALID_PARAMETER
     })?;
 
-    debug!("round_secret {}", round_secret);
-
-    debug!("round_msg {:?}", round_msg.aggregated_msg);
-
     // XOR server's secrets
-    round_msg.aggregated_msg.xor_mut(&round_secret.into());
+    // round_msg.aggregated_msg.xor_mut(&round_secret);
 
     let mut unblined_agg = messages_types::UnblindedAggregateShare {
-        msg: round_msg,
+        encrypted_msg: round_msg,
+        key_share: round_secret,
         sig: Default::default(),
         pk: Default::default(),
     };
@@ -119,22 +115,28 @@ pub fn unblind_aggregate(
     // sign
     unblined_agg.sign_mut(&sig_key)?;
 
-    debug!("unblined_agg {:?}", unblined_agg);
-
     Ok(unblined_agg.marshal()?)
 }
 
 use std::vec::Vec;
 
 pub fn derive_round_output(shares: &Vec<UnblindedAggregateShareBlob>) -> SgxResult<RoundOutput> {
+    if shares.is_empty() {
+        error!("empty shares array");
+        return Err(SGX_ERROR_INVALID_PARAMETER);
+    }
+
+    // TODO: check all shares are for the same around & same message
+
+    // Xor of all server secrets
     let mut final_msg = DcMessage::default();
-
-    debug!("{:?}", final_msg);
-
     for s in shares.iter() {
         let share = s.unmarshal()?;
-        final_msg.xor_mut(&share.msg.aggregated_msg);
+        final_msg.xor_mut(&share.key_share);
     }
+
+    // Finally xor secrets with the message
+    final_msg.xor_mut(&shares[0].unmarshal()?.encrypted_msg.aggregated_msg);
 
     Ok(RoundOutput(final_msg))
 }

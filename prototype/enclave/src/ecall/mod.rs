@@ -48,33 +48,46 @@ pub extern "C" fn ecall_entrypoint(
     // make sure this matches exact with that in enclave_wrapper.rs
     match_ecall_ids! {
         ecall_id_raw, inp, inp_len, output, output_cap, output_used,
-        (EcallNewSgxKeypair,
+        (
+            EcallNewSgxKeypair,
             String,
             SealedKey,
-            register::new_sgx_keypair_internal),
-        (EcallUnsealToPublicKey,
+            register::new_sgx_keypair_internal
+        ),
+        (
+            EcallUnsealToPublicKey,
             SealedKey,
             SgxProtectedKeyPub,
-            register::unseal_to_pubkey_internal),
-        (EcallRegisterUser,
+            register::unseal_to_pubkey_internal
+        ),
+        (
+            EcallRegisterUser,
             Vec<SgxProtectedKeyPub>,
             UserRegistration,
-            register::register_user_internal),
-        (EcallUserSubmit,
+            register::register_user
+        ),
+        (
+            EcallUserSubmit,
             (UserSubmissionReq, SealedSigPrivKey),
             RoundSubmissionBlob,
-            submit::user_submit_internal),
-        (EcallAddToAggregate,
+            submit::user_submit_internal
+        ),
+        (
+            EcallAddToAggregate,
             (RoundSubmissionBlob,SignedPartialAggregate,SealedSigPrivKey),
             SignedPartialAggregate,
-            aggregation::add_to_aggregate_internal),
-        (EcallRecvUserRegistration,
+            aggregation::add_to_aggregate_internal
+        ),
+        (
+            EcallRecvUserRegistration,
             // input:
             (SignedPubKeyDb, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob),
             // output: updated SignedPubKeyDb, SealedSharedSecretDb
             (SignedPubKeyDb, SealedSharedSecretDb),
-            server::recv_user_registration),
-        (EcallUnblindAggregate,
+            server::recv_user_registration
+        ),
+        (
+            EcallUnblindAggregate,
             (RoundSubmissionBlob,SealedSigPrivKey,SealedSharedSecretDb),
             UnblindedAggregateShareBlob,
             server::unblind_aggregate),

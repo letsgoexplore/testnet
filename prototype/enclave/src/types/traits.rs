@@ -25,12 +25,6 @@ impl Xor for DcMessage {
     }
 }
 
-impl Xor for Vec<u8> {
-    fn xor(&self, other: &Self) -> Self {
-        self.iter().zip(other).map(|(x, y)| x ^ y).collect()
-    }
-}
-
 // return a reasonable zero value
 pub trait Zero {
     fn zero() -> Self;

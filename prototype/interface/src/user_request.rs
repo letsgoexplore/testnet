@@ -154,35 +154,24 @@ impl Debug for UserSubmissionReq {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct UserRegistration {
-    key: SealedKey,
-    shared_secrets: SealedSharedSecretDb,
+    pub key: SealedSigPrivKey,
+    pub shared_secrets: SealedSharedSecretDb,
 }
 
 impl UserRegistration {
-    pub fn new(key: SealedKey, shared_secrets: SealedSharedSecretDb) -> Self {
-        UserRegistration {
-            key,
-            shared_secrets,
-        }
-    }
-
     pub fn get_user_id(&self) -> EntityId {
-        EntityId::from(&self.key.attested_pk.pk)
+        EntityId::from(&self.key.0.attested_pk.pk)
     }
 
     pub fn get_sealed_shared_secrets(&self) -> &SealedSharedSecretDb {
         &self.shared_secrets
     }
 
-    pub fn get_sealed_usk(&self) -> &SealedKey {
+    pub fn get_sealed_usk(&self) -> &SealedSigPrivKey {
         &self.key
     }
 
     pub fn get_registration_blob(&self) -> UserRegistrationBlob {
-        UserRegistrationBlob(self.key.attested_pk.clone())
+        UserRegistrationBlob(self.key.0.attested_pk.clone())
     }
-
-    // pub fn get_anygroup_id(&self) -> EntityId {
-    //     self.shared_secrets.anytrust_group_id
-    // }
 }

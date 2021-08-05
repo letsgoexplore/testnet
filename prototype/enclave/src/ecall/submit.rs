@@ -3,6 +3,7 @@ extern crate sgx_types;
 use self::interface::*;
 use crate::messages_types::AggregatedMessage;
 use crate::types::UnsealableAs;
+use crate::types::Xor;
 use core::convert::TryInto;
 use crypto;
 use crypto::{SgxPrivateKey, SharedSecretsDb, SignMutable};
@@ -42,10 +43,8 @@ pub fn user_submit_internal(
     let round_key = crypto::derive_round_secret(send_request.round, &shared_secrets)
         .map_err(|_e| SGX_ERROR_INVALID_PARAMETER)?;
 
-    debug!("round secret {}", round_key);
-
     // encrypt the message with round_key
-    let encrypted_msg = round_key.encrypt(&send_request.msg);
+    let encrypted_msg = round_key.xor(&send_request.msg);
 
     // FIXME: add missing default fields
     let mut mutable = AggregatedMessage {

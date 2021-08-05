@@ -172,7 +172,6 @@ mod ecall_allowed {
     }
 }
 
-
 impl DcNetEnclave {
     pub fn init(enclave_file: &'static str) -> EnclaveResult<Self> {
         let enclave_path = PathBuf::from(enclave_file);
@@ -245,7 +244,7 @@ impl DcNetEnclave {
 
     /// Adds the given input from a user to the given partial aggregate
     /// Note: if marshalled_current_aggregation is empty (len = 0), an empty aggregation is created
-    //  and the signed message is aggregated into that.
+    ///  and the signed message is aggregated into that.
     pub fn add_to_aggregate(
         &self,
         agg: &mut SignedPartialAggregate,
@@ -292,11 +291,12 @@ impl DcNetEnclave {
         &self,
         server_aggs: &[UnblindedAggregateShareBlob],
     ) -> EnclaveResult<RoundOutput> {
-       ecall_allowed::derive_round_output(self.enclave.geteid(), server_aggs)
+        ecall_allowed::derive_round_output(self.enclave.geteid(), server_aggs)
     }
 
     /// Create a new TEE protected secret key. Derives shared secrets with all the given KEM pubkeys.
     /// information to send to anytrust nodes.
+    /// TODO: should we use different keys for signing and kem?
     pub fn new_user(
         &self,
         server_kem_pks: &[KemPubKey],
@@ -309,7 +309,7 @@ impl DcNetEnclave {
         let output = ecall_allowed::register_user(self.enclave.geteid(), server_kem_pks)?;
 
         let secrets = output.get_sealed_shared_secrets().to_owned();
-        let privkey = SealedSigPrivKey(output.get_sealed_usk().to_owned());
+        let privkey = output.get_sealed_usk().to_owned();
         let uid = output.get_user_id();
         let reg_blob = output.get_registration_blob();
 
@@ -388,7 +388,9 @@ impl DcNetEnclave {
         input_blob: &AggRegistrationBlob,
     ) -> EnclaveResult<()> {
         let new_db = ecall_allowed::recv_aggregator_registration(
-            self.enclave.geteid(), (pubkeys, input_blob))?;
+            self.enclave.geteid(),
+            (pubkeys, input_blob),
+        )?;
 
         pubkeys.db.clear();
         pubkeys.db.extend(new_db.db);
@@ -402,8 +404,8 @@ impl DcNetEnclave {
         pubkeys: &mut SignedPubKeyDb,
         input_blob: &ServerRegistrationBlob,
     ) -> EnclaveResult<()> {
-        let new_db = ecall_allowed::recv_server_registration(
-            self.enclave.geteid(), (pubkeys, input_blob))?;
+        let new_db =
+            ecall_allowed::recv_server_registration(self.enclave.geteid(), (pubkeys, input_blob))?;
 
         pubkeys.db.clear();
         pubkeys.db.extend(new_db.db);
@@ -652,11 +654,12 @@ mod enclave_tests {
     #[test]
     fn whole_thing() {
         init_logger();
+        info!("hell");
 
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         // create server public keys
-        let num_of_servers = 1;
+        let num_of_servers = 10;
         let servers = create_n_servers(num_of_servers, &enc);
 
         let mut server_kem_pks = Vec::new();
@@ -664,12 +667,15 @@ mod enclave_tests {
             server_kem_pks.push(kem_key.0.attested_pk.pk)
         }
 
-        log::info!("created {} server keys", num_of_servers);
+        info!("created {} server keys", num_of_servers);
+        for k in server_kem_pks.iter() {
+            info!("- {:?}", k);
+        }
 
         // create a fake user
         let user = enc.new_user(&server_kem_pks).unwrap();
 
-        log::info!("user {:?} created", user.2);
+        log::info!("user {:?} created. pk={:?}", user.2, user.3.0.pk);
 
         let req_1 = UserSubmissionReq {
             user_id: user.2,
@@ -682,9 +688,7 @@ mod enclave_tests {
 
         log::info!("submitting {:?}", req_1.msg);
 
-        let resp_1 = enc
-            .user_submit_round_msg(&req_1, &user.1)
-            .unwrap();
+        let resp_1 = enc.user_submit_round_msg(&req_1, &user.1).unwrap();
 
         // SealedSigPrivKey, EntityId, AggRegistrationBlob
         let aggregator = enc.new_aggregator().expect("agg");
@@ -704,11 +708,13 @@ mod enclave_tests {
         for s in servers.iter() {
             let mut pk_db = Default::default();
             let mut secret_db = Default::default();
-    
+
             // register users
-            enc.recv_user_registration(&mut pk_db, &mut secret_db, &s.1, &user.3).unwrap();
+            enc.recv_user_registration(&mut pk_db, &mut secret_db, &s.1, &user.3)
+                .unwrap();
             // register the aggregator
-            enc.recv_aggregator_registration(&mut pk_db, &aggregator.2).unwrap();
+            enc.recv_aggregator_registration(&mut pk_db, &aggregator.2)
+                .unwrap();
             // unblind
             let unblined_agg = enc.unblind_aggregate(&final_agg, &s.0, &secret_db).unwrap();
             decryption_shares.push(unblined_agg);

@@ -1,4 +1,4 @@
-use crypto::SgxSignature;
+use crypto::{RoundSecret, SgxSignature};
 use interface::{DcMessage, EntityId, SgxSigningPubKey};
 use sgx_tcrypto::SgxRsaPubKey;
 use std::vec::Vec;
@@ -67,7 +67,8 @@ impl SignMutable for AggregatedMessage {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UnblindedAggregateShare {
-    pub msg: AggregatedMessage,
+    pub encrypted_msg: AggregatedMessage,
+    pub key_share: RoundSecret,
     pub sig: SgxSignature,
     pub pk: SgxSigningPubKey,
 }

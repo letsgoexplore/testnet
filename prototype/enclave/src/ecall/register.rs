@@ -51,17 +51,17 @@ pub fn unseal_to_pubkey_internal(sealed_sk: &SealedKey) -> SgxResult<SgxProtecte
 /// Derives shared secrets with all the given KEM pubkeys, and derives a new signing pubkey.
 /// Returns sealed secrets, a sealed private key, and a registration message to send to an
 /// anytrust node
-pub fn register_user_internal(
-    anytrust_server_pks: &Vec<SgxProtectedKeyPub>,
-) -> SgxResult<UserRegistration> {
+pub fn register_user(anytrust_server_pks: &Vec<SgxProtectedKeyPub>) -> SgxResult<UserRegistration> {
     // 1. generate a SGX protected key. used for both signing and round key derivation
     let (sk, pk, sealed_key) = new_sgx_keypair_ext_internal("user")?;
 
     // 2. derive server secrets
     let server_secrets = SharedSecretsDb::derive_shared_secrets(&sk, anytrust_server_pks)?;
 
-    Ok(UserRegistration::new(
-        sealed_key,
-        server_secrets.to_sealed_db()?,
-    ))
+    info!("DH secrets {:?}", server_secrets);
+
+    Ok(UserRegistration {
+        key: SealedSigPrivKey(sealed_key),
+        shared_secrets: server_secrets.to_sealed_db()?,
+    })
 }
