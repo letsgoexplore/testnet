@@ -1,101 +1,69 @@
 extern crate common;
 extern crate interface;
 
-use std::{collections::BTreeSet, error::Error};
+mod agg_state;
+mod service;
 
-use common::enclave_wrapper::{DcNetEnclave, EnclaveResult};
-use dc_proto::{anytrust_node_client::AnytrustNodeClient, SgxMsg};
-pub mod dc_proto {
-    tonic::include_proto!("dc_proto");
-}
-use interface::{
-    compute_group_id, DcMessage, EntityId, KemPubKey, RoundSubmissionBlob, SealedFootprintTicket,
-    SealedSigPrivKey, SignedPartialAggregate, UserSubmissionReq,
+use crate::{agg_state::register_aggregator, service::start_service};
+
+use common::enclave_wrapper::DcNetEnclave;
+use interface::KemPubKey;
+
+use std::{
+    error::Error,
+    fs::File,
+    io::{BufRead, BufReader},
+    sync::{Arc, Mutex},
 };
 
-use rand::Rng;
+use clap::{App, Arg};
 
-struct AggregatorState<'a> {
-    /// A reference to this machine's enclave
-    enclave: &'a DcNetEnclave,
-    /// A unique identifier for this aggregator. Computed as the hash of the aggregator's pubkey.
-    agg_id: EntityId,
-    /// A unique for the set anytrust servers that this aggregator is registered with
-    anytrust_group_id: EntityId,
-    /// This aggregator's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedSigPrivKey,
-    /// A partial aggregate of received user messages
-    partial_agg: Option<SignedPartialAggregate>,
+// Parses the KEM pubkey file. Each line is a base64-encoded byte sequence. The byte sequence is a
+// CBOR encoding of a KemPubKey
+fn parse_kemfile(filename: &str) -> Result<Vec<KemPubKey>, Box<dyn Error>> {
+    let f = File::open(filename)?;
+    let mut reader = BufReader::new(f);
+    let mut line = String::new();
+
+    let mut pubkeys: Vec<KemPubKey> = Vec::new();
+
+    while reader.read_line(&mut line)? > 0 {
+        let bytes = base64::decode(&line)?;
+        let pubkey = serde_cbor::from_slice(&bytes)?;
+
+        pubkeys.push(pubkey);
+    }
+
+    Ok(pubkeys)
 }
 
-fn register_aggregator(
-    enclave: &DcNetEnclave,
-    pubkeys: Vec<KemPubKey>,
-) -> Result<(AggregatorState, SgxMsg), Box<dyn Error>> {
-    let (sealed_ask, agg_id, reg_data) = enclave.new_aggregator()?;
-
-    let anytrust_ids: BTreeSet<EntityId> = pubkeys.iter().map(|pk| pk.get_entity_id()).collect();
-    let anytrust_group_id = compute_group_id(&anytrust_ids);
-
-    let state = AggregatorState {
-        agg_id,
-        anytrust_group_id,
-        enclave,
-        signing_key: sealed_ask,
-        partial_agg: None,
-    };
-    let msg = SgxMsg {
-        payload: reg_data.0.tee_linkable_attestation,
+fn main() -> Result<(), Box<dyn Error>> {
+    let enclave = {
+        let enclave_handle = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
+        Arc::new(Mutex::new(enclave_handle))
     };
 
-    Ok((state, msg))
-}
+    let matches = App::new("SGX DCNet Aggregator")
+        .version("0.1.0")
+        .arg(
+            Arg::with_name("pubkey-file")
+                .short("p")
+                .long("pubkey-file")
+                .value_name("FILE")
+                .required(true)
+                .takes_value(true)
+                .help(
+                    "A text file containing newline-separated, base64-encoded KEM pubkeys of \
+                    anytrust nodes",
+                ),
+        )
+        .get_matches();
+    let kem_filename = matches.value_of("pubkey-file").unwrap();
+    let pubkeys = parse_kemfile(&kem_filename).unwrap();
 
-impl<'a> AggregatorState<'a> {
-    /// Clears whatever aggregate exists and makes an empty one for the given round
-    fn new_aggregate(&mut self, round: u32) -> Result<(), Box<dyn Error>> {
-        // Make a new partial aggregate and put it in the local state
-        let partial_agg = self.enclave.new_aggregate(round, &self.anytrust_group_id)?;
-        self.partial_agg = Some(partial_agg);
+    let (state, reg_msg) = register_aggregator(enclave, pubkeys)?;
 
-        Ok(())
-    }
+    start_service(state);
 
-    /// Adds the given input to the partial aggregate
-    fn add_to_aggregate(&mut self, input_blob: &RoundSubmissionBlob) -> Result<(), Box<dyn Error>> {
-        let partial_agg = self
-            .partial_agg
-            .as_mut()
-            .expect("cannot add to aggregate without first calling new_aggregate");
-        let _ = self
-            .enclave
-            .add_to_aggregate(partial_agg, input_blob, &self.signing_key)?;
-        Ok(())
-    }
-
-    /// Packages the current aggregate into a message that can be sent to the next aggregator or an
-    /// anytrust node
-    fn finalize_aggregate(&self) -> Result<SgxMsg, Box<dyn Error>> {
-        let partial_agg = self
-            .partial_agg
-            .as_ref()
-            .expect("cannot finalize aggregate without first calling new_aggregate");
-        let msg = self.enclave.finalize_aggregate(partial_agg)?;
-
-        Ok(SgxMsg { payload: msg.0 })
-    }
-}
-
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let mut rng = rand::thread_rng();
-
-    // TODO: maybe not hardcode the enclave path
-    let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
-    enclave.run_enclave_tests();
-
-    // TODO: Write a test routine for aggregator
-
-    enclave.destroy();
     Ok(())
 }
