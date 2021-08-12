@@ -14,6 +14,9 @@ tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 interface = { path = "../interface" }
 common = {path = "../common"}
 rand = "0.8"
+base64 = "0.13"
+serde_cbor = "0.11"
+reqwest = { version = "0.11", features = ["blocking"] }
 
 [build-dependencies]
 tonic-build = "0.4"
