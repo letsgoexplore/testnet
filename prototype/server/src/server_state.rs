@@ -32,8 +32,10 @@ pub struct ServerState {
 }
 
 impl ServerState {
-    pub fn new(enclave: &DcNetEnclave) -> Result<(ServerState, SgxMsg), Box<dyn Error>> {
-        let (sealed_ssk, sealed_ksk, server_id, reg_data) = enclave.new_server()?;
+    pub fn new(
+        enclave: &DcNetEnclave,
+    ) -> Result<(ServerState, ServerRegistrationBlob), Box<dyn Error>> {
+        let (sealed_ssk, sealed_ksk, server_id, reg_blob) = enclave.new_server()?;
 
         let state = ServerState {
             server_id,
@@ -43,11 +45,8 @@ impl ServerState {
             shared_secrets: SealedSharedSecretDb::default(),
             pubkeys: SignedPubKeyDb::default(),
         };
-        let msg = SgxMsg {
-            payload: reg_data.kem_key.tee_linkable_attestation,
-        };
 
-        Ok((state, msg))
+        Ok((state, reg_blob))
     }
 
     /// XORs the shared secrets into the given aggregate. Returns the server's share of the

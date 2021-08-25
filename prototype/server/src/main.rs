@@ -55,7 +55,22 @@ fn main() -> Result<(), Box<dyn Error>> {
     let matches = App::new("SGX DCNet Anytrust Node")
         .version("0.1.0")
         .setting(AppSettings::SubcommandRequiredElseHelp)
-        .subcommand(SubCommand::with_name("new").about("Generates a new server state"))
+        .subcommand(
+            SubCommand::with_name("new")
+                .about(
+                    "Generates a new server state and outputs a registration message for other \
+                    anytrust servers",
+                )
+                .arg(
+                    Arg::with_name("server-state")
+                        .short("s")
+                        .long("server-state")
+                        .value_name("OUTFILE")
+                        .required(true)
+                        .takes_value(true)
+                        .help("The file to which the new server state will be written"),
+                ),
+        )
         .subcommand(
             SubCommand::with_name("get-kem-pubkey")
                 .about("Outputs this server's KEM pubkey")
@@ -73,10 +88,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         )
         .get_matches();
 
-    if let Some(_) = matches.subcommand_matches("new") {
-        // Make a new state and print it out
-        let state = ServerState::new(&enclave)?.0;
-        save_to_stdout(&state)?;
+    if let Some(matches) = matches.subcommand_matches("new") {
+        // Make a new state and registration message
+        let (state, reg_blob) = ServerState::new(&enclave)?;
+        // Save the state and output the registration blob
+        save_state(&matches, &state)?;
+        save_to_stdout(&reg_blob)?;
     }
 
     if let Some(matches) = matches.subcommand_matches("get-kem-pubkey") {
