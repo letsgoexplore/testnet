@@ -1741,10 +1741,13 @@ dependencies = [
 name = "sgxdcnet-client"
 version = "0.1.0"
 dependencies = [
+ "base64",
+ "clap",
  "common",
  "interface",
  "prost",
  "rand",
+ "serde 1.0.126",
  "tokio",
  "tonic",
  "tonic-build",

@@ -35,7 +35,9 @@ fn load_from_stdin<D: for<'a> Deserialize<'a>>() -> Result<D, Box<dyn Error>> {
 
 fn save_to_stdout<S: Serialize>(val: &S) -> Result<(), Box<dyn Error>> {
     let stdout = std::io::stdout();
-    cli_util::save(stdout, val)
+    cli_util::save(stdout, val)?;
+    println!("");
+    Ok(())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {

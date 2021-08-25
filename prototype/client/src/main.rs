@@ -1,115 +1,152 @@
 extern crate common;
 extern crate interface;
 
-use std::{collections::BTreeSet, error::Error};
+mod user_state;
+use crate::user_state::UserState;
 
-use common::enclave_wrapper::{DcNetEnclave, EnclaveResult};
-use dc_proto::{anytrust_node_client::AnytrustNodeClient, SgxMsg};
+use common::{
+    cli_util,
+    enclave_wrapper::{DcNetEnclave, EnclaveResult},
+};
+use interface::{DcMessage, RoundSubmissionBlob, SealedFootprintTicket, DC_NET_MESSAGE_LENGTH};
 
-pub mod dc_proto {
-    tonic::include_proto!("dc_proto");
-}
-
-use interface::{
-    compute_group_id, DcMessage, EntityId, KemPubKey, SealedFootprintTicket, SealedSharedSecretDb,
-    SealedSigPrivKey, UserSubmissionReq,
+use std::{
+    collections::BTreeSet,
+    error::Error,
+    fs::File,
+    io::{BufRead, BufReader},
 };
 
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
-struct UserState<'a> {
-    /// A reference to this machine's enclave
-    enclave: &'a DcNetEnclave,
-    /// A unique identifier for this client. Computed as the hash of the client's pubkey.
-    user_id: EntityId,
-    /// A unique for the set anytrust servers that this client is registered with
-    anytrust_group_id: EntityId,
-    /// This client's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedSigPrivKey,
-    /// The secrets that this client shares with the anytrust servers. Maps entity ID to shared
-    /// secret. Can only be accessed from within the enclave.
-    shared_secrets: SealedSharedSecretDb,
+fn load_state(matches: &ArgMatches) -> Result<UserState, Box<dyn Error>> {
+    let save_filename = matches.value_of("user-state").unwrap();
+    let save_file = File::open(save_filename)?;
+    cli_util::load(save_file)
 }
 
-fn register_user(
-    enclave: &DcNetEnclave,
-    pubkeys: Vec<KemPubKey>,
-) -> Result<(UserState, SgxMsg), Box<dyn Error>> {
-    let (sealed_shared_secrets, sealed_usk, user_id, reg_data) = enclave.new_user(&pubkeys)?;
-
-    let anytrust_ids: BTreeSet<EntityId> = pubkeys.iter().map(|pk| pk.get_entity_id()).collect();
-    let anytrust_group_id = compute_group_id(&anytrust_ids);
-
-    let state = UserState {
-        user_id,
-        anytrust_group_id,
-        enclave,
-        signing_key: sealed_usk.to_owned(),
-        shared_secrets: sealed_shared_secrets.to_owned(),
-    };
-    let msg = SgxMsg {
-        payload: reg_data.0.tee_linkable_attestation,
-    };
-
-    Ok((state, msg))
+fn save_state(matches: &ArgMatches, state: &UserState) -> Result<(), Box<dyn Error>> {
+    let save_filename = matches.value_of("user-state").unwrap();
+    let save_file = File::create(save_filename)?;
+    cli_util::save(save_file, state)
 }
 
-impl<'a> UserState<'a> {
-    fn submit_round_msg(
-        &self,
-        round: u32,
-        msg: &DcMessage,
-        ticket: &SealedFootprintTicket,
-    ) -> Result<SgxMsg, Box<dyn Error>> {
-        let req = UserSubmissionReq {
-            user_id: self.user_id,
-            anytrust_group_id: self.anytrust_group_id,
-            round,
-            msg: msg.clone(),
-            ticket: ticket.clone(),
-            shared_secrets: self.shared_secrets.clone(),
-        };
-
-        let msg_blob = self
-            .enclave
-            .user_submit_round_msg(&req, &self.signing_key)?;
-
-        Ok(SgxMsg {
-            payload: msg_blob.0,
-        })
-    }
+fn load_from_stdin<D: for<'a> Deserialize<'a>>() -> Result<D, Box<dyn Error>> {
+    let stdin = std::io::stdin();
+    cli_util::load(stdin)
 }
 
-async fn test_register_user<R: Rng>(
-    rng: &mut R,
-    anytrust_url: String,
-    enclave: &DcNetEnclave,
-) -> Result<(), Box<dyn Error>> {
-    // Make a fresh set of some pubkeys
-    let pubkeys: Vec<KemPubKey> = (0..6)
-        .map(|_| KemPubKey::rand_invalid_placeholder(rng))
-        .collect();
-
-    let (state, reg_msg) = register_user(enclave, pubkeys)?;
-    let req = tonic::Request::new(reg_msg);
-
-    let mut client = AnytrustNodeClient::connect(anytrust_url).await?;
-    let res = client.register_pubkey(req).await?;
-
+fn save_to_stdout<S: Serialize>(val: &S) -> Result<(), Box<dyn Error>> {
+    let stdout = std::io::stdout();
+    cli_util::save(stdout, val)?;
+    println!("");
     Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let mut rng = rand::thread_rng();
+/// Loads raw base64 from STDIN, ignoring trailing newlines
+pub fn base64_from_stdin() -> Result<Vec<u8>, Box<dyn Error>> {
+    let mut stdin = std::io::stdin();
+    let f = BufReader::new(&mut stdin);
+    let line = f.lines().next().expect("got no base64 input")?;
+    let bytes = base64::decode(&line)?;
 
-    // TODO: maybe not hardcode the enclave path
+    Ok(bytes)
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    // Do setup
     let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
-    enclave.run_enclave_tests();
 
-    // Run registration
-    let anytrust_url = "http://[::1]:78934".to_string();
-    test_register_user(&mut rng, anytrust_url, &enclave).await?;
+    let state_arg = Arg::with_name("user-state")
+        .short("s")
+        .long("user-state")
+        .value_name("FILE")
+        .required(true)
+        .takes_value(true)
+        .help("A file that contains this user's previous state");
+
+    let matches = App::new("SGX DCNet Client")
+        .version("0.1.0")
+        .setting(AppSettings::SubcommandRequiredElseHelp)
+        .subcommand(
+            SubCommand::with_name("new")
+                .about("Generates a new client state")
+                .arg(
+                    Arg::with_name("user-state")
+                        .short("s")
+                        .long("user-state")
+                        .value_name("OUTFILE")
+                        .required(true)
+                        .takes_value(true)
+                        .help("The file to which the new user state will be written"),
+                )
+                .arg(
+                    Arg::with_name("server-keys")
+                    .short("k")
+                    .long("server-keys")
+                    .value_name("INFILE")
+                    .required(true)
+                    .help(
+                        "A file that contains newline-delimited KEM pubkeys of the servers that \
+                        this user wishes to register with"
+                    )
+                )
+        )
+        .subcommand(
+            SubCommand::with_name("encrypt-msg")
+                .about(format!(
+                    "Encrypts a round message to the DC net. STDIN is a base64-encoded bytestring \
+                    of length at most {}",
+                    DC_NET_MESSAGE_LENGTH
+                ).as_str())
+                .arg(state_arg.clone())
+                .arg(
+                    Arg::with_name("round").short("r").long("round").value_name("INTEGER").required(true).takes_value(true).help("The current round number of the DC net"))
+        )
+        .get_matches();
+
+    if let Some(matches) = matches.subcommand_matches("new") {
+        // Load up the KEM keys
+        let pubkeys_filename = matches.value_of("server-keys").unwrap();
+        let keysfile = File::open(pubkeys_filename)?;
+        let kem_pubkeys = cli_util::load_multi(keysfile)?;
+
+        // Make a new state and user registration. Save the state and and print the registration
+        let (state, reg_blob) = UserState::new(&enclave, kem_pubkeys)?;
+        save_state(&matches, &state)?;
+        save_to_stdout(&reg_blob)?;
+    }
+
+    if let Some(matches) = matches.subcommand_matches("encrypt-msg") {
+        // Load the message
+        let msg = base64_from_stdin()?;
+        assert!(
+            msg.len() < DC_NET_MESSAGE_LENGTH,
+            format!(
+                "input message must be less than {} bytes long",
+                DC_NET_MESSAGE_LENGTH
+            )
+        );
+
+        // Pad out the message and put it in the correct wrapper
+        let mut dc_msg = DcMessage::default();
+        dc_msg.0[..msg.len()].copy_from_slice(&msg);
+
+        // Load the round
+        let round_str = matches.value_of("round").unwrap();
+        let round = u32::from_str_radix(&round_str, 10)?;
+
+        // Input the footprint ticket
+        // TODO: Acutally do this
+        let ticket = SealedFootprintTicket(Vec::new());
+
+        // Now encrypt the message and output it
+        let state = load_state(&matches)?;
+        let ciphertext = state.submit_round_msg(&enclave, round, &dc_msg, &ticket)?;
+        save_to_stdout(&ciphertext)?;
+    }
 
     enclave.destroy();
     Ok(())
