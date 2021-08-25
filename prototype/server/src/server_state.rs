@@ -52,7 +52,7 @@ impl ServerState {
 
     /// XORs the shared secrets into the given aggregate. Returns the server's share of the
     /// unblinded aggregate
-    fn unblind_aggregate(
+    pub fn unblind_aggregate(
         &self,
         enclave: &DcNetEnclave,
         toplevel_agg: &RoundSubmissionBlob,
@@ -74,7 +74,7 @@ impl ServerState {
         Ok(output)
     }
 
-    fn recv_user_registration(
+    pub fn recv_user_registration(
         &mut self,
         enclave: &DcNetEnclave,
         input_blob: &UserRegistrationBlob,
@@ -89,7 +89,7 @@ impl ServerState {
         Ok(())
     }
 
-    fn recv_aggregator_registration(
+    pub fn recv_aggregator_registration(
         &mut self,
         enclave: &DcNetEnclave,
         input_blob: &AggRegistrationBlob,
@@ -99,7 +99,7 @@ impl ServerState {
         Ok(())
     }
 
-    fn recv_server_registration(
+    pub fn recv_server_registration(
         &mut self,
         enclave: &DcNetEnclave,
         input_blob: &ServerRegistrationBlob,
