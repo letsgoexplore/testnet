@@ -12,11 +12,10 @@ use interface::{
     UnblindedAggregateShareBlob, UserRegistrationBlob, UserSubmissionReq,
 };
 
-use rand::Rng;
+use serde::{Deserialize, Serialize};
 
-pub struct ServerState<'a> {
-    /// A reference to this machine's enclave
-    pub enclave: &'a DcNetEnclave,
+#[derive(Serialize, Deserialize)]
+pub struct ServerState {
     /// A unique identifier for this aggregator. Computed as the hash of the server's KEM pubkey.
     pub server_id: EntityId,
     /// This server's's signing key. Can only be accessed from within the enclave.
@@ -32,12 +31,11 @@ pub struct ServerState<'a> {
     pub pubkeys: SignedPubKeyDb,
 }
 
-impl<'a> ServerState<'a> {
-    pub fn new(enclave: &'a DcNetEnclave) -> Result<(ServerState, SgxMsg), Box<dyn Error>> {
+impl ServerState {
+    pub fn new(enclave: &DcNetEnclave) -> Result<(ServerState, SgxMsg), Box<dyn Error>> {
         let (sealed_ssk, sealed_ksk, server_id, reg_data) = enclave.new_server()?;
 
         let state = ServerState {
-            enclave,
             server_id,
             signing_key: sealed_ssk,
             decap_key: sealed_ksk,
@@ -56,13 +54,11 @@ impl<'a> ServerState<'a> {
     /// unblinded aggregate
     fn unblind_aggregate(
         &self,
+        enclave: &DcNetEnclave,
         toplevel_agg: &RoundSubmissionBlob,
     ) -> Result<UnblindedAggregateShareBlob, Box<dyn Error>> {
-        let share = self.enclave.unblind_aggregate(
-            toplevel_agg,
-            &self.signing_key,
-            &self.shared_secrets,
-        )?;
+        let share =
+            enclave.unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
 
         Ok(share)
     }
@@ -70,18 +66,20 @@ impl<'a> ServerState<'a> {
     /// Derives the final round output given all the shares of the unblinded aggregates
     pub fn derive_round_output(
         &self,
+        enclave: &DcNetEnclave,
         server_aggs: &[UnblindedAggregateShareBlob],
     ) -> Result<RoundOutput, Box<dyn Error>> {
-        let output = self.enclave.derive_round_output(server_aggs)?;
+        let output = enclave.derive_round_output(server_aggs)?;
 
         Ok(output)
     }
 
     fn recv_user_registration(
         &mut self,
+        enclave: &DcNetEnclave,
         input_blob: &UserRegistrationBlob,
     ) -> Result<(), Box<dyn Error>> {
-        self.enclave.recv_user_registration(
+        enclave.recv_user_registration(
             &mut self.pubkeys,
             &mut self.shared_secrets,
             &self.decap_key,
@@ -93,20 +91,20 @@ impl<'a> ServerState<'a> {
 
     fn recv_aggregator_registration(
         &mut self,
+        enclave: &DcNetEnclave,
         input_blob: &AggRegistrationBlob,
     ) -> Result<(), Box<dyn Error>> {
-        self.enclave
-            .recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
+        enclave.recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
 
         Ok(())
     }
 
     fn recv_server_registration(
         &mut self,
+        enclave: &DcNetEnclave,
         input_blob: &ServerRegistrationBlob,
     ) -> Result<(), Box<dyn Error>> {
-        self.enclave
-            .recv_server_registration(&mut self.pubkeys, input_blob)?;
+        enclave.recv_server_registration(&mut self.pubkeys, input_blob)?;
 
         Ok(())
     }
@@ -117,4 +115,5 @@ impl<'a> ServerState<'a> {
 fn test_new_server() {
     let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so").unwrap();
     ServerState::new(&enclave).unwrap();
+    enclave.destroy();
 }

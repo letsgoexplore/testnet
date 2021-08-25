@@ -18,23 +18,10 @@ use std::{
 
 use clap::{App, Arg};
 
-// Parses the KEM pubkey file. Each line is a base64-encoded byte sequence. The byte sequence is a
-// CBOR encoding of a KemPubKey
-fn parse_kemfile(filename: &str) -> Result<Vec<KemPubKey>, Box<dyn Error>> {
+// Parses the KEM pubkey file. It's a
+fn parse_pubkey_file(filename: &str) -> Result<Vec<KemPubKey>, Box<dyn Error>> {
     let f = File::open(filename)?;
-    let mut reader = BufReader::new(f);
-    let mut line = String::new();
-
-    let mut pubkeys: Vec<KemPubKey> = Vec::new();
-
-    while reader.read_line(&mut line)? > 0 {
-        let bytes = base64::decode(&line)?;
-        let pubkey = serde_cbor::from_slice(&bytes)?;
-
-        pubkeys.push(pubkey);
-    }
-
-    Ok(pubkeys)
+    serde_json::from_reader(f).map_err(Into::into)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -50,16 +37,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .short("p")
                 .long("pubkey-file")
                 .value_name("FILE")
-                .required(true)
+                .default_value("pubkeys.json")
                 .takes_value(true)
-                .help(
-                    "A text file containing newline-separated, base64-encoded KEM pubkeys of \
-                    anytrust nodes",
-                ),
+                .help("A JSON file containing a list of anytrust server KEM pubkeys"),
         )
         .get_matches();
-    let kem_filename = matches.value_of("pubkey-file").unwrap();
-    let pubkeys = parse_kemfile(&kem_filename).unwrap();
+    let pubkey_filename = matches.value_of("pubkey-file").unwrap();
+    let pubkeys = parse_pubkey_file(&pubkey_filename).unwrap();
 
     let (state, reg_msg) = register_aggregator(enclave, pubkeys)?;
 

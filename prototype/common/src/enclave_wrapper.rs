@@ -344,7 +344,7 @@ impl DcNetEnclave {
         let sealed_kem_key = self.new_sgx_protected_key("server_kem".to_string())?;
 
         // todo: double check that the entity id is derived from the signing key, not the KEM
-        let entity_id = EntityId::from(&sealed_sig_key.attested_pk.pk);
+        let entity_id = EntityId::from(&sealed_kem_key.attested_pk.pk);
 
         Ok((
             SealedSigPrivKey(sealed_sig_key.clone()),
