@@ -4,7 +4,7 @@ extern crate interface;
 mod server_state;
 use server_state::ServerState;
 
-use common::enclave_wrapper::DcNetEnclave;
+use common::{cli_util, enclave_wrapper::DcNetEnclave};
 use interface::KemPubKey;
 
 use std::{
@@ -13,34 +13,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use clap::{App, Arg};
-
-const AGGREGATOR_ADDR: &str = "http://localhost:8080";
-const GET_AGG_PATH: &str = "get-agg";
-
-/// Load the server state from a file
-fn load_server_state(
-    filename: &str,
-    enclave: &DcNetEnclave,
-) -> Result<ServerState, Box<dyn Error>> {
-    match File::open(filename) {
-        Ok(f) => serde_json::from_reader(f).map_err(Into::into),
-        _ => {
-            println!("Creating new state");
-            let state = ServerState::new(&enclave)?.0;
-            save_state(filename, &state);
-            Ok(state)
-        }
-    }
-}
-
-/// Saves the server state
-fn save_state(filename: &str, state: &ServerState) -> Result<(), Box<dyn Error>> {
-    let mut f = File::create(filename)?;
-    serde_json::to_writer(&mut f, state)?;
-
-    Ok(())
-}
+use clap::{App, AppSettings, Arg, SubCommand};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Do setup
@@ -48,36 +21,46 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let matches = App::new("SGX DCNet Anytrust Node")
         .version("0.1.0")
-        .arg(
-            Arg::with_name("server-state")
-                .short("s")
-                .long("server-state")
-                .value_name("FILE")
-                .required(false)
-                .takes_value(true)
-                .default_value("server-state.json")
-                .help("A file that contains this server's previous state"),
+        .setting(AppSettings::SubcommandRequiredElseHelp)
+        .subcommand(
+            SubCommand::with_name("get-kem-pubkey")
+                .about("Outputs this server's KEM pubkey")
+                .arg(
+                    Arg::with_name("server-state")
+                        .short("s")
+                        .long("server-state")
+                        .value_name("FILE")
+                        .required(true)
+                        .takes_value(true)
+                        .help("A file that contains this server's previous state"),
+                ),
         )
+        .subcommand(SubCommand::with_name("new").about("Generates a new server state"))
         .get_matches();
 
-    let save_filename = matches.value_of("server-state").unwrap();
-    let state = load_server_state(save_filename, &enclave)?;
+    if let Some(_) = matches.subcommand_matches("new") {
+        // Make a new state and print it out
+        let state = ServerState::new(&enclave)?.0;
+        let stdout = std::io::stdout();
+        let mut stdout = File::create("state.txt")?;
+        cli_util::save(stdout, &state)?;
 
-    /*
-    // Print the KEM pubkey
-    let pubkey_str = {
-        println!("Unsealing PK");
-        let kem_pubkey = enclave.unseal_to_public_key_on_p256(&state.signing_key.0)?;
-        println!("Unsealed PK");
-        base64::encode(serde_json::to_vec(&kem_pubkey)?)
-    };
-    println!("Using KEM pubkey\n{}", pubkey_str);
+        return Ok(());
+    }
+    if let Some(matches) = matches.subcommand_matches("get-kem-pubkey") {
+        // Load state
+        let save_filename = matches.value_of("server-state").unwrap();
+        let save_file = File::open(save_filename)?;
+        let state: ServerState = cli_util::load(save_file)?;
 
-    // Now connect to the aggregator
-    let agg = reqwest::blocking::get(format!("{}/{}", AGGREGATOR_ADDR, GET_AGG_PATH))?.bytes()?;
-    println!("Got an aggregate of {} bytes", agg.len());
+        // Get KEM pubkey and print it
+        let kem_pubkey = &state.decap_key.0.attested_pk.pk;
+        let stdout = std::io::stdout();
+        cli_util::save(stdout, kem_pubkey)?;
 
-    */
+        return Ok(());
+    }
+
     enclave.destroy();
     Ok(())
 }
