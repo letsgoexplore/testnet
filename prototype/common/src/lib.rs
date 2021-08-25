@@ -7,6 +7,7 @@ extern crate tonic;
 #[macro_use]
 extern crate quick_error;
 
+pub mod cli_util;
 pub mod enclave_wrapper;
 
 use enclave_wrapper::{DcNetEnclave, EnclaveResult};
