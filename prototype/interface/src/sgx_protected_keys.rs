@@ -67,17 +67,7 @@ impl Into<sgx_ec256_public_t> for &SgxProtectedKeyPub {
 impl SgxProtectedKeyPub {
     /// Computes the entity ID corresponding to this KEM pubkey
     pub fn get_entity_id(&self) -> EntityId {
-        // The entity ID is just H("ent" || x || y).
-        let mut hasher = Sha256::new();
-        hasher.update(b"ent");
-        hasher.update(self.gx);
-        hasher.update(self.gy);
-        let digest = hasher.finalize();
-
-        let mut id = EntityId::default();
-        id.0.copy_from_slice(&digest);
-
-        id
+        EntityId::from(self)
     }
 
     // TODO: Make this generate valid pubkeys

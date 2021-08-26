@@ -9,8 +9,9 @@ pub mod dc_proto {
 }
 
 use interface::{
-    compute_group_id, DcMessage, EntityId, KemPubKey, RoundSubmissionBlob, SealedFootprintTicket,
-    SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob, UserSubmissionReq,
+    compute_anytrust_group_id, compute_group_id, DcMessage, EntityId, KemPubKey,
+    RoundSubmissionBlob, SealedFootprintTicket, SealedSharedSecretDb, SealedSigPrivKey,
+    UserRegistrationBlob, UserSubmissionReq,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -34,9 +35,7 @@ impl UserState {
     ) -> Result<(UserState, UserRegistrationBlob), Box<dyn Error>> {
         let (sealed_shared_secrets, sealed_usk, user_id, reg_blob) = enclave.new_user(&pubkeys)?;
 
-        let anytrust_ids: BTreeSet<EntityId> =
-            pubkeys.iter().map(|pk| pk.get_entity_id()).collect();
-        let anytrust_group_id = compute_group_id(&anytrust_ids);
+        let anytrust_group_id = compute_anytrust_group_id(&pubkeys);
 
         let state = UserState {
             user_id,

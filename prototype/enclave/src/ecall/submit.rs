@@ -21,12 +21,12 @@ pub fn user_submit_internal(
     let send_request = &input.0;
 
     // 1) TODO: check ticket first
-    warn!("NOT checking ticket ATM");
+    warn!("we are not checking the user_submission.ticket ATM");
 
     // 2) unseal signing key
     let sk = input.1.unseal()?;
     let pk = SgxProtectedKeyPub::try_from(&sk)?;
-    debug!("using signing (pub) key {}", pk);
+    debug!("using user signing (pub) key {}", pk);
 
     if send_request.user_id != EntityId::from(&pk) {
         error!("send_request.user_id != EntityId::from(&pk)");
