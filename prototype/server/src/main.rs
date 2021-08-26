@@ -82,6 +82,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .arg(state_arg.clone()),
         )
         .subcommand(
+            SubCommand::with_name("register-aggregator")
+                .about("Registers an aggregator with this server")
+                .arg(state_arg.clone()),
+        )
+        .subcommand(
             SubCommand::with_name("unblind-aggregate")
                 .about("Unblinds the given top-level aggregate value")
                 .arg(state_arg.clone()),
@@ -110,6 +115,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Feed it to the state and save the new state
         let mut state = load_state(&matches)?;
         state.recv_user_registration(&enclave, &reg_blob)?;
+        save_state(&matches, &state)?;
+
+        println!("OK");
+    }
+
+    if let Some(matches) = matches.subcommand_matches("register-aggregator") {
+        // Parse a user registration blob from stdin
+        let reg_blob: AggRegistrationBlob = load_from_stdin()?;
+
+        // Feed it to the state and save the new state
+        let mut state = load_state(&matches)?;
+        state.recv_aggregator_registration(&enclave, &reg_blob)?;
         save_state(&matches, &state)?;
 
         println!("OK");

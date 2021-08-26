@@ -1,13 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
-    fs::File,
     io::{BufRead, BufReader, Read, Write},
-    path::Path,
 };
 
 /// file -> base64::decode -> cbor::decode
-pub fn load<R, D>(mut f: R) -> Result<D, Box<dyn Error>>
+pub fn load<R, D>(f: R) -> Result<D, Box<dyn Error>>
 where
     R: Read,
     D: for<'a> Deserialize<'a>,
@@ -17,7 +15,7 @@ where
 }
 
 /// cbor::encode -> base64::encode -> file
-pub fn save<W, S>(mut f: W, val: &S) -> Result<(), Box<dyn Error>>
+pub fn save<W, S>(f: W, val: &S) -> Result<(), Box<dyn Error>>
 where
     W: Write,
     S: Serialize,
