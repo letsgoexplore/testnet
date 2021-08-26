@@ -1731,7 +1731,7 @@ dependencies = [
  "prost",
  "rand",
  "rouille",
- "serde_json",
+ "serde 1.0.126",
  "tokio",
  "tonic",
  "tonic-build",

@@ -103,7 +103,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ).as_str())
                 .arg(state_arg.clone())
                 .arg(
-                    Arg::with_name("round").short("r").long("round").value_name("INTEGER").required(true).takes_value(true).help("The current round number of the DC net"))
+                    Arg::with_name("round")
+                    .short("r")
+                    .long("round")
+                    .value_name("INTEGER")
+                    .required(true)
+                    .takes_value(true)
+                    .help("The current round number of the DC net")
+                )
         )
         .get_matches();
 
