@@ -3,7 +3,6 @@ use std::prelude::v1::*;
 
 use crate::{ecall_interface_types::*, params::*, sgx_protected_keys::*};
 
-use sgx_types::SGX_HMAC256_KEY_SIZE;
 use sha2::{Digest, Sha256};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 

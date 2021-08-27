@@ -43,7 +43,7 @@ pub extern "C" fn ecall_entrypoint(
     let env = Env::default()
         .filter_or("ENCLAVE_LOG_LEVEL", "debug")
         .write_style_or("ENCLAVE_LOG_STYLE", "always");
-    let _ = Builder::from_env(env).target(Target::Stdout).try_init();
+    let _ = Builder::from_env(env).try_init();
 
     // make sure this matches exact with that in enclave_wrapper.rs
     match_ecall_ids! {
@@ -124,7 +124,7 @@ macro_rules! unmarshal_or_abort {
     };
 }
 
-use env_logger::{Builder, Env, Target};
+use env_logger::{Builder, Env};
 
 fn generic_ecall<I, O>(
     ecall_id: EcallId,

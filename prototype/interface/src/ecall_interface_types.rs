@@ -4,8 +4,6 @@ use crate::DcMessage;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::format;
-use std::string::String;
-use std::string::ToString;
 use std::vec;
 use std::vec::Vec;
 

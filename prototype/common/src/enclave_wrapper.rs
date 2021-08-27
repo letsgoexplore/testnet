@@ -439,7 +439,7 @@ mod enclave_tests {
     extern crate interface;
     extern crate sgx_types;
 
-    use env_logger::{Builder, Env, Target};
+    use env_logger::{Builder, Env};
     use hex::FromHex;
     use interface::{
         DcMessage, EntityId, SealedFootprintTicket, SealedKey, SgxProtectedKeyPub,
@@ -452,7 +452,7 @@ mod enclave_tests {
             .filter_or("RUST_LOG", "debug")
             .write_style_or("RUST_LOG_STYLE", "always");
 
-        let _ = Builder::from_env(env).target(Target::Stdout).try_init();
+        let _ = Builder::from_env(env).try_init();
 
         let _ = env_logger::builder().is_test(true).try_init();
     }
