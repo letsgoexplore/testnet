@@ -93,16 +93,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subcommand(
             SubCommand::with_name("unblind-aggregate")
                 .about("Unblinds the given top-level aggregate value")
-                .arg(state_arg.clone())
-                .arg(
-                    Arg::with_name("aggregate")
-                        .short("a")
-                        .long("aggregate")
-                        .value_name("INFILE")
-                        .required(true)
-                        .takes_value(true)
-                        .help("A file containing the output of a top-level aggregator"),
-                ),
+                .arg(state_arg.clone()),
         )
         .subcommand(
             SubCommand::with_name("combine-shares")
@@ -176,9 +167,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("unblind-aggregate") {
         // Load the aggregation blob
-        let agg_filename = matches.value_of("aggregate").unwrap();
-        let agg_file = File::open(agg_filename)?;
-        let agg_blob: RoundSubmissionBlob = cli_util::load(agg_file)?;
+        let agg_blob: RoundSubmissionBlob = load_from_stdin()?;
 
         // Feed it to the state and print the result
         let state = load_state(&matches)?;
