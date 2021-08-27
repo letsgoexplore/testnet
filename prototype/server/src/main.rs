@@ -5,7 +5,10 @@ mod server_state;
 use server_state::ServerState;
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
-use interface::{AggRegistrationBlob, KemPubKey, RoundSubmissionBlob, UserRegistrationBlob};
+use interface::{
+    AggRegistrationBlob, KemPubKey, RoundSubmissionBlob, UnblindedAggregateShareBlob,
+    UserRegistrationBlob,
+};
 
 use std::{
     error::Error,
@@ -91,6 +94,23 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .about("Unblinds the given top-level aggregate value")
                 .arg(state_arg.clone()),
         )
+        .subcommand(
+            SubCommand::with_name("combine-shares")
+                .about("Combines the given unblinded shares from each server")
+                .arg(state_arg.clone())
+                .arg(
+                    Arg::with_name("shares")
+                        .short("a")
+                        .long("shares")
+                        .value_name("INFILE")
+                        .required(true)
+                        .takes_value(true)
+                        .help(
+                            "A file containing newline-delimited unblinded shares from every \
+                            anytrust server",
+                        ),
+                ),
+        )
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("new") {
@@ -152,6 +172,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut state = load_state(&matches)?;
         let agg = state.unblind_aggregate(&enclave, &agg_blob)?;
         save_to_stdout(&agg)?;
+    }
+
+    if let Some(matches) = matches.subcommand_matches("combine-shares") {
+        // Parse each server's unblinded inputs
+        let shares_filename = matches.value_of("shares").unwrap();
+        let sharefile = File::open(shares_filename)?;
+        let shares: Vec<UnblindedAggregateShareBlob> = cli_util::load_multi(sharefile)?;
+
+        // Feed it to the state and print the result in plain base64
+        let mut state = load_state(&matches)?;
+        let round_output = state.derive_round_output(&enclave, &shares)?;
+        println!("{}", base64::encode(&round_output.0));
     }
 
     enclave.destroy();
