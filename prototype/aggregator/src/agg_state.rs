@@ -1,17 +1,11 @@
 use std::{collections::BTreeSet, error::Error};
 
-use common::enclave_wrapper::{DcNetEnclave, EnclaveResult};
-use dc_proto::{anytrust_node_client::AnytrustNodeClient, SgxMsg};
-use serde::{Deserialize, Serialize};
-pub mod dc_proto {
-    tonic::include_proto!("dc_proto");
-}
+use common::enclave_wrapper::DcNetEnclave;
 use interface::{
-    compute_group_id, AggRegistrationBlob, DcMessage, EntityId, KemPubKey, RoundSubmissionBlob,
-    SealedFootprintTicket, SealedSigPrivKey, SignedPartialAggregate, UserSubmissionReq,
+    compute_group_id, AggRegistrationBlob, EntityId, KemPubKey, RoundSubmissionBlob,
+    SealedSigPrivKey, SignedPartialAggregate,
 };
-
-use rand::Rng;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct AggregatorState {

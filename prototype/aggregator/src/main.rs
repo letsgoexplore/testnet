@@ -2,19 +2,13 @@ extern crate common;
 extern crate interface;
 
 mod agg_state;
-//mod service;
 
 use crate::agg_state::AggregatorState;
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
-use interface::{KemPubKey, RoundSubmissionBlob};
+use interface::RoundSubmissionBlob;
 
-use std::{
-    error::Error,
-    fs::File,
-    io::{BufRead, BufReader},
-    sync::{Arc, Mutex},
-};
+use std::{error::Error, fs::File};
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use serde::{Deserialize, Serialize};
@@ -147,7 +141,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("finalize") {
         // Load the state
-        let mut state = load_state(&matches)?;
+        let state = load_state(&matches)?;
 
         // Pass the input to the state and print the result
         let agg_blob = state.finalize_aggregate(&enclave)?;

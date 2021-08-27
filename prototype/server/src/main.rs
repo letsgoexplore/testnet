@@ -6,15 +6,11 @@ use server_state::ServerState;
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
 use interface::{
-    AggRegistrationBlob, KemPubKey, RoundSubmissionBlob, UnblindedAggregateShareBlob,
+    AggRegistrationBlob, RoundSubmissionBlob, ServerRegistrationBlob, UnblindedAggregateShareBlob,
     UserRegistrationBlob,
 };
 
-use std::{
-    error::Error,
-    fs::File,
-    sync::{Arc, Mutex},
-};
+use std::{error::Error, fs::File};
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use serde::{Deserialize, Serialize};
@@ -90,6 +86,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .arg(state_arg.clone()),
         )
         .subcommand(
+            SubCommand::with_name("register-server")
+                .about("Registers another server with this server")
+                .arg(state_arg.clone()),
+        )
+        .subcommand(
             SubCommand::with_name("unblind-aggregate")
                 .about("Unblinds the given top-level aggregate value")
                 .arg(state_arg.clone())
@@ -161,6 +162,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("OK");
     }
 
+    if let Some(matches) = matches.subcommand_matches("register-server") {
+        // Parse an aggregator registration blob from stdin
+        let reg_blob: ServerRegistrationBlob = load_from_stdin()?;
+
+        // Feed it to the state and save the new state
+        let mut state = load_state(&matches)?;
+        state.recv_server_registration(&enclave, &reg_blob)?;
+        save_state(&matches, &state)?;
+
+        println!("OK");
+    }
+
     if let Some(matches) = matches.subcommand_matches("unblind-aggregate") {
         // Load the aggregation blob
         let agg_filename = matches.value_of("aggregate").unwrap();
@@ -168,7 +181,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let agg_blob: RoundSubmissionBlob = cli_util::load(agg_file)?;
 
         // Feed it to the state and print the result
-        let mut state = load_state(&matches)?;
+        let state = load_state(&matches)?;
         let agg = state.unblind_aggregate(&enclave, &agg_blob)?;
         save_to_stdout(&agg)?;
     }
@@ -180,7 +193,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let shares: Vec<UnblindedAggregateShareBlob> = cli_util::load_multi(sharefile)?;
 
         // Feed it to the state and print the result in plain base64
-        let mut state = load_state(&matches)?;
+        let state = load_state(&matches)?;
         let round_output = state.derive_round_output(&enclave, &shares)?;
         println!("{}", base64::encode(&round_output.0));
     }

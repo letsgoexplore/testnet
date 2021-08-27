@@ -1,17 +1,12 @@
-use std::{collections::BTreeSet, error::Error};
+use std::error::Error;
 
-use common::enclave_wrapper::{DcNetEnclave, EnclaveResult};
-use dc_proto::{anytrust_node_client::AnytrustNodeClient, SgxMsg};
+use common::enclave_wrapper::DcNetEnclave;
 use serde::{Deserialize, Serialize};
 
-pub mod dc_proto {
-    tonic::include_proto!("dc_proto");
-}
-
 use interface::{
-    compute_anytrust_group_id, compute_group_id, DcMessage, EntityId, KemPubKey,
-    RoundSubmissionBlob, SealedFootprintTicket, SealedSharedSecretDb, SealedSigPrivKey,
-    UserRegistrationBlob, UserSubmissionReq,
+    compute_anytrust_group_id, DcMessage, EntityId, KemPubKey, RoundSubmissionBlob,
+    SealedFootprintTicket, SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob,
+    UserSubmissionReq,
 };
 
 #[derive(Serialize, Deserialize)]

@@ -4,22 +4,17 @@ extern crate interface;
 mod user_state;
 use crate::user_state::UserState;
 
-use common::{
-    cli_util,
-    enclave_wrapper::{DcNetEnclave, EnclaveResult},
-};
-use interface::{DcMessage, RoundSubmissionBlob, SealedFootprintTicket, DC_NET_MESSAGE_LENGTH};
+use common::{cli_util, enclave_wrapper::DcNetEnclave};
+use interface::{DcMessage, SealedFootprintTicket, DC_NET_MESSAGE_LENGTH};
 
 use std::{
-    collections::BTreeSet,
     error::Error,
     fs::File,
     io::{BufRead, BufReader},
 };
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 fn load_state(matches: &ArgMatches) -> Result<UserState, Box<dyn Error>> {
     let save_filename = matches.value_of("user-state").unwrap();
@@ -31,11 +26,6 @@ fn save_state(matches: &ArgMatches, state: &UserState) -> Result<(), Box<dyn Err
     let save_filename = matches.value_of("user-state").unwrap();
     let save_file = File::create(save_filename)?;
     cli_util::save(save_file, state)
-}
-
-fn load_from_stdin<D: for<'a> Deserialize<'a>>() -> Result<D, Box<dyn Error>> {
-    let stdin = std::io::stdin();
-    cli_util::load(stdin)
 }
 
 fn save_to_stdout<S: Serialize>(val: &S) -> Result<(), Box<dyn Error>> {
