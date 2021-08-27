@@ -92,7 +92,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         .subcommand(
             SubCommand::with_name("unblind-aggregate")
                 .about("Unblinds the given top-level aggregate value")
-                .arg(state_arg.clone()),
+                .arg(state_arg.clone())
+                .arg(
+                    Arg::with_name("aggregate")
+                        .short("a")
+                        .long("aggregate")
+                        .value_name("INFILE")
+                        .required(true)
+                        .takes_value(true)
+                        .help("A file containing the output of a top-level aggregator"),
+                ),
         )
         .subcommand(
             SubCommand::with_name("combine-shares")
@@ -141,18 +150,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if let Some(matches) = matches.subcommand_matches("register-aggregator") {
-        // Parse a user registration blob from stdin
-        let reg_blob: AggRegistrationBlob = load_from_stdin()?;
-
-        // Feed it to the state and save the new state
-        let mut state = load_state(&matches)?;
-        state.recv_aggregator_registration(&enclave, &reg_blob)?;
-        save_state(&matches, &state)?;
-
-        println!("OK");
-    }
-
-    if let Some(matches) = matches.subcommand_matches("register-agg") {
         // Parse an aggregator registration blob from stdin
         let reg_blob: AggRegistrationBlob = load_from_stdin()?;
 
@@ -164,9 +161,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("OK");
     }
 
-    if let Some(matches) = matches.subcommand_matches("unblind-agg") {
-        // Parse an aggregation blob from stdin
-        let agg_blob: RoundSubmissionBlob = load_from_stdin()?;
+    if let Some(matches) = matches.subcommand_matches("unblind-aggregate") {
+        // Load the aggregation blob
+        let agg_filename = matches.value_of("aggregate").unwrap();
+        let agg_file = File::open(agg_filename)?;
+        let agg_blob: RoundSubmissionBlob = cli_util::load(agg_file)?;
 
         // Feed it to the state and print the result
         let mut state = load_state(&matches)?;
