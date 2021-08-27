@@ -97,6 +97,19 @@ pub fn unblind_aggregate(
     let sig_key = input.1.unseal()?;
     let secret_db = input.2.unseal()?;
 
+    let mut user_ids_in_submission = round_msg.user_ids.clone();
+    user_ids_in_submission.sort();
+    let mut user_ids_in_secret_db: Vec<EntityId> = secret_db.db.keys().map(EntityId::from).collect();
+    user_ids_in_secret_db.sort();
+
+    if user_ids_in_submission != user_ids_in_secret_db {
+        error!("user_ids_in_submission != user_ids_in_secret_db. user_ids_in_submission = {:?}, user_ids_in_secret_db= {:?}",
+        user_ids_in_submission,
+        user_ids_in_secret_db);
+        error!("secret_db {:?}", secret_db);
+        return Err(SGX_ERROR_INVALID_PARAMETER)
+    }
+
     let round_secret = derive_round_secret(round_msg.round, &secret_db).map_err(|e| {
         error!("crypto error");
         SGX_ERROR_INVALID_PARAMETER
@@ -130,8 +143,16 @@ pub fn derive_round_output(shares: &Vec<UnblindedAggregateShareBlob>) -> SgxResu
 
     // Xor of all server secrets
     let mut final_msg = DcMessage::default();
+
+    // We require all s in shares should have the same aggregated_msg
+    let mut final_aggregation = shares[0].unmarshal()?.encrypted_msg.aggregated_msg;
+
     for s in shares.iter() {
         let share = s.unmarshal()?;
+        if share.encrypted_msg.aggregated_msg != final_aggregation {
+            error!("share {:?} has a different final agg", share);
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
         final_msg.xor_mut(&share.key_share);
     }
 

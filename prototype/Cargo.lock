@@ -1247,6 +1247,7 @@ dependencies = [
  "base64",
  "clap",
  "common",
+ "hex",
  "interface",
  "serde 1.0.126",
 ]

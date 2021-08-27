@@ -20,8 +20,10 @@ pub fn user_submit_internal(
 ) -> SgxResult<RoundSubmissionBlob> {
     let send_request = &input.0;
 
+    debug!("submitting {:?}", send_request);
+
     // 1) TODO: check ticket first
-    warn!("we are not checking the user_submission.ticket ATM");
+    warn!("we are not checking user_submission.ticket ATM");
 
     // 2) unseal signing key
     let sk = input.1.unseal()?;
@@ -61,6 +63,8 @@ pub fn user_submit_internal(
         error!("can't sign");
         return Err(SGX_ERROR_UNEXPECTED);
     }
+
+    debug!("encrypted msg: {:?}", mutable);
 
     // serialized
     Ok(RoundSubmissionBlob(serialize_to_vec(&mutable)?))
