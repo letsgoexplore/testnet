@@ -15,14 +15,15 @@ SERVER_SHARES="server/shares.txt"
 CMD_PREFIX="cargo run -- "
 
 NUM_SERVERS=1
-NUM_USERS=2
+NUM_USERS=4
 NUM_AGGREGATORS=1
-NUM_USERS_PER_AGGREGATOR=2
+NUM_USERS_PER_AGGREGATOR=4
 ROUND=1
 
-# We only define two messages. "testing" and "\0\0\0\0\0\0\0hello". These XOR to "testinghello". The
-# leading ';' is just because other things are indexed by 1.
-MSGS=";testing;"$'\0'$'\0'$'\0'$'\0'$'\0'$'\0'$'\0'"hello"
+# We define four messages. "testing", "\0\0\0\0\0\0\0hello", and "\0\0\0\0\0\0\0\0\0\0\0\0world",
+# and "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0yo". These XOR to "testinghelloworld". The leading ';' is
+# just because other things are indexed by 1.
+MSGS=";testing;\0\0\0\0\0\0\0hello;\0\0\0\0\0\0\0\0\0\0\0\0world;\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0yo"
 
 # Magic command to trim the leading and trailing whitespace of its input
 TRIM="sed 's/\n$//' | sed '/^$/d'"
@@ -168,7 +169,7 @@ encrypt_msgs() {
         echo -n $MSG;
 
         CIPHERTEXT=$(
-            echo -n "$MSG" \
+            echo -ne "$MSG" \
             | base64 \
             | $CMD_PREFIX encrypt-msg --user-state "../$STATE" --round $ROUND
         )
