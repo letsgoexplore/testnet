@@ -41,7 +41,7 @@ pub extern "C" fn ecall_entrypoint(
     output_used: *mut usize,
 ) -> sgx_status_t {
     let env = Env::default()
-        .filter_or("ENCLAVE_LOG_LEVEL", "debug")
+        .filter_or("ENCLAVE_LOG_LEVEL", "info")
         .write_style_or("ENCLAVE_LOG_STYLE", "always");
     let _ = Builder::from_env(env).try_init();
 

@@ -7,13 +7,15 @@ use interface::*;
 use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 use sgx_types::SgxResult;
 use std::borrow::ToOwned;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::{debug, vec};
+use types::{UnmarshallableAs, UnsealableAs};
 
 /// This file implements ecalls used by an anytrust server
 
 /// Verifies and adds the given user registration blob to the database of pubkeys and
 /// shared secrets
+/// TODO: the second input is currently not used. We always build a new SealedSharedSecretDb from SignedPubKeyDb.
 pub fn recv_user_registration(
     input: &(
         SignedPubKeyDb,
@@ -22,29 +24,28 @@ pub fn recv_user_registration(
         UserRegistrationBlob,
     ),
 ) -> SgxResult<(SignedPubKeyDb, SealedSharedSecretDb)> {
-    let (_, shared_secret_db, _my_kem_sk, user_pk) = input;
     let mut pk_db = input.0.clone();
 
     // verify user key
+    let user_pk = &input.3;
     let attested_pk = &user_pk.0;
-    warn!("skipping verifying attestation for now");
+    warn!("skipping verifying attested_pk for now");
 
     // add user key to pubkey db
     pk_db
-        .db
+        .users
         .insert(EntityId::from(&attested_pk.pk), attested_pk.to_owned());
 
     // Derive secrets
-    let my_kem_sk: KemPrvKey = utils::unseal_vec_and_deser(&_my_kem_sk.0.sealed_sk)?;
-
+    let my_kem_sk: SgxPrivateKey = input.2.unseal()?;
     let mut others_kem_pks = vec![];
-    for (_, k) in pk_db.db.iter() {
+    for (_, k) in pk_db.users.iter() {
         others_kem_pks.push(k.pk);
     }
 
     let shared_secrets = SharedSecretsDb::derive_shared_secrets(&my_kem_sk, &others_kem_pks)?;
 
-    info!("shared_secrets {:?}", shared_secrets);
+    debug!("shared_secrets {:?}", shared_secrets);
 
     Ok((pk_db, shared_secrets.to_sealed_db()?))
 }
@@ -61,7 +62,7 @@ pub fn recv_aggregator_registration(
 
     // add user key to pubkey db
     pk_db
-        .db
+        .aggregators
         .insert(EntityId::from(&attested_pk.pk), attested_pk.to_owned());
 
     Ok(pk_db)
@@ -79,13 +80,13 @@ pub fn recv_server_registration(
 
     // add user key to pubkey db
     pk_db
-        .db
+        .servers
         .insert(EntityId::from(&attested_pk.pk), attested_pk.to_owned());
 
     Ok(pk_db)
 }
 
-use types::{UnmarshallableAs, UnsealableAs};
+use std::iter::FromIterator;
 
 /// XORs the shared secrets into the given aggregate. Returns the server's share of the
 /// unblinded aggregate
@@ -97,17 +98,15 @@ pub fn unblind_aggregate(
     let sig_key = input.1.unseal()?;
     let secret_db = input.2.unseal()?;
 
-    let mut user_ids_in_submission = round_msg.user_ids.clone();
-    user_ids_in_submission.sort();
-    let mut user_ids_in_secret_db: Vec<EntityId> = secret_db.db.keys().map(EntityId::from).collect();
-    user_ids_in_secret_db.sort();
-
-    if user_ids_in_submission != user_ids_in_secret_db {
-        error!("user_ids_in_submission != user_ids_in_secret_db. user_ids_in_submission = {:?}, user_ids_in_secret_db= {:?}",
+    let user_ids_in_secret_db = BTreeSet::from_iter(secret_db.db.keys().map(EntityId::from));
+    let user_ids_in_submission = BTreeSet::from_iter(round_msg.user_ids.iter().cloned());
+    if !(user_ids_in_submission == user_ids_in_secret_db
+        || user_ids_in_submission.is_subset(&user_ids_in_secret_db))
+    {
+        error!("submission.user_ids is not a subset of user_ids_in_secret_db. user_ids_in_submission = {:?}, user_ids_in_secret_db= {:?}",
         user_ids_in_submission,
         user_ids_in_secret_db);
-        error!("secret_db {:?}", secret_db);
-        return Err(SGX_ERROR_INVALID_PARAMETER)
+        return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
     let round_secret = derive_round_secret(round_msg.round, &secret_db).map_err(|e| {
@@ -145,7 +144,7 @@ pub fn derive_round_output(shares: &Vec<UnblindedAggregateShareBlob>) -> SgxResu
     let mut final_msg = DcMessage::default();
 
     // We require all s in shares should have the same aggregated_msg
-    let mut final_aggregation = shares[0].unmarshal()?.encrypted_msg.aggregated_msg;
+    let final_aggregation = shares[0].unmarshal()?.encrypted_msg.aggregated_msg;
 
     for s in shares.iter() {
         let share = s.unmarshal()?;
@@ -157,7 +156,9 @@ pub fn derive_round_output(shares: &Vec<UnblindedAggregateShareBlob>) -> SgxResu
     }
 
     // Finally xor secrets with the message
-    final_msg.xor_mut(&shares[0].unmarshal()?.encrypted_msg.aggregated_msg);
+    final_msg.xor_mut(&final_aggregation);
+
+    info!("final msg {}", hex::encode(&final_msg));
 
     Ok(RoundOutput(final_msg))
 }

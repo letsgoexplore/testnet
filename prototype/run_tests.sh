@@ -15,9 +15,9 @@ SERVER_SHARES="server/shares.txt"
 CMD_PREFIX="cargo run -- "
 
 NUM_SERVERS=1
-NUM_USERS=1
-NUM_AGGREGATORS=0
-NUM_USERS_PER_AGGREGATOR=1
+NUM_USERS=2
+NUM_AGGREGATORS=1
+NUM_USERS_PER_AGGREGATOR=2
 ROUND=1
 
 # We only define two messages. "testing" and "\0\0\0\0\0\0\0hello". These XOR to "testinghello". The
@@ -164,6 +164,8 @@ encrypt_msgs() {
     for i in $(seq 1 $NUM_USERS); do
         STATE="${USER_STATE%.txt}$i.txt"
         MSG="${MSGS[$i]}"
+
+        echo -n $MSG;
 
         CIPHERTEXT=$(
             echo -n "$MSG" \

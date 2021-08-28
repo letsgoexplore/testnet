@@ -213,7 +213,9 @@ impl AsRef<SealedKey> for SealedKemPrivKey {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct SignedPubKeyDb {
-    pub db: BTreeMap<EntityId, AttestedPublicKey>,
+    pub users: BTreeMap<EntityId, AttestedPublicKey>,
+    pub servers: BTreeMap<EntityId, AttestedPublicKey>,
+    pub aggregators: BTreeMap<EntityId, AttestedPublicKey>,
 }
 
 // TODO: Figure out what this should contain. Probably just a long bitstring.

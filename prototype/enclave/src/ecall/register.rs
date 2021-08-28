@@ -15,7 +15,7 @@ fn new_sgx_keypair_ext_internal(
     role: &str,
 ) -> SgxResult<(SgxPrivateKey, SgxProtectedKeyPub, SealedKey)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
-        println!("cant create rand {}", e);
+        error!("cant create rand {}", e);
         SGX_ERROR_UNEXPECTED
     })?;
     // generate a random secret key
@@ -58,7 +58,7 @@ pub fn register_user(anytrust_server_pks: &Vec<SgxProtectedKeyPub>) -> SgxResult
     // 2. derive server secrets
     let server_secrets = SharedSecretsDb::derive_shared_secrets(&sk, anytrust_server_pks)?;
 
-    info!("DH secrets {:?}", server_secrets);
+    debug!("DH secrets {:?}", server_secrets);
 
     Ok(UserRegistration {
         key: SealedSigPrivKey(sealed_key),

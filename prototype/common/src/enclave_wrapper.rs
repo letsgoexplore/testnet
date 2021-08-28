@@ -372,8 +372,8 @@ impl DcNetEnclave {
             (pubkeys, shared_secrets, decap_key, input_blob),
         )?;
 
-        pubkeys.db.clear();
-        pubkeys.db.extend(new_pubkey_db.db);
+        pubkeys.users.clear();
+        pubkeys.users.extend(new_pubkey_db.users);
 
         shared_secrets.db.clear();
         shared_secrets.db.extend(new_secrets_db.db);
@@ -392,8 +392,8 @@ impl DcNetEnclave {
             (pubkeys, input_blob),
         )?;
 
-        pubkeys.db.clear();
-        pubkeys.db.extend(new_db.db);
+        pubkeys.aggregators.clear();
+        pubkeys.aggregators.extend(new_db.aggregators);
 
         Ok(())
     }
@@ -407,8 +407,8 @@ impl DcNetEnclave {
         let new_db =
             ecall_allowed::recv_server_registration(self.enclave.geteid(), (pubkeys, input_blob))?;
 
-        pubkeys.db.clear();
-        pubkeys.db.extend(new_db.db);
+        pubkeys.servers.clear();
+        pubkeys.servers.extend(new_db.servers);
 
         Ok(())
     }
@@ -674,8 +674,9 @@ mod enclave_tests {
 
         // create a fake user
         let user = enc.new_user(&server_kem_pks).unwrap();
+        let user_pk = user.3;
 
-        log::info!("user {:?} created. pk={:?}", user.2, user.3.0.pk);
+        log::info!("user {:?} created. pk={:?}", user.2, user_pk.0.pk);
 
         let req_1 = UserSubmissionReq {
             user_id: user.2,
