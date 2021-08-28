@@ -10,8 +10,10 @@ use crypto::{SgxPrivateKey, SharedSecretsDb, SignMutable};
 use interface::UserSubmissionReq;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 use sgx_types::SgxResult;
+use std::collections::BTreeSet;
 use std::convert::TryFrom;
 use std::debug;
+use std::iter::FromIterator;
 use std::prelude::v1::*;
 use utils::serialize_to_vec;
 
@@ -50,7 +52,7 @@ pub fn user_submit_internal(
 
     // FIXME: add missing default fields
     let mut mutable = AggregatedMessage {
-        user_ids: vec![send_request.user_id],
+        user_ids: BTreeSet::from_iter(vec![send_request.user_id].into_iter()),
         anytrust_group_id: send_request.anytrust_group_id,
         round: send_request.round,
         tee_sig: Default::default(),

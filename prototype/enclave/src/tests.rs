@@ -9,6 +9,8 @@ use serde_cbor;
 use sgx_rand::Rng;
 use sgx_types::sgx_status_t;
 use sha2::Sha256;
+use std::collections::BTreeSet;
+use std::iter::FromIterator;
 use types::*;
 
 pub fn test_all() -> sgx_status_t {
@@ -49,7 +51,7 @@ fn sign() -> () {
     let (sk, pk) = test_keypair().unwrap();
 
     let mut mutable = AggregatedMessage {
-        user_ids: vec![EntityId::default()],
+        user_ids: BTreeSet::from_iter(vec![EntityId::default()].into_iter()),
         anytrust_group_id: Default::default(),
         round: 0,
         aggregated_msg: Default::default(),

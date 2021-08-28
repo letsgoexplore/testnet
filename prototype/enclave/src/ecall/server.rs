@@ -99,12 +99,11 @@ pub fn unblind_aggregate(
     let secret_db = input.2.unseal()?;
 
     let user_ids_in_secret_db = BTreeSet::from_iter(secret_db.db.keys().map(EntityId::from));
-    let user_ids_in_submission = BTreeSet::from_iter(round_msg.user_ids.iter().cloned());
-    if !(user_ids_in_submission == user_ids_in_secret_db
-        || user_ids_in_submission.is_subset(&user_ids_in_secret_db))
+    if !(round_msg.user_ids == user_ids_in_secret_db
+        || round_msg.user_ids.is_subset(&user_ids_in_secret_db))
     {
         error!("submission.user_ids is not a subset of user_ids_in_secret_db. user_ids_in_submission = {:?}, user_ids_in_secret_db= {:?}",
-        user_ids_in_submission,
+        round_msg.user_ids,
         user_ids_in_secret_db);
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }

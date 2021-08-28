@@ -15,9 +15,9 @@ SERVER_SHARES="server/shares.txt"
 CMD_PREFIX="cargo run -- "
 
 NUM_SERVERS=1
-NUM_USERS=1
-NUM_AGGREGATORS=1
-NUM_USERS_PER_AGGREGATOR=1
+NUM_USERS=2
+NUM_AGGREGATORS=2
+NUM_USERS_PER_AGGREGATOR=2
 ROUND=1
 
 # We define four messages. "testing", "\0\0\0\0\0\0\0hello", and "\0\0\0\0\0\0\0\0\0\0\0\0world",

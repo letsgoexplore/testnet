@@ -1,6 +1,7 @@
 use crypto::SgxPrivateKey;
 use interface::*;
 use messages_types::AggregatedMessage;
+use std::collections::BTreeSet;
 use types::UnmarshallableAs;
 use types::UnsealableAs;
 use utils;
@@ -8,6 +9,23 @@ use utils;
 impl UnmarshallableAs<AggregatedMessage> for RoundSubmissionBlob {
     fn unmarshal(&self) -> sgx_types::SgxResult<AggregatedMessage> {
         utils::deserialize_from_vec(&self.0)
+    }
+}
+
+impl UnmarshallableAs<AggregatedMessage> for SignedPartialAggregate {
+    fn unmarshal(&self) -> sgx_types::SgxResult<AggregatedMessage> {
+        if !self.0.is_empty() {
+            utils::deserialize_from_vec(&self.0)
+        } else {
+            Ok(AggregatedMessage {
+                round: u32::max_value(),
+                anytrust_group_id: Default::default(),
+                user_ids: BTreeSet::new(),
+                aggregated_msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
+                tee_sig: Default::default(),
+                tee_pk: Default::default(),
+            })
+        }
     }
 }
 

@@ -1,14 +1,20 @@
+use crypto::SgxSigningKey;
 use crypto::{RoundSecret, SgxSignature};
+use crypto::{SignMutable, Signable};
 use interface::{DcMessage, EntityId, SgxSigningPubKey};
 use sgx_tcrypto::SgxRsaPubKey;
+use sgx_types::SgxError;
+use sha2::Digest;
+use sha2::Sha256;
+use std::collections::BTreeSet;
 use std::vec::Vec;
 
 /// A (potentially aggregated) message that's produced by an enclaave
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AggregatedMessage {
     pub round: u32,
     pub anytrust_group_id: EntityId,
-    pub user_ids: Vec<EntityId>,
+    pub user_ids: BTreeSet<EntityId>,
     pub aggregated_msg: DcMessage,
     pub tee_sig: SgxSignature,
     pub tee_pk: SgxSigningPubKey,
@@ -21,19 +27,13 @@ impl Zero for AggregatedMessage {
         AggregatedMessage {
             round: 0,
             anytrust_group_id: EntityId::default(),
-            user_ids: Vec::new(),
+            user_ids: BTreeSet::new(),
             aggregated_msg: DcMessage::zero(),
             tee_sig: SgxSignature::default(),
             tee_pk: SgxSigningPubKey::default(),
         }
     }
 }
-
-use crypto::SgxSigningKey;
-use crypto::{SignMutable, Signable};
-use sgx_types::SgxError;
-use sha2::Digest;
-use sha2::Sha256;
 
 impl Signable for AggregatedMessage {
     fn digest(&self) -> Vec<u8> {

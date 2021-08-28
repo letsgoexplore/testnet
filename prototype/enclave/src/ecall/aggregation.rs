@@ -7,6 +7,9 @@ use std::prelude::v1::*;
 use types::*;
 
 use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
+use sgx_types::sgx_status_t::SGX_SUCCESS;
+use std::collections::BTreeSet;
+use types::UnmarshallableAs;
 use utils;
 
 pub fn add_to_aggregate_internal(
@@ -18,67 +21,65 @@ pub fn add_to_aggregate_internal(
 ) -> SgxResult<SignedPartialAggregate> {
     let (incoming_msg, current_aggregation, sealed_sk) = input;
 
-    let incoming_msg: AggregatedMessage = utils::deserialize_from_vec(&incoming_msg.0)?;
-    if incoming_msg.user_ids.len() != 1 {
-        error!(
-            "incoming message is already aggregated. This interface only accept user submission"
-        );
-        return Err(SGX_ERROR_INVALID_PARAMETER);
+    // unmarshal
+    let mut current_aggregation = current_aggregation.unmarshal()?;
+
+    // if incoming_msg is empty just return the current aggregation. No op.
+    if incoming_msg.0.is_empty() {
+        warn!("empty incoming_msg");
+        return Ok(SignedPartialAggregate(utils::serialize_to_vec(
+            &current_aggregation,
+        )?));
     }
 
-    // if input.1.0.is_empty(), we create a new aggregation
-    // input.1 is a MarshalledSignedUserMessage
-    // input.1.0 is the vec contained in a MarshalledSignedUserMessage
-    let current_aggregation = if !current_aggregation.0.is_empty() {
-        utils::deserialize_from_vec(&current_aggregation.0)?
-    } else {
-        AggregatedMessage {
-            round: incoming_msg.round,
-            anytrust_group_id: incoming_msg.anytrust_group_id,
-            user_ids: vec![],
-            aggregated_msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
-            tee_sig: Default::default(),
-            tee_pk: Default::default(),
-        }
-    };
-
-    let tee_signing_sk: SgxSigningKey = utils::unseal_vec_and_deser(&sealed_sk.0.sealed_sk)?;
+    // unmarshal and unseal
+    let incoming_msg = incoming_msg.unmarshal()?;
+    let tee_signing_key = sealed_sk.unseal()?;
 
     // verify signature
+    // FIXME: check incoming_msg.pk against a list of accepted public keys
     if !incoming_msg.verify()? {
         error!("can't verify sig on incoming_msg");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    // FIXME: check incoming_msg.pk against a list of accepted public keys
+    // we treat an agg with an empty user id list as uninitialized. We initialize it with the
+    // incoming transaction.
+    if current_aggregation.user_ids.is_empty() {
+        current_aggregation.round = incoming_msg.round;
+        current_aggregation.anytrust_group_id = incoming_msg.anytrust_group_id;
+    } else {
+        if current_aggregation.round != incoming_msg.round {
+            error!("current_aggregation.round != incoming_msg.round");
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
 
-    if incoming_msg.round != current_aggregation.round {
-        error!("incoming_msg.round != agg.round");
-        return Err(SGX_ERROR_INVALID_PARAMETER);
+        if current_aggregation.anytrust_group_id != incoming_msg.anytrust_group_id {
+            error!("current_aggregation.anytrust_group_id != incoming_msg.anytrust_group_id");
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
+
+        if !current_aggregation
+            .user_ids
+            .is_disjoint(&incoming_msg.user_ids)
+        {
+            error!("current_aggregation.user_ids overlap with incoming_msg.user_ids");
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
     }
-
-    // we already checked that incoming_msg.user_ids has only one element
-    if current_aggregation
-        .user_ids
-        .contains(&incoming_msg.user_ids[0])
-    {
-        error!("user already in");
-        return Err(SGX_ERROR_INVALID_PARAMETER);
-    }
-
-    // create a new aggregation
-    let mut new_agg = current_aggregation.clone();
 
     // aggregate in the new message
-    new_agg.user_ids.push(incoming_msg.user_ids[0]);
-    new_agg
+    current_aggregation.user_ids.extend(&incoming_msg.user_ids);
+    current_aggregation
         .aggregated_msg
         .xor_mut(&DcMessage(incoming_msg.aggregated_msg.0));
 
     // sign
-    new_agg.sign_mut(&tee_signing_sk)?;
+    current_aggregation.sign_mut(&tee_signing_key)?;
 
-    debug!("new agg: {:?}", new_agg.user_ids);
+    debug!("new agg with users {:?}", current_aggregation.user_ids);
 
-    Ok(SignedPartialAggregate(utils::serialize_to_vec(&new_agg)?))
+    Ok(SignedPartialAggregate(utils::serialize_to_vec(
+        &current_aggregation,
+    )?))
 }
