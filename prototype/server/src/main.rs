@@ -2,7 +2,12 @@ extern crate common;
 extern crate interface;
 
 mod server_state;
-use server_state::ServerState;
+mod util;
+
+use crate::{
+    server_state::ServerState,
+    util::{load_from_stdin, load_state, save_state, save_to_stdout},
+};
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
 use interface::{
@@ -12,32 +17,7 @@ use interface::{
 
 use std::{error::Error, fs::File};
 
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use serde::{Deserialize, Serialize};
-
-fn load_state(matches: &ArgMatches) -> Result<ServerState, Box<dyn Error>> {
-    let save_filename = matches.value_of("server-state").unwrap();
-    let save_file = File::open(save_filename)?;
-    cli_util::load(save_file)
-}
-
-fn save_state(matches: &ArgMatches, state: &ServerState) -> Result<(), Box<dyn Error>> {
-    let save_filename = matches.value_of("server-state").unwrap();
-    let save_file = File::create(save_filename)?;
-    cli_util::save(save_file, state)
-}
-
-fn load_from_stdin<D: for<'a> Deserialize<'a>>() -> Result<D, Box<dyn Error>> {
-    let stdin = std::io::stdin();
-    cli_util::load(stdin)
-}
-
-fn save_to_stdout<S: Serialize>(val: &S) -> Result<(), Box<dyn Error>> {
-    let stdout = std::io::stdout();
-    cli_util::save(stdout, val)?;
-    println!("");
-    Ok(())
-}
+use clap::{App, AppSettings, Arg, SubCommand};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Do setup

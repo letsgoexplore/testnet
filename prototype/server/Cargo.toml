@@ -13,3 +13,4 @@ common = {path = "../common"}
 base64 = "0.13"
 serde = "1.0"
 clap = "2.33"
+thiserror = "1.0"

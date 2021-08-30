@@ -1,4 +1,4 @@
-use std::error::Error;
+use crate::util::Result;
 
 use common::enclave_wrapper::DcNetEnclave;
 use interface::{
@@ -27,9 +27,7 @@ pub struct ServerState {
 }
 
 impl ServerState {
-    pub fn new(
-        enclave: &DcNetEnclave,
-    ) -> Result<(ServerState, ServerRegistrationBlob), Box<dyn Error>> {
+    pub fn new(enclave: &DcNetEnclave) -> Result<(ServerState, ServerRegistrationBlob)> {
         let (sealed_ssk, sealed_ksk, server_id, reg_blob) = enclave.new_server()?;
 
         let state = ServerState {
@@ -50,7 +48,7 @@ impl ServerState {
         &self,
         enclave: &DcNetEnclave,
         toplevel_agg: &RoundSubmissionBlob,
-    ) -> Result<UnblindedAggregateShareBlob, Box<dyn Error>> {
+    ) -> Result<UnblindedAggregateShareBlob> {
         let share =
             enclave.unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
 
@@ -62,7 +60,7 @@ impl ServerState {
         &self,
         enclave: &DcNetEnclave,
         server_aggs: &[UnblindedAggregateShareBlob],
-    ) -> Result<RoundOutput, Box<dyn Error>> {
+    ) -> Result<RoundOutput> {
         let output = enclave.derive_round_output(server_aggs)?;
 
         Ok(output)
@@ -72,7 +70,7 @@ impl ServerState {
         &mut self,
         enclave: &DcNetEnclave,
         input_blob: &UserRegistrationBlob,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         enclave.recv_user_registration(
             &mut self.pubkeys,
             &mut self.shared_secrets,
@@ -87,7 +85,7 @@ impl ServerState {
         &mut self,
         enclave: &DcNetEnclave,
         input_blob: &AggRegistrationBlob,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         enclave.recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
 
         Ok(())
@@ -97,7 +95,7 @@ impl ServerState {
         &mut self,
         enclave: &DcNetEnclave,
         input_blob: &ServerRegistrationBlob,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<()> {
         enclave.recv_server_registration(&mut self.pubkeys, input_blob)?;
 
         Ok(())
