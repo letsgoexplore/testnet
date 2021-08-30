@@ -1,4 +1,6 @@
-use std::{collections::BTreeSet, error::Error};
+use crate::util::{AggError, Result};
+
+use std::collections::BTreeSet;
 
 use common::enclave_wrapper::DcNetEnclave;
 use interface::{
@@ -24,7 +26,7 @@ impl AggregatorState {
     pub(crate) fn new(
         enclave: &DcNetEnclave,
         pubkeys: Vec<KemPubKey>,
-    ) -> Result<(AggregatorState, AggRegistrationBlob), Box<dyn Error>> {
+    ) -> Result<(AggregatorState, AggRegistrationBlob)> {
         let (sealed_ask, agg_id, reg_data) = enclave.new_aggregator()?;
 
         let anytrust_ids: BTreeSet<EntityId> =
@@ -42,11 +44,7 @@ impl AggregatorState {
     }
 
     /// Clears whatever aggregate exists and makes an empty one for the given round
-    pub(crate) fn clear(
-        &mut self,
-        enclave: &DcNetEnclave,
-        round: u32,
-    ) -> Result<(), Box<dyn Error>> {
+    pub(crate) fn clear(&mut self, enclave: &DcNetEnclave, round: u32) -> Result<()> {
         // Make a new partial aggregate and put it in the local state
         let partial_agg = enclave.new_aggregate(round, &self.anytrust_group_id)?;
         self.partial_agg = Some(partial_agg);
@@ -59,25 +57,16 @@ impl AggregatorState {
         &mut self,
         enclave: &DcNetEnclave,
         input_blob: &RoundSubmissionBlob,
-    ) -> Result<(), Box<dyn Error>> {
-        let partial_agg = self
-            .partial_agg
-            .as_mut()
-            .expect("cannot add to aggregate without first calling new_aggregate");
+    ) -> Result<()> {
+        let partial_agg = self.partial_agg.as_mut().ok_or(AggError::Uninitialized)?;
         let _ = enclave.add_to_aggregate(partial_agg, input_blob, &self.signing_key)?;
         Ok(())
     }
 
     /// Packages the current aggregate into a message that can be sent to the next aggregator or an
     /// anytrust node
-    pub(crate) fn finalize_aggregate(
-        &self,
-        enclave: &DcNetEnclave,
-    ) -> Result<RoundSubmissionBlob, Box<dyn Error>> {
-        let partial_agg = self
-            .partial_agg
-            .as_ref()
-            .expect("cannot finalize aggregate without first calling new_aggregate");
+    pub(crate) fn finalize_aggregate(&self, enclave: &DcNetEnclave) -> Result<RoundSubmissionBlob> {
+        let partial_agg = self.partial_agg.as_ref().ok_or(AggError::Uninitialized)?;
         let blob = enclave.finalize_aggregate(partial_agg)?;
 
         Ok(blob)

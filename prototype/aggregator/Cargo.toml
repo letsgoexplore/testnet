@@ -12,3 +12,4 @@ interface = { path = "../interface" }
 common = {path = "../common"}
 clap = "2.33"
 serde = "1.0"
+thiserror = "1.0"

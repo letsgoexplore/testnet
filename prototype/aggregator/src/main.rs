@@ -2,42 +2,21 @@ extern crate common;
 extern crate interface;
 
 mod agg_state;
+mod util;
 
-use crate::agg_state::AggregatorState;
+pub use crate::util::AggError;
+use crate::{
+    agg_state::AggregatorState,
+    util::{load_from_stdin, load_state, save_state, save_to_stdout},
+};
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
 use interface::RoundSubmissionBlob;
+use std::fs::File;
 
-use std::{error::Error, fs::File};
+use clap::{App, AppSettings, Arg, SubCommand};
 
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use serde::{Deserialize, Serialize};
-
-fn load_state(matches: &ArgMatches) -> Result<AggregatorState, Box<dyn Error>> {
-    let save_filename = matches.value_of("agg-state").unwrap();
-    let save_file = File::open(save_filename)?;
-    cli_util::load(save_file)
-}
-
-fn save_state(matches: &ArgMatches, state: &AggregatorState) -> Result<(), Box<dyn Error>> {
-    let save_filename = matches.value_of("agg-state").unwrap();
-    let save_file = File::create(save_filename)?;
-    cli_util::save(save_file, state)
-}
-
-fn load_from_stdin<D: for<'a> Deserialize<'a>>() -> Result<D, Box<dyn Error>> {
-    let stdin = std::io::stdin();
-    cli_util::load(stdin)
-}
-
-fn save_to_stdout<S: Serialize>(val: &S) -> Result<(), Box<dyn Error>> {
-    let stdout = std::io::stdout();
-    cli_util::save(stdout, val)?;
-    println!("");
-    Ok(())
-}
-
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), AggError> {
     // Do setup
     let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
 
@@ -117,7 +96,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     if let Some(matches) = matches.subcommand_matches("start-round") {
         // Load the round
         let round_str = matches.value_of("round").unwrap();
-        let round = u32::from_str_radix(&round_str, 10)?;
+        let round = u32::from_str_radix(&round_str, 10).map_err(|e| {
+            let e: Box<dyn std::error::Error> = Box::new(e);
+            e
+        })?;
 
         // Now update the state and save it
         let mut state = load_state(&matches)?;
