@@ -4,7 +4,7 @@ extern crate interface;
 mod agg_state;
 mod util;
 
-pub use crate::util::AggError;
+pub use crate::util::AggregatorError;
 use crate::{
     agg_state::AggregatorState,
     util::{load_from_stdin, load_state, save_state, save_to_stdout},
@@ -16,7 +16,7 @@ use std::fs::File;
 
 use clap::{App, AppSettings, Arg, SubCommand};
 
-fn main() -> Result<(), AggError> {
+fn main() -> Result<(), AggregatorError> {
     // Do setup
     let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
 

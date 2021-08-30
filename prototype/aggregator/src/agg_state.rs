@@ -1,4 +1,4 @@
-use crate::util::{AggError, Result};
+use crate::util::{AggregatorError, Result};
 
 use std::collections::BTreeSet;
 
@@ -58,7 +58,10 @@ impl AggregatorState {
         enclave: &DcNetEnclave,
         input_blob: &RoundSubmissionBlob,
     ) -> Result<()> {
-        let partial_agg = self.partial_agg.as_mut().ok_or(AggError::Uninitialized)?;
+        let partial_agg = self
+            .partial_agg
+            .as_mut()
+            .ok_or(AggregatorError::Uninitialized)?;
         let _ = enclave.add_to_aggregate(partial_agg, input_blob, &self.signing_key)?;
         Ok(())
     }
@@ -66,7 +69,10 @@ impl AggregatorState {
     /// Packages the current aggregate into a message that can be sent to the next aggregator or an
     /// anytrust node
     pub(crate) fn finalize_aggregate(&self, enclave: &DcNetEnclave) -> Result<RoundSubmissionBlob> {
-        let partial_agg = self.partial_agg.as_ref().ok_or(AggError::Uninitialized)?;
+        let partial_agg = self
+            .partial_agg
+            .as_ref()
+            .ok_or(AggregatorError::Uninitialized)?;
         let blob = enclave.finalize_aggregate(partial_agg)?;
 
         Ok(blob)

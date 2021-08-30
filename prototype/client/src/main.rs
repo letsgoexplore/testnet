@@ -2,50 +2,20 @@ extern crate common;
 extern crate interface;
 
 mod user_state;
-use crate::user_state::UserState;
+mod util;
+
+use crate::{
+    user_state::UserState,
+    util::{base64_from_stdin, load_state, save_state, save_to_stdout, UserError},
+};
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
 use interface::{DcMessage, SealedFootprintTicket, DC_NET_MESSAGE_LENGTH};
+use std::fs::File;
 
-use std::{
-    error::Error,
-    fs::File,
-    io::{BufRead, BufReader},
-};
+use clap::{App, AppSettings, Arg, SubCommand};
 
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use serde::Serialize;
-
-fn load_state(matches: &ArgMatches) -> Result<UserState, Box<dyn Error>> {
-    let save_filename = matches.value_of("user-state").unwrap();
-    let save_file = File::open(save_filename)?;
-    cli_util::load(save_file)
-}
-
-fn save_state(matches: &ArgMatches, state: &UserState) -> Result<(), Box<dyn Error>> {
-    let save_filename = matches.value_of("user-state").unwrap();
-    let save_file = File::create(save_filename)?;
-    cli_util::save(save_file, state)
-}
-
-fn save_to_stdout<S: Serialize>(val: &S) -> Result<(), Box<dyn Error>> {
-    let stdout = std::io::stdout();
-    cli_util::save(stdout, val)?;
-    println!("");
-    Ok(())
-}
-
-/// Loads raw base64 from STDIN, ignoring trailing newlines
-pub fn base64_from_stdin() -> Result<Vec<u8>, Box<dyn Error>> {
-    let mut stdin = std::io::stdin();
-    let f = BufReader::new(&mut stdin);
-    let line = f.lines().next().expect("got no base64 input")?;
-    let bytes = base64::decode(&line)?;
-
-    Ok(bytes)
-}
-
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), UserError> {
     // Do setup
     let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
 
@@ -133,7 +103,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Load the round
         let round_str = matches.value_of("round").unwrap();
-        let round = u32::from_str_radix(&round_str, 10)?;
+        let round = u32::from_str_radix(&round_str, 10).map_err(|e| {
+            let e: Box<dyn std::error::Error> = Box::new(e);
+            e
+        })?;
 
         // Input the footprint ticket
         // TODO: Acutally do this

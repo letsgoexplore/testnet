@@ -1,4 +1,4 @@
-use std::error::Error;
+use crate::util::Result;
 
 use common::enclave_wrapper::DcNetEnclave;
 use serde::{Deserialize, Serialize};
@@ -27,7 +27,7 @@ impl UserState {
     pub fn new(
         enclave: &DcNetEnclave,
         pubkeys: Vec<KemPubKey>,
-    ) -> Result<(UserState, UserRegistrationBlob), Box<dyn Error>> {
+    ) -> Result<(UserState, UserRegistrationBlob)> {
         let (sealed_shared_secrets, sealed_usk, user_id, reg_blob) = enclave.new_user(&pubkeys)?;
 
         let anytrust_group_id = compute_anytrust_group_id(&pubkeys);
@@ -48,7 +48,7 @@ impl UserState {
         round: u32,
         msg: &DcMessage,
         ticket: &SealedFootprintTicket,
-    ) -> Result<RoundSubmissionBlob, Box<dyn Error>> {
+    ) -> Result<RoundSubmissionBlob> {
         let req = UserSubmissionReq {
             user_id: self.user_id,
             anytrust_group_id: self.anytrust_group_id,

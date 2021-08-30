@@ -1239,6 +1239,7 @@ dependencies = [
  "common",
  "interface",
  "serde 1.0.126",
+ "thiserror",
 ]
 
 [[package]]

@@ -7,10 +7,10 @@ use common::{cli_util, enclave_wrapper::EnclaveError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub(crate) type Result<T> = core::result::Result<T, AggError>;
+pub(crate) type Result<T> = core::result::Result<T, AggregatorError>;
 
 #[derive(Debug, Error)]
-pub enum AggError {
+pub enum AggregatorError {
     #[error("aggregator has not been initialized")]
     Uninitialized,
     #[error("error from enclave")]
