@@ -56,7 +56,7 @@ async fn submit(
     // Add to aggregate
     agg_state.add_to_aggregate(enclave, &agg_data)?;
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok().body("OK\n\n"))
 }
 
 async fn forward_aggregate(agg_state: &AggregatorState, enclave: &DcNetEnclave, base_url: &str) {
