@@ -185,9 +185,12 @@ fn main() -> Result<(), AggregatorError> {
             let secs = cli_util::parse_u32(matches.value_of("round-duration").unwrap())?;
             std::time::Duration::from_secs(secs as u64)
         };
-        let forward_url = {
-            let addr_str = matches.value_of("forward-to").unwrap();
-            reqwest::Url::parse(addr_str).expect("the forward-to parameter must be a URL")
+        let forward_url = matches.value_of("forward-to").unwrap().to_string();
+        // Check that the forward-to URL is well-formed
+        {
+            let _: actix_web::http::Uri = forward_url
+                .parse()
+                .expect("the forward-to parameter must be a URL");
         };
 
         // Load the aggregator state and clear it for this round
@@ -200,6 +203,7 @@ fn main() -> Result<(), AggregatorError> {
             agg_state,
             enclave,
             round,
+            terminated: false,
         };
         start_service(bind_addr, forward_url, state_path, state, round_dur).unwrap();
     }

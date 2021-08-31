@@ -13,6 +13,8 @@ pub enum SerializationError {
     Io(#[from] std::io::Error),
     #[error("integer parsing")]
     Int(#[from] core::num::ParseIntError),
+    #[error("cannot deserialize empty string")]
+    Empty,
 }
 
 type Result<T> = core::result::Result<T, SerializationError>;
@@ -27,7 +29,7 @@ where
     R: Read,
     D: for<'a> Deserialize<'a>,
 {
-    let val = load_multi(f)?.pop().unwrap();
+    let val = load_multi(f)?.pop().ok_or(SerializationError::Empty)?;
     Ok(val)
 }
 
