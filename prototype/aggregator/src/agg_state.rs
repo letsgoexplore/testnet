@@ -9,8 +9,8 @@ use interface::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
-pub(crate) struct AggregatorState {
+#[derive(Clone, Serialize, Deserialize)]
+pub struct AggregatorState {
     /// A unique identifier for this aggregator. Computed as the hash of the aggregator's pubkey.
     agg_id: EntityId,
     /// A unique for the set anytrust servers that this aggregator is registered with

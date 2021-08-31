@@ -47,7 +47,7 @@ extern "C" {
 
 const ENCLAVE_OUTPUT_BUF_SIZE: usize = 1024000;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DcNetEnclave {
     enclave: sgx_urts::SgxEnclave,
 }

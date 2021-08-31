@@ -2,7 +2,6 @@ use crate::agg_state::AggregatorState;
 
 use std::{fs::File, io};
 
-use clap::ArgMatches;
 use common::{cli_util, enclave_wrapper::EnclaveError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -17,19 +16,17 @@ pub enum AggregatorError {
     Enclave(#[from] EnclaveError),
     #[error("error from IO")]
     Io(#[from] io::Error),
-    #[error(transparent)]
-    Cli(#[from] Box<dyn std::error::Error>),
+    #[error("error in serialization/deserialization")]
+    Ser(#[from] cli_util::SerializationError),
 }
 
-pub(crate) fn load_state(matches: &ArgMatches) -> Result<AggregatorState> {
-    let save_filename = matches.value_of("agg-state").unwrap();
-    let save_file = File::open(save_filename)?;
+pub(crate) fn load_state(save_path: &str) -> Result<AggregatorState> {
+    let save_file = File::open(save_path)?;
     Ok(cli_util::load(save_file)?)
 }
 
-pub(crate) fn save_state(matches: &ArgMatches, state: &AggregatorState) -> Result<()> {
-    let save_filename = matches.value_of("agg-state").unwrap();
-    let save_file = File::create(save_filename)?;
+pub(crate) fn save_state(save_path: &str, state: &AggregatorState) -> Result<()> {
+    let save_file = File::create(save_path)?;
     Ok(cli_util::save(save_file, state)?)
 }
 

@@ -1,11 +1,28 @@
 use serde::{Deserialize, Serialize};
-use std::{
-    error::Error,
-    io::{BufRead, BufReader, Read, Write},
-};
+use std::io::{BufRead, BufReader, Read, Write};
+
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum SerializationError {
+    #[error("cbor error")]
+    Cbor(#[from] serde_cbor::Error),
+    #[error("base64 decoding error")]
+    Base64(#[from] base64::DecodeError),
+    #[error("read error")]
+    Io(#[from] std::io::Error),
+    #[error("integer parsing")]
+    Int(#[from] core::num::ParseIntError),
+}
+
+type Result<T> = core::result::Result<T, SerializationError>;
+
+pub fn parse_u32(s: &str) -> Result<u32> {
+    Ok(u32::from_str_radix(s, 10)?)
+}
 
 /// file -> base64::decode -> cbor::decode
-pub fn load<R, D>(f: R) -> Result<D, Box<dyn Error>>
+pub fn load<R, D>(f: R) -> Result<D>
 where
     R: Read,
     D: for<'a> Deserialize<'a>,
@@ -15,7 +32,7 @@ where
 }
 
 /// cbor::encode -> base64::encode -> file
-pub fn save<W, S>(f: W, val: &S) -> Result<(), Box<dyn Error>>
+pub fn save<W, S>(f: W, val: &S) -> Result<()>
 where
     W: Write,
     S: Serialize,
@@ -24,7 +41,7 @@ where
 }
 
 /// file -> separate by newline -> [base64::decode] -> [cbor::decode]
-pub fn load_multi<R, D>(mut f: R) -> Result<Vec<D>, Box<dyn Error>>
+pub fn load_multi<R, D>(mut f: R) -> Result<Vec<D>>
 where
     R: Read,
     D: for<'a> Deserialize<'a>,
@@ -49,7 +66,7 @@ where
 }
 
 /// cbor::encode -> base64::encode -> file
-pub fn save_multi<W, S>(mut f: W, values: &[S]) -> Result<(), Box<dyn Error>>
+pub fn save_multi<W, S>(mut f: W, values: &[S]) -> Result<()>
 where
     W: Write,
     S: Serialize,

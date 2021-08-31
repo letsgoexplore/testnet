@@ -18,8 +18,8 @@ pub enum UserError {
     Enclave(#[from] EnclaveError),
     #[error("error from IO")]
     Io(#[from] std::io::Error),
-    #[error(transparent)]
-    Cli(#[from] Box<dyn std::error::Error>),
+    #[error("error in serialization/deserialization")]
+    Ser(#[from] cli_util::SerializationError),
 }
 
 pub(crate) fn load_state(matches: &ArgMatches) -> Result<UserState> {
@@ -46,10 +46,7 @@ pub(crate) fn base64_from_stdin() -> Result<Vec<u8>> {
     let mut stdin = std::io::stdin();
     let f = BufReader::new(&mut stdin);
     let line = f.lines().next().expect("got no base64 input")?;
-    let bytes = base64::decode(&line).map_err(|e| {
-        let e: Box<dyn std::error::Error> = Box::new(e);
-        e
-    })?;
+    let bytes = base64::decode(&line).map_err(cli_util::SerializationError::from)?;
 
     Ok(bytes)
 }

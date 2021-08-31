@@ -102,11 +102,10 @@ fn main() -> Result<(), UserError> {
         dc_msg.0[..msg.len()].copy_from_slice(&msg);
 
         // Load the round
-        let round_str = matches.value_of("round").unwrap();
-        let round = u32::from_str_radix(&round_str, 10).map_err(|e| {
-            let e: Box<dyn std::error::Error> = Box::new(e);
-            e
-        })?;
+        let round = {
+            let round_str = matches.value_of("round").unwrap();
+            cli_util::parse_u32(&round_str)?
+        };
 
         // Input the footprint ticket
         // TODO: Acutally do this

@@ -16,8 +16,8 @@ pub enum ServerError {
     Enclave(#[from] EnclaveError),
     #[error("error from IO")]
     Io(#[from] std::io::Error),
-    #[error(transparent)]
-    Cli(#[from] Box<dyn std::error::Error>),
+    #[error("error in serialization/deserialization")]
+    Ser(#[from] cli_util::SerializationError),
 }
 
 pub(crate) fn load_state(matches: &ArgMatches) -> Result<ServerState> {
