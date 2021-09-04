@@ -9,7 +9,7 @@ use interface::{
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ServerState {
     /// A unique identifier for this aggregator. Computed as the hash of the server's KEM pubkey.
     pub server_id: EntityId,
@@ -24,11 +24,16 @@ pub struct ServerState {
     pub shared_secrets: SealedSharedSecretDb,
     /// A map of EntityIds to the corresponding public key
     pub pubkeys: SignedPubKeyDb,
+    /// The size of this anytrust group, including this node
+    pub anytrust_group_size: usize,
 }
 
 impl ServerState {
     pub fn new(enclave: &DcNetEnclave) -> Result<(ServerState, ServerRegistrationBlob)> {
         let (sealed_ssk, sealed_ksk, server_id, reg_blob) = enclave.new_server()?;
+        // Group size starts out as 1. This will increment every time an anytrust node is
+        // registered with this node.
+        let anytrust_group_size = 1;
 
         let state = ServerState {
             server_id,
@@ -37,6 +42,7 @@ impl ServerState {
             partial_agg: None,
             shared_secrets: SealedSharedSecretDb::default(),
             pubkeys: SignedPubKeyDb::default(),
+            anytrust_group_size,
         };
 
         Ok((state, reg_blob))
@@ -66,6 +72,7 @@ impl ServerState {
         Ok(output)
     }
 
+    /// Registers a user with this server
     pub fn recv_user_registration(
         &mut self,
         enclave: &DcNetEnclave,
@@ -81,6 +88,7 @@ impl ServerState {
         Ok(())
     }
 
+    /// Registers an aggregator with this server
     pub fn recv_aggregator_registration(
         &mut self,
         enclave: &DcNetEnclave,
@@ -91,12 +99,16 @@ impl ServerState {
         Ok(())
     }
 
+    /// Registers another anytrust server with this server. This will be added to the server's
+    /// anytrust group
     pub fn recv_server_registration(
         &mut self,
         enclave: &DcNetEnclave,
         input_blob: &ServerRegistrationBlob,
     ) -> Result<()> {
+        // Input the registration and increment the size of the group
         enclave.recv_server_registration(&mut self.pubkeys, input_blob)?;
+        self.anytrust_group_size += 1;
 
         Ok(())
     }

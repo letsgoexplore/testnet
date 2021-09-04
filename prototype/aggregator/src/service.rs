@@ -17,7 +17,7 @@ use actix_web::{
     http::{StatusCode, Uri},
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError,
 };
-use log::{debug, error, info};
+use log::{error, info};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -32,23 +32,24 @@ enum ApiError {
 impl ResponseError for ApiError {}
 
 #[derive(Clone)]
-pub(crate) struct ServerState {
+pub(crate) struct ServiceState {
     pub(crate) agg_state: AggregatorState,
     pub(crate) enclave: DcNetEnclave,
+    pub(crate) forward_url: String,
     pub(crate) round: u32,
-    pub(crate) terminated: bool,
 }
 
-#[post("/submit")]
-async fn submit(
-    (payload, state): (String, web::Data<Arc<Mutex<ServerState>>>),
+/// Receives a partial aggregate from an aggregator or a user
+#[post("/submit-agg")]
+async fn submit_agg(
+    (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
     // Parse aggregation
     let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
 
     // Unpack state
     let mut handle = state.get_ref().lock().unwrap();
-    let ServerState {
+    let ServiceState {
         ref mut agg_state,
         ref enclave,
         ..
@@ -56,10 +57,11 @@ async fn submit(
     // Add to aggregate
     agg_state.add_to_aggregate(enclave, &agg_data)?;
 
-    Ok(HttpResponse::Ok().body("OK\n\n"))
+    Ok(HttpResponse::Ok().body("OK\n"))
 }
 
-async fn forward_aggregate(agg_state: &AggregatorState, enclave: &DcNetEnclave, base_url: &str) {
+/// Sends a finalized aggregate to `base_url/submit-agg`
+async fn send_aggregate(agg_state: &AggregatorState, enclave: &DcNetEnclave, base_url: &str) {
     // Finalize and serialize the aggregate
     let agg = match agg_state.finalize_aggregate(enclave) {
         Ok(a) => a,
@@ -73,11 +75,10 @@ async fn forward_aggregate(agg_state: &AggregatorState, enclave: &DcNetEnclave, 
 
     // Send the serialized contents
     let client = Client::builder().timeout(Duration::from_secs(20)).finish();
-    let post_path: Uri = [base_url, "/submit"]
+    let post_path: Uri = [base_url, "/submit-agg"]
         .concat()
         .parse()
-        .expect("Couldn't not append '/submit' to forward URL");
-    println!("Connecting");
+        .expect("Couldn't not append '/submit-agg' to forward URL");
     match client.post(post_path).send_body(body).await {
         Ok(res) => {
             if res.status() == StatusCode::OK {
@@ -90,25 +91,31 @@ async fn forward_aggregate(agg_state: &AggregatorState, enclave: &DcNetEnclave, 
     }
 }
 
+/// Every `round_dur`, ends the round and forwards the finalized aggregate to the next aggregator
+/// or anytrust server up the tree
 async fn round_finalization_loop(
     state_path: String,
-    state: Arc<Mutex<ServerState>>,
+    state: Arc<Mutex<ServiceState>>,
     round_dur: Duration,
-    forward_url: String,
 ) {
     // Every round_dur seconds, end the round, save the state, and send the finalized aggregate to
     // the next aggregator up the tree
     let mut interval = actix_rt::time::interval(round_dur);
-    while let _ = interval.tick().await {
+    // The first tick fires immediately, so get that out of the way
+    interval.tick().await;
+    // Now start the round loop
+    loop {
+        interval.tick().await;
+
         // The round has ended. Save the state and forward the aggregate before starting the
         // new round
         {
             let mut handle = state.lock().unwrap();
-            let ServerState {
+            let ServiceState {
                 ref mut agg_state,
                 ref enclave,
+                ref forward_url,
                 ref mut round,
-                ref terminated,
             } = *handle;
 
             info!("Round {} complete", round);
@@ -117,12 +124,7 @@ async fn round_finalization_loop(
             save_state(&state_path, agg_state).expect("failed to save state");
 
             info!("Forwarding aggregate");
-            forward_aggregate(agg_state, enclave, &forward_url).await;
-
-            // If the server has terminated, exit
-            if *terminated {
-                return;
-            }
+            send_aggregate(agg_state, enclave, forward_url).await;
 
             // Otherwise, start the next round
             *round = *round + 1;
@@ -136,25 +138,19 @@ async fn round_finalization_loop(
 #[actix_rt::main]
 pub(crate) async fn start_service(
     bind_addr: String,
-    forward_url: String,
     state_path: String,
-    state: ServerState,
+    state: ServiceState,
     round_dur: Duration,
 ) -> std::io::Result<()> {
     let state = Arc::new(Mutex::new(state));
     let state_copy = state.clone();
 
-    Arbiter::spawn(round_finalization_loop(
-        state_path,
-        state_copy,
-        round_dur,
-        forward_url,
-    ));
+    Arbiter::spawn(round_finalization_loop(state_path, state_copy, round_dur));
 
     // Start the web server
     HttpServer::new(move || {
         App::new().data(state.clone()).configure(|cfg| {
-            cfg.service(submit);
+            cfg.service(submit_agg);
         })
     })
     .bind(bind_addr)

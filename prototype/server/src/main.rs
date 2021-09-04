@@ -2,6 +2,7 @@ extern crate common;
 extern crate interface;
 
 mod server_state;
+mod service;
 mod util;
 
 use crate::{

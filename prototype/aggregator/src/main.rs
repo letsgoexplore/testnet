@@ -199,13 +199,13 @@ fn main() -> Result<(), AggregatorError> {
         agg_state.clear(&enclave, round)?;
         info!("Initialized round {}", round);
 
-        let state = service::ServerState {
+        let state = service::ServiceState {
             agg_state,
             enclave,
+            forward_url,
             round,
-            terminated: false,
         };
-        start_service(bind_addr, forward_url, state_path, state, round_dur).unwrap();
+        start_service(bind_addr, state_path, state, round_dur).unwrap();
     }
 
     Ok(())
