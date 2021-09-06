@@ -126,28 +126,26 @@ pub fn compute_anytrust_group_id(keys: &[KemPubKey]) -> EntityId {
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UserSubmissionReq {
     pub user_id: EntityId,
     pub anytrust_group_id: EntityId,
     pub round: u32,
     pub msg: DcMessage,
-    pub ticket: SealedFootprintTicket,
+    pub prev_round_output: RoundOutput,
     /// A map from server public key to sealed shared secret
     pub shared_secrets: SealedSharedSecretDb,
 }
 
-impl Debug for UserSubmissionReq {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.debug_struct("UserSubmissionReq")
-            .field("user_id", &hex::encode(self.user_id))
-            .field("anytrust_group_id", &hex::encode(self.anytrust_group_id))
-            .field("round", &self.round)
-            .field("msg", &self.msg)
-            .field("ticket", &"empty for now")
-            .field("shared_secrets", &self.shared_secrets)
-            .finish()
-    }
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UserReservationReq {
+    pub user_id: EntityId,
+    pub anytrust_group_id: EntityId,
+    pub round: u32,
+    pub prev_round_output: RoundOutput,
+    /// A map from server public key to sealed shared secret
+    pub shared_secrets: SealedSharedSecretDb,
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]

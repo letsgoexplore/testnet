@@ -4,9 +4,9 @@ use common::enclave_wrapper::DcNetEnclave;
 use serde::{Deserialize, Serialize};
 
 use interface::{
-    compute_anytrust_group_id, DcMessage, EntityId, KemPubKey, RoundSubmissionBlob,
-    SealedFootprintTicket, SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob,
-    UserSubmissionReq,
+    compute_anytrust_group_id, DcMessage, EntityId, KemPubKey, RoundOutput, RoundSubmissionBlob,
+    SealedSharedSecretDb, SealedSigPrivKey, ServerPubKeyPackage, UserRegistrationBlob,
+    UserReservationReq, UserSubmissionReq,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -20,23 +20,27 @@ pub struct UserState {
     /// The secrets that this client shares with the anytrust servers. Maps entity ID to shared
     /// secret. Can only be accessed from within the enclave.
     shared_secrets: SealedSharedSecretDb,
+    /// The anytrust servers' KEM and signing pubkeys
+    anytrust_group_keys: Vec<ServerPubKeyPackage>,
 }
 
 impl UserState {
     /// Creates a new user state and registration blob for the server
     pub fn new(
         enclave: &DcNetEnclave,
-        pubkeys: Vec<KemPubKey>,
+        pubkeys: Vec<ServerPubKeyPackage>,
     ) -> Result<(UserState, UserRegistrationBlob)> {
         let (sealed_shared_secrets, sealed_usk, user_id, reg_blob) = enclave.new_user(&pubkeys)?;
 
-        let anytrust_group_id = compute_anytrust_group_id(&pubkeys);
+        let kem_pubkeys: Vec<KemPubKey> = pubkeys.iter().map(|p| p.kem).collect();
+        let anytrust_group_id = compute_anytrust_group_id(&kem_pubkeys);
 
         let state = UserState {
             user_id,
             anytrust_group_id,
             signing_key: sealed_usk.to_owned(),
             shared_secrets: sealed_shared_secrets.to_owned(),
+            anytrust_group_keys: pubkeys,
         };
 
         Ok((state, reg_blob))
@@ -46,19 +50,37 @@ impl UserState {
         &self,
         enclave: &DcNetEnclave,
         round: u32,
-        msg: &DcMessage,
-        ticket: &SealedFootprintTicket,
+        msg: DcMessage,
+        prev_round_output: RoundOutput,
     ) -> Result<RoundSubmissionBlob> {
         let req = UserSubmissionReq {
             user_id: self.user_id,
             anytrust_group_id: self.anytrust_group_id,
             round,
-            msg: msg.clone(),
-            ticket: ticket.clone(),
+            msg,
             shared_secrets: self.shared_secrets.clone(),
+            prev_round_output,
         };
 
         let blob = enclave.user_submit_round_msg(&req, &self.signing_key)?;
+        Ok(blob)
+    }
+
+    pub fn reserve_slot(
+        &self,
+        enclave: &DcNetEnclave,
+        round: u32,
+        prev_round_output: RoundOutput,
+    ) -> Result<RoundSubmissionBlob> {
+        let req = UserReservationReq {
+            user_id: self.user_id,
+            anytrust_group_id: self.anytrust_group_id,
+            round,
+            shared_secrets: self.shared_secrets.clone(),
+            prev_round_output,
+        };
+
+        let blob = enclave.user_reserve_slot(&req, &self.signing_key)?;
         Ok(blob)
     }
 }

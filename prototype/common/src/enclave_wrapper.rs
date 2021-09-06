@@ -219,17 +219,37 @@ impl DcNetEnclave {
         )?)
     }
 
-    /// Given a message and the relevant scheduling ticket, constructs a round message for sending
-    /// to an aggregator
+    /// Given a message, constructs a round message for sending to an aggregator
     pub fn user_submit_round_msg(
         &self,
         submission_req: &UserSubmissionReq,
         sealed_usk: &SealedSigPrivKey,
     ) -> EnclaveResult<RoundSubmissionBlob> {
+        // TODO: UserSubmissionReq now contains prev_round instead of ticket. SGX should
+        // 1. Check the signature on the preivous round output against a signing key (might have to
+        //    change API a bit for that)
+        // 2. Check that the current round is prev_round+1
+        // 3. Use the derived slot for the given message
+        // 4. Make a new footprint reservation for this round
+        return unimplemented!();
         Ok(ecall_allowed::user_submit(
             self.enclave.geteid(),
             (submission_req, sealed_usk),
         )?)
+    }
+
+    /// Constructs a round message for sending to an aggregator
+    pub fn user_reserve_slot(
+        &self,
+        submission_req: &UserReservationReq,
+        sealed_usk: &SealedSigPrivKey,
+    ) -> EnclaveResult<RoundSubmissionBlob> {
+        // TODO: SGX should
+        // 1. Check the signature on the preivous round output against a signing key (might have to
+        //    change API a bit for that)
+        // 2. Check that the current round is prev_round+1
+        // 3. Make a new footprint reservation for this round
+        unimplemented!()
     }
 
     /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
@@ -296,16 +316,22 @@ impl DcNetEnclave {
 
     /// Create a new TEE protected secret key. Derives shared secrets with all the given KEM pubkeys.
     /// information to send to anytrust nodes.
-    /// TODO: should we use different keys for signing and kem?
     pub fn new_user(
         &self,
-        server_kem_pks: &[KemPubKey],
+        server_pks: &[ServerPubKeyPackage],
     ) -> EnclaveResult<(
         SealedSharedSecretDb,
         SealedSigPrivKey,
         EntityId,
         UserRegistrationBlob,
     )> {
+        // Previously this function took just server KEM pubkeys. Now it takes pubkey packages
+        // (which contain both KEM and signing pubkeys).
+        // This function should:
+        // 1. Verify the Enclave Attestation on the packages
+        // 2. Use the KEM pubkeys to derive the shared secrets. This is already implemented.
+        unimplemented!()
+        /*
         let output = ecall_allowed::register_user(self.enclave.geteid(), server_kem_pks)?;
 
         let secrets = output.get_sealed_shared_secrets().to_owned();
@@ -314,6 +340,7 @@ impl DcNetEnclave {
         let reg_blob = output.get_registration_blob();
 
         Ok((secrets, privkey, uid, reg_blob))
+        */
     }
 
     /// Create a new TEE protected secret key for an aggregator.

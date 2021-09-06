@@ -84,3 +84,17 @@ impl SgxProtectedKeyPub {
 // KemPubKey and SgxSigningPubKey are just aliases to SgxProtectedKeyPub
 pub type KemPubKey = SgxProtectedKeyPub;
 pub type SgxSigningPubKey = SgxProtectedKeyPub;
+
+/// Contains a server's signing and KEM pubkeys
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
+pub struct ServerPubKeyPackage {
+    pub kem: KemPubKey,
+    pub sig: SgxSigningPubKey,
+}
+
+// TODO: PubKeyPackage is what identifies servers to users. This should have some sort of
+// attestation signature or something, no? Currently it's an unauthenticated tuple.
+fn _note() {
+    unimplemented!()
+}
