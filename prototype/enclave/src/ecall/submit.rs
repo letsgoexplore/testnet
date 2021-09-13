@@ -10,7 +10,7 @@ use crypto;
 use crypto::{MultiSignable, SgxPrivateKey, SharedSecretsDb, SignMutable};
 use interface::UserSubmissionReq;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
-use sgx_types::SgxResult;
+use sgx_types::{SgxResult, SgxError};
 use std::collections::BTreeSet;
 use std::convert::TryFrom;
 use std::debug;
@@ -73,49 +73,75 @@ pub fn user_submit_internal(
     Ok(RoundSubmissionBlob(serialize_to_vec(&mutable)?))
 }
 
-use bitvec;
-use bitvec::prelude::{BitVec, Local};
+use bitvec::prelude::*;
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use sha2::Digest;
 use sha2::Sha256;
+use sha2::digest::DynDigest;
 
 pub struct FootprintMap {
     fp_bit_len: usize,
-    n_slot: usize,
-    pub fp: BitVec<Local, u8>,
+    fps: Vec<SlotValue>,
 }
 
 impl FootprintMap {
-    fn new_footprint_map(fp_bit_len: usize, n_slot: usize) -> SgxResult<Self> {
-        if (fp_bit_len * n_slot) % 32 != 0 {
-            error!("(fp_bit_len * n_slot) % 32 != 0");
-            return Err(SGX_ERROR_INVALID_PARAMETER);
-        }
-
+    fn new_footprint_map(n_slots: usize, fp_bit_len: usize) -> SgxResult<Self> {
         Ok(Self {
             fp_bit_len,
-            n_slot,
-            fp: BitVec::with_capacity(fp_bit_len * n_slot),
+            fps: vec![0u32; n_slots],
         })
     }
 
-    fn set(i: usize, footprint: u32) {
-        unimplemented!()
+    fn set(&mut self, i: usize, footprint: SlotValue) -> SgxError{
+        if i > self.fps.len() {
+            error!("i > self.fps.len()");
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
+        self.fps[i] = footprint;
+
+        Ok(())
     }
 
-    fn get(i: usize, footprint: u32) {
-        unimplemented!()
+    fn get(&self, i: usize) -> SgxResult<SlotValue> {
+        if i > self.fps.len() {
+            error!("i > self.fps.len()");
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
+
+        Ok(self.fps[i])
     }
 
-    fn from_bytes(fp_bit_len: usize, n_slot: usize, bytes: Vec<u8>) -> SgxResult<Self> {
-        unimplemented!()
+    fn from_bytes(fp_bit_len: usize, bytes: &[u8]) -> SgxResult<Self> {
+        let bits = BitSlice::<Msb0, u8>::from_slice(bytes);
+        if bits.len() % fp_bit_len != 0 {
+            error!("bits.len() % fp_bit_len != 0");
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
+
+        let n_fps = bits.len() / fp_bit_len;
+        let mut fps: Vec<u32> = Vec::with_capacity(n_fps);
+        for i in 0..n_fps{
+            fps.push(bits[i*fp_bit_len..(i+1)*fp_bit_len].load());
+        }
+
+        Ok(Self{
+            fp_bit_len,
+            fps
+        })
     }
 
-    fn to_bytes() -> Vec<u8> {
-        unimplemented!()
+    fn to_bytes(&self) -> SgxResult<Vec<u8>> {
+        let mut bits = bitvec![Msb0, u8; 0; self.fp_bit_len * self.fps.len()];
+        for (i, fp) in self.fps.iter().enumerate() {
+            bits[i * self.fp_bit_len.. (i+1)*self.fp_bit_len].store(fp.to_owned());
+        }
+
+        Ok(bits.into_vec())
     }
 }
+
+pub type SlotValue = u32;
 
 /// Return a deterministically derived footprint reservation for the given parameter
 ///
@@ -125,20 +151,33 @@ impl FootprintMap {
 /// else:
 ///   Let cur_slot_idx = H("sched-slot-idx", usk, anytrust_group_id, epoch-1)
 ///   Let cur_slot_val = H("sched-slot-val", usk, anytrust_group_id, epoch-1)
-fn derive_reservation(usk: SgxPrivateKey, round: u32, anytrust_group_id: EntityId) {
-    let mut hasher = Sha256::new();
-    hasher.input(if round == 0 {
+fn derive_reservation(usk: SgxPrivateKey, round: u32, anytrust_group_id: EntityId) -> (u32, SlotValue) {
+    let mut hasher_idx = Sha256::new();
+    hasher_idx.input(if round == 0 {
         "first-slot-idx"
     } else {
         "sched-slot-idx"
     });
-    hasher.input(&usk);
-    hasher.input(&anytrust_group_id.0);
-    let cur_slot_idx = hasher.result().to_vec();
+    hasher_idx.input(&usk);
+    hasher_idx.input(&anytrust_group_id.0);
+    if round > 0 {
+        hasher_idx.input(round - 1);
+    }
 
-    LittleEndian::read_u16(&cur_slot_idx);
+    let hasher_val = Sha256::new();
+    hasher_val.input(if round == 0 {
+        "first-slot-val"
+    } else {
+        "sched-slot-val"
+    });
+    hasher_val.input(&usk);
+    hasher_val.input(&anytrust_group_id.0);
+    if round > 0 {
+        hasher_val.input(round - 1);
+    }
 
-    unimplemented!()
+    (LittleEndian::read_u32(&hasher_idx.result().to_vec()),
+     LittleEndian::read_u32(&hasher_val.result().to_vec()))
 }
 
 fn submit(
