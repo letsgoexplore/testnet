@@ -121,21 +121,39 @@ mod ecall_allowed {
         (
             EcallUnsealToPublicKey,
             &SealedKey,
-            SgxProtectedKeyPub,unseal_to_public_key),
+            SgxProtectedKeyPub,
+            unseal_to_public_key),
         (
-            EcallRegisterUser,
-            &[SgxProtectedKeyPub],
-            UserRegistration,register_user
+            EcallNewUser,
+            &[ServerPubKeyPackage],
+            (SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob),
+            new_user
+        ),
+        (
+            EcallNewServer,
+            // input
+            (),
+            // output
+            (SealedSigPrivKey, SealedKemPrivKey, ServerRegistrationBlob),
+            new_server
         ),
         (
             EcallUserSubmit,
             (&UserSubmissionReq, &SealedSigPrivKey),
-            RoundSubmissionBlob,user_submit
+            RoundSubmissionBlob,
+            user_submit
+        ),
+        (
+            EcallUserReserveSlot,
+            (&UserReservationReq, &SealedSigPrivKey),
+            RoundSubmissionBlob,
+            user_reserve_slot
         ),
         (
             EcallAddToAggregate,
             (&RoundSubmissionBlob, &SignedPartialAggregate, &SealedSigPrivKey),
-            SignedPartialAggregate,add_to_agg
+            SignedPartialAggregate,
+            add_to_agg
         ),
         (
             EcallRecvUserRegistration,
@@ -249,7 +267,7 @@ impl DcNetEnclave {
         //    change API a bit for that)
         // 2. Check that the current round is prev_round+1
         // 3. Make a new footprint reservation for this round
-        unimplemented!()
+        ecall_allowed::user_reserve_slot(self.enclave.geteid(), (submission_req, sealed_usk))
     }
 
     /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
@@ -315,7 +333,10 @@ impl DcNetEnclave {
     }
 
     /// Create a new TEE protected secret key. Derives shared secrets with all the given KEM pubkeys.
-    /// information to send to anytrust nodes.
+    /// This function
+    /// 1. Verify the enclave attestations on the packages
+    /// 2. Use the KEM pubkeys to derive the shared secrets.
+    /// TODO: what should it do with the signing keys?
     pub fn new_user(
         &self,
         server_pks: &[ServerPubKeyPackage],
@@ -325,22 +346,8 @@ impl DcNetEnclave {
         EntityId,
         UserRegistrationBlob,
     )> {
-        // Previously this function took just server KEM pubkeys. Now it takes pubkey packages
-        // (which contain both KEM and signing pubkeys).
-        // This function should:
-        // 1. Verify the Enclave Attestation on the packages
-        // 2. Use the KEM pubkeys to derive the shared secrets. This is already implemented.
-        unimplemented!()
-        /*
-        let output = ecall_allowed::register_user(self.enclave.geteid(), server_kem_pks)?;
-
-        let secrets = output.get_sealed_shared_secrets().to_owned();
-        let privkey = output.get_sealed_usk().to_owned();
-        let uid = output.get_user_id();
-        let reg_blob = output.get_registration_blob();
-
-        Ok((secrets, privkey, uid, reg_blob))
-        */
+        let u = ecall_allowed::new_user(self.enclave.geteid(), server_pks)?;
+        Ok((u.0, u.1, EntityId::from(&u.2), u.2))
     }
 
     /// Create a new TEE protected secret key for an aggregator.
@@ -367,21 +374,9 @@ impl DcNetEnclave {
         EntityId,
         ServerRegistrationBlob,
     )> {
-        let sealed_sig_key = self.new_sgx_protected_key("server_sig".to_string())?;
-        let sealed_kem_key = self.new_sgx_protected_key("server_kem".to_string())?;
+        let s = ecall_allowed::new_server(self.enclave.geteid(), ())?;
 
-        // todo: double check that the entity id is derived from the signing key, not the KEM
-        let entity_id = EntityId::from(&sealed_kem_key.attested_pk.pk);
-
-        Ok((
-            SealedSigPrivKey(sealed_sig_key.clone()),
-            SealedKemPrivKey(sealed_kem_key.clone()),
-            entity_id,
-            ServerRegistrationBlob {
-                sig_key: sealed_sig_key.attested_pk,
-                kem_key: sealed_kem_key.attested_pk,
-            },
-        ))
+        Ok((s.0, s.1, EntityId::from(&s.2), s.2))
     }
 
     /// Verifies and adds the given user registration blob to the database of pubkeys and

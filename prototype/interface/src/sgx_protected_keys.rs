@@ -6,6 +6,8 @@ use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 #[allow(unused_imports)]
 use sgx_types::sgx_status_t;
+use std::format;
+use std::vec;
 #[allow(unused_imports)]
 use std::{convert::TryFrom, vec::Vec};
 
@@ -81,20 +83,76 @@ impl SgxProtectedKeyPub {
     }
 }
 
-// KemPubKey and SgxSigningPubKey are just aliases to SgxProtectedKeyPub
+/// KemPubKey and SgxSigningPubKey are just aliases to SgxProtectedKeyPub
 pub type KemPubKey = SgxProtectedKeyPub;
 pub type SgxSigningPubKey = SgxProtectedKeyPub;
 
-/// Contains a server's signing and KEM pubkeys
+/// AttestedPublicKey is pk + attestation
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Serialize, Deserialize, Default)]
+pub struct AttestedPublicKey {
+    pub pk: SgxProtectedKeyPub,
+    pub role: std::string::String,
+    /// role denotes the intended use of this key e.g., "aggregator" "client" "anytrust server"
+    pub tee_linkable_attestation: std::vec::Vec<u8>, // binds this key to an enclave
+}
+
+impl Debug for AttestedPublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SgxProtectedKeyPair")
+            .field("pk", &self.pk)
+            .field("role", &self.role)
+            .field(
+                "tee_linkable_attestation",
+                &hex::encode(&self.tee_linkable_attestation),
+            )
+            .finish()
+    }
+}
+
+/// An enclave-generated private signing key
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Deserialize)]
+pub struct SealedKey {
+    pub sealed_sk: Vec<u8>,
+    pub attested_pk: AttestedPublicKey,
+}
+
+/// We implement Default for all Sealed* types
+/// Invariant: default values are "ready to use" in ecall.
+/// That usually means we have allocated enough memory for the enclave to write to.
+impl Default for SealedKey {
+    fn default() -> Self {
+        SealedKey {
+            sealed_sk: vec![0u8; 1024], // 1024 seems enough
+            attested_pk: AttestedPublicKey::default(),
+        }
+    }
+}
+
+impl Debug for SealedKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SealedKey")
+            .field("sealed_sk", &format!("{} bytes", self.sealed_sk.len()))
+            .field("pk", &self.attested_pk)
+            .finish()
+    }
+}
+
+/// Contains a server's signing and KEM pubkeys
+/// Invariant: Sig public key represents identity. As a corollary, anytrust group id is computed from Sig pubkeys.
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ServerPubKeyPackage {
-    pub kem: KemPubKey,
     pub sig: SgxSigningPubKey,
+    pub kem: KemPubKey,
+    /// proving the association of the two keys
+    pub attestation: Vec<u8>,
 }
 
 // TODO: PubKeyPackage is what identifies servers to users. This should have some sort of
 // attestation signature or something, no? Currently it's an unauthenticated tuple.
+// Yes. Added. --- Fan.
 fn _note() {
     unimplemented!()
 }

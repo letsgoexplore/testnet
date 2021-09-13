@@ -29,3 +29,4 @@ serde_cbor = {git = "https://github.com/mesalock-linux/cbor-sgx"}
 interface = { path = "../interface", default-features = false, features = ["trusted"] }
 log = { git = "https://github.com/mesalock-linux/log-sgx" }
 env_logger = { git = "https://github.com/mesalock-linux/env_logger-sgx" }
+bitvec = { git = "https://github.com/mesalock-linux/bitvec-sgx", features = ["serde", "alloc"] }

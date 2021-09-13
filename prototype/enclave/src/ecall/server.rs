@@ -1,17 +1,40 @@
+use crate::attestation::Attested;
 use crate::crypto::{
     derive_round_secret, KemPrvKey, SgxPrivateKey, SharedSecretsDb, SignMutable, Signable,
 };
 use crate::types::{MarshallAs, Xor};
 use crate::{messages_types, utils};
+use ecall::keygen::new_sgx_keypair_ext_internal;
 use interface::*;
 use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 use sgx_types::SgxResult;
 use std::borrow::ToOwned;
 use std::collections::{BTreeMap, BTreeSet};
+use std::string::ToString;
 use std::{debug, vec};
 use types::{UnmarshallableAs, UnsealableAs};
 
 /// This file implements ecalls used by an anytrust server
+
+/// Create two keys for a new server
+pub fn new_server(
+    _: &(),
+) -> SgxResult<(SealedSigPrivKey, SealedKemPrivKey, ServerRegistrationBlob)> {
+    let sig_key = new_sgx_keypair_ext_internal(&"server_sig".to_string())?;
+    let kem_key = new_sgx_keypair_ext_internal(&"server_kem".to_string())?;
+
+    let reg = ServerRegistrationBlob {
+        sig: sig_key.1,
+        kem: kem_key.1,
+        attestation: vec![0],
+    };
+
+    Ok((
+        SealedSigPrivKey(sig_key.2),
+        SealedKemPrivKey(kem_key.2),
+        reg,
+    ))
+}
 
 /// Verifies and adds the given user registration blob to the database of pubkeys and
 /// shared secrets
@@ -28,13 +51,14 @@ pub fn recv_user_registration(
 
     // verify user key
     let user_pk = &input.3;
-    let attested_pk = &user_pk.0;
-    warn!("skipping verifying attested_pk for now");
+    if !user_pk.verify_attestation() {
+        return Err(SGX_ERROR_INVALID_PARAMETER);
+    }
 
     // add user key to pubkey db
     pk_db
         .users
-        .insert(EntityId::from(&attested_pk.pk), attested_pk.to_owned());
+        .insert(EntityId::from(&user_pk.pk), user_pk.clone());
 
     // Derive secrets
     let my_kem_sk: SgxPrivateKey = input.2.unseal()?;
@@ -74,14 +98,14 @@ pub fn recv_server_registration(
     let (pk_db, attested_pk) = input;
     let mut pk_db = pk_db.clone();
 
-    // verify user key
-    let attested_pk = &attested_pk.kem_key;
-    warn!("skipping verifying attestation for now");
+    if !attested_pk.verify_attestation() {
+        return Err(SGX_ERROR_INVALID_PARAMETER);
+    }
 
-    // add user key to pubkey db
+    // add server's key package to pubkey db
     pk_db
         .servers
-        .insert(EntityId::from(&attested_pk.pk), attested_pk.to_owned());
+        .insert(EntityId::from(&attested_pk.kem), attested_pk.clone());
 
     Ok(pk_db)
 }
@@ -159,5 +183,8 @@ pub fn derive_round_output(shares: &Vec<UnblindedAggregateShareBlob>) -> SgxResu
 
     info!("final msg {}", hex::encode(&final_msg));
 
-    Ok(RoundOutput(final_msg))
+    Ok(RoundOutput {
+        dc_msg: final_msg,
+        server_sigs: vec![], // TODO pass in secret key to get it signed
+    })
 }

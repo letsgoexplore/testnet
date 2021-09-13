@@ -105,6 +105,19 @@ impl From<&SgxProtectedKeyPub> for EntityId {
     }
 }
 
+impl From<&AttestedPublicKey> for EntityId {
+    fn from(pk: &AttestedPublicKey) -> Self {
+        EntityId::from(&pk.pk)
+    }
+}
+
+impl From<&ServerPubKeyPackage> for EntityId {
+    // server's entity id is computed from the signing key
+    fn from(spk: &ServerPubKeyPackage) -> Self {
+        EntityId::from(&spk.sig)
+    }
+}
+
 /// Computes a group ID given a list of entity IDs
 pub fn compute_group_id(ids: &BTreeSet<EntityId>) -> EntityId {
     // The group ID of a set of entities is the hash of their IDs, concatenated in ascending order.
@@ -121,8 +134,9 @@ pub fn compute_group_id(ids: &BTreeSet<EntityId>) -> EntityId {
     id
 }
 
-pub fn compute_anytrust_group_id(keys: &[KemPubKey]) -> EntityId {
-    compute_group_id(&keys.iter().map(|pk| EntityId::from(pk)).collect())
+/// An anytrust_group_id is computed from sig keys
+pub fn compute_anytrust_group_id(keys: &[SgxSigningPubKey]) -> EntityId {
+    compute_group_id(&keys.iter().map(|k| EntityId::from(k)).collect())
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -132,6 +146,7 @@ pub struct UserSubmissionReq {
     pub anytrust_group_id: EntityId,
     pub round: u32,
     pub msg: DcMessage,
+    /// output of previous round signed by one or more anytrust server
     pub prev_round_output: RoundOutput,
     /// A map from server public key to sealed shared secret
     pub shared_secrets: SealedSharedSecretDb,
@@ -148,27 +163,27 @@ pub struct UserReservationReq {
     pub shared_secrets: SealedSharedSecretDb,
 }
 
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct UserRegistration {
-    pub key: SealedSigPrivKey,
-    pub shared_secrets: SealedSharedSecretDb,
-}
-
-impl UserRegistration {
-    pub fn get_user_id(&self) -> EntityId {
-        EntityId::from(&self.key.0.attested_pk.pk)
-    }
-
-    pub fn get_sealed_shared_secrets(&self) -> &SealedSharedSecretDb {
-        &self.shared_secrets
-    }
-
-    pub fn get_sealed_usk(&self) -> &SealedSigPrivKey {
-        &self.key
-    }
-
-    pub fn get_registration_blob(&self) -> UserRegistrationBlob {
-        UserRegistrationBlob(self.key.0.attested_pk.clone())
-    }
-}
+// #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+// #[derive(Clone, Serialize, Debug, Deserialize)]
+// pub struct UserRegistration {
+//     pub key: SealedSigPrivKey,
+//     pub shared_secrets: SealedSharedSecretDb,
+// }
+//
+// impl UserRegistration {
+//     pub fn get_user_id(&self) -> EntityId {
+//         EntityId::from(&self.key.0.attested_pk.pk)
+//     }
+//
+//     pub fn get_sealed_shared_secrets(&self) -> &SealedSharedSecretDb {
+//         &self.shared_secrets
+//     }
+//
+//     pub fn get_sealed_usk(&self) -> &SealedSigPrivKey {
+//         &self.key
+//     }
+//
+//     pub fn get_registration_blob(&self) -> UserRegistrationBlob {
+//         UserRegistrationBlob(self.key.0.attested_pk.clone())
+//     }
+// }

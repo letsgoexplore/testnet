@@ -1,7 +1,7 @@
+use crypto::RoundSecret;
 use crypto::SgxSigningKey;
-use crypto::{RoundSecret, SgxSignature};
 use crypto::{SignMutable, Signable};
-use interface::{DcMessage, EntityId, SgxSigningPubKey};
+use interface::{DcMessage, EntityId, SgxSignature, SgxSigningPubKey};
 use sgx_tcrypto::SgxRsaPubKey;
 use sgx_types::SgxError;
 use sha2::Digest;

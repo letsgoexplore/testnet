@@ -1,4 +1,7 @@
-use crate::sgx_protected_keys::SgxProtectedKeyPub;
+use crate::sgx_protected_keys::{
+    AttestedPublicKey, SealedKey, ServerPubKeyPackage, SgxProtectedKeyPub,
+};
+use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
 use crate::DcMessage;
 use std::collections::BTreeMap;
@@ -36,8 +39,10 @@ impl_enum! {
     pub enum EcallId {
         EcallNewSgxKeypair = 1,
         EcallUnsealToPublicKey = 2,
-        EcallRegisterUser = 3,
+        EcallNewUser = 3,
+        EcallNewServer = 11,
         EcallUserSubmit = 4,
+        EcallUserReserveSlot = 12,
         EcallAddToAggregate = 5,
         EcallRecvUserRegistration = 6,
         EcallUnblindAggregate = 7,
@@ -52,8 +57,10 @@ impl EcallId {
         match *self {
             EcallId::EcallNewSgxKeypair => "EcallNewSgxKeypair",
             EcallId::EcallUnsealToPublicKey => "EcallUnsealToPublicKey",
-            EcallId::EcallRegisterUser => "EcallRegisterUser",
+            EcallId::EcallNewUser => "EcallNewUser",
+            EcallId::EcallNewServer => "EcallNewServer",
             EcallId::EcallUserSubmit => "EcallUserSubmit",
+            EcallId::EcallUserReserveSlot => "EcallUserReserveSlot",
             EcallId::EcallAddToAggregate => "EcallAddToAggregate",
             EcallId::EcallRecvUserRegistration => "EcallRecvUserRegistration",
             EcallId::EcallUnblindAggregate => "EcallUnblindAgg",
@@ -93,10 +100,7 @@ pub struct SignedPartialAggregate(pub Vec<u8>);
 
 /// Describes user registration information. This contains key encapsulations as well as a linkably
 /// attested signature pubkey.
-/// In enclave this is deserialized to an AttestedPublicKey (defined in enclave::crypto::keys).
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct UserRegistrationBlob(pub AttestedPublicKey);
+pub type UserRegistrationBlob = AttestedPublicKey;
 
 /// Describes aggregator registration information. This contains a linkably attested signature
 /// pubkey.
@@ -106,21 +110,18 @@ pub struct AggRegistrationBlob(pub AttestedPublicKey);
 
 /// Describes anytrust server registration information. This contains two linkable attestations
 /// for sig key and kem key.
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct ServerRegistrationBlob {
-    pub sig_key: AttestedPublicKey,
-    pub kem_key: AttestedPublicKey,
-}
+pub type ServerRegistrationBlob = ServerPubKeyPackage;
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SealedFootprintTicket(pub Vec<u8>);
 
-/// Enclave-protected secrets shared with a set of anytrust servers
+/// Enclave-protected secrets shared between anytrust servers and users.
+/// This data structure is used by both users and servers.
+/// On the user side, the key is server's signing key
+/// On the client side, the key is user's signing key
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Default, Clone, Serialize, Deserialize)]
-// TODO: Make this a map from entity ID to shared secret
 pub struct SealedSharedSecretDb {
     pub db: BTreeMap<SgxProtectedKeyPub, Vec<u8>>,
 }
@@ -137,58 +138,6 @@ impl Debug for SealedSharedSecretDb {
         let pks: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
         f.debug_struct("SealedSharedSecretDb")
             .field("pks", &pks)
-            .finish()
-    }
-}
-
-/// SgxProtectedKeyPair is pk + attestation
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Deserialize, Default)]
-pub struct AttestedPublicKey {
-    pub pk: SgxProtectedKeyPub,
-    pub role: std::string::String,
-    /// role denotes the intended use of this key e.g., "aggregator" "client" "anytrust server"
-    pub tee_linkable_attestation: std::vec::Vec<u8>, // binds this key to an enclave
-}
-
-impl Debug for AttestedPublicKey {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SgxProtectedKeyPair")
-            .field("pk", &self.pk)
-            .field("role", &self.role)
-            .field(
-                "tee_linkable_attestation",
-                &hex::encode(&self.tee_linkable_attestation),
-            )
-            .finish()
-    }
-}
-
-/// An enclave-generated private signing key
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Deserialize)]
-pub struct SealedKey {
-    pub sealed_sk: Vec<u8>,
-    pub attested_pk: AttestedPublicKey,
-}
-
-/// We implement Default for all Sealed* types
-/// Invariant: default values are "ready to use" in ecall.
-/// That usually means we have allocated enough memory for the enclave to write to.
-impl Default for SealedKey {
-    fn default() -> Self {
-        SealedKey {
-            sealed_sk: vec![0u8; 1024], // 1024 seems enough
-            attested_pk: AttestedPublicKey::default(),
-        }
-    }
-}
-
-impl Debug for SealedKey {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SealedKey")
-            .field("sealed_sk", &format!("{} bytes", self.sealed_sk.len()))
-            .field("pk", &self.attested_pk)
             .finish()
     }
 }
@@ -214,11 +163,14 @@ impl AsRef<SealedKey> for SealedKemPrivKey {
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct SignedPubKeyDb {
     pub users: BTreeMap<EntityId, AttestedPublicKey>,
-    pub servers: BTreeMap<EntityId, AttestedPublicKey>,
+    pub servers: BTreeMap<EntityId, ServerPubKeyPackage>,
     pub aggregators: BTreeMap<EntityId, AttestedPublicKey>,
 }
 
 // TODO: Figure out what this should contain. Probably just a long bitstring.
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
-pub struct RoundOutput(pub DcMessage);
+pub struct RoundOutput {
+    pub dc_msg: DcMessage,
+    pub server_sigs: Vec<Signature>,
+}

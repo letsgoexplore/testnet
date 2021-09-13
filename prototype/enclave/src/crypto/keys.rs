@@ -51,6 +51,12 @@ impl Into<sgx_ec256_private_t> for &SgxPrivateKey {
     }
 }
 
+impl AsRef<[u8]> for &SgxPrivateKey {
+    fn as_ref(&self) -> &[u8] {
+        return &self.r;
+    }
+}
+
 impl TryFrom<&SgxPrivateKey> for SgxProtectedKeyPub {
     type Error = sgx_status_t;
 

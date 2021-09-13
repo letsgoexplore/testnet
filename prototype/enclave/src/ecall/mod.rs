@@ -1,7 +1,8 @@
 mod aggregation;
-mod register;
+mod keygen;
 mod server;
 mod submit;
+mod user;
 
 use interface::*;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_SUCCESS};
@@ -52,25 +53,47 @@ pub extern "C" fn ecall_entrypoint(
             EcallNewSgxKeypair,
             String,
             SealedKey,
-            register::new_sgx_keypair_internal
+            |role: &String| {Ok(keygen::new_sgx_keypair_ext_internal(role)?.2)}
         ),
         (
             EcallUnsealToPublicKey,
             SealedKey,
             SgxProtectedKeyPub,
-            register::unseal_to_pubkey_internal
+            keygen::unseal_to_pubkey_internal
+        ),
+        // (
+        //     EcallRegisterUser,
+        //     Vec<ServerPubKeyPackage>,
+        //     UserRegistration,
+        //     user::new_user
+        // ),
+        (
+            EcallNewUser,
+            // input
+            Vec<ServerPubKeyPackage>,
+            // output
+            (SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob),
+            user::new_user
         ),
         (
-            EcallRegisterUser,
-            Vec<SgxProtectedKeyPub>,
-            UserRegistration,
-            register::register_user
+            EcallNewServer,
+            // input
+            (),
+            // output
+            (SealedSigPrivKey, SealedKemPrivKey, ServerRegistrationBlob),
+            server::new_server
         ),
         (
             EcallUserSubmit,
             (UserSubmissionReq, SealedSigPrivKey),
             RoundSubmissionBlob,
             submit::user_submit_internal
+        ),
+        (
+            EcallUserReserveSlot,
+            (UserReservationReq, SealedSigPrivKey),
+            RoundSubmissionBlob,
+            submit::user_reserve_slot
         ),
         (
             EcallAddToAggregate,

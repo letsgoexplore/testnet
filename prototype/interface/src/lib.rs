@@ -35,10 +35,12 @@ big_array! { BigArray; }
 mod ecall_interface_types;
 mod params;
 mod sgx_protected_keys;
+mod sgx_signature;
 mod user_request;
 
 pub use ecall_interface_types::*;
 pub use params::*;
 #[allow(dead_code)]
 pub use sgx_protected_keys::*;
+pub use sgx_signature::*;
 pub use user_request::*;

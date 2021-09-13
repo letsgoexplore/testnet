@@ -23,13 +23,13 @@ impl From<sgx_ec256_signature_t> for SgxSignature {
     }
 }
 
+use crate::SgxSigningPubKey;
 use std::fmt::{Debug, Formatter, Result as FmtResult};
-use std::prelude::v1::*;
 
 impl Debug for SgxSignature {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let hex_u32_vec = |array: &[u32]| {
-            let x = Vec::<u8>::with_capacity(4 * self.x.len());
+            let x = std::vec::Vec::<u8>::with_capacity(4 * self.x.len());
             let x = array.iter().fold(x, |mut acc, elem| {
                 acc.extend(&elem.to_be_bytes());
                 acc
@@ -42,4 +42,12 @@ impl Debug for SgxSignature {
             .field("y", &hex_u32_vec(&self.y))
             .finish()
     }
+}
+
+/// Used by users (in request) and servers (in round outputs)
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
+pub struct Signature {
+    pub pk: SgxSigningPubKey,
+    pub sig: SgxSignature,
 }
