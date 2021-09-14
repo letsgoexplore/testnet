@@ -3,10 +3,10 @@ use sgx_types::sgx_status_t;
 
 use std::prelude::v1::*;
 
+use crate::unseal::Sealable;
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
 use sha2::Sha256;
-use types::Sealable;
 use utils;
 
 use super::*;
@@ -80,8 +80,6 @@ impl SharedSecretsDb {
                 DiffieHellmanSharedSecret(shared_secret.s),
             );
         }
-
-        let my_pk = SgxProtectedKeyPub::try_from(my_sk)?;
 
         Ok(SharedSecretsDb { db: server_secrets })
     }

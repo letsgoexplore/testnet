@@ -3,7 +3,7 @@ use crate::crypto::Xor;
 use crate::crypto::{
     derive_round_secret, KemPrvKey, SgxPrivateKey, SharedSecretsDb, SignMutable, Signable,
 };
-use crate::types::MarshallAs;
+use crate::unseal::{MarshallAs, UnmarshalledAs, UnsealableAs};
 use crate::{messages_types, utils};
 use ecall::keygen::new_sgx_keypair_ext_internal;
 use interface::*;
@@ -13,7 +13,6 @@ use std::borrow::ToOwned;
 use std::collections::{BTreeMap, BTreeSet};
 use std::string::ToString;
 use std::{debug, vec};
-use types::{UnmarshallableAs, UnsealableAs};
 
 /// This file implements ecalls used by an anytrust server
 

@@ -238,18 +238,16 @@ impl DcNetEnclave {
     }
 
     /// Given a message, constructs a round message for sending to an aggregator
+    /// SGX will
+    ///     1. Check the signature on the preivous round output against a signing key (might have to change API a bit for that)
+    ///     2. Check that the current round is prev_round+1
+    ///     3. Use the derived slot for the given message
+    ///     4. Make a new footprint reservation for this round
     pub fn user_submit_round_msg(
         &self,
         submission_req: &UserSubmissionReq,
         sealed_usk: &SealedSigPrivKey,
     ) -> EnclaveResult<RoundSubmissionBlob> {
-        // TODO: UserSubmissionReq now contains prev_round instead of ticket. SGX should
-        // 1. Check the signature on the preivous round output against a signing key (might have to
-        //    change API a bit for that)
-        // 2. Check that the current round is prev_round+1
-        // 3. Use the derived slot for the given message
-        // 4. Make a new footprint reservation for this round
-        return unimplemented!();
         Ok(ecall_allowed::user_submit(
             self.enclave.geteid(),
             (submission_req, sealed_usk),
@@ -257,16 +255,16 @@ impl DcNetEnclave {
     }
 
     /// Constructs a round message for sending to an aggregator
+    /// SGX will
+    ///     1. Check the signature on the preivous round output against a signing key (might have to change API a bit for that)
+    ///     2. Check that the current round is prev_round+1
+    ///     3. Make a new footprint reservation for this round
     pub fn user_reserve_slot(
         &self,
         submission_req: &UserReservationReq,
         sealed_usk: &SealedSigPrivKey,
     ) -> EnclaveResult<RoundSubmissionBlob> {
-        // TODO: SGX should
-        // 1. Check the signature on the preivous round output against a signing key (might have to
-        //    change API a bit for that)
-        // 2. Check that the current round is prev_round+1
-        // 3. Make a new footprint reservation for this round
+        // TODO: user_reserve_slot is essentially the same as user_submit_round_msg. Consider merging the two.
         ecall_allowed::user_reserve_slot(self.enclave.geteid(), (submission_req, sealed_usk))
     }
 
@@ -451,8 +449,6 @@ impl DcNetEnclave {
 mod enclave_tests {
     const TEST_ENCLAVE_PATH: &'static str = "/sgxdcnet/lib/enclave.signed.so";
 
-    use std::vec;
-
     use super::DcNetEnclave;
 
     extern crate base64;
@@ -467,7 +463,9 @@ mod enclave_tests {
         DcMessage, EntityId, SealedFootprintTicket, SealedKey, SgxProtectedKeyPub,
         UserSubmissionReq, DC_NET_MESSAGE_LENGTH, SEALED_SGX_SIGNING_KEY_LENGTH, USER_ID_LENGTH,
     };
+    use log::*;
     use sgx_types::SGX_ECP256_KEY_SIZE;
+    use std::vec;
 
     fn init_logger() {
         let env = Env::default()
@@ -475,7 +473,6 @@ mod enclave_tests {
             .write_style_or("RUST_LOG_STYLE", "always");
 
         let _ = Builder::from_env(env).try_init();
-
         let _ = env_logger::builder().is_test(true).try_init();
     }
 

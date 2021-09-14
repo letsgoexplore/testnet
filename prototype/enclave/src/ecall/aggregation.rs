@@ -6,10 +6,11 @@ use sgx_types::SgxResult;
 use std::prelude::v1::*;
 use types::*;
 
+use crate::unseal::{UnmarshalledAs, UnsealableAs};
 use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 use sgx_types::sgx_status_t::SGX_SUCCESS;
 use std::collections::BTreeSet;
-use types::UnmarshallableAs;
+use unseal::MarshallAs;
 use utils;
 
 pub fn add_to_aggregate_internal(
@@ -27,9 +28,7 @@ pub fn add_to_aggregate_internal(
     // if incoming_msg is empty just return the current aggregation. No op.
     if incoming_msg.0.is_empty() {
         warn!("empty incoming_msg");
-        return Ok(SignedPartialAggregate(utils::serialize_to_vec(
-            &current_aggregation,
-        )?));
+        return current_aggregation.marshal();
     }
 
     // unmarshal and unseal
@@ -79,7 +78,5 @@ pub fn add_to_aggregate_internal(
 
     debug!("new agg with users {:?}", current_aggregation.user_ids);
 
-    Ok(SignedPartialAggregate(utils::serialize_to_vec(
-        &current_aggregation,
-    )?))
+    current_aggregation.marshal()
 }

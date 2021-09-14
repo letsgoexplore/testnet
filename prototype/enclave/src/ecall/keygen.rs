@@ -1,3 +1,4 @@
+use crate::unseal::{Sealable, UnsealableAs};
 use core::convert::TryFrom;
 use crypto::{SgxPrivateKey, SharedSecretsDb};
 use interface::*;
@@ -9,7 +10,6 @@ use std::string::ToString;
 use std::vec;
 use std::vec::Vec;
 use utils;
-use utils::ser_and_seal_to_vec;
 
 pub fn new_sgx_keypair_ext_internal(
     role: &str,
@@ -33,13 +33,13 @@ pub fn new_sgx_keypair_ext_internal(
         sk,
         pk,
         SealedKey {
-            sealed_sk: ser_and_seal_to_vec(&sk, "key".as_bytes())?,
+            sealed_sk: sk.seal()?,
+            // todo: remove this and all other unauthenticated data next to sealed data (which can be misused)
             attested_pk: attested_key,
         },
     ))
 }
 
 pub fn unseal_to_pubkey_internal(sealed_sk: &SealedKey) -> SgxResult<SgxProtectedKeyPub> {
-    let sk: SgxPrivateKey = utils::unseal_vec_and_deser(&sealed_sk.sealed_sk)?;
-    SgxProtectedKeyPub::try_from(&sk)
+    SgxProtectedKeyPub::try_from(&sealed_sk.unseal()?)
 }

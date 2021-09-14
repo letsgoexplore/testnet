@@ -19,9 +19,9 @@ impl Default for DcMessage {
     }
 }
 
+use core::cmp::Ordering;
 #[cfg(feature = "trusted")]
 use sgx_rand::{Rand, Rng};
-use core::cmp::Ordering;
 
 #[cfg(feature = "trusted")]
 impl Rand for DcMessage {
@@ -63,7 +63,6 @@ impl AsRef<[u8; DC_NET_MESSAGE_LENGTH]> for DcMessage {
     }
 }
 
-
 /// What's broadcast through the channel
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize)]
@@ -80,7 +79,7 @@ impl Default for DcRoundMessage {
     fn default() -> Self {
         DcRoundMessage {
             scheduling_msg: [0; DC_NET_N_SLOTS],
-            aggregated_msg: [DcMessage::default(); DC_NET_N_SLOTS]
+            aggregated_msg: [DcMessage::default(); DC_NET_N_SLOTS],
         }
     }
 }

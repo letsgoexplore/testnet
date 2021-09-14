@@ -9,7 +9,6 @@ use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_SUCCESS};
 use sgx_types::{sgx_status_t, SgxResult};
 
 use std::slice;
-use utils::serialize_to_ptr;
 
 macro_rules! match_ecall_ids {
     (
@@ -148,6 +147,38 @@ macro_rules! unmarshal_or_abort {
 }
 
 use env_logger::{Builder, Env};
+use serde::Serialize;
+use sgx_types::SgxError;
+
+/// serialize v to outbuf. Return error if outbuf_cap is too small.
+fn serialize_to_ptr<T: Serialize>(
+    v: &T,
+    outbuf: *mut u8,
+    outbuf_cap: usize,
+    outbuf_used: *mut usize,
+) -> SgxError {
+    let serialized = serde_cbor::to_vec(v).map_err(|e| {
+        println!("[IN] error serializing: {}", e);
+        SGX_ERROR_INVALID_PARAMETER
+    })?;
+
+    if serialized.len() > outbuf_cap {
+        println!(
+            "[IN] not enough output to write serialized message. need {} got {}",
+            serialized.len(),
+            outbuf_cap,
+        );
+        return Err(SGX_ERROR_INVALID_PARAMETER);
+    }
+
+    unsafe {
+        // write serialized output to outbuf
+        outbuf.copy_from(serialized.as_ptr(), serialized.len());
+        *outbuf_used = serialized.len();
+    }
+
+    Ok(())
+}
 
 fn generic_ecall<I, O>(
     ecall_id: EcallId,

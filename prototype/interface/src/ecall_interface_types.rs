@@ -3,7 +3,7 @@ use crate::sgx_protected_keys::{
 };
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
-use crate::{DcMessage, DC_NET_N_SLOTS, DcRoundMessage};
+use crate::{DcMessage, DcRoundMessage, DC_NET_N_SLOTS};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::format;
