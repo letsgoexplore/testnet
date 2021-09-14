@@ -1,6 +1,11 @@
+use crate::types::MarshallAs;
 use crypto::SgxPrivateKey;
+use crypto::SharedSecretsDb;
 use interface::*;
+use messages_types;
 use messages_types::AggregatedMessage;
+use sgx_types::SgxResult;
+use std::borrow::ToOwned;
 use std::collections::BTreeSet;
 use types::UnmarshallableAs;
 use types::UnsealableAs;
@@ -9,6 +14,12 @@ use utils;
 impl UnmarshallableAs<AggregatedMessage> for RoundSubmissionBlob {
     fn unmarshal(&self) -> sgx_types::SgxResult<AggregatedMessage> {
         utils::deserialize_from_vec(&self.0)
+    }
+}
+
+impl MarshallAs<RoundSubmissionBlob> for messages_types::AggregatedMessage {
+    fn marshal(&self) -> SgxResult<RoundSubmissionBlob> {
+        Ok(RoundSubmissionBlob(utils::serialize_to_vec(&self)?))
     }
 }
 
@@ -21,7 +32,7 @@ impl UnmarshallableAs<AggregatedMessage> for SignedPartialAggregate {
                 round: u32::max_value(),
                 anytrust_group_id: Default::default(),
                 user_ids: BTreeSet::new(),
-                aggregated_msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
+                aggregated_msg: DcRoundMessage::default(),
                 tee_sig: Default::default(),
                 tee_pk: Default::default(),
             })
@@ -41,9 +52,6 @@ impl UnsealableAs<SgxPrivateKey> for SealedKemPrivKey {
     }
 }
 
-use crypto::SharedSecretsDb;
-use std::borrow::ToOwned;
-
 impl UnsealableAs<SharedSecretsDb> for SealedSharedSecretDb {
     fn unseal(&self) -> sgx_types::SgxResult<SharedSecretsDb> {
         let mut db = SharedSecretsDb::default();
@@ -54,10 +62,6 @@ impl UnsealableAs<SharedSecretsDb> for SealedSharedSecretDb {
         Ok(db)
     }
 }
-
-use messages_types;
-
-use crate::types::MarshallAs;
 
 impl UnmarshallableAs<messages_types::UnblindedAggregateShare> for UnblindedAggregateShareBlob {
     fn unmarshal(&self) -> sgx_types::SgxResult<messages_types::UnblindedAggregateShare> {

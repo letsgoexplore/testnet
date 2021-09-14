@@ -10,7 +10,7 @@ big_array! { BigArray; }
 
 // a wrapper around RawMessage so that we can impl traits
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct DcMessage(#[serde(with = "BigArray")] pub [u8; DC_NET_MESSAGE_LENGTH]);
 
 impl Default for DcMessage {
@@ -21,6 +21,7 @@ impl Default for DcMessage {
 
 #[cfg(feature = "trusted")]
 use sgx_rand::{Rand, Rng};
+use core::cmp::Ordering;
 
 #[cfg(feature = "trusted")]
 impl Rand for DcMessage {
@@ -59,6 +60,59 @@ impl AsRef<[u8]> for DcMessage {
 impl AsRef<[u8; DC_NET_MESSAGE_LENGTH]> for DcMessage {
     fn as_ref(&self) -> &[u8; DC_NET_MESSAGE_LENGTH] {
         &self.0
+    }
+}
+
+
+/// What's broadcast through the channel
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Deserialize)]
+pub struct DcRoundMessage {
+    /// we store footprints in u32s (enclave/ecall/submit.rs)
+    #[serde(with = "BigArray")]
+    //TODO: change this to u8
+    pub scheduling_msg: [u32; DC_NET_N_SLOTS],
+    #[serde(with = "BigArray")]
+    pub aggregated_msg: [DcMessage; DC_NET_N_SLOTS],
+}
+
+impl Default for DcRoundMessage {
+    fn default() -> Self {
+        DcRoundMessage {
+            scheduling_msg: [0; DC_NET_N_SLOTS],
+            aggregated_msg: [DcMessage::default(); DC_NET_N_SLOTS]
+        }
+    }
+}
+
+impl PartialEq for DcRoundMessage {
+    fn eq(&self, other: &Self) -> bool {
+        self.aggregated_msg == other.aggregated_msg && self.scheduling_msg == other.scheduling_msg
+    }
+}
+
+impl DcRoundMessage {
+    /// used by signature
+    pub fn digest(&self) -> Vec<u8> {
+        let mut b: Vec<u8> = Vec::new();
+        for i in self.scheduling_msg.iter() {
+            b.extend(&i.to_le_bytes())
+        }
+
+        for i in self.aggregated_msg.iter() {
+            b.extend(&i.0)
+        }
+
+        b
+    }
+}
+
+impl Debug for DcRoundMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("DcRoundMessage")
+            .field("scheduling_msg", &self.scheduling_msg)
+            .field("aggregated_msg", &self.aggregated_msg)
+            .finish()
     }
 }
 

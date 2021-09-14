@@ -1,8 +1,9 @@
 use crate::attestation::Attested;
+use crate::crypto::Xor;
 use crate::crypto::{
     derive_round_secret, KemPrvKey, SgxPrivateKey, SharedSecretsDb, SignMutable, Signable,
 };
-use crate::types::{MarshallAs, Xor};
+use crate::types::MarshallAs;
 use crate::{messages_types, utils};
 use ecall::keygen::new_sgx_keypair_ext_internal;
 use interface::*;
@@ -164,10 +165,12 @@ pub fn derive_round_output(shares: &Vec<UnblindedAggregateShareBlob>) -> SgxResu
     // TODO: check all shares are for the same around & same message
 
     // Xor of all server secrets
-    let mut final_msg = DcMessage::default();
+    let mut final_msg = DcRoundMessage::default();
 
     // We require all s in shares should have the same aggregated_msg
-    let final_aggregation = shares[0].unmarshal()?.encrypted_msg.aggregated_msg;
+    let first_msg = shares[0].unmarshal()?;
+    let final_aggregation = first_msg.encrypted_msg.aggregated_msg;
+    let round = first_msg.encrypted_msg.round;
 
     for s in shares.iter() {
         let share = s.unmarshal()?;
@@ -181,9 +184,10 @@ pub fn derive_round_output(shares: &Vec<UnblindedAggregateShareBlob>) -> SgxResu
     // Finally xor secrets with the message
     final_msg.xor_mut(&final_aggregation);
 
-    info!("final msg {}", hex::encode(&final_msg));
+    info!("final msg {:?}", final_msg);
 
     Ok(RoundOutput {
+        round,
         dc_msg: final_msg,
         server_sigs: vec![], // TODO pass in secret key to get it signed
     })

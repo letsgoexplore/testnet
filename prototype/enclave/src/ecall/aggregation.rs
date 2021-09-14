@@ -72,7 +72,7 @@ pub fn add_to_aggregate_internal(
     current_aggregation.user_ids.extend(&incoming_msg.user_ids);
     current_aggregation
         .aggregated_msg
-        .xor_mut(&DcMessage(incoming_msg.aggregated_msg.0));
+        .xor_mut(&incoming_msg.aggregated_msg);
 
     // sign
     current_aggregation.sign_mut(&tee_signing_key)?;

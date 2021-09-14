@@ -55,17 +55,17 @@ pub trait MultiSignable {
     }
     /// verify against a list of public keys
     /// return indices of keys that verify
-    fn verify(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>>;
+    fn verify_multisig(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>>;
 }
 
 use interface::{RoundOutput, SgxProtectedKeyPub};
 
 impl MultiSignable for RoundOutput {
     fn digest(&self) -> Vec<u8> {
-        Vec::from(self.dc_msg.0)
+        unimplemented!()
     }
 
-    fn verify(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>> {
+    fn verify_multisig(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>> {
         let msg_hash = self.digest();
 
         let ecdsa_handler = sgx_tcrypto::SgxEccHandle::new();

@@ -3,7 +3,7 @@ use crate::sgx_protected_keys::{
 };
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
-use crate::DcMessage;
+use crate::{DcMessage, DC_NET_N_SLOTS, DcRoundMessage};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::format;
@@ -120,6 +120,7 @@ pub struct SealedFootprintTicket(pub Vec<u8>);
 /// This data structure is used by both users and servers.
 /// On the user side, the key is server's signing key
 /// On the client side, the key is user's signing key
+/// TODO: protect the integrity of pks
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct SealedSharedSecretDb {
@@ -171,6 +172,7 @@ pub struct SignedPubKeyDb {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct RoundOutput {
-    pub dc_msg: DcMessage,
+    pub round: u32,
+    pub dc_msg: DcRoundMessage,
     pub server_sigs: Vec<Signature>,
 }
