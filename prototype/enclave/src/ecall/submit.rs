@@ -27,6 +27,7 @@ pub type SlotValue = u32;
 pub fn user_submit_internal(
     input: &(UserSubmissionReq, SealedSigPrivKey),
 ) -> SgxResult<RoundSubmissionBlob> {
+    info!("in");
     let send_request = &input.0;
     // unseal user's sk
     let signing_sk = (&input.1).unseal()?;

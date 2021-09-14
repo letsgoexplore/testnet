@@ -12,18 +12,11 @@ use std::slice;
 
 macro_rules! match_ecall_ids {
     (
-        $ecall_id_raw:ident,$inp:ident,$inp_len:ident,$out:ident,$out_cap:ident,$out_used:ident,
+        $ecall_id:ident,$inp:ident,$inp_len:ident,$out:ident,$out_cap:ident,$out_used:ident,
         $(($name:ident, $type_i:ty, $type_o: ty, $impl:expr), )+
     ) => {
-        let ecall_id = match EcallId::from_repr($ecall_id_raw) {
-            Some(i) => i,
-            None => {
-                error!("wrong ecall id {}", $ecall_id_raw);
-                return SGX_ERROR_INVALID_PARAMETER
-            },
-        };
-        match ecall_id {
-            $(EcallId::$name => generic_ecall::<$type_i,$type_o>(ecall_id,$inp,$inp_len,$out,$out_cap,$out_used,$impl),)+
+        match $ecall_id {
+            $(EcallId::$name => generic_ecall::<$type_i,$type_o>($ecall_id,$inp,$inp_len,$out,$out_cap,$out_used,$impl),)+
         }
     }
 }
@@ -41,13 +34,23 @@ pub extern "C" fn ecall_entrypoint(
     output_used: *mut usize,
 ) -> sgx_status_t {
     let env = Env::default()
-        .filter_or("ENCLAVE_LOG_LEVEL", "info")
+        .filter_or("ENCLAVE_LOG_LEVEL", "debug") // "info" or "debug"
         .write_style_or("ENCLAVE_LOG_STYLE", "always");
     let _ = Builder::from_env(env).try_init();
 
+    let ecall_id = match EcallId::from_repr(ecall_id_raw) {
+        Some(i) => i,
+        None => {
+            error!("wrong ecall id {}", ecall_id_raw);
+            return SGX_ERROR_INVALID_PARAMETER
+        },
+    };
+
+    debug!("in ecall {}", ecall_id.as_str());
+
     // make sure this matches exact with that in enclave_wrapper.rs
     match_ecall_ids! {
-        ecall_id_raw, inp, inp_len, output, output_cap, output_used,
+        ecall_id, inp, inp_len, output, output_cap, output_used,
         (
             EcallNewSgxKeypair,
             String,
@@ -60,12 +63,6 @@ pub extern "C" fn ecall_entrypoint(
             SgxProtectedKeyPub,
             keygen::unseal_to_pubkey_internal
         ),
-        // (
-        //     EcallRegisterUser,
-        //     Vec<ServerPubKeyPackage>,
-        //     UserRegistration,
-        //     user::new_user
-        // ),
         (
             EcallNewUser,
             // input

@@ -38,7 +38,6 @@ mod messages_types;
 mod tests;
 mod types;
 mod unseal;
-mod utils;
 
 #[no_mangle]
 pub extern "C" fn test_main_entrance() -> sgx_status_t {

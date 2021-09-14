@@ -7,7 +7,6 @@ use crate::unseal::Sealable;
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
 use sha2::Sha256;
-use utils;
 
 use super::*;
 use std::collections::BTreeMap;

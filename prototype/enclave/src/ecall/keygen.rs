@@ -9,7 +9,6 @@ use std::string::String;
 use std::string::ToString;
 use std::vec;
 use std::vec::Vec;
-use utils;
 
 pub fn new_sgx_keypair_ext_internal(
     role: &str,

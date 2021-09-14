@@ -4,7 +4,7 @@ use crate::crypto::{
     derive_round_secret, KemPrvKey, SgxPrivateKey, SharedSecretsDb, SignMutable, Signable,
 };
 use crate::unseal::{MarshallAs, UnmarshalledAs, UnsealableAs};
-use crate::{messages_types, utils};
+use crate::{messages_types};
 use ecall::keygen::new_sgx_keypair_ext_internal;
 use interface::*;
 use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;

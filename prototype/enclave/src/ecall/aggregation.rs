@@ -11,7 +11,6 @@ use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 use sgx_types::sgx_status_t::SGX_SUCCESS;
 use std::collections::BTreeSet;
 use unseal::MarshallAs;
-use utils;
 
 pub fn add_to_aggregate_internal(
     input: &(

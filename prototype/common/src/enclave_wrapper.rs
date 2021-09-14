@@ -484,12 +484,28 @@ mod enclave_tests {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
     }
 
+    /// create n server public keys
+    fn create_server_pubkeys(
+        enc: &DcNetEnclave,
+        n: i32,
+    ) -> Vec<ServerPubKeyPackage> {
+        let mut pks = Vec::new();
+
+        for i in 0..n {
+            let s = enc.new_server().unwrap();
+            pks.push(s.3);
+        }
+
+        pks
+    }
+
     #[test]
     fn user_submit_round_msg() {
-        let mut enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+        init_logger();
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
         // create server public keys
-        let spks = create_server_pubkeys(&mut enc, 10);
+        let spks = create_server_pubkeys(&enc, 10);
         let (user_reg_shared_secrets, user_reg_sealed_key, user_reg_uid, user_reg_proof) =
             enc.new_user(&spks).unwrap();
 
@@ -497,29 +513,16 @@ mod enclave_tests {
             user_id: user_reg_uid,
             anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
             round: 0u32,
-            msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
-            ticket: SealedFootprintTicket(vec![0; 1]),
+            msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
             shared_secrets: user_reg_shared_secrets,
+            prev_round_output: Default::default()
         };
+        info!("here");
         let resp_1 = enc
             .user_submit_round_msg(&req_1, &user_reg_sealed_key)
             .unwrap();
 
         enc.destroy();
-    }
-
-    fn create_server_pubkeys(
-        enc: &mut DcNetEnclave,
-        num_of_servers: i32,
-    ) -> Vec<SgxProtectedKeyPub> {
-        let mut pks = Vec::new();
-
-        for i in 0..num_of_servers {
-            let sk = enc.new_sgx_protected_key("test".to_string()).expect("key");
-            pks.push(sk.attested_pk.pk);
-        }
-
-        pks
     }
 
     #[test]
@@ -529,16 +532,12 @@ mod enclave_tests {
 
         // create server public keys
         let num_of_servers = 10;
-        let mut spks = vec![];
-        for _ in 0..num_of_servers {
-            let (sealed_sigkey, sealed_kemkey, sever_id, _) = enc.new_server().unwrap();
-            spks.push(sealed_kemkey.0.attested_pk.pk)
-        }
+        let server_pks = create_server_pubkeys(&enc, num_of_servers);
         log::info!("created {} server keys", num_of_servers);
 
         // create a fake user
         let (user_reg_shared_secrets, user_reg_sealed_key, user_reg_uid, user_reg_proof) =
-            enc.new_user(&spks).unwrap();
+            enc.new_user(&server_pks).unwrap();
 
         log::info!("user {:?} created", user_reg_uid);
 
@@ -546,8 +545,8 @@ mod enclave_tests {
             user_id: user_reg_uid,
             anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
             round: 0u32,
-            msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
-            ticket: SealedFootprintTicket(vec![0; 1]),
+            msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
+            prev_round_output: Default::default(),
             shared_secrets: user_reg_shared_secrets,
         };
 
@@ -573,14 +572,14 @@ mod enclave_tests {
 
         log::info!("error expected");
 
-        let user_2 = enc.new_user(&spks).unwrap();
+        let user_2 = enc.new_user(&server_pks).unwrap();
 
         let req_2 = UserSubmissionReq {
             user_id: user_2.2,
             anytrust_group_id: user_2.0.anytrust_group_id(),
             round: 0u32,
-            msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
-            ticket: SealedFootprintTicket(vec![0; 1]),
+            msg: DcMessage([2u8; DC_NET_MESSAGE_LENGTH]),
+            prev_round_output: Default::default(),
             shared_secrets: user_2.0,
         };
         let resp_2 = enc.user_submit_round_msg(&req_2, &user_2.1).unwrap();
@@ -596,13 +595,7 @@ mod enclave_tests {
         init_logger();
 
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
-
-        let mut pks = Vec::new();
-        for i in 0..10 {
-            let sk = enc.new_sgx_protected_key("user".to_string()).expect("key");
-            pks.push(sk.attested_pk.pk);
-        }
-
+        let pks = create_server_pubkeys(&enc, 2);
         let (user_reg_shared_secrets, user_reg_sealed_key, user_reg_uid, user_reg_proof) =
             enc.new_user(&pks).unwrap();
 
@@ -652,12 +645,12 @@ mod enclave_tests {
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
         let servers = create_n_servers(2, &enc);
 
-        let mut server_kem_pks = Vec::new();
-        for (_, kem_key, _, _) in servers.iter() {
-            server_kem_pks.push(kem_key.0.attested_pk.pk)
+        let mut server_pks = Vec::new();
+        for (_, _, _, k) in servers.iter().cloned() {
+            server_pks.push(k)
         }
 
-        let user = enc.new_user(&server_kem_pks).expect("user");
+        let user = enc.new_user(&server_pks).expect("user");
 
         info!("user created {:?}", user.2);
 
@@ -681,28 +674,28 @@ mod enclave_tests {
         let num_of_servers = 10;
         let servers = create_n_servers(num_of_servers, &enc);
 
-        let mut server_kem_pks = Vec::new();
-        for (_, kem_key, _, _) in servers.iter() {
-            server_kem_pks.push(kem_key.0.attested_pk.pk)
+        let mut server_pks = Vec::new();
+        for (_, _, _, k) in servers.iter().cloned() {
+            server_pks.push(k)
         }
 
         info!("created {} server keys", num_of_servers);
-        for k in server_kem_pks.iter() {
+        for k in server_pks.iter() {
             info!("- {:?}", k);
         }
 
         // create a fake user
-        let user = enc.new_user(&server_kem_pks).unwrap();
-        let user_pk = user.3;
+        let user = enc.new_user(&server_pks).unwrap();
+        let user_pk = &user.3;
 
-        log::info!("user {:?} created. pk={:?}", user.2, user_pk.0.pk);
+        log::info!("user {:?} created. pk={:?}", user.2, user_pk.pk);
 
         let req_1 = UserSubmissionReq {
             user_id: user.2,
             anytrust_group_id: user.0.anytrust_group_id(),
             round: 0u32,
             msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
-            ticket: SealedFootprintTicket(vec![0; 1]),
+            prev_round_output: RoundOutput::default(),
             shared_secrets: user.0,
         };
 
@@ -745,7 +738,7 @@ mod enclave_tests {
 
         info!("round_output {:?}", round_output);
 
-        assert_eq!(round_output.0, req_1.msg);
+        // assert_eq!(round_output.dc_msg, req_1.msg);
     }
 
     #[test]
