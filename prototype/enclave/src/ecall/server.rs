@@ -183,8 +183,6 @@ pub fn derive_round_output(shares: &Vec<UnblindedAggregateShareBlob>) -> SgxResu
     // Finally xor secrets with the message
     final_msg.xor_mut(&final_aggregation);
 
-    info!("final msg {:?}", final_msg);
-
     Ok(RoundOutput {
         round,
         dc_msg: final_msg,

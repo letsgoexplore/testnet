@@ -22,27 +22,20 @@ use std::debug;
 use std::iter::FromIterator;
 use std::prelude::v1::*;
 
-pub type SlotValue = u32;
-
 pub fn user_submit_internal(
     input: &(UserSubmissionReq, SealedSigPrivKey),
 ) -> SgxResult<RoundSubmissionBlob> {
-    info!("in");
     let send_request = &input.0;
     // unseal user's sk
     let signing_sk = (&input.1).unseal()?;
-
-    // validate the request
-    if send_request.round != send_request.prev_round_output.round + 1 {
-        error!("wrong round #");
-        return Err(SGX_ERROR_INVALID_PARAMETER);
-    }
 
     // check user key matches user_id
     if EntityId::from(&SgxSigningPubKey::try_from(&signing_sk)?) != send_request.user_id {
         error!("user id mismatch");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
+
+    debug!("✅ user id matches user signing key");
 
     // check anytrust group id matches server pubkeys
     // TODO: these pub keys are untrustworthy
@@ -53,11 +46,7 @@ pub fn user_submit_internal(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    // verify server's signatures
-    let verified_index = send_request
-        .prev_round_output
-        .verify_multisig(&server_sig_pks)?;
-    info!("round output verified against {:?}", verified_index);
+    debug!("✅ shared secrets matches anytrust groupid");
 
     // make a new footprint
     let (cur_slot, cur_fp, next_slot, next_fp) = derive_reservation(
@@ -66,14 +55,37 @@ pub fn user_submit_internal(
         send_request.round,
     );
 
-    // Check the scheduling result from the previous round (the ticket) unless a) this is the first round (round = 0)
-    // or 2) req.msg is all zeroes (i.e., the user is not sending anything but just scheduling).
-    if send_request.round > 0 || send_request.msg.0.iter().all(|x| *x == 0) {
-        if send_request.prev_round_output.dc_msg.scheduling_msg[cur_slot] != cur_fp {
-            error!("fp mismatch. can't send in this round");
+    // check previous output is properly signed if round > 0
+    if send_request.round > 0 {
+        // validate the request
+        if send_request.round != send_request.prev_round_output.round + 1 {
+            error!("wrong round #");
             return Err(SGX_ERROR_INVALID_PARAMETER);
         }
+
+        // verify server's signatures
+        let verified_index = send_request
+            .prev_round_output
+            .verify_multisig(&server_sig_pks)?;
+        info!("round output verified against {:?}", verified_index);
     }
+
+    // Check the scheduling result from the previous round (the ticket) unless a) this is the first round (round = 0)
+    // or 2) req.msg is all zeroes (i.e., the user is not sending anything but just scheduling).
+    let msg_all_zero = send_request.msg.0.iter().all(|x| *x == 0);
+    if send_request.round == 0 {
+        debug!("✅ user is permitted to send msg at slot {} because it's round 0", cur_slot);
+    } else if send_request.msg.0.iter().all(|x| *x == 0) {
+        debug!("✅ user is permitted to send msg at slot {} because msg is all-zero", cur_slot);
+    } else {
+        if send_request.prev_round_output.dc_msg.scheduling_msg[cur_slot] != cur_fp {
+            error!("❌ can't send in slot {} at round {}. fp mismatch.", cur_slot, send_request.round);
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
+        debug!("✅ user is permitted to send msg at slot {} for round {}", cur_slot, send_request.round);
+    }
+
+    debug!("✅ user will schedule for slot {} for next round", next_slot);
 
     // Put use message in the designated slot of the round message
     let mut round_msg = DcRoundMessage::default();
@@ -87,8 +99,15 @@ pub fn user_submit_internal(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    let round_key = crypto::derive_round_secret(send_request.round, &shared_secrets)
-        .map_err(|_e| SGX_ERROR_INVALID_PARAMETER)?;
+    debug!("round msg: {:?}", round_msg);
+
+    let round_key = match crypto::derive_round_secret(send_request.round, &shared_secrets) {
+        Ok(k) => k,
+        Err(e) => {
+            error!("can't derive round secret {}", e);
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
+    };
 
     // encrypt the message with round_key
     let encrypted_msg = round_key.xor(&round_msg);
@@ -115,6 +134,8 @@ pub fn user_submit_internal(
 }
 
 /// Return deterministically derived footprint reservation for the given parameter
+///
+/// ```
 /// if epoch == 0:
 ///         Let prev_slot_idx = H("first-slot-idx", usk, anytrust_group_id)
 ///         Let prev_slot_val = H("first-slot-val", usk, anytrust_group_id)
@@ -125,11 +146,12 @@ pub fn user_submit_internal(
 /// Let next_slot_val = H("sched-slot-val", usk, anytrust_group_id, round)
 ///
 /// return (prev_slot_idx, prev_slot_val, next_slot_idx, next_slot_val)
+/// ```
 fn derive_reservation(
     usk: &SgxPrivateKey,
     anytrust_group_id: &EntityId,
     round: u32,
-) -> (usize, SlotValue, usize, SlotValue) {
+) -> (usize, interface::Footprint, usize, interface::Footprint) {
     const FIRST_SLOT_IDX: &[u8; 14] = b"first-slot-idx";
     const FIRST_SLOT_VAL: &[u8; 14] = b"first-slot-val";
     const SCHED_SLOT_IDX: &[u8; 14] = b"sched-slot-idx";

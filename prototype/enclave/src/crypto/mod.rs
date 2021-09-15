@@ -5,6 +5,25 @@ use std::vec::Vec;
 
 pub type CryptoResult<T> = Result<T, CryptoError>;
 
+use sha2::Sha256;
+use sha2::Digest;
+
+pub trait Hashable {
+    fn sha256(&self) -> [u8;32];
+}
+
+use std::convert::TryInto;
+
+impl Hashable for RoundOutput {
+    fn sha256(&self) -> [u8; 32] {
+        let mut h = Sha256::new();
+        h.input(&self.round.to_le_bytes());
+        h.input(&self.dc_msg.digest());
+
+        h.result().try_into().unwrap()
+    }
+}
+
 pub trait Signable {
     fn digest(&self) -> Vec<u8>;
     fn get_sig(&self) -> SgxSignature;
@@ -62,7 +81,7 @@ use interface::{RoundOutput, SgxProtectedKeyPub};
 
 impl MultiSignable for RoundOutput {
     fn digest(&self) -> Vec<u8> {
-        unimplemented!()
+        self.sha256().to_vec()
     }
 
     fn verify_multisig(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>> {
@@ -99,4 +118,3 @@ mod keys;
 
 pub use self::dining_crypto::*;
 pub use self::keys::*;
-use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;

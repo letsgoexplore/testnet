@@ -21,6 +21,7 @@ quick_error! {
         }
         HKDFErr {
             from(InvalidLength)
+            display("InvalidLength")
         }
     }
 }

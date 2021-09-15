@@ -11,10 +11,21 @@ use sha2::Sha256;
 use super::*;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
+use sgx_tcrypto::SgxEccHandle;
+use std::fmt::Display;
+use std::fmt::Result as FmtResult;
+
+use sgx_rand::{ChaChaRng, Rng, SeedableRng, Rand};
 
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DiffieHellmanSharedSecret([u8; SGX_ECP256_KEY_SIZE]);
+
+impl AsRef<[u8]> for DiffieHellmanSharedSecret {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 impl Debug for DiffieHellmanSharedSecret {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -94,52 +105,27 @@ impl SharedSecretsDb {
 /// DiffieHellmanSharedSecret, one for each anytrust server.
 pub type RoundSecret = DcRoundMessage;
 
-use sgx_tcrypto::SgxEccHandle;
-use std::fmt::Display;
-use std::fmt::Result as FmtResult;
-
 /// Derives a RoundSecret as the XOR of `HKDF(server_secrets[i], round)` for all `i` in `0`...`len(server_secrets)`
 pub fn derive_round_secret(
     round: u32,
     server_secrets: &SharedSecretsDb,
 ) -> CryptoResult<RoundSecret> {
-    // Fill this buffer with pseudorandom bytes
-    let rand_bytes_needed = std::mem::size_of::<DcRoundMessage>();
-    let mut round_secret_flatten = vec![0; rand_bytes_needed];
-
+    let mut round_secret = RoundSecret::default();
     for (_, server_secret) in server_secrets.db.iter() {
-        let hk = Hkdf::<Sha256>::new(None, &server_secret.0);
-        let mut round_secret_flatten_i = vec![0; rand_bytes_needed];
+        let hk = Hkdf::<Sha256>::new(None, server_secret.as_ref());
+        // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
+        let mut seed = [0u8; 32];
 
         // info contains round
         let mut info = [0; 32];
         LittleEndian::write_u32(&mut info, round);
-        hk.expand(&info, &mut round_secret_flatten_i)?;
+        hk.expand(&info, &mut seed)?;
 
-        for i in 0..round_secret_flatten.len() {
-            round_secret_flatten[i] ^= round_secret_flatten_i[i];
-        }
+        let mut seed_u32 = [0u32; 8]; // Chacha PRNG in SGX SDK uses u32 as seeds
+        byteorder::LittleEndian::read_u32_into(&seed, &mut seed_u32);
+        let mut rng = ChaChaRng::from_seed(&seed_u32);
+        round_secret.xor_mut(&DcRoundMessage::rand(&mut rng));
     }
-
-    // drop mut
-    let round_secret_flatten = round_secret_flatten;
-
-    let mut round_secret = DcRoundMessage::default();
-    let mut byte_read = 0;
-    for i in 0..round_secret.scheduling_msg.len() {
-        round_secret.scheduling_msg[i] = LittleEndian::read_u32(&round_secret_flatten[byte_read..]);
-        byte_read += 4; // u32 is 4-byte
-    }
-
-    for i in 0..round_secret.aggregated_msg.len() {
-        let l = round_secret.aggregated_msg[i].0.len();
-        round_secret.aggregated_msg[i]
-            .0
-            .clone_from_slice(&round_secret_flatten[byte_read..byte_read + l]);
-        byte_read += l;
-    }
-
-    // info!("derived secrets for round {} from {:?}. secret {:?}", round, server_secrets, round_secret);
 
     Ok(round_secret)
 }
@@ -150,8 +136,8 @@ pub trait Xor {
     fn xor(&self, other: &Self) -> Self;
     // xor_mut computes and sets self = xor(self, other)
     fn xor_mut(&mut self, other: &Self)
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         *self = self.xor(other);
     }

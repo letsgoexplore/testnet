@@ -7,6 +7,7 @@ use sgx_urts::SgxEnclave;
 use std::path::PathBuf;
 
 use interface::*;
+use log::*;
 
 // error type for enclave operations
 use quick_error::quick_error;
@@ -45,7 +46,7 @@ extern "C" {
     fn test_main_entrance(eid: sgx_enclave_id_t, retval: *mut sgx_status_t) -> sgx_status_t;
 }
 
-const ENCLAVE_OUTPUT_BUF_SIZE: usize = 1024000;
+const ENCLAVE_OUTPUT_BUF_SIZE: usize = 1024000; // 1MB buffer should be enough?
 
 #[derive(Clone, Debug)]
 pub struct DcNetEnclave {
@@ -59,6 +60,7 @@ macro_rules! gen_ecall_stub {
             inp: $type_i,
         ) -> crate::EnclaveResult<$type_o> {
             let marshaled_input = serde_cbor::to_vec(&inp)?;
+            log::debug!("input marshaled {} bytes", marshaled_input.len());
 
             let mut ret = crate::enclave_wrapper::SGX_SUCCESS;
             let mut out_buf = vec![0u8; crate::enclave_wrapper::ENCLAVE_OUTPUT_BUF_SIZE];
@@ -211,7 +213,7 @@ impl DcNetEnclave {
             &mut launch_token_updated,
             &mut misc_attr,
         )
-        .map_err(EnclaveError::SgxError)?;
+            .map_err(EnclaveError::SgxError)?;
 
         Ok(Self { enclave })
     }
@@ -515,15 +517,47 @@ mod enclave_tests {
             round: 0u32,
             msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
             shared_secrets: user_reg_shared_secrets,
-            prev_round_output: Default::default()
+            prev_round_output: RoundOutput::default(),
         };
-        info!("here");
+
         let resp_1 = enc
             .user_submit_round_msg(&req_1, &user_reg_sealed_key)
             .unwrap();
 
+        // if we set round to 1, this should fail because the previous round output is empty
+        let mut req_round_1 = req_1.clone();
+        req_round_1.round = 1;
+
+        assert!(enc.user_submit_round_msg(&req_round_1, &user_reg_sealed_key).is_err());
+
         enc.destroy();
     }
+
+    #[test]
+    fn user_reserve_slot() {
+        init_logger();
+        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
+
+        // create server public keys
+        let spks = create_server_pubkeys(&enc, 10);
+        let (user_reg_shared_secrets, user_reg_sealed_key, user_reg_uid, user_reg_proof) =
+            enc.new_user(&spks).unwrap();
+
+        let req_1 = UserReservationReq {
+            user_id: user_reg_uid,
+            anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
+            round: 1u32,
+            shared_secrets: user_reg_shared_secrets,
+            prev_round_output: RoundOutput::default(),
+        };
+
+        let resp_1 = enc
+            .user_reserve_slot(&req_1, &user_reg_sealed_key)
+            .unwrap();
+
+        enc.destroy();
+    }
+
 
     #[test]
     fn aggregation() {
@@ -666,7 +700,6 @@ mod enclave_tests {
     #[test]
     fn whole_thing() {
         init_logger();
-        info!("hell");
 
         let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
 
@@ -690,30 +723,29 @@ mod enclave_tests {
 
         log::info!("user {:?} created. pk={:?}", user.2, user_pk.pk);
 
-        let req_1 = UserSubmissionReq {
+        let req_0 = UserSubmissionReq {
             user_id: user.2,
             anytrust_group_id: user.0.anytrust_group_id(),
-            round: 0u32,
-            msg: DcMessage([0u8; DC_NET_MESSAGE_LENGTH]),
+            round: 0,
+            msg: DcMessage([9u8; DC_NET_MESSAGE_LENGTH]),
             prev_round_output: RoundOutput::default(),
             shared_secrets: user.0,
         };
 
-        log::info!("submitting {:?}", req_1.msg);
+        log::info!("🏁 submitting {:?}", req_0.msg);
 
-        let resp_1 = enc.user_submit_round_msg(&req_1, &user.1).unwrap();
+        let resp_0 = enc.user_submit_round_msg(&req_0, &user.1).unwrap();
 
-        // SealedSigPrivKey, EntityId, AggRegistrationBlob
         let aggregator = enc.new_aggregator().expect("agg");
 
-        log::info!("aggregator {:?} created", aggregator.1);
+        log::info!("🏁 aggregator {:?} created", aggregator.1);
 
         let mut empty_agg = enc.new_aggregate(0, &EntityId::default()).unwrap();
-        enc.add_to_aggregate(&mut empty_agg, &resp_1, &aggregator.0)
+        enc.add_to_aggregate(&mut empty_agg, &resp_0, &aggregator.0)
             .unwrap();
 
         // finalize the aggregate
-        let final_agg = enc.finalize_aggregate(&empty_agg).unwrap();
+        let final_agg_0 = enc.finalize_aggregate(&empty_agg).unwrap();
 
         // decryption
         let mut decryption_shares = Vec::new();
@@ -729,26 +761,23 @@ mod enclave_tests {
             enc.recv_aggregator_registration(&mut pk_db, &aggregator.2)
                 .unwrap();
             // unblind
-            let unblined_agg = enc.unblind_aggregate(&final_agg, &s.0, &secret_db).unwrap();
+            let unblined_agg = enc.unblind_aggregate(&final_agg_0, &s.0, &secret_db).unwrap();
             decryption_shares.push(unblined_agg);
         }
 
-        // aggregate final shares
-        let round_output = enc.derive_round_output(&decryption_shares).unwrap();
+        info!("🏁 {} decryption shares obtained. Each {} bytes", decryption_shares.len(), decryption_shares[0].0.len());
 
-        info!("round_output {:?}", round_output);
+        // aggregate final shares
+        let round_output_r0 = enc.derive_round_output(&decryption_shares).unwrap();
+        info!("✅ round_output {:?}", round_output_r0);
+
+        let mut req_r1 = req_0.clone();
+        req_r1.round = 1;
+        req_r1.prev_round_output = round_output_r0;
+
+        info!("🏁 starting round 1");
+        let resp_1 = enc.user_submit_round_msg(&req_r1, &user.1).unwrap();
 
         // assert_eq!(round_output.dc_msg, req_1.msg);
-    }
-
-    #[test]
-    fn enclave_tests() {
-        println!("===begin enclave tests");
-        let enc = DcNetEnclave::init(TEST_ENCLAVE_PATH).unwrap();
-
-        enc.run_enclave_tests().unwrap();
-
-        enc.destroy();
-        println!("===end enclave tests");
     }
 }

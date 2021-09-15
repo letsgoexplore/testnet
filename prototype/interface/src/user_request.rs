@@ -63,16 +63,35 @@ impl AsRef<[u8; DC_NET_MESSAGE_LENGTH]> for DcMessage {
     }
 }
 
+/// we store footprints in u32s (enclave/ecall/submit.rs)
+pub type Footprint = u32;
+
 /// What's broadcast through the channel
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct DcRoundMessage {
-    /// we store footprints in u32s (enclave/ecall/submit.rs)
-    #[serde(with = "BigArray")]
-    //TODO: change this to u8
-    pub scheduling_msg: [u32; DC_NET_N_SLOTS],
-    #[serde(with = "BigArray")]
+    // #[serde(with = "BigArray")]
+    pub scheduling_msg: [Footprint; DC_NET_N_SLOTS],
+    // #[serde(with = "BigArray")]
     pub aggregated_msg: [DcMessage; DC_NET_N_SLOTS],
+}
+
+/// Used to generate round secrets
+#[cfg(feature = "trusted")]
+impl Rand for DcRoundMessage {
+    fn rand<R: Rng>(rng: &mut R) -> Self {
+        let mut m = DcRoundMessage::default();
+
+        for i in 0..m.scheduling_msg.len() {
+            m.scheduling_msg[i] = rng.next_u32();
+        }
+
+        for i in 0..m.aggregated_msg.len() {
+            m.aggregated_msg[i] = DcMessage::rand(rng);
+        }
+
+        m
+    }
 }
 
 impl Default for DcRoundMessage {
@@ -87,6 +106,15 @@ impl Default for DcRoundMessage {
 impl PartialEq for DcRoundMessage {
     fn eq(&self, other: &Self) -> bool {
         self.aggregated_msg == other.aggregated_msg && self.scheduling_msg == other.scheduling_msg
+    }
+}
+
+impl Debug for DcRoundMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_struct("DcRoundMessage")
+            .field("scheduling_msg", &self.scheduling_msg)
+            .field("aggregated_msg", &"omitted")
+            .finish()
     }
 }
 
@@ -106,14 +134,6 @@ impl DcRoundMessage {
     }
 }
 
-impl Debug for DcRoundMessage {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.debug_struct("DcRoundMessage")
-            .field("scheduling_msg", &self.scheduling_msg)
-            .field("aggregated_msg", &self.aggregated_msg)
-            .finish()
-    }
-}
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -215,28 +235,3 @@ pub struct UserReservationReq {
     /// A map from server public key to sealed shared secret
     pub shared_secrets: SealedSharedSecretDb,
 }
-
-// #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-// #[derive(Clone, Serialize, Debug, Deserialize)]
-// pub struct UserRegistration {
-//     pub key: SealedSigPrivKey,
-//     pub shared_secrets: SealedSharedSecretDb,
-// }
-//
-// impl UserRegistration {
-//     pub fn get_user_id(&self) -> EntityId {
-//         EntityId::from(&self.key.0.attested_pk.pk)
-//     }
-//
-//     pub fn get_sealed_shared_secrets(&self) -> &SealedSharedSecretDb {
-//         &self.shared_secrets
-//     }
-//
-//     pub fn get_sealed_usk(&self) -> &SealedSigPrivKey {
-//         &self.key
-//     }
-//
-//     pub fn get_registration_blob(&self) -> UserRegistrationBlob {
-//         UserRegistrationBlob(self.key.0.attested_pk.clone())
-//     }
-// }

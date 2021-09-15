@@ -46,8 +46,6 @@ pub extern "C" fn ecall_entrypoint(
         },
     };
 
-    debug!("in ecall {}", ecall_id.as_str());
-
     // make sure this matches exact with that in enclave_wrapper.rs
     match_ecall_ids! {
         ecall_id, inp, inp_len, output, output_cap, output_used,
@@ -155,13 +153,15 @@ fn serialize_to_ptr<T: Serialize>(
     outbuf_used: *mut usize,
 ) -> SgxError {
     let serialized = serde_cbor::to_vec(v).map_err(|e| {
-        println!("[IN] error serializing: {}", e);
+        error!("error serializing: {}", e);
         SGX_ERROR_INVALID_PARAMETER
     })?;
 
+    // debug!("output serialized to {} bytes", serialized.len());
+
     if serialized.len() > outbuf_cap {
-        println!(
-            "[IN] not enough output to write serialized message. need {} got {}",
+        error!(
+            "not enough output to write serialized message. need {} got {}",
             serialized.len(),
             outbuf_cap,
         );

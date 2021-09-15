@@ -6,7 +6,7 @@ pub const USER_ID_MAX_LEN: usize = 32;
 pub const FOOTPRINT_BIT_SIZE: usize = 3;
 
 /// The number of slots in a DC net message
-pub const DC_NET_N_SLOTS: usize = 128;
+pub const DC_NET_N_SLOTS: usize = 16;
 /// The number of bytes in each DC net slot
 pub const DC_NET_MESSAGE_LENGTH: usize = 1024;
 
