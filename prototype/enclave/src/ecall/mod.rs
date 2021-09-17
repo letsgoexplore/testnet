@@ -42,8 +42,8 @@ pub extern "C" fn ecall_entrypoint(
         Some(i) => i,
         None => {
             error!("wrong ecall id {}", ecall_id_raw);
-            return SGX_ERROR_INVALID_PARAMETER
-        },
+            return SGX_ERROR_INVALID_PARAMETER;
+        }
     };
 
     // make sure this matches exact with that in enclave_wrapper.rs
@@ -110,7 +110,7 @@ pub extern "C" fn ecall_entrypoint(
             server::unblind_aggregate),
         (
             EcallDeriveRoundOutput,
-            Vec<UnblindedAggregateShareBlob>,
+            (SealedSigPrivKey, Vec<UnblindedAggregateShareBlob>),
             RoundOutput,
             server::derive_round_output
         ),

@@ -74,18 +74,33 @@ pub fn user_submit_internal(
     // or 2) req.msg is all zeroes (i.e., the user is not sending anything but just scheduling).
     let msg_all_zero = send_request.msg.0.iter().all(|x| *x == 0);
     if send_request.round == 0 {
-        debug!("✅ user is permitted to send msg at slot {} because it's round 0", cur_slot);
+        debug!(
+            "✅ user is permitted to send msg at slot {} because it's round 0",
+            cur_slot
+        );
     } else if send_request.msg.0.iter().all(|x| *x == 0) {
-        debug!("✅ user is permitted to send msg at slot {} because msg is all-zero", cur_slot);
+        debug!(
+            "✅ user is permitted to send msg at slot {} because msg is all-zero",
+            cur_slot
+        );
     } else {
         if send_request.prev_round_output.dc_msg.scheduling_msg[cur_slot] != cur_fp {
-            error!("❌ can't send in slot {} at round {}. fp mismatch.", cur_slot, send_request.round);
+            error!(
+                "❌ can't send in slot {} at round {}. fp mismatch.",
+                cur_slot, send_request.round
+            );
             return Err(SGX_ERROR_INVALID_PARAMETER);
         }
-        debug!("✅ user is permitted to send msg at slot {} for round {}", cur_slot, send_request.round);
+        debug!(
+            "✅ user is permitted to send msg at slot {} for round {}",
+            cur_slot, send_request.round
+        );
     }
 
-    debug!("✅ user will schedule for slot {} for next round", next_slot);
+    debug!(
+        "✅ user will schedule for slot {} for next round",
+        next_slot
+    );
 
     // Put use message in the designated slot of the round message
     let mut round_msg = DcRoundMessage::default();

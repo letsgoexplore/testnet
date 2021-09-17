@@ -134,7 +134,6 @@ impl DcRoundMessage {
     }
 }
 
-
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EntityId(pub [u8; USER_ID_LENGTH]);

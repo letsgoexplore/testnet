@@ -173,7 +173,7 @@ mod ecall_allowed {
         ),
         (
             EcallDeriveRoundOutput,
-            &[UnblindedAggregateShareBlob],
+            (&SealedSigPrivKey,&[UnblindedAggregateShareBlob]),
             RoundOutput,
             derive_round_output
         ),
@@ -213,7 +213,7 @@ impl DcNetEnclave {
             &mut launch_token_updated,
             &mut misc_attr,
         )
-            .map_err(EnclaveError::SgxError)?;
+        .map_err(EnclaveError::SgxError)?;
 
         Ok(Self { enclave })
     }
@@ -327,9 +327,10 @@ impl DcNetEnclave {
     /// Derives the final round output given all the shares of the unblinded aggregates
     pub fn derive_round_output(
         &self,
+        sealed_sig_sk: &SealedSigPrivKey,
         server_aggs: &[UnblindedAggregateShareBlob],
     ) -> EnclaveResult<RoundOutput> {
-        ecall_allowed::derive_round_output(self.enclave.geteid(), server_aggs)
+        ecall_allowed::derive_round_output(self.enclave.geteid(), (sealed_sig_sk, server_aggs))
     }
 
     /// Create a new TEE protected secret key. Derives shared secrets with all the given KEM pubkeys.
@@ -487,10 +488,7 @@ mod enclave_tests {
     }
 
     /// create n server public keys
-    fn create_server_pubkeys(
-        enc: &DcNetEnclave,
-        n: i32,
-    ) -> Vec<ServerPubKeyPackage> {
+    fn create_server_pubkeys(enc: &DcNetEnclave, n: i32) -> Vec<ServerPubKeyPackage> {
         let mut pks = Vec::new();
 
         for i in 0..n {
@@ -528,7 +526,9 @@ mod enclave_tests {
         let mut req_round_1 = req_1.clone();
         req_round_1.round = 1;
 
-        assert!(enc.user_submit_round_msg(&req_round_1, &user_reg_sealed_key).is_err());
+        assert!(enc
+            .user_submit_round_msg(&req_round_1, &user_reg_sealed_key)
+            .is_err());
 
         enc.destroy();
     }
@@ -551,13 +551,10 @@ mod enclave_tests {
             prev_round_output: RoundOutput::default(),
         };
 
-        let resp_1 = enc
-            .user_reserve_slot(&req_1, &user_reg_sealed_key)
-            .unwrap();
+        let resp_1 = enc.user_reserve_slot(&req_1, &user_reg_sealed_key).unwrap();
 
         enc.destroy();
     }
-
 
     #[test]
     fn aggregation() {
@@ -749,7 +746,6 @@ mod enclave_tests {
 
         // decryption
         let mut decryption_shares = Vec::new();
-
         for s in servers.iter() {
             let mut pk_db = Default::default();
             let mut secret_db = Default::default();
@@ -761,14 +757,23 @@ mod enclave_tests {
             enc.recv_aggregator_registration(&mut pk_db, &aggregator.2)
                 .unwrap();
             // unblind
-            let unblined_agg = enc.unblind_aggregate(&final_agg_0, &s.0, &secret_db).unwrap();
+            let unblined_agg = enc
+                .unblind_aggregate(&final_agg_0, &s.0, &secret_db)
+                .unwrap();
             decryption_shares.push(unblined_agg);
         }
 
-        info!("🏁 {} decryption shares obtained. Each {} bytes", decryption_shares.len(), decryption_shares[0].0.len());
+        info!(
+            "🏁 {} decryption shares obtained. Each {} bytes",
+            decryption_shares.len(),
+            decryption_shares[0].0.len()
+        );
 
         // aggregate final shares
-        let round_output_r0 = enc.derive_round_output(&decryption_shares).unwrap();
+        // suppose the first server is the leader
+        let round_output_r0 = enc
+            .derive_round_output(&servers[0].0, &decryption_shares)
+            .unwrap();
         info!("✅ round_output {:?}", round_output_r0);
 
         let mut req_r1 = req_0.clone();

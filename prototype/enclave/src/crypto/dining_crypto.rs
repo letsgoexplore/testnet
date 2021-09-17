@@ -9,13 +9,13 @@ use hkdf::Hkdf;
 use sha2::Sha256;
 
 use super::*;
-use std::collections::BTreeMap;
-use std::fmt::{Debug, Formatter};
 use sgx_tcrypto::SgxEccHandle;
+use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::fmt::Result as FmtResult;
+use std::fmt::{Debug, Formatter};
 
-use sgx_rand::{ChaChaRng, Rng, SeedableRng, Rand};
+use sgx_rand::{ChaChaRng, Rand, Rng, SeedableRng};
 
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -136,8 +136,8 @@ pub trait Xor {
     fn xor(&self, other: &Self) -> Self;
     // xor_mut computes and sets self = xor(self, other)
     fn xor_mut(&mut self, other: &Self)
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         *self = self.xor(other);
     }

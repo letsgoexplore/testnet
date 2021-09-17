@@ -3,8 +3,8 @@ use crate::crypto::Xor;
 use crate::crypto::{
     derive_round_secret, KemPrvKey, SgxPrivateKey, SharedSecretsDb, SignMutable, Signable,
 };
+use crate::messages_types;
 use crate::unseal::{MarshallAs, UnmarshalledAs, UnsealableAs};
-use crate::{messages_types};
 use ecall::keygen::new_sgx_keypair_ext_internal;
 use interface::*;
 use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
@@ -153,9 +153,13 @@ pub fn unblind_aggregate(
     Ok(unblined_agg.marshal()?)
 }
 
+use crypto::MultiSignable;
 use std::vec::Vec;
 
-pub fn derive_round_output(shares: &Vec<UnblindedAggregateShareBlob>) -> SgxResult<RoundOutput> {
+pub fn derive_round_output(
+    input: &(SealedSigPrivKey, Vec<UnblindedAggregateShareBlob>),
+) -> SgxResult<RoundOutput> {
+    let (signing_sk, shares) = input;
     if shares.is_empty() {
         error!("empty shares array");
         return Err(SGX_ERROR_INVALID_PARAMETER);
@@ -183,9 +187,15 @@ pub fn derive_round_output(shares: &Vec<UnblindedAggregateShareBlob>) -> SgxResu
     // Finally xor secrets with the message
     final_msg.xor_mut(&final_aggregation);
 
-    Ok(RoundOutput {
+    let mut round_output = RoundOutput {
         round,
         dc_msg: final_msg,
         server_sigs: vec![], // TODO pass in secret key to get it signed
-    })
+    };
+
+    let (sig, pk) = round_output.sign(&signing_sk.unseal()?)?;
+
+    round_output.server_sigs.push(Signature { pk, sig });
+
+    Ok(round_output)
 }

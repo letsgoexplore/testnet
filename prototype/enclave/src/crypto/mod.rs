@@ -5,11 +5,11 @@ use std::vec::Vec;
 
 pub type CryptoResult<T> = Result<T, CryptoError>;
 
-use sha2::Sha256;
 use sha2::Digest;
+use sha2::Sha256;
 
 pub trait Hashable {
-    fn sha256(&self) -> [u8;32];
+    fn sha256(&self) -> [u8; 32];
 }
 
 use std::convert::TryInto;
