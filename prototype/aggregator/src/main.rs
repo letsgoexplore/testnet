@@ -13,7 +13,7 @@ use crate::{
 };
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
-use interface::RoundSubmissionBlob;
+use interface::{RoundSubmissionBlob, ServerPubKeyPackage};
 use std::fs::File;
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -63,8 +63,8 @@ fn main() -> Result<(), AggregatorError> {
                         .value_name("INFILE")
                         .required(true)
                         .help(
-                            "A file that contains newline-delimited KEM pubkeys of the servers \
-                            that this user wishes to register with",
+                            "A file that contains newline-delimited pubkey packages of the \
+                            servers that this user wishes to register with",
                         ),
                 ),
         )
@@ -123,13 +123,13 @@ fn main() -> Result<(), AggregatorError> {
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("new") {
-        // Load up the KEM keys
+        // Load up the pubkeys
         let pubkeys_filename = matches.value_of("server-keys").unwrap();
         let keysfile = File::open(pubkeys_filename)?;
-        let kem_pubkeys = cli_util::load_multi(keysfile)?;
+        let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
 
         // Make a new state and agg registration. Save the state and and print the registration
-        let (state, reg_blob) = AggregatorState::new(&enclave, kem_pubkeys)?;
+        let (state, reg_blob) = AggregatorState::new(&enclave, pubkeys)?;
         let state_path = matches.value_of("agg-state").unwrap();
         save_state(&dbg!(state_path), &state)?;
         save_to_stdout(&reg_blob)?;

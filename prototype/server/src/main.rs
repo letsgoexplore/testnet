@@ -52,8 +52,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                 ),
         )
         .subcommand(
-            SubCommand::with_name("get-kem-pubkey")
-                .about("Outputs this server's KEM pubkey")
+            SubCommand::with_name("get-pubkeys")
+                .about("Outputs this server's pubkey package")
                 .arg(state_arg.clone()),
         )
         .subcommand(
@@ -103,11 +103,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         save_to_stdout(&reg_blob)?;
     }
 
-    if let Some(matches) = matches.subcommand_matches("get-kem-pubkey") {
-        // Get the stat'es KEM pubkey and print it
+    if let Some(matches) = matches.subcommand_matches("get-pubkeys") {
+        // Get the server's pubkey package and print it
         let state = load_state(&matches)?;
-        let kem_pubkey = &state.decap_key.0.attested_pk.pk;
-        save_to_stdout(kem_pubkey)?;
+        save_to_stdout(&state.pubkey_pkg)?;
     }
 
     if let Some(matches) = matches.subcommand_matches("register-user") {

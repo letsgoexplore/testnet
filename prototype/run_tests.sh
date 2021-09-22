@@ -15,13 +15,13 @@ SERVER_SHARES="server/shares.txt"
 CMD_PREFIX="cargo run -- "
 
 NUM_SERVERS=2
-NUM_USERS=4
+NUM_USERS=2
 NUM_AGGREGATORS=1
-NUM_USERS_PER_AGGREGATOR=4
-ROUND=1
+NUM_USERS_PER_AGGREGATOR=2
+ROUND=0
 
 # We define four messages. "testing", "\0\0\0\0\0\0\0hello", and "\0\0\0\0\0\0\0\0\0\0\0\0world",
-# and "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0yo". These XOR to "testinghelloworld". The leading ';' is
+# and "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0yo". These XOR to "testinghelloworldyo". The leading ';' is
 # just because other things are indexed by 1.
 MSGS=";testing;\0\0\0\0\0\0\0hello;\0\0\0\0\0\0\0\0\0\0\0\0world;\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0yo"
 
@@ -79,7 +79,7 @@ setup_servers() {
         STATE="${SERVER_STATE%.txt}$i.txt"
         # TODO: Do server registration
         $CMD_PREFIX new --server-state "../$STATE" > /dev/null
-        $CMD_PREFIX get-kem-pubkey --server-state "../$STATE" >> "../$USER_SERVERKEYS"
+        $CMD_PREFIX get-pubkeys --server-state "../$STATE" >> "../$USER_SERVERKEYS"
     done
 
     # Copy the pubkey file to the aggregator
@@ -209,10 +209,14 @@ encrypt_msgs() {
 
         echo -n $MSG;
 
+        # TODO: Set previous round output to something real for round > 0
         CIPHERTEXT=$(
             echo -ne "$MSG" \
             | base64 \
-            | $CMD_PREFIX encrypt-msg --user-state "../$STATE" --round $ROUND
+            | $CMD_PREFIX encrypt-msg \
+                  --user-state "../$STATE" \
+                  --round $ROUND \
+                  --prev-round-output /dev/null
         )
 
         # Append

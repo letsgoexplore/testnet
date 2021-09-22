@@ -10,7 +10,7 @@ use crate::{
 };
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
-use interface::{DcMessage, RoundOutput, DC_NET_MESSAGE_LENGTH};
+use interface::{DcMessage, RoundOutput, ServerPubKeyPackage, DC_NET_MESSAGE_LENGTH};
 use std::fs::File;
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -92,10 +92,10 @@ fn main() -> Result<(), UserError> {
         // Load up the KEM keys
         let pubkeys_filename = matches.value_of("server-keys").unwrap();
         let keysfile = File::open(pubkeys_filename)?;
-        let kem_pubkeys = cli_util::load_multi(keysfile)?;
+        let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
 
         // Make a new state and user registration. Save the state and and print the registration
-        let (state, reg_blob) = UserState::new(&enclave, kem_pubkeys)?;
+        let (state, reg_blob) = UserState::new(&enclave, pubkeys)?;
         save_state(&matches, &state)?;
         save_to_stdout(&reg_blob)?;
     }
@@ -121,10 +121,14 @@ fn main() -> Result<(), UserError> {
             cli_util::parse_u32(&round_str)?
         };
 
-        // Load the previous round output
-        let round_output_filename = matches.value_of("prev-round-output").unwrap();
-        let round_file = File::open(round_output_filename)?;
-        let prev_round_output: RoundOutput = cli_util::load(round_file)?;
+        // Load the previous round output. Load a placeholder output if round == 0
+        let prev_round_output: RoundOutput = if round > 0 {
+            let round_output_filename = matches.value_of("prev-round-output").unwrap();
+            let round_file = File::open(round_output_filename)?;
+            cli_util::load(round_file)?
+        } else {
+            RoundOutput::default()
+        };
 
         // Now encrypt the message and output it
         let state = load_state(&matches)?;

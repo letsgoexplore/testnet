@@ -3,8 +3,8 @@ use crate::util::Result;
 use common::enclave_wrapper::DcNetEnclave;
 use interface::{
     AggRegistrationBlob, EntityId, RoundOutput, RoundSubmissionBlob, SealedKemPrivKey,
-    SealedSharedSecretDb, SealedSigPrivKey, ServerRegistrationBlob, SignedPartialAggregate,
-    SignedPubKeyDb, UnblindedAggregateShareBlob, UserRegistrationBlob,
+    SealedSharedSecretDb, SealedSigPrivKey, ServerPubKeyPackage, ServerRegistrationBlob,
+    SignedPartialAggregate, SignedPubKeyDb, UnblindedAggregateShareBlob, UserRegistrationBlob,
 };
 
 use serde::{Deserialize, Serialize};
@@ -17,6 +17,8 @@ pub struct ServerState {
     pub signing_key: SealedSigPrivKey,
     /// This server's KEM decapsulation key. Can only be accessed from within the enclave.
     pub decap_key: SealedKemPrivKey,
+    /// The KEM and signing public keys of this server
+    pub pubkey_pkg: ServerPubKeyPackage,
     /// A partial aggregate of received user messages
     pub partial_agg: Option<SignedPartialAggregate>,
     /// A sealed database of secrets shared with users. Maps entity ID to shared secret. Can only
@@ -34,11 +36,14 @@ impl ServerState {
         // Group size starts out as 1. This will increment every time an anytrust node is
         // registered with this node.
         let anytrust_group_size = 1;
+        // The registration blob is just the pubkey package info
+        let pubkey_pkg = reg_blob.clone();
 
         let state = ServerState {
             server_id,
             signing_key: sealed_ssk,
             decap_key: sealed_ksk,
+            pubkey_pkg,
             partial_agg: None,
             shared_secrets: SealedSharedSecretDb::default(),
             pubkeys: SignedPubKeyDb::default(),

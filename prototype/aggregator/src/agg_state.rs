@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use common::enclave_wrapper::DcNetEnclave;
 use interface::{
     compute_group_id, AggRegistrationBlob, EntityId, KemPubKey, RoundSubmissionBlob,
-    SealedSigPrivKey, SignedPartialAggregate,
+    SealedSigPrivKey, ServerPubKeyPackage, SignedPartialAggregate,
 };
 use serde::{Deserialize, Serialize};
 
@@ -25,12 +25,12 @@ impl AggregatorState {
     /// Makes a new aggregate given the pubkeys of the servers
     pub(crate) fn new(
         enclave: &DcNetEnclave,
-        pubkeys: Vec<KemPubKey>,
+        pubkeys: Vec<ServerPubKeyPackage>,
     ) -> Result<(AggregatorState, AggRegistrationBlob)> {
         let (sealed_ask, agg_id, reg_data) = enclave.new_aggregator()?;
 
         let anytrust_ids: BTreeSet<EntityId> =
-            pubkeys.iter().map(|pk| pk.get_entity_id()).collect();
+            pubkeys.iter().map(|pk| pk.kem.get_entity_id()).collect();
         let anytrust_group_id = compute_group_id(&anytrust_ids);
 
         let state = AggregatorState {
