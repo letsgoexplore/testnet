@@ -66,18 +66,12 @@ impl UserState {
         Ok(blob)
     }
 
-    pub fn reserve_slot(
-        &self,
-        enclave: &DcNetEnclave,
-        round: u32,
-        prev_round_output: RoundOutput,
-    ) -> Result<RoundSubmissionBlob> {
+    pub fn reserve_slot(&self, enclave: &DcNetEnclave, round: u32) -> Result<RoundSubmissionBlob> {
         let req = UserReservationReq {
             user_id: self.user_id,
             anytrust_group_id: self.anytrust_group_id,
             round,
             shared_secrets: self.shared_secrets.clone(),
-            prev_round_output,
         };
 
         let blob = enclave.user_reserve_slot(&req, &self.signing_key)?;

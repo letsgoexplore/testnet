@@ -139,14 +139,9 @@ fn main() -> Result<(), UserError> {
             cli_util::parse_u32(&round_str)?
         };
 
-        // Load the previous round output
-        let round_output_filename = matches.value_of("prev-round-output").unwrap();
-        let round_file = File::open(round_output_filename)?;
-        let prev_round_output: RoundOutput = cli_util::load(round_file)?;
-
         // Now encrypt the message and output it
         let state = load_state(&matches)?;
-        let ciphertext = state.reserve_slot(&enclave, round, prev_round_output)?;
+        let ciphertext = state.reserve_slot(&enclave, round)?;
         save_to_stdout(&ciphertext)?;
     }
 

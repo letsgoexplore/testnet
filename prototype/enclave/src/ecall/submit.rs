@@ -28,6 +28,8 @@ pub fn user_submit_internal(
     let send_request = &input.0;
     // unseal user's sk
     let signing_sk = (&input.1).unseal()?;
+    // Determine whether the message is just cover traffic
+    let msg_is_empty = send_request.msg == Default::default();
 
     // check user key matches user_id
     if EntityId::from(&SgxSigningPubKey::try_from(&signing_sk)?) != send_request.user_id {
@@ -55,8 +57,20 @@ pub fn user_submit_internal(
         send_request.round,
     );
 
-    // check previous output is properly signed if round > 0
-    if send_request.round > 0 {
+    // Check the scheduling result from the previous round (the ticket) unless
+    // a) this is the first round (round = 0) or
+    // b) req.msg is all zeroes (i.e., the user is not sending anything but just scheduling).
+    if send_request.round == 0 {
+        debug!(
+            "✅ user is permitted to send msg at slot {} because it's round 0",
+            cur_slot
+        );
+    } else if msg_is_empty {
+        debug!(
+            "✅ user is permitted to send msg at slot {} because msg is all-zero",
+            cur_slot
+        );
+    } else {
         // validate the request
         if send_request.round != send_request.prev_round_output.round + 1 {
             error!("wrong round #");
@@ -68,22 +82,7 @@ pub fn user_submit_internal(
             .prev_round_output
             .verify_multisig(&server_sig_pks)?;
         info!("round output verified against {:?}", verified_index);
-    }
 
-    // Check the scheduling result from the previous round (the ticket) unless a) this is the first round (round = 0)
-    // or 2) req.msg is all zeroes (i.e., the user is not sending anything but just scheduling).
-    let msg_all_zero = send_request.msg.0.iter().all(|x| *x == 0);
-    if send_request.round == 0 {
-        debug!(
-            "✅ user is permitted to send msg at slot {} because it's round 0",
-            cur_slot
-        );
-    } else if send_request.msg.0.iter().all(|x| *x == 0) {
-        debug!(
-            "✅ user is permitted to send msg at slot {} because msg is all-zero",
-            cur_slot
-        );
-    } else {
         if send_request.prev_round_output.dc_msg.scheduling_msg[cur_slot] != cur_fp {
             error!(
                 "❌ can't send in slot {} at round {}. fp mismatch.",
@@ -107,7 +106,7 @@ pub fn user_submit_internal(
     round_msg.scheduling_msg[next_slot] = next_fp;
     round_msg.aggregated_msg[cur_slot] = send_request.msg.clone();
 
-    // 3) derive the round key from shared secrets
+    // Derive the round key from shared secrets
     let shared_secrets = send_request.shared_secrets.unseal()?;
     if shared_secrets.anytrust_group_id() != send_request.anytrust_group_id {
         error!("shared_secrets.anytrust_group_id() != send_request.anytrust_group_id");
@@ -237,7 +236,7 @@ pub fn user_reserve_slot(
             anytrust_group_id: req.anytrust_group_id,
             round: req.round,
             msg: Default::default(),
-            prev_round_output: req.prev_round_output,
+            prev_round_output: Default::default(),
             shared_secrets: req.shared_secrets,
         },
         signing_sk,

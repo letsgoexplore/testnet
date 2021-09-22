@@ -146,10 +146,3 @@ pub struct ServerPubKeyPackage {
     /// proving the association of the two keys
     pub attestation: Vec<u8>,
 }
-
-// TODO: PubKeyPackage is what identifies servers to users. This should have some sort of
-// attestation signature or something, no? Currently it's an unauthenticated tuple.
-// Yes. Added. --- Fan.
-fn _note() {
-    unimplemented!()
-}

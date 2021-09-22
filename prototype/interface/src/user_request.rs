@@ -230,7 +230,6 @@ pub struct UserReservationReq {
     pub user_id: EntityId,
     pub anytrust_group_id: EntityId,
     pub round: u32,
-    pub prev_round_output: RoundOutput,
     /// A map from server public key to sealed shared secret
     pub shared_secrets: SealedSharedSecretDb,
 }
