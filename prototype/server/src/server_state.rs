@@ -67,7 +67,7 @@ impl ServerState {
         enclave: &DcNetEnclave,
         server_aggs: &[UnblindedAggregateShareBlob],
     ) -> Result<RoundOutput> {
-        let output = enclave.derive_round_output(server_aggs)?;
+        let output = enclave.derive_round_output(&self.signing_key, server_aggs)?;
 
         Ok(output)
     }

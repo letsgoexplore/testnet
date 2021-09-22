@@ -165,7 +165,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Feed it to the state and print the result in plain base64
         let state = load_state(&matches)?;
         let round_output = state.derive_round_output(&enclave, &shares)?;
-        println!("{}", base64::encode(&round_output.0));
+        let final_msg = &round_output
+            .dc_msg
+            .aggregated_msg
+            .iter()
+            .flat_map(|msg| msg.0.to_vec())
+            .collect::<Vec<u8>>();
+        println!("{}", base64::encode(final_msg));
     }
 
     enclave.destroy();
