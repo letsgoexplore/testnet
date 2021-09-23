@@ -38,12 +38,16 @@ impl std::cmp::PartialEq for DcMessage {
     }
 }
 
+use std::string::String;
+
 impl Debug for DcMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         if self.0.iter().all(|a| *a == 0) {
             f.write_str(&"0")
         } else {
-            f.write_str(&hex::encode(&self))
+            // f.write_str(&hex::encode(&self))
+            let utf8 = String::from_utf8_lossy(&self.0).into_owned();
+            f.write_str(&utf8)
         }
     }
 }
