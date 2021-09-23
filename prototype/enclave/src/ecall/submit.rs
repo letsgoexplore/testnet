@@ -106,6 +106,12 @@ pub fn user_submit_internal(
     round_msg.scheduling_msg[next_slot] = next_fp;
     round_msg.aggregated_msg[cur_slot] = send_request.msg.clone();
 
+    debug!(
+        "✅ slot {} will include msg {}",
+        cur_slot,
+        hex::encode(send_request.msg),
+    );
+
     // Derive the round key from shared secrets
     let shared_secrets = send_request.shared_secrets.unseal()?;
     if shared_secrets.anytrust_group_id() != send_request.anytrust_group_id {
@@ -140,8 +146,6 @@ pub fn user_submit_internal(
         error!("can't sign");
         return Err(SGX_ERROR_UNEXPECTED);
     }
-
-    debug!("encrypted msg: {:?}", mutable);
 
     // serialize
     Ok(mutable.marshal()?)

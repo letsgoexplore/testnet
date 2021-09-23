@@ -12,7 +12,8 @@ AGG_SERVERKEYS="aggregator/server-keys.txt"
 SERVER_STATE="server/server-state.txt"
 SERVER_SHARES="server/shares.txt"
 
-CMD_PREFIX="cargo run -- "
+# -q to reduce clutter
+CMD_PREFIX="cargo run -q -- "
 
 NUM_SERVERS=2
 NUM_USERS=2

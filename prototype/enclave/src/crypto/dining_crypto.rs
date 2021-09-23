@@ -95,7 +95,7 @@ impl SharedSecretsDb {
     }
 
     pub fn anytrust_group_id(&self) -> EntityId {
-        warn!("this keys are taken from untrusted input. To fix this, seal the public keys too");
+        warn!("[TODO] db keys are untrusted. To fix this, put the public keys as AD when sealing");
         let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
         compute_anytrust_group_id(&keys)
     }
@@ -156,10 +156,10 @@ impl Xor for DcMessage {
 
 impl Xor for DcRoundMessage {
     fn xor(&self, other: &Self) -> Self {
-        let mut result = DcRoundMessage::default();
+        let mut result = self.clone();
 
         for i in 0..result.scheduling_msg.len() {
-            result.scheduling_msg[i] = self.scheduling_msg[i] ^ other.scheduling_msg[i];
+            result.scheduling_msg[i] ^= other.scheduling_msg[i];
         }
 
         for i in 0..result.aggregated_msg.len() {

@@ -4,8 +4,8 @@ use std::collections::BTreeSet;
 
 use common::enclave_wrapper::DcNetEnclave;
 use interface::{
-    compute_group_id, AggRegistrationBlob, EntityId, KemPubKey, RoundSubmissionBlob,
-    SealedSigPrivKey, ServerPubKeyPackage, SignedPartialAggregate,
+    compute_group_id, AggRegistrationBlob, EntityId, RoundSubmissionBlob, SealedSigPrivKey,
+    ServerPubKeyPackage, SignedPartialAggregate,
 };
 use serde::{Deserialize, Serialize};
 

@@ -190,12 +190,17 @@ pub fn derive_round_output(
     let mut round_output = RoundOutput {
         round,
         dc_msg: final_msg,
-        server_sigs: vec![], // TODO pass in secret key to get it signed
+        server_sigs: vec![],
     };
 
     let (sig, pk) = round_output.sign(&signing_sk.unseal()?)?;
 
     round_output.server_sigs.push(Signature { pk, sig });
+
+    debug!(
+        "✅ round {} concluded with output {:?}",
+        round, round_output
+    );
 
     Ok(round_output)
 }

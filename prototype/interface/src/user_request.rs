@@ -19,7 +19,6 @@ impl Default for DcMessage {
     }
 }
 
-use core::cmp::Ordering;
 #[cfg(feature = "trusted")]
 use sgx_rand::{Rand, Rng};
 
@@ -41,7 +40,11 @@ impl std::cmp::PartialEq for DcMessage {
 
 impl Debug for DcMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.write_str(&hex::encode(&self))
+        if self.0.iter().all(|a| *a == 0) {
+            f.write_str(&"0")
+        } else {
+            f.write_str(&hex::encode(&self))
+        }
     }
 }
 
@@ -113,7 +116,7 @@ impl Debug for DcRoundMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_struct("DcRoundMessage")
             .field("scheduling_msg", &self.scheduling_msg)
-            .field("aggregated_msg", &"omitted")
+            .field("aggregated_msg", &self.aggregated_msg)
             .finish()
     }
 }

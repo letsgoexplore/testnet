@@ -1,4 +1,6 @@
+use crate::SgxSigningPubKey;
 use sgx_types::{sgx_ec256_signature_t, SGX_NISTP_ECP256_KEY_SIZE};
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 // A wrapper around sgx_ec256_signature_t
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -23,9 +25,6 @@ impl From<sgx_ec256_signature_t> for SgxSignature {
     }
 }
 
-use crate::SgxSigningPubKey;
-use std::fmt::{Debug, Formatter, Result as FmtResult};
-
 impl Debug for SgxSignature {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let hex_u32_vec = |array: &[u32]| {
@@ -37,10 +36,11 @@ impl Debug for SgxSignature {
             hex::encode(&x)
         };
 
-        f.debug_struct("Sig")
-            .field("x", &hex_u32_vec(&self.x))
-            .field("y", &hex_u32_vec(&self.y))
-            .finish()
+        f.write_str(&std::format!(
+            "({}, {})",
+            &hex_u32_vec(&self.x),
+            &hex_u32_vec(&self.y)
+        ))
     }
 }
 

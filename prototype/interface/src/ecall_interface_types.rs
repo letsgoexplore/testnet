@@ -3,11 +3,9 @@ use crate::sgx_protected_keys::{
 };
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
-use crate::{DcMessage, DcRoundMessage, DC_NET_N_SLOTS};
+use crate::DcRoundMessage;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
-use std::format;
-use std::vec;
 use std::vec::Vec;
 
 macro_rules! impl_enum {

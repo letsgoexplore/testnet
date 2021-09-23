@@ -66,6 +66,10 @@ pub fn add_to_aggregate_internal(
         }
     }
 
+    debug!("✅ various checks passed now we can aggregate");
+    // debug!("incoming msg: {:?}", incoming_msg);
+    // debug!("current agg: {:?}", current_aggregation);
+
     // aggregate in the new message
     current_aggregation.user_ids.extend(&incoming_msg.user_ids);
     current_aggregation
@@ -75,7 +79,7 @@ pub fn add_to_aggregate_internal(
     // sign
     current_aggregation.sign_mut(&tee_signing_key)?;
 
-    debug!("new agg with users {:?}", current_aggregation.user_ids);
+    debug!("✅ new agg with users {:?}", current_aggregation.user_ids);
 
     current_aggregation.marshal()
 }

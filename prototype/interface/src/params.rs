@@ -8,7 +8,7 @@ pub const FOOTPRINT_BIT_SIZE: usize = 3;
 /// The number of slots in a DC net message
 pub const DC_NET_N_SLOTS: usize = 16;
 /// The number of bytes in each DC net slot
-pub const DC_NET_MESSAGE_LENGTH: usize = 1024;
+pub const DC_NET_MESSAGE_LENGTH: usize = 256;
 
 /// The size of an anytrust shared secret
 pub const SERVER_KEY_LENGTH: usize = DC_NET_MESSAGE_LENGTH;

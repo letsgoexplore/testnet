@@ -7,7 +7,6 @@ use sgx_urts::SgxEnclave;
 use std::path::PathBuf;
 
 use interface::*;
-use log::*;
 
 // error type for enclave operations
 use quick_error::quick_error;
