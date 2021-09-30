@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build enclave
         run: PATH=/root/.cargo/bin:$PATH make
-        working-directory: prototype/enclave
+        working-directory: ./enclave
       - name: Build client
         run: PATH=/root/.cargo/bin:$PATH cargo b
-        working-directory: prototype/enclave
+        working-directory: ./enclave
