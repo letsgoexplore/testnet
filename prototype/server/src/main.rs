@@ -7,6 +7,7 @@ mod util;
 
 use crate::{
     server_state::ServerState,
+    service::start_service,
     util::{load_from_stdin, load_state, save_state, save_to_stdout},
 };
 
@@ -19,9 +20,11 @@ use interface::{
 use std::{error::Error, fs::File};
 
 use clap::{App, AppSettings, Arg, SubCommand};
+use log::info;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Do setup
+    env_logger::init();
     let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
 
     let state_arg = Arg::with_name("server-state")
@@ -91,6 +94,43 @@ fn main() -> Result<(), Box<dyn Error>> {
                             "A file containing newline-delimited unblinded shares from every \
                             anytrust server",
                         ),
+                ),
+        )
+        .subcommand(
+            SubCommand::with_name("start-service")
+                .about(
+                    "Starts a web service at BIND_ADDR. After TIMEOUT seconds, sends the\
+                    aggregate to the aggregator or server at FORWARD_ADDR.",
+                )
+                .arg(state_arg.clone())
+                .arg(
+                    Arg::with_name("bind")
+                        .short("b")
+                        .long("bind")
+                        .value_name("BIND_ADDR")
+                        .required(true)
+                        .help("The local address to bind the service to. Example: localhost:9000"),
+                )
+                .arg(
+                    Arg::with_name("leader-url")
+                        .short("l")
+                        .long("leader-url")
+                        .value_name("LEADER_ADDR")
+                        .required(false)
+                        .help(
+                            "The URL of the leader of this anytrust group. Example: \
+                            http://192.168.0.10:9000 . If this node is the leader, this flag is \
+                            omitted.",
+                        ),
+                )
+                .arg(
+                    Arg::with_name("round")
+                        .short("r")
+                        .long("round")
+                        .value_name("INTEGER")
+                        .required(true)
+                        .takes_value(true)
+                        .help("The current round number of the DC net"),
                 ),
         )
         .get_matches();
@@ -171,6 +211,32 @@ fn main() -> Result<(), Box<dyn Error>> {
             .flat_map(|msg| msg.0.to_vec())
             .collect::<Vec<u8>>();
         println!("{}", base64::encode(final_msg));
+    }
+
+    if let Some(matches) = matches.subcommand_matches("start-service") {
+        // Load the args
+        let bind_addr = matches.value_of("bind").unwrap().to_string();
+        let leader_url = matches.value_of("leader-url").map(|s| s.to_string());
+        let round = {
+            let round_str = matches.value_of("round").unwrap();
+            cli_util::parse_u32(&round_str)?
+        };
+
+        // Check that the forward-to URL is well-formed
+        leader_url.as_ref().map(|u| {
+            u.parse::<actix_web::http::Uri>()
+                .expect("the leader-url parameter must be a URL");
+        });
+
+        // Feed it to the state and print the result
+        let server_state = load_state(&matches)?;
+        info!(
+            "Loaded server state. Group size is {}",
+            server_state.anytrust_group_size
+        );
+
+        let state = service::ServiceState::new(server_state, enclave.clone(), round, leader_url);
+        start_service(bind_addr, state).unwrap();
     }
 
     enclave.destroy();

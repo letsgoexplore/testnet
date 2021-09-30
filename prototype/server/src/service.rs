@@ -40,7 +40,24 @@ pub(crate) struct ServiceState {
     pub(crate) leader_url: Option<String>,
     /// A map from round number to the round's output
     pub(crate) round_outputs: BTreeMap<u32, RoundOutput>,
-    pub(crate) anytrust_group_size: usize,
+}
+
+impl ServiceState {
+    pub(crate) fn new(
+        server_state: ServerState,
+        enclave: DcNetEnclave,
+        round: u32,
+        leader_url: Option<String>,
+    ) -> ServiceState {
+        ServiceState {
+            server_state,
+            enclave,
+            round,
+            leader_url,
+            round_outputs: BTreeMap::new(),
+            round_shares: Vec::new(),
+        }
+    }
 }
 
 /// Finish the round as the anytrust leader. This means computing the round output and clearing the
@@ -60,11 +77,12 @@ fn leader_finish_round(state: &mut ServiceState) {
     // a state that cannot progres.
     let output = server_state
         .derive_round_output(enclave, &round_shares)
-        .unwrap_or(RoundOutput::default());
+        .unwrap();
+    //.unwrap_or(RoundOutput::default());
     round_outputs.insert(*round, output);
+    info!("Output of round {} now available", *round);
 
     // Clear the state and increment the round
-    round_outputs.clear();
     round_shares.clear();
     *round += 1;
 }
@@ -98,11 +116,14 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
 async fn submit_agg(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
+    // Strip whitespace from the payload
+    let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
     let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
 
     // Unblind the input
     let mut state_handle = state.get_ref().lock().unwrap();
+    let group_size = state_handle.server_state.anytrust_group_size;
     let share = state_handle
         .server_state
         .unblind_aggregate(&state_handle.enclave, &agg_data)?;
@@ -113,9 +134,15 @@ async fn submit_agg(
             // Since we're the leader, add this share to the current round's shares
             let round_shares = &mut state_handle.round_shares;
             round_shares.push(share);
+            info!(
+                "I now have {}/{} round shares",
+                round_shares.len(),
+                group_size
+            );
 
             // If all the shares are in, that's the end of the round
-            if round_shares.len() == state_handle.server_state.anytrust_group_size {
+            if round_shares.len() == group_size {
+                info!("Finishing round");
                 leader_finish_round(state_handle.deref_mut());
             }
         }
@@ -136,10 +163,10 @@ async fn submit_share(
 ) -> Result<HttpResponse, ApiError> {
     // Unpack state
     let mut handle = state.get_ref().lock().unwrap();
+    let group_size = handle.server_state.anytrust_group_size;
     let ServiceState {
         ref leader_url,
         ref mut round_shares,
-        anytrust_group_size,
         ..
     } = handle.deref_mut();
 
@@ -153,9 +180,11 @@ async fn submit_share(
     // Parse the share and add it to our shares
     let share: UnblindedAggregateShareBlob = cli_util::load(&mut payload.as_bytes())?;
     round_shares.push(share);
+    info!("Got share. Number of shares is now {}", round_shares.len());
 
     // If all the shares are in, that's the end of the round
-    if round_shares.len() == *anytrust_group_size {
+    if round_shares.len() == group_size {
+        info!("Finishing round");
         leader_finish_round(handle.deref_mut());
     }
 
@@ -163,7 +192,7 @@ async fn submit_share(
 }
 
 /// Returns the output of the specified round
-#[get("/round-result/{orund}")]
+#[get("/round-result/{round}")]
 async fn round_result(
     (round, state): (web::Path<u32>, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
@@ -179,9 +208,15 @@ async fn round_result(
     // Try to get the requested output
     let res = match round_outputs.get(&round) {
         // If the given round's output exists in memory, return it
-        Some(blob) => {
+        Some(round_output) => {
+            let blob = round_output
+                .dc_msg
+                .aggregated_msg
+                .iter()
+                .flat_map(|msg| msg.0.to_vec())
+                .collect::<Vec<u8>>();
             let mut body = Vec::new();
-            cli_util::save(&mut body, blob)?;
+            cli_util::save(&mut body, &blob)?;
             HttpResponse::Ok().body(body)
         }
         // If the given round's output doesn't exist in memory, error out
@@ -196,7 +231,13 @@ async fn round_result(
 
 #[actix_rt::main]
 pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std::io::Result<()> {
+    info!(
+        "Server group size is {}",
+        state.server_state.anytrust_group_size
+    );
     let state = Arc::new(Mutex::new(state));
+
+    info!("Making new server on {}", bind_addr);
 
     // Start the web server
     HttpServer::new(move || {
@@ -206,6 +247,7 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
             cfg.service(round_result);
         })
     })
+    .workers(1)
     .bind(bind_addr)
     .expect("could not bind")
     .run()

@@ -9,8 +9,13 @@ USER_SERVERKEYS="client/server-keys.txt"
 AGG_STATE="aggregator/agg-state.txt"
 AGG_ROOTSTATE="aggregator/agg-root-state.txt"
 AGG_SERVERKEYS="aggregator/server-keys.txt"
+AGG_FINALAGG="aggregator/final-agg.txt"
 SERVER_STATE="server/server-state.txt"
 SERVER_SHARES="server/shares.txt"
+SERVER_SHARES_PARTIAL="server/partial_shares.txt"
+
+AGG_SERVICE_ADDR="localhost:8785"
+SERVER_SERVICE_ADDR="localhost:8122"
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -q -- "
@@ -61,12 +66,14 @@ check() {
 clean() {
     # The below pattern removes all files of the form "client/user-stateX.txt" for any X
     rm -f ${USER_STATE%.txt}*.txt || true
-    rm -f ${USER_SERVERKEYS%.txt}*.txt || true
+    rm -f $USER_SERVERKEYS || true
     rm -f ${AGG_STATE%.txt}*.txt || true
     rm -f $AGG_ROOTSTATE || true
-    rm -f ${AGG_SERVERKEYS%.txt}*.txt || true
+    rm -f $AGG_SERVERKEYS || true
+    rm -f $AGG_FINALAGG || true
     rm -f ${SERVER_STATE%.txt}*.txt || true
     rm -f $SERVER_SHARES || true
+    rm -f $SERVER_SHARES_PARTIAL || true
     echo "Cleaned"
 }
 
@@ -75,17 +82,53 @@ setup_servers() {
     touch $USER_SERVERKEYS
     cd server
 
+    # Accumulate the server registration data in this variable. The separator we use is ';'
+    SERVER_REGS=""
+
     # Make a bunch of servers and save their pubkeys in client/ and aggregator/
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
-        # TODO: Do server registration
-        $CMD_PREFIX new --server-state "../$STATE" > /dev/null
+
+        # Make a new server and save the registration data
+        SERVER_REG=$(
+            $CMD_PREFIX new --server-state "../$STATE"
+        )
+        # Append
+        if [[ i -eq 1 ]]; then
+            SERVER_REGS="$SERVER_REG"
+        else
+            SERVER_REGS="$SERVER_REGS;$SERVER_REG"
+        fi
+
+        # Save the server pubkeys
         $CMD_PREFIX get-pubkeys --server-state "../$STATE" >> "../$USER_SERVERKEYS"
     done
 
-    # Copy the pubkey file to the aggregator
+    # Copy the pubkeys file to the aggregators
     cp "../$USER_SERVERKEYS" "../$AGG_SERVERKEYS"
 
+    # Read the regs into a variable
+    IFS=';' read -ra SERVER_REGS <<< "$SERVER_REGS"
+
+    # Register the servers with each other
+    i=1
+    for SERVER_REG in "${SERVER_REGS[@]}"; do
+        for j in $(seq 1 $NUM_SERVERS); do
+            # Don't register any server with itself
+            if [[ $i -eq $j ]]; then
+                continue
+            fi
+
+            # Register server i with server j
+            STATE="${SERVER_STATE%.txt}$j.txt"
+            echo $SERVER_REG | $CMD_PREFIX register-server --server-state "../$STATE"
+        done
+
+        # Increment i
+        i=$(($i + 1))
+    done
+
+    echo "Set up servers"
     cd ..
 }
 
@@ -93,7 +136,7 @@ setup_servers() {
 setup_aggregators() {
     cd aggregator
 
-    # Accumulate the client registration data in this variable. The separator we use is ';'
+    # Accumulate the aggregator registration data in this variable. The separator we use is ';'
     AGG_REGS=""
 
     # Make new base-level aggregators and capture the registration data
@@ -125,13 +168,13 @@ setup_aggregators() {
 
     # Register all the aggregators
     for AGG_REG in "${AGG_REGS[@]}"; do
-        echo $(seq 1 $NUM_SERVERS)
         for i in $(seq 1 $NUM_SERVERS); do
             STATE="${SERVER_STATE%.txt}$i.txt"
             echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
         done
     done
 
+    echo "Set up aggregators"
     cd ..
 }
 
@@ -170,6 +213,7 @@ setup_clients() {
         done
     done
 
+    echo "Set up clients"
     cd ..
 }
 
@@ -252,6 +296,7 @@ encrypt_msgs() {
         i=$(($i + 1))
     done
 
+    echo "Encrypted messages"
     cd ..
 }
 
@@ -276,21 +321,20 @@ propagate_aggregates() {
     # Read the aggregates into an array
     IFS=';' read -ra AGGS <<< "$AGGS"
 
-    # Now input all the aggregates into the root aggregator
+    # Input all the aggregates into the root aggregator
     for AGG in "${AGGS[@]}"; do
         echo "$AGG" | $CMD_PREFIX input --agg-state "../$AGG_ROOTSTATE"
     done
 
-     cd ..
+    # Get the final aggregate
+    $CMD_PREFIX finalize --agg-state "../$AGG_ROOTSTATE" > "../$AGG_FINALAGG"
+
+    echo "Propagated aggregates"
+    cd ..
 }
 
 # Decrypts the aggregated messages using the server's secrets
 decrypt_msgs() {
-    # Finalize the root aggregator
-    cd aggregator
-    AGG=$($CMD_PREFIX finalize --agg-state "../$AGG_ROOTSTATE")
-    cd ..
-
     cd server
 
     # Create the unblinded shares file
@@ -299,12 +343,14 @@ decrypt_msgs() {
     # For each server, unblind the top-level aggregate and put them all in the server share file
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
-        echo $AGG \
-            | $CMD_PREFIX unblind-aggregate --server-state "../$STATE" \
+        $CMD_PREFIX unblind-aggregate --server-state "../$STATE" < "../$AGG_FINALAGG" \
             >> "../$SERVER_SHARES"
     done
 
-    # Now have every combine the shares. The output should be the same for all of them.
+    # Save all but the leader's share. This is for the service tests
+    tail +2 "../$SERVER_SHARES" > "../$SERVER_SHARES_PARTIAL"
+
+    # Now have every server combine the shares. The output should be the same for all of them.
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
         ROUND_OUTPUT=$(

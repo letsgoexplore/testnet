@@ -7,6 +7,7 @@ use interface::{
     SignedPartialAggregate, SignedPubKeyDb, UnblindedAggregateShareBlob, UserRegistrationBlob,
 };
 
+use log::info;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -114,6 +115,11 @@ impl ServerState {
         // Input the registration and increment the size of the group
         enclave.recv_server_registration(&mut self.pubkeys, input_blob)?;
         self.anytrust_group_size += 1;
+
+        info!(
+            "Registered new server. Anytrust group size is now {}",
+            self.anytrust_group_size
+        );
 
         Ok(())
     }
