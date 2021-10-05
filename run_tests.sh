@@ -13,6 +13,7 @@ AGG_FINALAGG="aggregator/final-agg.txt"
 SERVER_STATE="server/server-state.txt"
 SERVER_SHARES="server/shares.txt"
 SERVER_SHARES_PARTIAL="server/partial_shares.txt"
+SERVER_ROUNDOUTPUT="server/round_output.txt"
 
 AGG_SERVICE_ADDR="localhost:8785"
 SERVER_SERVICE_ADDR="localhost:8122"
@@ -24,15 +25,11 @@ NUM_SERVERS=2
 NUM_USERS=2
 NUM_AGGREGATORS=1
 NUM_USERS_PER_AGGREGATOR=2
-ROUND=0
 
 # We define four messages. "testing", "\0\0\0\0\0\0\0hello", and "\0\0\0\0\0\0\0\0\0\0\0\0world",
 # and "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0yo". These XOR to "testinghelloworldyo". The leading ';' is
 # just because other things are indexed by 1.
 MSGS=";testing;\0\0\0\0\0\0\0hello;\0\0\0\0\0\0\0\0\0\0\0\0world;\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0yo"
-
-# Magic command to trim the leading and trailing whitespace of its input
-TRIM="sed 's/\n$//' | sed '/^$/d'"
 
 # Checks that the given constants make sense
 check() {
@@ -74,6 +71,7 @@ clean() {
     rm -f ${SERVER_STATE%.txt}*.txt || true
     rm -f $SERVER_SHARES || true
     rm -f $SERVER_SHARES_PARTIAL || true
+    rm -f ${SERVER_ROUNDOUTPUT%.txt}*.txt || true
     echo "Cleaned"
 }
 
@@ -251,6 +249,13 @@ encrypt_msgs() {
     for i in $(seq 1 $NUM_USERS); do
         STATE="${USER_STATE%.txt}$i.txt"
         MSG="${MSGS[$i]}"
+        # Set the round output filename. If there was no previous round, it's /dev/null
+        PREV_ROUND_OUTPUT=""
+        if [[ $ROUND -eq 0 ]]; then
+            PREV_ROUND_OUTPUT="/dev/null"
+        else
+            PREV_ROUND_OUTPUT="${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt"
+        fi
 
         echo -n $MSG;
 
@@ -261,7 +266,7 @@ encrypt_msgs() {
             | $CMD_PREFIX encrypt-msg \
                   --user-state "../$STATE" \
                   --round $ROUND \
-                  --prev-round-output /dev/null
+                  --prev-round-output $PREV_ROUND_OUTPUT
         )
 
         # Append
@@ -350,27 +355,37 @@ decrypt_msgs() {
     # Save all but the leader's share. This is for the service tests
     tail +2 "../$SERVER_SHARES" > "../$SERVER_SHARES_PARTIAL"
 
-    # Now have every server combine the shares. The output should be the same for all of them.
-    for i in $(seq 1 $NUM_SERVERS); do
-        STATE="${SERVER_STATE%.txt}$i.txt"
-        ROUND_OUTPUT=$(
-            $CMD_PREFIX combine-shares --server-state "../$STATE" --shares "../$SERVER_SHARES"
-        )
+    # Now get the combined shares from the leader
+    LEADER=1
+    STATE="${SERVER_STATE%.txt}$LEADER.txt"
+    ROUND_OUTPUT="${SERVER_ROUNDOUTPUT%.txt}$ROUND.txt"
+    $CMD_PREFIX combine-shares --server-state "../$STATE" --shares "../$SERVER_SHARES" \
+        > "../$ROUND_OUTPUT"
 
-        echo -n "ROUND OUTPUT: "
-        echo -n $ROUND_OUTPUT | base64 -d
-        echo ""
-    done
+    # Now have every server combine the shares. The output should be the same for all of them.
+    #for i in $(seq 1 $NUM_SERVERS); do
+    #    STATE="${SERVER_STATE%.txt}$i.txt"
+    #    ROUND_OUTPUT=$(
+    #        $CMD_PREFIX combine-shares --server-state "../$STATE" --shares "../$SERVER_SHARES"
+    #    )
+    #    echo -n "ROUND OUTPUT: "
+    #    echo -n $ROUND_OUTPUT | base64 -d
+    #    echo ""
+    #done
 
     cd ..
 }
 
 clean
 check
+
 setup_servers
 setup_aggregators
 setup_clients
-start_round
-encrypt_msgs
-propagate_aggregates
-decrypt_msgs
+
+for ROUND in $(seq 0 2); do
+    start_round
+    encrypt_msgs
+    propagate_aggregates
+    decrypt_msgs
+done

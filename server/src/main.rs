@@ -201,16 +201,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         let sharefile = File::open(shares_filename)?;
         let shares: Vec<UnblindedAggregateShareBlob> = cli_util::load_multi(sharefile)?;
 
-        // Feed it to the state and print the result in plain base64
+        // Feed it to the state and output the result
         let state = load_state(&matches)?;
         let round_output = state.derive_round_output(&enclave, &shares)?;
-        let final_msg = &round_output
+        save_to_stdout(&round_output)?;
+
+        // Log the raw round result in base64
+        let round_msg = &round_output
             .dc_msg
             .aggregated_msg
             .iter()
             .flat_map(|msg| msg.0.to_vec())
             .collect::<Vec<u8>>();
-        println!("{}", base64::encode(final_msg));
+        info!("Round output {}", base64::encode(round_msg));
     }
 
     if let Some(matches) = matches.subcommand_matches("start-service") {
