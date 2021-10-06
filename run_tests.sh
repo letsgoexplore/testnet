@@ -26,10 +26,8 @@ NUM_USERS=2
 NUM_AGGREGATORS=1
 NUM_USERS_PER_AGGREGATOR=2
 
-# We define four messages. "testing", "\0\0\0\0\0\0\0hello", and "\0\0\0\0\0\0\0\0\0\0\0\0world",
-# and "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0yo". These XOR to "testinghelloworldyo". The leading ';' is
-# just because other things are indexed by 1.
-MSGS=";testing;\0\0\0\0\0\0\0hello;\0\0\0\0\0\0\0\0\0\0\0\0world;\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0yo"
+# We define four messages, separated by semicolons. The leading ; is because we index by 1
+MSGS_STR=";testing;hello;world;yo"
 
 # Checks that the given constants make sense
 check() {
@@ -219,6 +217,8 @@ setup_clients() {
 start_round() {
     cd aggregator
 
+    echo "Starting round $ROUND"
+
     # Start the base aggregators
     for i in $(seq 1 $NUM_AGGREGATORS); do
         STATE="${AGG_STATE%.txt}$i.txt"
@@ -235,7 +235,7 @@ encrypt_msgs() {
     cd client
 
     # Read the messages into a variable
-    IFS=';' read -ra MSGS <<< "$MSGS"
+    IFS=';' read -ra MSGS <<< "$MSGS_STR"
 
     if [[ ${#MSGS[@]} -lt $NUM_USERS ]]; then
         echo "Error: we don't have enough sample messages for $NUM_USERS users"
@@ -257,16 +257,14 @@ encrypt_msgs() {
             PREV_ROUND_OUTPUT="${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt"
         fi
 
-        echo -n $MSG;
-
-        # TODO: Set previous round output to something real for round > 0
+        # Encrypt
         CIPHERTEXT=$(
             echo -ne "$MSG" \
             | base64 \
             | $CMD_PREFIX encrypt-msg \
                   --user-state "../$STATE" \
                   --round $ROUND \
-                  --prev-round-output $PREV_ROUND_OUTPUT
+                  --prev-round-output "../$PREV_ROUND_OUTPUT"
         )
 
         # Append
@@ -342,8 +340,9 @@ propagate_aggregates() {
 decrypt_msgs() {
     cd server
 
-    # Create the unblinded shares file
+    # Create and clear the unblinded shares file
     touch "../$SERVER_SHARES"
+    true > "../$SERVER_SHARES"
 
     # For each server, unblind the top-level aggregate and put them all in the server share file
     for i in $(seq 1 $NUM_SERVERS); do
@@ -362,28 +361,25 @@ decrypt_msgs() {
     $CMD_PREFIX combine-shares --server-state "../$STATE" --shares "../$SERVER_SHARES" \
         > "../$ROUND_OUTPUT"
 
-    # Now have every server combine the shares. The output should be the same for all of them.
-    #for i in $(seq 1 $NUM_SERVERS); do
-    #    STATE="${SERVER_STATE%.txt}$i.txt"
-    #    ROUND_OUTPUT=$(
-    #        $CMD_PREFIX combine-shares --server-state "../$STATE" --shares "../$SERVER_SHARES"
-    #    )
-    #    echo -n "ROUND OUTPUT: "
-    #    echo -n $ROUND_OUTPUT | base64 -d
-    #    echo ""
-    #done
+    # Have every server combine the shares as well. The output should be the same for all of them.
+    # Don't save the output. Just visually inspect the logs.
+    for i in $(seq 2 $NUM_SERVERS); do
+        STATE="${SERVER_STATE%.txt}$i.txt"
+        $CMD_PREFIX combine-shares --server-state "../$STATE" --shares "../$SERVER_SHARES" \
+            > /dev/null
+    done
 
     cd ..
 }
 
-clean
-check
+#clean
+#check
+#
+#setup_servers
+#setup_aggregators
+#setup_clients
 
-setup_servers
-setup_aggregators
-setup_clients
-
-for ROUND in $(seq 0 2); do
+for ROUND in $(seq 0 3); do
     start_round
     encrypt_msgs
     propagate_aggregates
