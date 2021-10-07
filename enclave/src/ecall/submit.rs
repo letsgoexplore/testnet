@@ -59,10 +59,16 @@ pub fn user_submit_internal(
         send_request.round,
     );
 
-    // convert scheduling slot to msg slot
-    // some scheduling slot might be empty.
+    // since the scheduling vector is potentially a lot larger than the dc net message vector (to
+    // avoid collision), we expect many slots in the scheduling vector to be empty. To save
+    // bandwidth we compact the dc net message by skipping slots that are not scheduled
+    //
+    // e.g., if scheduling msg is [100, 0, 0, 676] and the sender is scheduled at the 4th slot
+    // (fp=676), then she should send in the 2nd slot in the dc net vector because two slots are
+    // empty.
+    // cur_slot is the reserved slot # in the scheduling vector (3 in the above example)
     // msg_slot = the number of non-empty footprints in slot [0...cur_slot)
-    // e.g., if scheduling msg is [1, 0, 1, 1] and the sender is scheduled at scheduling slot 3, then she should send in slot 2
+    // msg_slot = 1 in the above example
     let mut msg_slot = cur_slot;
     for s in 0..cur_slot {
         // skip empty slots
