@@ -74,8 +74,8 @@ pub type Footprint = u32;
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct DcRoundMessage {
-    // #[serde(with = "BigArray")]
-    pub scheduling_msg: [Footprint; DC_NET_N_SLOTS],
+    #[serde(with = "BigArray")]
+    pub scheduling_msg: [Footprint; FOOTPRINT_N_SLOTS],
     // #[serde(with = "BigArray")]
     pub aggregated_msg: [DcMessage; DC_NET_N_SLOTS],
 }
@@ -101,7 +101,7 @@ impl Rand for DcRoundMessage {
 impl Default for DcRoundMessage {
     fn default() -> Self {
         DcRoundMessage {
-            scheduling_msg: [0; DC_NET_N_SLOTS],
+            scheduling_msg: [0; FOOTPRINT_N_SLOTS],
             aggregated_msg: [DcMessage::default(); DC_NET_N_SLOTS],
         }
     }

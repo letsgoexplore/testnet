@@ -37,7 +37,9 @@ pub fn user_submit_internal(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    debug!("✅ user id matches user signing key");
+    let uid = &send_request.user_id;
+
+    debug!("✅ user id {} matches user signing key", uid);
 
     // check anytrust group id matches server pubkeys
     // TODO: these pub keys are untrustworthy
@@ -57,18 +59,39 @@ pub fn user_submit_internal(
         send_request.round,
     );
 
+    // convert scheduling slot to msg slot
+    // some scheduling slot might be empty.
+    // msg_slot = the number of non-empty footprints in slot [0...cur_slot)
+    // e.g., if scheduling msg is [1, 0, 1, 1] and the sender is scheduled at scheduling slot 3, then she should send in slot 2
+    let mut msg_slot = cur_slot;
+    for s in 0..cur_slot {
+        // skip empty slots
+        if send_request.prev_round_output.dc_msg.scheduling_msg[s] == 0 {
+            msg_slot -= 1;
+        }
+    }
+
+    if msg_slot > DC_NET_N_SLOTS {
+        error!("❌ can't send. scheduling failure. you need to wait for the next round.")
+    }
+
+    // drop mut
+    let msg_slot: usize = msg_slot;
+
+    debug!("user {} will try to send in slot {}", uid, msg_slot);
+
     // Check the scheduling result from the previous round (the ticket) unless
     // a) this is the first round (round = 0) or
     // b) req.msg is all zeroes (i.e., the user is not sending anything but just scheduling).
     if send_request.round == 0 {
         debug!(
-            "✅ user is permitted to send msg at slot {} because it's round 0",
-            cur_slot
+            "✅ user {} is permitted to send at slot {} because it's round 0",
+            uid, msg_slot
         );
     } else if msg_is_empty {
         debug!(
-            "✅ user is permitted to send msg at slot {} because msg is all-zero",
-            cur_slot
+            "✅ user {} is permitted to send at slot {} because msg is all-zero",
+            uid, msg_slot
         );
     } else {
         // validate the request
@@ -85,31 +108,33 @@ pub fn user_submit_internal(
 
         if send_request.prev_round_output.dc_msg.scheduling_msg[cur_slot] != cur_fp {
             error!(
-                "❌ can't send in slot {} at round {}. fp mismatch.",
-                cur_slot, send_request.round
+                "❌ can't send in slot {} at round {}. fp mismatch. scheduled {}. current {}. Possible collision.",
+                msg_slot,
+                send_request.round,
+                send_request.prev_round_output.dc_msg.scheduling_msg[cur_slot],
+                cur_fp,
             );
             return Err(SGX_ERROR_INVALID_PARAMETER);
         }
         debug!(
-            "✅ user is permitted to send msg at slot {} for round {}",
-            cur_slot, send_request.round
+            "✅ user {} is permitted to send msg at slot {} for round {}",
+            uid, msg_slot, send_request.round
         );
     }
 
     debug!(
-        "✅ user will schedule for slot {} for next round",
-        next_slot
+        "✅ user will schedule for slot {} for next round with fp {}",
+        next_slot, next_fp,
     );
 
-    // Put use message in the designated slot of the round message
+    // Put user message in the designated slot of the round message
     let mut round_msg = DcRoundMessage::default();
     round_msg.scheduling_msg[next_slot] = next_fp;
-    round_msg.aggregated_msg[cur_slot] = send_request.msg.clone();
+    round_msg.aggregated_msg[msg_slot] = send_request.msg.clone();
 
     debug!(
-        "✅ slot {} will include msg {}",
-        cur_slot,
-        hex::encode(send_request.msg),
+        "✅ slot {} will include msg {:?}",
+        msg_slot, send_request.msg,
     );
 
     // Derive the round key from shared secrets
@@ -219,9 +244,9 @@ fn derive_reservation(
     let next_slot_val = h4_to_u32(SCHED_SLOT_VAL, usk, anytrust_group_id, round);
 
     (
-        prev_slot_idx % DC_NET_N_SLOTS,
+        prev_slot_idx % FOOTPRINT_N_SLOTS,
         prev_slot_val,
-        next_slot_idx % DC_NET_N_SLOTS,
+        next_slot_idx % FOOTPRINT_N_SLOTS,
         next_slot_val,
     )
 }

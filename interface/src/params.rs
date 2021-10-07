@@ -5,6 +5,9 @@ pub const USER_ID_MAX_LEN: usize = 32;
 /// The num of bits in a footprint. must be smaller than 32 (checked in enclave)
 pub const FOOTPRINT_BIT_SIZE: usize = 3;
 
+/// The number of scheduling slots. This should be larger than DC_NET_N_SLOTS to avoid collision.
+pub const FOOTPRINT_N_SLOTS: usize = DC_NET_N_SLOTS * 4;
+
 /// The number of slots in a DC net message
 pub const DC_NET_N_SLOTS: usize = 16;
 /// The number of bytes in each DC net slot

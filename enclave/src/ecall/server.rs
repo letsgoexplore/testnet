@@ -132,7 +132,7 @@ pub fn unblind_aggregate(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    let round_secret = derive_round_secret(round_msg.round, &secret_db).map_err(|e| {
+    let round_secret = derive_round_secret(round_msg.round, &secret_db).map_err(|_| {
         error!("crypto error");
         SGX_ERROR_INVALID_PARAMETER
     })?;
@@ -198,7 +198,7 @@ pub fn derive_round_output(
     round_output.server_sigs.push(Signature { pk, sig });
 
     debug!(
-        "✅ round {} concluded with output {:?}",
+        "⏰ round {} concluded with output {:?}",
         round, round_output
     );
 
