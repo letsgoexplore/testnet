@@ -84,7 +84,7 @@ macro_rules! gen_ecall_stub {
                 return Err(crate::enclave_wrapper::EnclaveError::SgxError(call_ret));
             }
             if ret != crate::enclave_wrapper::sgx_status_t::SGX_SUCCESS {
-                return Err(crate::enclave_wrapper::EnclaveError::SgxError(ret));
+                return Err(crate::enclave_wrapper::EnclaveError::EnclaveLogicError(ret));
             }
 
             let output: $type_o = serde_cbor::from_slice(&out_buf[..outbuf_used]).map_err(|e| {
@@ -244,6 +244,12 @@ impl DcNetEnclave {
     ///     2. Check that the current round is prev_round+1
     ///     3. Use the derived slot for the given message
     ///     4. Make a new footprint reservation for this round
+    ///
+    /// Error handling:
+    ///
+    /// If scheduling failed (e.g., due to collision) this will return
+    /// Err(EnclaveLogicError(SGX_ERROR_SERVICE_UNAVAILABLE)). Higher level application should
+    /// retry, for example, in the next round.
     pub fn user_submit_round_msg(
         &self,
         submission_req: &UserSubmissionReq,

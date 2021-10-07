@@ -379,7 +379,7 @@ decrypt_msgs() {
 #setup_aggregators
 #setup_clients
 
-for ROUND in $(seq 0 3); do
+for ROUND in $(seq 60 65); do
     start_round
     encrypt_msgs
     propagate_aggregates
