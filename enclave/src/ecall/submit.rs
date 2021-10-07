@@ -21,6 +21,7 @@ use std::convert::TryFrom;
 use std::debug;
 use std::iter::FromIterator;
 use std::prelude::v1::*;
+use sgx_types::sgx_status_t::SGX_ERROR_SERVICE_UNAVAILABLE;
 
 pub fn user_submit_internal(
     input: &(UserSubmissionReq, SealedSigPrivKey),
@@ -78,7 +79,8 @@ pub fn user_submit_internal(
     }
 
     if msg_slot > DC_NET_N_SLOTS {
-        error!("❌ can't send. scheduling failure. you need to wait for the next round.")
+        error!("❌ can't send. scheduling failure. you need to wait for the next round.");
+        return Err(SGX_ERROR_SERVICE_UNAVAILABLE)
     }
 
     // drop mut
@@ -114,13 +116,13 @@ pub fn user_submit_internal(
 
         if send_request.prev_round_output.dc_msg.scheduling_msg[cur_slot] != cur_fp {
             error!(
-                "❌ can't send in slot {} at round {}. fp mismatch. scheduled {}. current {}. Possible collision.",
+                "❌ Collision in slot {} for round {}. sent fp {} != received fp {}. ",
                 msg_slot,
                 send_request.round,
                 send_request.prev_round_output.dc_msg.scheduling_msg[cur_slot],
                 cur_fp,
             );
-            return Err(SGX_ERROR_INVALID_PARAMETER);
+            return Err(SGX_ERROR_SERVICE_UNAVAILABLE);
         }
         debug!(
             "✅ user {} is permitted to send msg at slot {} for round {}",
