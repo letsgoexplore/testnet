@@ -14,7 +14,7 @@ SERVER_STATE="server/server-state.txt"
 SERVER_SHARES="server/shares.txt"
 SERVER_SHARES_PARTIAL="server/partial_shares.txt"
 
-SERVER_LEADER_PORT="8222"
+SERVER_LEADER_PORT="8522"
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
@@ -51,7 +51,7 @@ start_followers() {
         $CMD_PREFIX start-service \
             --server-state "../$STATE" \
             --bind "localhost:$FOLLOWER_PORT" \
-            --leader-url "http://localhost:$SERVER_LEADER_PORT" \
+            --leader-url "http://localhost:$SERVER_LEADER_PORT"
     done
 
     cd ..
@@ -61,7 +61,7 @@ start_followers() {
 submit_agg() {
     cd server
 
-    for i in $(seq 1 $NUM_FOLLOWERS); do
+    for i in $(seq 0 $NUM_FOLLOWERS); do
         PORT=$(($SERVER_LEADER_PORT + $i))
 
         curl "http://localhost:$PORT/submit-agg" \
@@ -93,7 +93,7 @@ submit_shares() {
 # Returns the round result
 get_round_result() {
     # Now get the round result
-    curl -s "http://localhost:$SERVER_LEADER_PORT/round-result/$ROUND"
+    curl -s "http://localhost:$SERVER_LEADER_PORT/round-result/$1"
 }
 
 if [[ $1 == "start-leader" ]]; then
@@ -105,5 +105,5 @@ elif [[ $1 == "submit-agg" ]]; then
 elif [[ $1 == "submit-shares" ]]; then
     submit_shares
 elif [[ $1 == "round-result" ]]; then
-    get_round_result
+    get_round_result $2
 fi

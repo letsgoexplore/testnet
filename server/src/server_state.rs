@@ -72,7 +72,7 @@ impl ServerState {
         &self,
         enclave: &DcNetEnclave,
         server_aggs: &[UnblindedAggregateShareBlob],
-    ) -> Result<(u32, RoundOutput)> {
+    ) -> Result<RoundOutput> {
         enclave
             .derive_round_output(&self.signing_key, server_aggs)
             .map_err(Into::into)

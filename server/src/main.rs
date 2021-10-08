@@ -194,10 +194,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Feed it to the state and output the result
         let state = load_state(&matches)?;
-        let (round, round_output) = state.derive_round_output(&enclave, &shares)?;
+        let round_output = state.derive_round_output(&enclave, &shares)?;
         save_to_stdout(&round_output)?;
 
         // Log the raw round result in base64
+        let round = round_output.round;
         let round_msg = &round_output
             .dc_msg
             .aggregated_msg

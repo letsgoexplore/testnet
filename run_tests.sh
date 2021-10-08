@@ -372,12 +372,12 @@ decrypt_msgs() {
     cd ..
 }
 
-#clean
-#check
-#
-#setup_servers
-#setup_aggregators
-#setup_clients
+clean
+check
+
+setup_servers
+setup_aggregators
+setup_clients
 
 for ROUND in $(seq 0 3); do
     start_round

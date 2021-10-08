@@ -70,11 +70,11 @@ fn leader_finish_round(state: &mut ServiceState) {
 
     // Derive the round output and save it to the state. This can be queries in the round_result
     // function. If this fails, use the default value. The last thing we want to do is get stuck in
-    // a state that cannot progres.
-    let (round, output) = server_state
+    // a state that cannot progress
+    let output = server_state
         .derive_round_output(enclave, &round_shares)
         .unwrap();
-    //.unwrap_or(RoundOutput::default());
+    let round = output.round;
     round_outputs.insert(round, output);
     info!("Output of round {} now available", round);
 
