@@ -329,13 +329,15 @@ impl DcNetEnclave {
         )
     }
 
-    /// Derives the final round output given all the shares of the unblinded aggregates
+    /// Derives the final round output given all the shares of the unblinded aggregates. Returns
+    /// the round and the round's output.
     pub fn derive_round_output(
         &self,
         sealed_sig_sk: &SealedSigPrivKey,
         server_aggs: &[UnblindedAggregateShareBlob],
-    ) -> EnclaveResult<RoundOutput> {
-        ecall_allowed::derive_round_output(self.enclave.geteid(), (sealed_sig_sk, server_aggs))
+    ) -> EnclaveResult<(u32, RoundOutput)> {
+        unimplemented!()
+        //ecall_allowed::derive_round_output(self.enclave.geteid(), (sealed_sig_sk, server_aggs))
     }
 
     /// Create a new TEE protected secret key. Derives shared secrets with all the given KEM pubkeys.

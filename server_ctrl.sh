@@ -14,8 +14,7 @@ SERVER_STATE="server/server-state.txt"
 SERVER_SHARES="server/shares.txt"
 SERVER_SHARES_PARTIAL="server/partial_shares.txt"
 
-AGG_SERVICE_ADDR="localhost:8785"
-SERVER_SERVICE_ADDR="0.0.0.0:8122"
+SERVER_LEADER_PORT="8222"
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
@@ -24,31 +23,52 @@ NUM_SERVERS=2
 NUM_USERS=2
 NUM_AGGREGATORS=1
 NUM_USERS_PER_AGGREGATOR=2
-ROUND=0
+
+# Assume wlog that the leading anytrust node is the first one
+LEADER=1
+NUM_FOLLOWERS=1
 
 # Starts the anytrust leader
-start_server_service() {
+start_leader() {
     cd server
 
-    # Assume wlog that the leading anytrust node is the first one
-    LEADER=1
     STATE="${SERVER_STATE%.txt}$LEADER.txt"
     $CMD_PREFIX start-service \
         --server-state "../$STATE" \
-        --bind "$SERVER_SERVICE_ADDR" \
-        --round $ROUND
+        --bind "localhost:$SERVER_LEADER_PORT" \
 
     cd ..
 }
 
-# Submits the toplevel aggregate to the leader
+# Starts the anytrust followers
+start_followers() {
+    cd server
+
+    for i in $(seq 1 $NUM_FOLLOWERS); do
+        FOLLOWER_PORT=$(($SERVER_LEADER_PORT + $i))
+        STATE="${SERVER_STATE%.txt}$(($i+1)).txt"
+
+        $CMD_PREFIX start-service \
+            --server-state "../$STATE" \
+            --bind "localhost:$FOLLOWER_PORT" \
+            --leader-url "http://localhost:$SERVER_LEADER_PORT" \
+    done
+
+    cd ..
+}
+
+# Submits the toplevel aggregate to the leader and followers
 submit_agg() {
     cd server
 
-    curl "http://$SERVER_SERVICE_ADDR/submit-agg" \
-        -X POST \
-        -H "Content-Type: text/plain" \
-        --data-binary "@../$AGG_FINALAGG"
+    for i in $(seq 1 $NUM_FOLLOWERS); do
+        PORT=$(($SERVER_LEADER_PORT + $i))
+
+        curl "http://localhost:$PORT/submit-agg" \
+            -X POST \
+            -H "Content-Type: text/plain" \
+            --data-binary "@../$AGG_FINALAGG"
+    done
 
     cd ..
 }
@@ -61,7 +81,7 @@ submit_shares() {
     while IFS="" read -r SHARE || [ -n "$SHARE" ]
     do
         # Send the share to the leader
-        curl "http://$SERVER_SERVICE_ADDR/submit-share" \
+        curl "http://localhost:$SERVER_LEADER_PORT/submit-share" \
             -X POST \
             -H "Content-Type: text/plain" \
             --data-binary "$SHARE"
@@ -73,11 +93,13 @@ submit_shares() {
 # Returns the round result
 get_round_result() {
     # Now get the round result
-    curl -s "http://$SERVER_SERVICE_ADDR/round-result/$ROUND" | base64 -d
+    curl -s "http://localhost:$SERVER_LEADER_PORT/round-result/$ROUND"
 }
 
-if [[ $1 == "start" ]]; then
-    start_server_service
+if [[ $1 == "start-leader" ]]; then
+    start_leader
+elif [[ $1 == "start-followers" ]]; then
+    start_followers
 elif [[ $1 == "submit-agg" ]]; then
     submit_agg
 elif [[ $1 == "submit-shares" ]]; then

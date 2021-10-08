@@ -122,15 +122,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                             http://192.168.0.10:9000 . If this node is the leader, this flag is \
                             omitted.",
                         ),
-                )
-                .arg(
-                    Arg::with_name("round")
-                        .short("r")
-                        .long("round")
-                        .value_name("INTEGER")
-                        .required(true)
-                        .takes_value(true)
-                        .help("The current round number of the DC net"),
                 ),
         )
         .get_matches();
@@ -203,7 +194,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Feed it to the state and output the result
         let state = load_state(&matches)?;
-        let round_output = state.derive_round_output(&enclave, &shares)?;
+        let (round, round_output) = state.derive_round_output(&enclave, &shares)?;
         save_to_stdout(&round_output)?;
 
         // Log the raw round result in base64
@@ -213,17 +204,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             .iter()
             .flat_map(|msg| msg.0.to_vec())
             .collect::<Vec<u8>>();
-        info!("Round output {}", base64::encode(round_msg));
+        info!("Round {} output: {}", round, base64::encode(round_msg));
     }
 
     if let Some(matches) = matches.subcommand_matches("start-service") {
         // Load the args
         let bind_addr = matches.value_of("bind").unwrap().to_string();
         let leader_url = matches.value_of("leader-url").map(|s| s.to_string());
-        let round = {
-            let round_str = matches.value_of("round").unwrap();
-            cli_util::parse_u32(&round_str)?
-        };
 
         // Check that the forward-to URL is well-formed
         leader_url.as_ref().map(|u| {
@@ -238,7 +225,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             server_state.anytrust_group_size
         );
 
-        let state = service::ServiceState::new(server_state, enclave.clone(), round, leader_url);
+        let state = service::ServiceState::new(server_state, enclave.clone(), leader_url);
         start_service(bind_addr, state).unwrap();
     }
 

@@ -16,7 +16,7 @@ use actix_web::{
     http::{StatusCode, Uri},
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError,
 };
-use log::{error, info};
+use log::{debug, error, info};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -35,7 +35,6 @@ pub(crate) struct ServiceState {
     pub(crate) server_state: ServerState,
     pub(crate) round_shares: Vec<UnblindedAggregateShareBlob>,
     pub(crate) enclave: DcNetEnclave,
-    pub(crate) round: u32,
     /// Contains the URL of the anytrust leader. If `None`, it's you.
     pub(crate) leader_url: Option<String>,
     /// A map from round number to the round's output
@@ -46,13 +45,11 @@ impl ServiceState {
     pub(crate) fn new(
         server_state: ServerState,
         enclave: DcNetEnclave,
-        round: u32,
         leader_url: Option<String>,
     ) -> ServiceState {
         ServiceState {
             server_state,
             enclave,
-            round,
             leader_url,
             round_outputs: BTreeMap::new(),
             round_shares: Vec::new(),
@@ -67,7 +64,6 @@ fn leader_finish_round(state: &mut ServiceState) {
         ref server_state,
         ref mut round_outputs,
         ref mut round_shares,
-        ref mut round,
         ref enclave,
         ..
     } = state;
@@ -75,16 +71,15 @@ fn leader_finish_round(state: &mut ServiceState) {
     // Derive the round output and save it to the state. This can be queries in the round_result
     // function. If this fails, use the default value. The last thing we want to do is get stuck in
     // a state that cannot progres.
-    let output = server_state
+    let (round, output) = server_state
         .derive_round_output(enclave, &round_shares)
         .unwrap();
     //.unwrap_or(RoundOutput::default());
-    round_outputs.insert(*round, output);
-    info!("Output of round {} now available", *round);
+    round_outputs.insert(round, output);
+    info!("Output of round {} now available", round);
 
     // Clear the state and increment the round
     round_shares.clear();
-    *round += 1;
 }
 
 /// Sends the given unblinded share to `base_url/submit-share`
@@ -94,7 +89,14 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
     cli_util::save(&mut body, &share).expect("could not serialize share");
 
     // Send the serialized contents as an HTTP POST to leader/submit-share
-    let client = Client::builder().timeout(Duration::from_secs(20)).finish();
+    let timeout_sec = 20;
+    debug!(
+        "Sending share to {} with timeout {}s",
+        base_url, timeout_sec
+    );
+    let client = Client::builder()
+        .timeout(Duration::from_secs(timeout_sec))
+        .finish();
     let post_path: Uri = [&base_url, "/submit-share"]
         .concat()
         .parse()
@@ -102,7 +104,7 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
     match client.post(post_path).send_body(body).await {
         Ok(res) => {
             if res.status() == StatusCode::OK {
-                info!("Successfully sent share");
+                debug!("Share sent successfully");
             } else {
                 error!("Could not send share: {:?}", res);
             }
@@ -209,16 +211,14 @@ async fn round_result(
     let res = match round_outputs.get(&round) {
         // If the given round's output exists in memory, return it
         Some(round_output) => {
-            /*
             let blob = round_output
                 .dc_msg
                 .aggregated_msg
                 .iter()
                 .flat_map(|msg| msg.0.to_vec())
                 .collect::<Vec<u8>>();
-            */
             let mut body = Vec::new();
-            cli_util::save(&mut body, &round_output)?;
+            cli_util::save(&mut body, &blob)?;
             HttpResponse::Ok().body(body)
         }
         // If the given round's output doesn't exist in memory, error out

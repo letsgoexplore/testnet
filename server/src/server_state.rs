@@ -72,10 +72,10 @@ impl ServerState {
         &self,
         enclave: &DcNetEnclave,
         server_aggs: &[UnblindedAggregateShareBlob],
-    ) -> Result<RoundOutput> {
-        let output = enclave.derive_round_output(&self.signing_key, server_aggs)?;
-
-        Ok(output)
+    ) -> Result<(u32, RoundOutput)> {
+        enclave
+            .derive_round_output(&self.signing_key, server_aggs)
+            .map_err(Into::into)
     }
 
     /// Registers a user with this server
