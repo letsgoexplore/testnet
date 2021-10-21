@@ -204,21 +204,32 @@ async fn round_result(
     // Unpack state
     let handle = state.get_ref().lock().unwrap();
     let ServiceState {
-        ref round_outputs, ..
+        ref round_outputs,
+        ref leader_url,
+        ..
     } = *handle;
+
+    // I am not the leader. Don't ask me for round results
+    if leader_url.is_some() {
+        return Ok(HttpResponse::NotFound().body("Followers don't store round results"));
+    }
 
     // Try to get the requested output
     let res = match round_outputs.get(&round) {
         // If the given round's output exists in memory, return it
         Some(round_output) => {
+            // Give the signed round output, not just the raw payload
+            /*
             let blob = round_output
                 .dc_msg
                 .aggregated_msg
                 .iter()
                 .flat_map(|msg| msg.0.to_vec())
                 .collect::<Vec<u8>>();
-            let mut body = Vec::new();
             cli_util::save(&mut body, &blob)?;
+            */
+            let mut body = Vec::new();
+            cli_util::save(&mut body, &round_output)?;
             HttpResponse::Ok().body(body)
         }
         // If the given round's output doesn't exist in memory, error out

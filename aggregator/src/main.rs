@@ -104,11 +104,12 @@ fn main() -> Result<(), AggregatorError> {
                     Arg::with_name("forward-to")
                         .short("f")
                         .long("forward-to")
-                        .value_name("FORWARD_ADDR")
+                        .value_name("FORWARD_ADDRS")
                         .required(true)
                         .help(
-                            "The URL of the next-level server or aggregator in the aggregation \
-                            tree. Example: http://192.168.0.10:9000",
+                            "A comma-separated list URLs of the next-level servers or aggregators \
+                            in the aggregation tree. Example: \
+                            \"http://192.168.0.10:9000,http://192.168.0.11:3030\"",
                         ),
                 )
                 .arg(
@@ -185,13 +186,17 @@ fn main() -> Result<(), AggregatorError> {
             let secs = cli_util::parse_u32(matches.value_of("round-duration").unwrap())?;
             std::time::Duration::from_secs(secs as u64)
         };
-        let forward_url = matches.value_of("forward-to").unwrap().to_string();
-        // Check that the forward-to URL is well-formed
-        {
-            let _: actix_web::http::Uri = forward_url
-                .parse()
-                .expect("the forward-to parameter must be a URL");
-        };
+        let forward_urls: Vec<String> = matches
+            .value_of("forward-to")
+            .unwrap()
+            .split(",")
+            .map(String::from)
+            .collect();
+        // Check that the forward-to URLs are well-formed
+        for url in forward_urls.iter() {
+            let _: actix_web::http::Uri =
+                url.parse().expect(&format!("{} is not a valid URL", url));
+        }
 
         // Load the aggregator state and clear it for this round
         let state_path = matches.value_of("agg-state").unwrap().to_string();
@@ -202,7 +207,7 @@ fn main() -> Result<(), AggregatorError> {
         let state = service::ServiceState {
             agg_state,
             enclave,
-            forward_url,
+            forward_urls,
             round,
         };
         start_service(bind_addr, state_path, state, round_dur).unwrap();

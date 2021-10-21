@@ -4,11 +4,6 @@
 # -u => Error when using undefined vars
 set -eu
 
-USER_STATE="client/user-state.txt"
-USER_SERVERKEYS="client/server-keys.txt"
-AGG_STATE="aggregator/agg-state.txt"
-AGG_ROOTSTATE="aggregator/agg-root-state.txt"
-AGG_SERVERKEYS="aggregator/server-keys.txt"
 AGG_FINALAGG="aggregator/final-agg.txt"
 SERVER_STATE="server/server-state.txt"
 SERVER_SHARES="server/shares.txt"
@@ -18,11 +13,6 @@ SERVER_LEADER_PORT="8522"
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
-
-NUM_SERVERS=2
-NUM_USERS=2
-NUM_AGGREGATORS=1
-NUM_USERS_PER_AGGREGATOR=2
 
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
@@ -35,7 +25,7 @@ start_leader() {
     STATE="${SERVER_STATE%.txt}$LEADER.txt"
     $CMD_PREFIX start-service \
         --server-state "../$STATE" \
-        --bind "localhost:$SERVER_LEADER_PORT" \
+        --bind "localhost:$SERVER_LEADER_PORT" &
 
     cd ..
 }
@@ -51,7 +41,7 @@ start_followers() {
         $CMD_PREFIX start-service \
             --server-state "../$STATE" \
             --bind "localhost:$FOLLOWER_PORT" \
-            --leader-url "http://localhost:$SERVER_LEADER_PORT"
+            --leader-url "http://localhost:$SERVER_LEADER_PORT" &
     done
 
     cd ..
@@ -96,6 +86,10 @@ get_round_result() {
     curl -s "http://localhost:$SERVER_LEADER_PORT/round-result/$1"
 }
 
+kill_servers() {
+    ps aux | grep sgxdcnet-server | grep -v grep | cut -d" " -f 7 | xargs kill
+}
+
 if [[ $1 == "start-leader" ]]; then
     start_leader
 elif [[ $1 == "start-followers" ]]; then
@@ -106,4 +100,6 @@ elif [[ $1 == "submit-shares" ]]; then
     submit_shares
 elif [[ $1 == "round-result" ]]; then
     get_round_result $2
+elif [[ $1 == "stop" ]]; then
+    kill_servers
 fi

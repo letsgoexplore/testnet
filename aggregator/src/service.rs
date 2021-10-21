@@ -35,7 +35,7 @@ impl ResponseError for ApiError {}
 pub(crate) struct ServiceState {
     pub(crate) agg_state: AggregatorState,
     pub(crate) enclave: DcNetEnclave,
-    pub(crate) forward_url: String,
+    pub(crate) forward_urls: Vec<String>,
     pub(crate) round: u32,
 }
 
@@ -44,6 +44,8 @@ pub(crate) struct ServiceState {
 async fn submit_agg(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
+    // Strip whitespace from the payload
+    let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
     let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
 
@@ -60,7 +62,7 @@ async fn submit_agg(
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
-/// Sends a finalized aggregate to `base_url/submit-agg`
+/// Sends a finalized aggregate to base_url/submit-agg
 async fn send_aggregate(agg_state: &AggregatorState, enclave: &DcNetEnclave, base_url: &str) {
     // Finalize and serialize the aggregate
     let agg = match agg_state.finalize_aggregate(enclave) {
@@ -75,10 +77,10 @@ async fn send_aggregate(agg_state: &AggregatorState, enclave: &DcNetEnclave, bas
 
     // Send the serialized contents
     let client = Client::builder().timeout(Duration::from_secs(20)).finish();
-    let post_path: Uri = [base_url, "/submit-agg"]
-        .concat()
-        .parse()
-        .expect("Couldn't not append '/submit-agg' to forward URL");
+    let post_path: Uri = [base_url, "/submit-agg"].concat().parse().expect(&format!(
+        "Couldn't not append '/submit-agg' to forward URL {}",
+        base_url
+    ));
     match client.post(post_path).send_body(body).await {
         Ok(res) => {
             if res.status() == StatusCode::OK {
@@ -114,19 +116,21 @@ async fn round_finalization_loop(
             let ServiceState {
                 ref mut agg_state,
                 ref enclave,
-                ref forward_url,
+                ref forward_urls,
                 ref mut round,
             } = *handle;
 
             info!("Round {} complete", round);
 
+            info!("Forwarding aggregate to {:?}", forward_urls);
+            for forward_url in forward_urls {
+                send_aggregate(agg_state, enclave, forward_url).await;
+            }
+
+            // Save the state and start the next round
             info!("Saving state");
             save_state(&state_path, agg_state).expect("failed to save state");
 
-            info!("Forwarding aggregate");
-            send_aggregate(agg_state, enclave, forward_url).await;
-
-            // Otherwise, start the next round
             *round = *round + 1;
             if let Err(e) = agg_state.clear(&enclave, *round) {
                 error!("Could not start new round: {:?}", e);
@@ -153,6 +157,7 @@ pub(crate) async fn start_service(
             cfg.service(submit_agg);
         })
     })
+    .workers(1)
     .bind(bind_addr)
     .expect("could not bind")
     .run()

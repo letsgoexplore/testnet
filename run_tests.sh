@@ -26,6 +26,8 @@ NUM_USERS=2
 NUM_AGGREGATORS=1
 NUM_USERS_PER_AGGREGATOR=2
 
+NUM_TEST_ROUNDS=3
+
 # We define four messages, separated by semicolons. The leading ; is because we index by 1
 MSGS_STR=";testing;hello;world;yo"
 
@@ -254,7 +256,7 @@ encrypt_msgs() {
         if [[ $ROUND -eq 0 ]]; then
             PREV_ROUND_OUTPUT="/dev/null"
         else
-            PREV_ROUND_OUTPUT="${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt"
+            PREV_ROUND_OUTPUT="../${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt"
         fi
 
         # Encrypt
@@ -264,7 +266,7 @@ encrypt_msgs() {
             | $CMD_PREFIX encrypt-msg \
                   --user-state "../$STATE" \
                   --round $ROUND \
-                  --prev-round-output "../$PREV_ROUND_OUTPUT"
+                  --prev-round-output $PREV_ROUND_OUTPUT
         )
 
         # Append
@@ -379,7 +381,7 @@ setup_servers
 setup_aggregators
 setup_clients
 
-for ROUND in $(seq 0 3); do
+for ROUND in $(seq 0 $(($NUM_TEST_ROUNDS - 1))); do
     start_round
     encrypt_msgs
     propagate_aggregates
