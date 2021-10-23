@@ -13,6 +13,7 @@ use crypto::{MultiSignable, SgxPrivateKey, SharedSecretsDb, SignMutable};
 use interface::UserSubmissionReq;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 use sgx_tcrypto::SgxEccHandle;
+use sgx_types::sgx_status_t::SGX_ERROR_SERVICE_UNAVAILABLE;
 use sgx_types::{SgxError, SgxResult};
 use sha2::Digest;
 use sha2::Sha256;
@@ -21,7 +22,6 @@ use std::convert::TryFrom;
 use std::debug;
 use std::iter::FromIterator;
 use std::prelude::v1::*;
-use sgx_types::sgx_status_t::SGX_ERROR_SERVICE_UNAVAILABLE;
 
 pub fn user_submit_internal(
     input: &(UserSubmissionReq, SealedSigPrivKey),
@@ -80,7 +80,7 @@ pub fn user_submit_internal(
 
     if msg_slot > DC_NET_N_SLOTS {
         error!("❌ can't send. scheduling failure. you need to wait for the next round.");
-        return Err(SGX_ERROR_SERVICE_UNAVAILABLE)
+        return Err(SGX_ERROR_SERVICE_UNAVAILABLE);
     }
 
     // drop mut
