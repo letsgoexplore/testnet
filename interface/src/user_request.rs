@@ -76,7 +76,7 @@ pub type Footprint = u32;
 pub struct DcRoundMessage {
     #[serde(with = "BigArray")]
     pub scheduling_msg: [Footprint; FOOTPRINT_N_SLOTS],
-    // #[serde(with = "BigArray")]
+    #[serde(with = "BigArray")]
     pub aggregated_msg: [DcMessage; DC_NET_N_SLOTS],
 }
 
