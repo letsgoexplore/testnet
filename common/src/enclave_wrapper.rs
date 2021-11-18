@@ -553,7 +553,6 @@ mod enclave_tests {
             anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
             round: 1u32,
             shared_secrets: user_reg_shared_secrets,
-            prev_round_output: RoundOutput::default(),
         };
 
         let resp_1 = enc.user_reserve_slot(&req_1, &user_reg_sealed_key).unwrap();
