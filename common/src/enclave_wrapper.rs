@@ -191,8 +191,19 @@ mod ecall_allowed {
     }
 }
 
+use pretty_env_logger::env_logger::{Env, Builder};
+
 impl DcNetEnclave {
     pub fn init(enclave_file: &'static str) -> EnclaveResult<Self> {
+        // enable debug
+        let env = Env::default()
+            .filter_or("RUST_LOG", "debug")
+            .write_style_or("RUST_LOG_STYLE", "always");
+
+        let _ = Builder::from_env(env).try_init();
+        let _ = pretty_env_logger::env_logger::builder().is_test(true).try_init();
+
+
         let enclave_path = PathBuf::from(enclave_file);
 
         let mut launch_token: sgx_launch_token_t = [0; 1024];

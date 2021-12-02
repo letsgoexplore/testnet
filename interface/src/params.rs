@@ -9,7 +9,7 @@ pub const FOOTPRINT_BIT_SIZE: usize = 3;
 pub const FOOTPRINT_N_SLOTS: usize = DC_NET_N_SLOTS * 4;
 
 /// The number of slots in a DC net message
-pub const DC_NET_N_SLOTS: usize = 64;
+pub const DC_NET_N_SLOTS: usize = 128;
 /// The number of bytes in each DC net slot
 pub const DC_NET_MESSAGE_LENGTH: usize = 256;
 

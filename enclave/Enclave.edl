@@ -11,7 +11,7 @@ enclave {
     trusted {
       public sgx_status_t ecall_entrypoint(
                         uint8_t ecall_id_raw,
-                        [in, size=inp_len] uint8_t* inp,
+                        [user_check] uint8_t* inp,
                         size_t inp_len,
                         [user_check] uint8_t* output,
                         size_t output_size,

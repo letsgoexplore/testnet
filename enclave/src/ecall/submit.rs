@@ -29,10 +29,10 @@ pub fn user_submit_internal(
     let send_request = &input.0;
     // unseal user's sk
     let signing_sk = (&input.1).unseal()?;
-    // Determine whether the message is just cover traffic
-    let msg_is_empty = send_request.msg == Default::default();
+    // Determine whether the message is just cover traffic (all zeroes)
+    let msg_is_empty = send_request.msg.0.iter().all(|b| b == 0);
 
-    // check user key matches user_id
+    // check user signing key matches user_id
     if EntityId::from(&SgxSigningPubKey::try_from(&signing_sk)?) != send_request.user_id {
         error!("user id mismatch");
         return Err(SGX_ERROR_INVALID_PARAMETER);
@@ -86,7 +86,7 @@ pub fn user_submit_internal(
     // drop mut
     let msg_slot: usize = msg_slot;
 
-    debug!("user {} will try to send in slot {}", uid, msg_slot);
+    debug!("✅ user {} will try to send in slot {}", uid, msg_slot);
 
     // Check the scheduling result from the previous round (the ticket) unless
     // a) this is the first round (round = 0) or
@@ -152,7 +152,7 @@ pub fn user_submit_internal(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    debug!("round msg: {:?}", round_msg);
+    // debug!("round msg: {:?}", round_msg);
 
     let round_key = match crypto::derive_round_secret(send_request.round, &shared_secrets) {
         Ok(k) => k,

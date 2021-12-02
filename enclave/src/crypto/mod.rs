@@ -85,6 +85,7 @@ impl MultiSignable for RoundOutput {
     }
 
     fn verify_multisig(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>> {
+        log::debug!("verifying RoundOutput (with {} signatures)", self.server_sigs.len());
         let msg_hash = self.digest();
 
         let ecdsa_handler = sgx_tcrypto::SgxEccHandle::new();

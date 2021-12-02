@@ -191,8 +191,12 @@ where
     O: serde::Serialize,
 {
     debug!("starting {}", ecall_id.as_str());
+    debug!("input received {} bytes", inp_len);
 
     let input: I = unmarshal_or_abort!(I, inp, inp_len);
+
+    debug!("input unmarshalled {} bytes", inp_len);
+
     let result = match internal_fn(&input) {
         Ok(o) => o,
         Err(e) => return e,
