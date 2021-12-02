@@ -30,7 +30,7 @@ pub fn user_submit_internal(
     // unseal user's sk
     let signing_sk = (&input.1).unseal()?;
     // Determine whether the message is just cover traffic (all zeroes)
-    let msg_is_empty = send_request.msg.0.iter().all(|b| b == 0);
+    let msg_is_empty = send_request.msg.0.iter().all(|b| *b == 0);
 
     // check user signing key matches user_id
     if EntityId::from(&SgxSigningPubKey::try_from(&signing_sk)?) != send_request.user_id {
