@@ -3,7 +3,6 @@ use sgx_types::sgx_status_t;
 
 use std::prelude::v1::*;
 
-use crate::unseal::Sealable;
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
 use sha2::Sha256;

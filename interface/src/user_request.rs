@@ -227,7 +227,7 @@ pub struct UserSubmissionReq {
     /// A map from server KEM public key to sealed shared secret
     pub shared_secrets: SealedSharedSecretDb,
     /// A list of server public keys (can be verified using the included attestation)
-    pub server_pks: Vec<ServerPubKeyPackage>
+    pub server_pks: Vec<ServerPubKeyPackage>,
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -239,5 +239,5 @@ pub struct UserReservationReq {
     /// A map from server public key to sealed shared secret
     pub shared_secrets: SealedSharedSecretDb,
     /// A list of server public keys (can be verified using the included attestation)
-    pub server_pks: Vec<ServerPubKeyPackage>
+    pub server_pks: Vec<ServerPubKeyPackage>,
 }

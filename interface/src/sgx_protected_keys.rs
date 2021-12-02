@@ -4,12 +4,7 @@ use crate::user_request::EntityId;
 
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
-#[allow(unused_imports)]
-use sgx_types::sgx_status_t;
-use std::format;
-use std::vec;
-#[allow(unused_imports)]
-use std::{convert::TryFrom, vec::Vec};
+use std::vec::Vec;
 
 use rand_core::RngCore;
 use sgx_types::{sgx_ec256_public_t, SGX_ECP256_KEY_SIZE};
@@ -142,6 +137,6 @@ impl Debug for AttestedPublicKey {
 pub struct ServerPubKeyPackage {
     pub sig: SgxSigningPubKey,
     pub kem: KemPubKey,
-    /// proving the association of the two keys
+    /// One attestation proving the association of the two keys
     pub attestation: Vec<u8>,
 }

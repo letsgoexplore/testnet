@@ -116,12 +116,12 @@ mod ecall_allowed {
         (
             EcallNewSgxKeypair,
             String,
-            SealedKeyPair,
+            (Vec<u8>, AttestedPublicKey),
             new_sgx_keypair
         ),
         (
             EcallUnsealToPublicKey,
-            &SealedKeyPair,
+            &Vec<u8>,
             SgxProtectedKeyPub,
             unseal_to_public_key),
         (
@@ -191,7 +191,7 @@ mod ecall_allowed {
     }
 }
 
-use pretty_env_logger::env_logger::{Env, Builder};
+use pretty_env_logger::env_logger::{Builder, Env};
 
 impl DcNetEnclave {
     pub fn init(enclave_file: &'static str) -> EnclaveResult<Self> {
@@ -201,8 +201,9 @@ impl DcNetEnclave {
             .write_style_or("RUST_LOG_STYLE", "always");
 
         let _ = Builder::from_env(env).try_init();
-        let _ = pretty_env_logger::env_logger::builder().is_test(true).try_init();
-
+        let _ = pretty_env_logger::env_logger::builder()
+            .is_test(true)
+            .try_init();
 
         let enclave_path = PathBuf::from(enclave_file);
 
@@ -234,14 +235,15 @@ impl DcNetEnclave {
 
     /// This method can be used for creating signing keys and KEM private keys.
     /// Use unseal_to_pubkey to unseal the key and compute its public key.
-    fn new_sgx_protected_key(&self, role: String) -> EnclaveResult<SealedKeyPair> {
+    /// Returns (sealed sk, AttestedPublicKey)
+    fn new_sgx_protected_key(&self, role: String) -> EnclaveResult<(Vec<u8>, AttestedPublicKey)> {
         Ok(ecall_allowed::new_sgx_keypair(self.enclave.geteid(), role)?)
     }
 
     /// Returns the public key corresponding to the sealed secret key
     pub fn unseal_to_public_key_on_p256(
         &self,
-        sealed_private_key: &SealedKeyPair,
+        sealed_private_key: &Vec<u8>,
     ) -> EnclaveResult<SgxProtectedKeyPub> {
         Ok(ecall_allowed::unseal_to_public_key(
             self.enclave.geteid(),
@@ -373,11 +375,11 @@ impl DcNetEnclave {
     pub fn new_aggregator(
         &self,
     ) -> EnclaveResult<(SealedSigPrivKey, EntityId, AggRegistrationBlob)> {
-        let sealed_sk = self.new_sgx_protected_key("agg".to_string())?;
+        let (sealed_sk, attested_pk) = self.new_sgx_protected_key("agg".to_string())?;
         Ok((
-            SealedSigPrivKey(sealed_sk.clone()),
-            EntityId::from(&sealed_sk.attested_pk.pk),
-            AggRegistrationBlob(sealed_sk.attested_pk),
+            SealedSigPrivKey(sealed_sk),
+            EntityId::from(&attested_pk.pk),
+            AggRegistrationBlob(attested_pk),
         ))
     }
 

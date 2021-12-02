@@ -85,9 +85,11 @@ impl MultiSignable for RoundOutput {
     }
 
     fn verify_multisig(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>> {
-        log::warn!("verifying RoundOutput (with {} signatures) against a list of {} server PKs",
+        log::warn!(
+            "verifying RoundOutput (with {} signatures) against a list of {} server PKs",
             self.server_sigs.len(),
-            pks.len());
+            pks.len()
+        );
 
         // digest
         let msg_hash = self.digest();
@@ -107,9 +109,7 @@ impl MultiSignable for RoundOutput {
 
             // check if pk is in the server PK list
             match pks.iter().position(|&k| k == pk) {
-                Some(i) => {
-                    verified.push(i)
-                }
+                Some(i) => verified.push(i),
                 None => {
                     log::error!("PK {} is not in the server PK list", pk);
                 }

@@ -24,16 +24,12 @@ pub fn new_server(
     let kem_key = new_sgx_keypair_ext_internal(&"server_kem".to_string())?;
 
     let reg = ServerRegistrationBlob {
-        sig: sig_key.1,
-        kem: kem_key.1,
+        sig: sig_key.1.pk,
+        kem: kem_key.1.pk,
         attestation: vec![0],
     };
 
-    Ok((
-        SealedSigPrivKey(sig_key.2),
-        SealedKemPrivKey(kem_key.2),
-        reg,
-    ))
+    Ok((sig_key.0.seal_into()?, kem_key.0.seal_into()?, reg))
 }
 
 /// Verifies and adds the given user registration blob to the database of pubkeys and
@@ -71,7 +67,7 @@ pub fn recv_user_registration(
 
     debug!("shared_secrets {:?}", shared_secrets);
 
-    Ok((pk_db, shared_secrets.to_sealed_db()?))
+    Ok((pk_db, shared_secrets.seal_into()?))
 }
 
 pub fn recv_aggregator_registration(
@@ -155,6 +151,7 @@ pub fn unblind_aggregate(
 
 use crypto::MultiSignable;
 use std::vec::Vec;
+use unseal::SealInto;
 
 pub fn derive_round_output(
     input: &(SealedSigPrivKey, Vec<UnblindedAggregateShareBlob>),

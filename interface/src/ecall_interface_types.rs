@@ -1,6 +1,4 @@
-use crate::sgx_protected_keys::{
-    AttestedPublicKey, SealedKeyPair, ServerPubKeyPackage, SgxProtectedKeyPub,
-};
+use crate::sgx_protected_keys::{AttestedPublicKey, ServerPubKeyPackage, SgxProtectedKeyPub};
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
 use crate::DcRoundMessage;
@@ -144,18 +142,18 @@ impl Debug for SealedSharedSecretDb {
 /// A signing keypair is an ECDSA keypair
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct SealedSigPrivKey(Vec<u8>);
+pub struct SealedSigPrivKey(pub Vec<u8>);
 
-/// A KEM keypair is also ECDSA keypair
+/// A KEM keypair is also an ECDSA keypair
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct SealedKemPrivKey(Vec<u8>);
+pub struct SealedKemPrivKey(pub Vec<u8>);
 
-impl AsRef<SealedKeyPair> for SealedKemPrivKey {
-    fn as_ref(&self) -> &SealedKeyPair {
-        &self.0
-    }
-}
+// impl AsRef<SealedKeyPair> for SealedKemPrivKey {
+//     fn as_ref(&self) -> &SealedKeyPair {
+//         &self.0
+//     }
+// }
 
 /// SignedPubKeyDb is a signed mapping between entity id and public key
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]

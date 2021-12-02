@@ -1,4 +1,4 @@
-use crate::unseal::{Sealable, UnsealableInto};
+use crate::unseal::UnsealableInto;
 use core::convert::TryFrom;
 use crypto::{SgxPrivateKey, SharedSecretsDb};
 use interface::*;
@@ -10,35 +10,21 @@ use std::string::ToString;
 use std::vec;
 use std::vec::Vec;
 
-pub fn new_sgx_keypair_ext_internal(
-    role: &str,
-) -> SgxResult<(SgxPrivateKey, SgxProtectedKeyPub, SealedKeyPair)> {
+pub fn new_sgx_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, AttestedPublicKey)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
         error!("cant create rand {}", e);
         SGX_ERROR_UNEXPECTED
     })?;
+
     // generate a random secret key
     let sk = rand.gen::<SgxPrivateKey>();
-    // make sure sk is a valid private key by computing its public key
-    let pk = SgxSigningPubKey::try_from(&sk)?;
-
     let attested_key = AttestedPublicKey {
-        pk: pk,
+        pk: SgxSigningPubKey::try_from(&sk)?,
         role: role.to_string(),
-        tee_linkable_attestation: vec![],
+        tee_linkable_attestation: vec![0], // TODO: add attestation
     };
 
-    Ok((
-        sk,
-        pk,
-        SealedKeyPair {
-            sealed_sk: sk.seal()?,
-            // todo: remove this and all other unauthenticated data next to sealed data (which can be misused)
-            attested_pk: attested_key,
-        },
-    ))
+    Ok((sk, attested_key))
 }
 
-pub fn unseal_to_pubkey_internal(sealed_sk: &SealedKeyPair) -> SgxResult<SgxProtectedKeyPub> {
-    SgxProtectedKeyPub::try_from(&sealed_sk.unseal_into()?)
-}
+use std::borrow::ToOwned;

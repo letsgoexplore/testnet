@@ -5,6 +5,7 @@ use self::interface::*;
 use crate::crypto::Xor;
 use crate::messages_types::AggregatedMessage;
 use crate::unseal::{MarshallAs, UnsealableInto};
+use attestation::Attested;
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use core::convert::TryInto;
@@ -22,7 +23,6 @@ use std::convert::TryFrom;
 use std::debug;
 use std::iter::FromIterator;
 use std::prelude::v1::*;
-use attestation::Attested;
 
 pub fn user_submit_internal(
     (send_request, signing_sk): &(UserSubmissionReq, SealedSigPrivKey),
@@ -43,9 +43,11 @@ pub fn user_submit_internal(
     debug!("✅ user id {} matches user signing key", uid);
 
     // check server pks against TEE attestation
-    if !send_request.server_pks.iter().all(|pk| {
-        pk.verify_attestation()
-    }) {
+    if !send_request
+        .server_pks
+        .iter()
+        .all(|pk| pk.verify_attestation())
+    {
         error!("some PKs not verified");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
