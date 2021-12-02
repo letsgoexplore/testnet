@@ -1,4 +1,4 @@
-use crate::unseal::{Sealable, UnsealableAs};
+use crate::unseal::{Sealable, UnsealableInto};
 use core::convert::TryFrom;
 use crypto::{SgxPrivateKey, SharedSecretsDb};
 use interface::*;
@@ -12,7 +12,7 @@ use std::vec::Vec;
 
 pub fn new_sgx_keypair_ext_internal(
     role: &str,
-) -> SgxResult<(SgxPrivateKey, SgxProtectedKeyPub, SealedKey)> {
+) -> SgxResult<(SgxPrivateKey, SgxProtectedKeyPub, SealedKeyPair)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
         error!("cant create rand {}", e);
         SGX_ERROR_UNEXPECTED
@@ -31,7 +31,7 @@ pub fn new_sgx_keypair_ext_internal(
     Ok((
         sk,
         pk,
-        SealedKey {
+        SealedKeyPair {
             sealed_sk: sk.seal()?,
             // todo: remove this and all other unauthenticated data next to sealed data (which can be misused)
             attested_pk: attested_key,
@@ -39,6 +39,6 @@ pub fn new_sgx_keypair_ext_internal(
     ))
 }
 
-pub fn unseal_to_pubkey_internal(sealed_sk: &SealedKey) -> SgxResult<SgxProtectedKeyPub> {
-    SgxProtectedKeyPub::try_from(&sealed_sk.unseal()?)
+pub fn unseal_to_pubkey_internal(sealed_sk: &SealedKeyPair) -> SgxResult<SgxProtectedKeyPub> {
+    SgxProtectedKeyPub::try_from(&sealed_sk.unseal_into()?)
 }

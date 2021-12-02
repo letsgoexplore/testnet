@@ -52,12 +52,12 @@ pub extern "C" fn ecall_entrypoint(
         (
             EcallNewSgxKeypair,
             String,
-            SealedKey,
+            SealedKeyPair,
             |role: &String| {Ok(keygen::new_sgx_keypair_ext_internal(role)?.2)}
         ),
         (
             EcallUnsealToPublicKey,
-            SealedKey,
+            SealedKeyPair,
             SgxProtectedKeyPub,
             keygen::unseal_to_pubkey_internal
         ),

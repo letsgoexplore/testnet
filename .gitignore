@@ -36,5 +36,5 @@ __pycache__
 target
 core
 
-*keys.txt
-*state*.txt
+# states
+*.txt

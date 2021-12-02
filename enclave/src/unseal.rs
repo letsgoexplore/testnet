@@ -53,68 +53,115 @@ fn ser_and_seal_to_vec<T: Serialize>(a: &T, ad: &[u8]) -> SgxResult<Vec<u8>> {
 }
 
 // TODO: make input generic AsRef<[u8]>
-fn unseal_vec_and_deser<T: DeserializeOwned + Default>(input: &Vec<u8>) -> SgxResult<T> {
+/// Unseal bytes and unmarshal to a T. Returns (T, additional data)
+fn unseal_vec_and_deser<T: DeserializeOwned + Default>(input: &Vec<u8>) -> SgxResult<(T, Vec<u8>)> {
     let mut bin = input.clone();
-    unsafe { unseal_ptr_and_deser(bin.as_mut_ptr(), bin.len()) }
-}
 
-unsafe fn unseal_ptr_and_deser<T: DeserializeOwned + Default>(
-    input: *mut u8,
-    input_len: usize,
-) -> SgxResult<T> {
-    if input_len == 0 {
-        warn!("empty sealed data");
-        return Ok(Default::default());
-    }
-
-    let sealed_data = match SgxSealedData::<[u8]>::from_raw_sealed_data_t(
-        input as *mut sgx_sealed_data_t,
-        input_len as u32,
-    ) {
-        Some(t) => t,
-        None => {
-            return Err(SGX_ERROR_INVALID_PARAMETER);
-        }
-    };
+    let sealed_data =
+        unsafe {
+            match SgxSealedData::<[u8]>::from_raw_sealed_data_t(
+                bin.as_mut_ptr() as *mut sgx_sealed_data_t,
+                bin.len() as u32,
+            ) {
+                Some(t) => t,
+                None => {
+                    return Err(SGX_ERROR_INVALID_PARAMETER);
+                }
+            }
+        };
 
     let unsealed = sealed_data.unseal_data()?;
     let unsealed_slice = unsealed.get_decrypt_txt();
-    Ok(match serde_cbor::de::from_slice(unsealed_slice) {
+
+    // unmarshal
+    let t = match serde_cbor::de::from_slice(unsealed_slice) {
         Ok(t) => t,
         Err(_e) => {
             return Err(SGX_ERROR_INVALID_PARAMETER);
         }
-    })
+    };
+
+    Ok((t, unsealed.get_additional_txt().to_vec()))
 }
+
 
 /// a few useful traits
 pub trait Sealable {
-    fn seal(&self) -> SgxResult<Vec<u8>>;
+    fn seal(&self, ad: Some(&[u8])) -> SgxResult<Vec<u8>>;
 }
 
+/// Any serializable type can be sealed
 impl<T> Sealable for T
-where
-    T: Serialize,
+    where
+        T: Serialize,
 {
-    fn seal(&self) -> SgxResult<Vec<u8>> {
-        ser_and_seal_to_vec(self, b"")
+    fn seal(&self, ad: Some(&[u8])) -> SgxResult<Vec<u8>> {
+        ser_and_seal_to_vec(self, match ad {
+            Some(ad) => ad,
+            None => b"",
+        })
     }
 }
 
-pub trait SealAs<T> {
-    fn seal(&self) -> SgxResult<T>;
+/// Seal and store sealed bytes in type T
+pub trait SealInto<T> {
+    fn seal_into(&self) -> SgxResult<T>;
 }
 
-pub trait UnsealableAs<T> {
-    fn unseal(&self) -> SgxResult<T>;
+pub trait UnsealableInto<T> {
+    fn unseal_into(&self) -> SgxResult<T>;
+}
+
+/// the relationship between keys
+/// SgxPrivateKey ---sealed as---> SealedKey ---wrapped as---> SealedSigPrivKey or SealedKemPrivKey
+
+impl UnsealableInto<SgxPrivateKey> for SealedSigPrivKey {
+    fn unseal_into(&self) -> sgx_types::SgxResult<SgxPrivateKey> {
+        unseal_vec_and_deser(&self.0.sealed_sk).0  // ignore the ad
+    }
+}
+
+impl UnsealableInto<SgxPrivateKey> for SealedKemPrivKey {
+    fn unseal_into(&self) -> sgx_types::SgxResult<SgxPrivateKey> {
+        unseal_vec_and_deser(&self.0.sealed_sk).0 // ignore the ad
+    }
+}
+
+impl UnsealableInto<SgxPrivateKey> for SealedKeyPair {
+    fn unseal_into(&self) -> sgx_types::SgxResult<SgxPrivateKey> {
+        unseal_vec_and_deser(&self.sealed_sk).0
+    }
+}
+
+impl SealInto<SealedSharedSecretDb> for SharedSecretsDb {
+    fn seal_into(&self) -> SgxResult<SealedSharedSecretDb> {
+        let mut sealed_shared_secrets = SealedSharedSecretDb::default();
+        for (k, s) in self.db.iter() {
+            sealed_shared_secrets.db.insert(k.to_owned(), s.seal()?);
+        }
+
+        Ok(sealed_shared_secrets)
+    }
+}
+
+impl UnsealableInto<SharedSecretsDb> for SealedSharedSecretDb {
+    fn unseal_into(&self) -> sgx_types::SgxResult<SharedSecretsDb> {
+        let mut db = SharedSecretsDb::default();
+        for (k, v) in self.db.iter() {
+            db.db.insert(k.to_owned(), unseal_vec_and_deser(&v)?);
+        }
+
+        Ok(db)
+    }
+}
+
+
+pub trait MarshallAs<T> {
+    fn marshal(&self) -> SgxResult<T>;
 }
 
 pub trait UnmarshalledAs<T> {
     fn unmarshal(&self) -> SgxResult<T>;
-}
-
-pub trait MarshallAs<T> {
-    fn marshal(&self) -> SgxResult<T>;
 }
 
 impl UnmarshalledAs<AggregatedMessage> for RoundSubmissionBlob {
@@ -141,43 +188,15 @@ impl UnmarshalledAs<AggregatedMessage> for SignedPartialAggregate {
     }
 }
 
-impl UnsealableAs<SgxPrivateKey> for SealedSigPrivKey {
-    fn unseal(&self) -> sgx_types::SgxResult<SgxPrivateKey> {
-        unseal_vec_and_deser(&self.0.sealed_sk)
+impl MarshallAs<UnblindedAggregateShareBlob> for messages_types::UnblindedAggregateShare {
+    fn marshal(&self) -> sgx_types::SgxResult<UnblindedAggregateShareBlob> {
+        Ok(UnblindedAggregateShareBlob(serialize_to_vec(&self)?))
     }
 }
 
-impl UnsealableAs<SgxPrivateKey> for SealedKemPrivKey {
-    fn unseal(&self) -> sgx_types::SgxResult<SgxPrivateKey> {
-        unseal_vec_and_deser(&self.0.sealed_sk)
-    }
-}
-
-impl UnsealableAs<SgxPrivateKey> for SealedKey {
-    fn unseal(&self) -> sgx_types::SgxResult<SgxPrivateKey> {
-        unseal_vec_and_deser(&self.sealed_sk)
-    }
-}
-
-impl UnsealableAs<SharedSecretsDb> for SealedSharedSecretDb {
-    fn unseal(&self) -> sgx_types::SgxResult<SharedSecretsDb> {
-        let mut db = SharedSecretsDb::default();
-        for (k, v) in self.db.iter() {
-            db.db.insert(k.to_owned(), unseal_vec_and_deser(&v)?);
-        }
-
-        Ok(db)
-    }
-}
 
 impl UnmarshalledAs<messages_types::UnblindedAggregateShare> for UnblindedAggregateShareBlob {
     fn unmarshal(&self) -> sgx_types::SgxResult<messages_types::UnblindedAggregateShare> {
         deserialize_from_vec(&self.0)
-    }
-}
-
-impl MarshallAs<UnblindedAggregateShareBlob> for messages_types::UnblindedAggregateShare {
-    fn marshal(&self) -> sgx_types::SgxResult<UnblindedAggregateShareBlob> {
-        Ok(UnblindedAggregateShareBlob(serialize_to_vec(&self)?))
     }
 }

@@ -4,7 +4,7 @@ extern crate sgx_types;
 use self::interface::*;
 use crate::crypto::Xor;
 use crate::messages_types::AggregatedMessage;
-use crate::unseal::{MarshallAs, UnsealableAs};
+use crate::unseal::{MarshallAs, UnsealableInto};
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use core::convert::TryInto;
@@ -22,13 +22,13 @@ use std::convert::TryFrom;
 use std::debug;
 use std::iter::FromIterator;
 use std::prelude::v1::*;
+use attestation::Attested;
 
 pub fn user_submit_internal(
-    input: &(UserSubmissionReq, SealedSigPrivKey),
+    (send_request, signing_sk): &(UserSubmissionReq, SealedSigPrivKey),
 ) -> SgxResult<RoundSubmissionBlob> {
-    let send_request = &input.0;
     // unseal user's sk
-    let signing_sk = (&input.1).unseal()?;
+    let signing_sk = signing_sk.unseal_into()?;
     // Determine whether the message is just cover traffic (all zeroes)
     let msg_is_empty = send_request.msg.0.iter().all(|b| *b == 0);
 
@@ -42,11 +42,24 @@ pub fn user_submit_internal(
 
     debug!("✅ user id {} matches user signing key", uid);
 
+    // check server pks against TEE attestation
+    if !send_request.server_pks.iter().all(|pk| {
+        pk.verify_attestation()
+    }) {
+        error!("some PKs not verified");
+        return Err(SGX_ERROR_INVALID_PARAMETER);
+    }
+
+    let mut server_sig_pks = Vec::new();
+    let mut server_kem_pks = Vec::new();
     // check anytrust group id matches server pubkeys
-    // TODO: these pub keys are untrustworthy
-    let server_sig_pks: Vec<SgxSigningPubKey> =
-        send_request.shared_secrets.db.keys().cloned().collect();
-    if send_request.anytrust_group_id != compute_anytrust_group_id(&server_sig_pks) {
+    for pk_pkg in send_request.server_pks.iter() {
+        server_sig_pks.push(pk_pkg.sig);
+        server_kem_pks.push(pk_pkg.kem);
+    }
+
+    // check anytrust_group_id against the (now verified) kem keys
+    if send_request.anytrust_group_id != compute_anytrust_group_id(&server_kem_pks) {
         error!("reserve_req.anytrust_group_id != EntityId::from(server_sig_pks)");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
@@ -108,12 +121,19 @@ pub fn user_submit_internal(
             return Err(SGX_ERROR_INVALID_PARAMETER);
         }
 
-        // verify server's signatures
+        // verify server's signatures on previous output
         let verified_index = send_request
             .prev_round_output
             .verify_multisig(&server_sig_pks)?;
-        info!("round output verified against {:?}", verified_index);
 
+        if verified_index.is_empty() {
+            error!("❌ sigs in prev_round_output can't be verified");
+            return Err(SGX_ERROR_INVALID_PARAMETER);
+        }
+
+        info!("✅ prev_round_output verified against {:?}", verified_index);
+
+        // now that sigs on prev_round_output are checked we check the footprints therein
         if send_request.prev_round_output.dc_msg.scheduling_msg[cur_slot] != cur_fp {
             error!(
                 "❌ Collision in slot {} for round {}. sent fp {} != received fp {}. ",
@@ -131,7 +151,7 @@ pub fn user_submit_internal(
     }
 
     debug!(
-        "✅ user will schedule for slot {} for next round with fp {}",
+        "✅ user is scheduled for slot {} for next round with fp {}",
         next_slot, next_fp,
     );
 
@@ -146,7 +166,7 @@ pub fn user_submit_internal(
     );
 
     // Derive the round key from shared secrets
-    let shared_secrets = send_request.shared_secrets.unseal()?;
+    let shared_secrets = send_request.shared_secrets.unseal_into()?;
     if shared_secrets.anytrust_group_id() != send_request.anytrust_group_id {
         error!("shared_secrets.anytrust_group_id() != send_request.anytrust_group_id");
         return Err(SGX_ERROR_INVALID_PARAMETER);
@@ -263,10 +283,8 @@ fn derive_reservation(
 /// 2. Check that the current round is prev_round+1
 /// 3. Make a new footprint reservation for this round
 pub fn user_reserve_slot(
-    input: &(UserReservationReq, SealedSigPrivKey),
+    (req, signing_sk): &(UserReservationReq, SealedSigPrivKey),
 ) -> SgxResult<RoundSubmissionBlob> {
-    let req = input.0.clone();
-    let signing_sk = input.1.clone();
     user_submit_internal(&(
         UserSubmissionReq {
             user_id: req.user_id,
@@ -274,8 +292,9 @@ pub fn user_reserve_slot(
             round: req.round,
             msg: Default::default(),
             prev_round_output: Default::default(),
-            shared_secrets: req.shared_secrets,
+            shared_secrets: req.shared_secrets.clone(),
+            server_pks: req.server_pks.clone(),
         },
-        signing_sk,
+        signing_sk.clone(),
     ))
 }

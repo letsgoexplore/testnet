@@ -4,7 +4,7 @@ use crate::crypto::{
     derive_round_secret, KemPrvKey, SgxPrivateKey, SharedSecretsDb, SignMutable, Signable,
 };
 use crate::messages_types;
-use crate::unseal::{MarshallAs, UnmarshalledAs, UnsealableAs};
+use crate::unseal::{MarshallAs, UnmarshalledAs, UnsealableInto};
 use ecall::keygen::new_sgx_keypair_ext_internal;
 use interface::*;
 use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
@@ -61,7 +61,7 @@ pub fn recv_user_registration(
         .insert(EntityId::from(&user_pk.pk), user_pk.clone());
 
     // Derive secrets
-    let my_kem_sk: SgxPrivateKey = input.2.unseal()?;
+    let my_kem_sk: SgxPrivateKey = input.2.unseal_into()?;
     let mut others_kem_pks = vec![];
     for (_, k) in pk_db.users.iter() {
         others_kem_pks.push(k.pk);
@@ -119,8 +119,8 @@ pub fn unblind_aggregate(
     input: &(RoundSubmissionBlob, SealedSigPrivKey, SealedSharedSecretDb),
 ) -> SgxResult<UnblindedAggregateShareBlob> {
     let round_msg = input.0.unmarshal()?;
-    let sig_key = input.1.unseal()?;
-    let secret_db = input.2.unseal()?;
+    let sig_key = input.1.unseal_into()?;
+    let secret_db = input.2.unseal_into()?;
 
     let user_ids_in_secret_db = BTreeSet::from_iter(secret_db.db.keys().map(EntityId::from));
     if !(round_msg.user_ids == user_ids_in_secret_db
@@ -193,7 +193,7 @@ pub fn derive_round_output(
         server_sigs: vec![],
     };
 
-    let (sig, pk) = round_output.sign(&signing_sk.unseal()?)?;
+    let (sig, pk) = round_output.sign(&signing_sk.unseal_into()?)?;
 
     round_output.server_sigs.push(Signature { pk, sig });
 

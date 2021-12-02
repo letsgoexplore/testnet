@@ -6,7 +6,7 @@ use sgx_types::SgxResult;
 use std::prelude::v1::*;
 use types::*;
 
-use crate::unseal::{UnmarshalledAs, UnsealableAs};
+use crate::unseal::{UnmarshalledAs, UnsealableInto};
 use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 use sgx_types::sgx_status_t::{SGX_ERROR_SERVICE_UNAVAILABLE, SGX_SUCCESS};
 use std::collections::BTreeSet;
@@ -40,7 +40,7 @@ pub fn add_to_aggregate_internal(
         error!("can't verify sig on incoming_msg");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
-    let tee_signing_key = sealed_sk.unseal()?;
+    let tee_signing_key = sealed_sk.unseal_into()?;
 
     // if the current aggregation is empty we create a single-msg aggregation
     if current_aggregation.0.is_empty() {

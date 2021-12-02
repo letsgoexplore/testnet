@@ -1,5 +1,5 @@
 use crate::sgx_protected_keys::{
-    AttestedPublicKey, SealedKey, ServerPubKeyPackage, SgxProtectedKeyPub,
+    AttestedPublicKey, SealedKeyPair, ServerPubKeyPackage, SgxProtectedKeyPub,
 };
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
@@ -144,15 +144,15 @@ impl Debug for SealedSharedSecretDb {
 /// A signing keypair is an ECDSA keypair
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct SealedSigPrivKey(pub SealedKey);
+pub struct SealedSigPrivKey(Vec<u8>);
 
 /// A KEM keypair is also ECDSA keypair
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct SealedKemPrivKey(pub SealedKey);
+pub struct SealedKemPrivKey(Vec<u8>);
 
-impl AsRef<SealedKey> for SealedKemPrivKey {
-    fn as_ref(&self) -> &SealedKey {
+impl AsRef<SealedKeyPair> for SealedKemPrivKey {
+    fn as_ref(&self) -> &SealedKeyPair {
         &self.0
     }
 }

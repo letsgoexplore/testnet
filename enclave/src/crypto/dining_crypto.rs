@@ -51,15 +51,6 @@ impl Debug for SharedSecretsDb {
 use std::convert::TryFrom;
 
 impl SharedSecretsDb {
-    pub fn to_sealed_db(&self) -> SgxResult<SealedSharedSecretDb> {
-        let mut sealed_shared_secrets = SealedSharedSecretDb::default();
-        for (k, s) in self.db.iter() {
-            sealed_shared_secrets.db.insert(k.to_owned(), s.seal()?);
-        }
-
-        Ok(sealed_shared_secrets)
-    }
-
     pub fn derive_shared_secrets(
         my_sk: &SgxPrivateKey,
         other_pks: &[SgxProtectedKeyPub],

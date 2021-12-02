@@ -85,7 +85,11 @@ impl MultiSignable for RoundOutput {
     }
 
     fn verify_multisig(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>> {
-        log::debug!("verifying RoundOutput (with {} signatures)", self.server_sigs.len());
+        log::warn!("verifying RoundOutput (with {} signatures) against a list of {} server PKs",
+            self.server_sigs.len(),
+            pks.len());
+
+        // digest
         let msg_hash = self.digest();
 
         let ecdsa_handler = sgx_tcrypto::SgxEccHandle::new();
@@ -96,17 +100,19 @@ impl MultiSignable for RoundOutput {
             let sig = self.server_sigs[i].sig;
             let pk = self.server_sigs[i].pk;
 
+            // verify the signature
+            if ecdsa_handler.ecdsa_verify_slice(&msg_hash, &pk.into(), &sig.into())? {
+                debug!("signature verified against {}", pk);
+            }
+
+            // check if pk is in the server PK list
             match pks.iter().position(|&k| k == pk) {
                 Some(i) => {
-                    if ecdsa_handler.ecdsa_verify_slice(
-                        &msg_hash,
-                        &self.server_sigs[i].pk.into(),
-                        &self.server_sigs[i].sig.into(),
-                    )? {
-                        verified.push(i)
-                    }
+                    verified.push(i)
                 }
-                None => {}
+                None => {
+                    log::error!("PK {} is not in the server PK list", pk);
+                }
             }
         }
 
