@@ -69,6 +69,12 @@ fn main() -> Result<(), UserError> {
                 .arg(round_arg.clone())
         )
         .subcommand(
+            SubCommand::with_name("send-empty")
+                .about("Sends the empty message as cover traffic for the system")
+                .arg(state_arg.clone())
+                .arg(round_arg.clone())
+        )
+        .subcommand(
             SubCommand::with_name("encrypt-msg")
                 .about(format!(
                     "Encrypts a round message to the DC net. STDIN is a base64-encoded bytestring \
@@ -98,6 +104,27 @@ fn main() -> Result<(), UserError> {
         let (state, reg_blob) = UserState::new(&enclave, pubkeys)?;
         save_state(&matches, &state)?;
         save_to_stdout(&reg_blob)?;
+    }
+
+    // Send cover traffic
+    if let Some(matches) = matches.subcommand_matches("send-empty") {
+        // Make an empty message. Previous round output doesn't matter.
+        let dc_msg = DcMessage::default();
+        let prev_round_output = RoundOutput::default();
+
+        // Load the round
+        let round = {
+            let round_str = matches.value_of("round").unwrap();
+            cli_util::parse_u32(&round_str)?
+        };
+
+        // Now encrypt the message and output it
+        let mut state = load_state(&matches)?;
+        let ciphertext = state.submit_round_msg(&enclave, round, dc_msg, prev_round_output)?;
+        save_to_stdout(&ciphertext)?;
+
+        // The shared secrets were ratcheted, so we have to save the new state
+        save_state(&matches, &state)?;
     }
 
     if let Some(matches) = matches.subcommand_matches("encrypt-msg") {
