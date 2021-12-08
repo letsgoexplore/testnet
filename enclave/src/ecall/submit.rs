@@ -25,7 +25,10 @@ use std::prelude::v1::*;
 
 pub fn user_submit_internal(
     input: &(UserSubmissionReq, SealedSigPrivKey),
-) -> SgxResult<RoundSubmissionBlob> {
+) -> SgxResult<(RoundSubmissionBlob, SealedSharedSecretDb)> {
+    // Added SealedSharedSecretDb to the return value. These are the ratcheted shared secrets
+    unimplemented!();
+    /*
     let send_request = &input.0;
     // unseal user's sk
     let signing_sk = (&input.1).unseal()?;
@@ -182,6 +185,7 @@ pub fn user_submit_internal(
 
     // serialize
     Ok(mutable.marshal()?)
+        */
 }
 
 /// Return deterministically derived footprint reservation for the given parameter
@@ -264,7 +268,7 @@ fn derive_reservation(
 /// 3. Make a new footprint reservation for this round
 pub fn user_reserve_slot(
     input: &(UserReservationReq, SealedSigPrivKey),
-) -> SgxResult<RoundSubmissionBlob> {
+) -> SgxResult<(RoundSubmissionBlob, SealedSharedSecretDb)> {
     let req = input.0.clone();
     let signing_sk = input.1.clone();
     user_submit_internal(&(

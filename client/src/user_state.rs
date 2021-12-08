@@ -47,7 +47,7 @@ impl UserState {
     }
 
     pub fn submit_round_msg(
-        &self,
+        &mut self,
         enclave: &DcNetEnclave,
         round: u32,
         msg: DcMessage,
@@ -62,7 +62,11 @@ impl UserState {
             prev_round_output,
         };
 
-        let blob = enclave.user_submit_round_msg(&req, &self.signing_key)?;
+        let (blob, ratcheted_secrets) = enclave.user_submit_round_msg(&req, &self.signing_key)?;
+
+        // Ratchet the secrets forward
+        self.shared_secrets = ratcheted_secrets;
+
         Ok(blob)
     }
 

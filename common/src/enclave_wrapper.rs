@@ -141,7 +141,7 @@ mod ecall_allowed {
         (
             EcallUserSubmit,
             (&UserSubmissionReq, &SealedSigPrivKey),
-            RoundSubmissionBlob,
+            (RoundSubmissionBlob, SealedSharedSecretDb),
             user_submit
         ),
         (
@@ -167,7 +167,7 @@ mod ecall_allowed {
         (
             EcallUnblindAggregate,
             (&RoundSubmissionBlob,&SealedSigPrivKey,&SealedSharedSecretDb),
-            UnblindedAggregateShareBlob,
+            (UnblindedAggregateShareBlob, SealedSharedSecretDb),
             unblind_aggregate
         ),
         (
@@ -245,6 +245,8 @@ impl DcNetEnclave {
     ///     3. Use the derived slot for the given message
     ///     4. Make a new footprint reservation for this round
     ///
+    /// This function returns the message as well as the ratcheted shared secrets.
+    ///
     /// Error handling:
     ///
     /// If scheduling failed (e.g., due to collision) this will return
@@ -254,7 +256,7 @@ impl DcNetEnclave {
         &self,
         submission_req: &UserSubmissionReq,
         sealed_usk: &SealedSigPrivKey,
-    ) -> EnclaveResult<RoundSubmissionBlob> {
+    ) -> EnclaveResult<(RoundSubmissionBlob, SealedSharedSecretDb)> {
         Ok(ecall_allowed::user_submit(
             self.enclave.geteid(),
             (submission_req, sealed_usk),
@@ -315,14 +317,15 @@ impl DcNetEnclave {
     }
 
     /// XORs the shared secrets into the given aggregate. Returns the server's share of the
-    /// unblinded aggregate
-    /// called by an anytrust server.
+    /// unblinded aggregate as well as the ratcheted shared secrets.
+    ///
+    /// This is invoked by the root anytrust server.
     pub fn unblind_aggregate(
         &self,
         toplevel_agg: &RoundSubmissionBlob,
         signing_key: &SealedSigPrivKey,
         shared_secrets: &SealedSharedSecretDb,
-    ) -> EnclaveResult<UnblindedAggregateShareBlob> {
+    ) -> EnclaveResult<(UnblindedAggregateShareBlob, SealedSharedSecretDb)> {
         ecall_allowed::unblind_aggregate(
             self.enclave.geteid(),
             (toplevel_agg, signing_key, shared_secrets),

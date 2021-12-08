@@ -80,13 +80,13 @@ pub extern "C" fn ecall_entrypoint(
         (
             EcallUserSubmit,
             (UserSubmissionReq, SealedSigPrivKey),
-            RoundSubmissionBlob,
+            (RoundSubmissionBlob, SealedSharedSecretDb),
             submit::user_submit_internal
         ),
         (
             EcallUserReserveSlot,
             (UserReservationReq, SealedSigPrivKey),
-            RoundSubmissionBlob,
+            (RoundSubmissionBlob, SealedSharedSecretDb),
             submit::user_reserve_slot
         ),
         (
@@ -106,8 +106,9 @@ pub extern "C" fn ecall_entrypoint(
         (
             EcallUnblindAggregate,
             (RoundSubmissionBlob,SealedSigPrivKey,SealedSharedSecretDb),
-            UnblindedAggregateShareBlob,
-            server::unblind_aggregate),
+            (UnblindedAggregateShareBlob, SealedSharedSecretDb),
+            server::unblind_aggregate
+        ),
         (
             EcallDeriveRoundOutput,
             (SealedSigPrivKey, Vec<UnblindedAggregateShareBlob>),

@@ -113,11 +113,15 @@ pub fn recv_server_registration(
 use std::iter::FromIterator;
 
 /// XORs the shared secrets into the given aggregate. Returns the server's share of the
-/// unblinded aggregate
-/// called by an anytrust server.
+/// unblinded aggregate as well as the ratcheted shared secrets.
+///
+/// This is invoked by the root anytrust server.
 pub fn unblind_aggregate(
     input: &(RoundSubmissionBlob, SealedSigPrivKey, SealedSharedSecretDb),
-) -> SgxResult<UnblindedAggregateShareBlob> {
+) -> SgxResult<(UnblindedAggregateShareBlob, SealedSharedSecretDb)> {
+    // Added SealedSharedSecretDb to the return type
+    unimplemented!();
+    /*
     let round_msg = input.0.unmarshal()?;
     let sig_key = input.1.unseal()?;
     let secret_db = input.2.unseal()?;
@@ -151,6 +155,7 @@ pub fn unblind_aggregate(
     unblined_agg.sign_mut(&sig_key)?;
 
     Ok(unblined_agg.marshal()?)
+    */
 }
 
 use crypto::MultiSignable;

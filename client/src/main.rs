@@ -131,9 +131,12 @@ fn main() -> Result<(), UserError> {
         };
 
         // Now encrypt the message and output it
-        let state = load_state(&matches)?;
+        let mut state = load_state(&matches)?;
         let ciphertext = state.submit_round_msg(&enclave, round, dc_msg, prev_round_output)?;
         save_to_stdout(&ciphertext)?;
+
+        // The shared secrets were ratcheted, so we have to save the new state
+        save_state(&matches, &state)?;
     }
 
     if let Some(matches) = matches.subcommand_matches("reserve-slot") {

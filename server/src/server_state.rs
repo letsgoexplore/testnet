@@ -55,14 +55,17 @@ impl ServerState {
     }
 
     /// XORs the shared secrets into the given aggregate. Returns the server's share of the
-    /// unblinded aggregate
+    /// unblinded aggregate as well as the ratcheted shared secrets
     pub fn unblind_aggregate(
-        &self,
+        &mut self,
         enclave: &DcNetEnclave,
         toplevel_agg: &RoundSubmissionBlob,
     ) -> Result<UnblindedAggregateShareBlob> {
-        let share =
+        let (share, ratcheted_secrets) =
             enclave.unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
+
+        // Ratchet the secrets forward
+        self.shared_secrets = ratcheted_secrets;
 
         Ok(share)
     }

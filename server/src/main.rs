@@ -181,9 +181,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         let agg_blob: RoundSubmissionBlob = load_from_stdin()?;
 
         // Feed it to the state and print the result
-        let state = load_state(&matches)?;
+        let mut state = load_state(&matches)?;
         let agg = state.unblind_aggregate(&enclave, &agg_blob)?;
         save_to_stdout(&agg)?;
+
+        // The shared secrets were ratcheted, so we have to save the new state
+        save_state(&matches, &state)?;
     }
 
     if let Some(matches) = matches.subcommand_matches("combine-shares") {

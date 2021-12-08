@@ -123,18 +123,24 @@ async fn submit_agg(
     // Parse aggregation
     let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
 
-    // Unblind the input
+    // Unpack the state
     let mut state_handle = state.get_ref().lock().unwrap();
-    let group_size = state_handle.server_state.anytrust_group_size;
-    let share = state_handle
-        .server_state
-        .unblind_aggregate(&state_handle.enclave, &agg_data)?;
+    let ServiceState {
+        ref leader_url,
+        ref mut round_shares,
+        ref enclave,
+        ref mut server_state,
+        ..
+    } = state_handle.deref_mut();
+    let group_size = server_state.anytrust_group_size;
 
-    match &state_handle.leader_url {
+    // Unblind the input
+    let share = server_state.unblind_aggregate(enclave, &agg_data)?;
+
+    match leader_url {
         // We're the leader
         None => {
             // Since we're the leader, add this share to the current round's shares
-            let round_shares = &mut state_handle.round_shares;
             round_shares.push(share);
             info!(
                 "I now have {}/{} round shares",
