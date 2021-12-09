@@ -7,6 +7,7 @@ use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 use sgx_types::SgxResult;
 use std::string::ToString;
 use std::vec::Vec;
+use unseal::SealInto;
 
 /// Derives shared secrets with all the given KEM pubkeys, and derives a new signing pubkey.
 /// Returns sealed secrets, a sealed private key, and a registration message to send to an
@@ -27,20 +28,12 @@ pub fn new_user(
     let role = "user".to_string();
 
     // 2. generate a SGX protected key. used for both signing and round key derivation
-    let (sk, pk, sealed_key) = new_sgx_keypair_ext_internal(&role)?;
+    let (sk, pk) = new_sgx_keypair_ext_internal(&role)?;
 
     // 3. derive server secrets
     let server_secrets = SharedSecretsDb::derive_shared_secrets(&sk, &kem_pks)?;
 
     debug!("DH secrets {:?}", server_secrets);
 
-    Ok((
-        server_secrets.to_sealed_db()?,
-        SealedSigPrivKey(sealed_key),
-        AttestedPublicKey {
-            pk,
-            role,
-            tee_linkable_attestation: vec![0],
-        },
-    ))
+    Ok((server_secrets.seal_into()?, sk.seal_into()?, pk))
 }

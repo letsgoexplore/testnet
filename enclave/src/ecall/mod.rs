@@ -7,6 +7,7 @@ mod user;
 use interface::*;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_SUCCESS};
 use sgx_types::{sgx_status_t, SgxResult};
+use unseal::{SealInto, UnsealableInto};
 
 use std::slice;
 
@@ -21,6 +22,7 @@ macro_rules! match_ecall_ids {
     }
 }
 
+use std::convert::TryFrom;
 use std::string::String;
 use std::vec::Vec;
 
@@ -48,23 +50,31 @@ pub extern "C" fn ecall_entrypoint(
 
     // make sure this matches exact with that in enclave_wrapper.rs
     match_ecall_ids! {
-        ecall_id, inp, inp_len, output, output_cap, output_used,
-        (
-            EcallNewSgxKeypair,
-            String,
-            SealedKey,
-            |role: &String| {Ok(keygen::new_sgx_keypair_ext_internal(role)?.2)}
-        ),
-        (
-            EcallUnsealToPublicKey,
-            SealedKey,
-            SgxProtectedKeyPub,
-            keygen::unseal_to_pubkey_internal
+            ecall_id, inp, inp_len, output, output_cap, output_used,
+            (
+                EcallNewSgxKeypair,
+                String,
+                (Vec<u8>, AttestedPublicKey), // (sealed sk, public key)
+                |role: &String| {
+                let (sk, pk) = keygen::new_sgx_keypair_ext_internal(role)?;
+
+                let sealed_sk: SealedSigPrivKey = sk.seal_into()?;
+                Ok((sealed_sk.0, pk))
+            }),
+            (
+                EcallUnsealToPublicKey,
+               Vec<u8>, // sealed sk
+                SgxProtectedKeyPub,
+                |sealed_sk: &Vec<u8>| {
+                let sk: SgxPrivateKey = SealedSigPrivKey(sealed_sk.to_vec()).unseal_into()?;
+
+                SgxProtectedKeyPub::try_from(&sk)
+            }
         ),
         (
             EcallNewUser,
             // input
-            Vec<ServerPubKeyPackage>,
+            Vec < ServerPubKeyPackage >,
             // output
             (SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob),
             user::new_user
@@ -91,7 +101,7 @@ pub extern "C" fn ecall_entrypoint(
         ),
         (
             EcallAddToAggregate,
-            (RoundSubmissionBlob,SignedPartialAggregate,SealedSigPrivKey),
+            (RoundSubmissionBlob, SignedPartialAggregate, SealedSigPrivKey),
             SignedPartialAggregate,
             aggregation::add_to_aggregate_internal
         ),
@@ -111,7 +121,7 @@ pub extern "C" fn ecall_entrypoint(
         ),
         (
             EcallDeriveRoundOutput,
-            (SealedSigPrivKey, Vec<UnblindedAggregateShareBlob>),
+            (SealedSigPrivKey, Vec < UnblindedAggregateShareBlob >),
             RoundOutput,
             server::derive_round_output
         ),
@@ -142,6 +152,7 @@ macro_rules! unmarshal_or_abort {
     };
 }
 
+use crypto::SgxPrivateKey;
 use env_logger::{Builder, Env};
 use serde::Serialize;
 use sgx_types::SgxError;
@@ -192,8 +203,12 @@ where
     O: serde::Serialize,
 {
     debug!("starting {}", ecall_id.as_str());
+    debug!("input received {} bytes", inp_len);
 
     let input: I = unmarshal_or_abort!(I, inp, inp_len);
+
+    debug!("input unmarshalled {} bytes", inp_len);
+
     let result = match internal_fn(&input) {
         Ok(o) => o,
         Err(e) => return e,

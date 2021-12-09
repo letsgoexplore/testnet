@@ -76,7 +76,7 @@ pub type Footprint = u32;
 pub struct DcRoundMessage {
     #[serde(with = "BigArray")]
     pub scheduling_msg: [Footprint; FOOTPRINT_N_SLOTS],
-    // #[serde(with = "BigArray")]
+    #[serde(with = "BigArray")]
     pub aggregated_msg: [DcMessage; DC_NET_N_SLOTS],
 }
 
@@ -224,8 +224,10 @@ pub struct UserSubmissionReq {
     pub msg: DcMessage,
     /// output of previous round signed by one or more anytrust server
     pub prev_round_output: RoundOutput,
-    /// A map from server public key to sealed shared secret
+    /// A map from server KEM public key to sealed shared secret
     pub shared_secrets: SealedSharedSecretDb,
+    /// A list of server public keys (can be verified using the included attestation)
+    pub server_pks: Vec<ServerPubKeyPackage>,
 }
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -236,4 +238,6 @@ pub struct UserReservationReq {
     pub round: u32,
     /// A map from server public key to sealed shared secret
     pub shared_secrets: SealedSharedSecretDb,
+    /// A list of server public keys (can be verified using the included attestation)
+    pub server_pks: Vec<ServerPubKeyPackage>,
 }

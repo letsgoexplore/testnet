@@ -1,9 +1,8 @@
 use interface::*;
-use sgx_types::sgx_status_t;
+use sgx_types::{sgx_sha256_init, sgx_status_t};
 
 use std::prelude::v1::*;
 
-use crate::unseal::Sealable;
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
 use sha2::Sha256;
@@ -33,16 +32,22 @@ impl Debug for DiffieHellmanSharedSecret {
     }
 }
 
+use std::cell::RefCell;
+
 /// A ServerSecrets consists of an array of shared secrets established between a user and with a
 /// group of any-trust server
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct SharedSecretsDb {
+    /// round number
+    pub round: u32,
+    /// a dictionary of keys
     pub db: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret>,
 }
 
 impl Debug for SharedSecretsDb {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_struct("SharedSecretsDb")
+            .field("round", &self.round)
             .field("db", &self.db)
             .finish()
     }
@@ -51,15 +56,7 @@ impl Debug for SharedSecretsDb {
 use std::convert::TryFrom;
 
 impl SharedSecretsDb {
-    pub fn to_sealed_db(&self) -> SgxResult<SealedSharedSecretDb> {
-        let mut sealed_shared_secrets = SealedSharedSecretDb::default();
-        for (k, s) in self.db.iter() {
-            sealed_shared_secrets.db.insert(k.to_owned(), s.seal()?);
-        }
-
-        Ok(sealed_shared_secrets)
-    }
-
+    /// Derive shared secrets (using DH). Used at registration time
     pub fn derive_shared_secrets(
         my_sk: &SgxPrivateKey,
         other_pks: &[SgxProtectedKeyPub],
@@ -91,13 +88,35 @@ impl SharedSecretsDb {
             );
         }
 
-        Ok(SharedSecretsDb { db: server_secrets })
+        Ok(SharedSecretsDb {
+            round: 0,
+            db: server_secrets,
+        })
     }
 
     pub fn anytrust_group_id(&self) -> EntityId {
-        warn!("[TODO] db keys are untrusted. To fix this, put the public keys as AD when sealing");
         let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
         compute_anytrust_group_id(&keys)
+    }
+
+    /// Return ratcheted keys
+    pub fn ratchet(&self) -> SharedSecretsDb {
+        let a = self
+            .db
+            .iter()
+            .map(|(&k, v)| {
+                let new_key = Sha256::digest(&v.0);
+                let mut new_sec = DiffieHellmanSharedSecret::default();
+                new_sec.0.copy_from_slice(new_key.as_slice());
+
+                (k, new_sec)
+            })
+            .collect();
+
+        SharedSecretsDb {
+            round: self.round + 1,
+            db: a,
+        }
     }
 }
 

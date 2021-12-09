@@ -116,12 +116,12 @@ mod ecall_allowed {
         (
             EcallNewSgxKeypair,
             String,
-            SealedKey,
+            (Vec<u8>, AttestedPublicKey),
             new_sgx_keypair
         ),
         (
             EcallUnsealToPublicKey,
-            &SealedKey,
+            &Vec<u8>,
             SgxProtectedKeyPub,
             unseal_to_public_key),
         (
@@ -191,8 +191,20 @@ mod ecall_allowed {
     }
 }
 
+use pretty_env_logger::env_logger::{Builder, Env};
+
 impl DcNetEnclave {
     pub fn init(enclave_file: &'static str) -> EnclaveResult<Self> {
+        // enable debug
+        let env = Env::default()
+            .filter_or("RUST_LOG", "debug")
+            .write_style_or("RUST_LOG_STYLE", "always");
+
+        let _ = Builder::from_env(env).try_init();
+        let _ = pretty_env_logger::env_logger::builder()
+            .is_test(true)
+            .try_init();
+
         let enclave_path = PathBuf::from(enclave_file);
 
         let mut launch_token: sgx_launch_token_t = [0; 1024];
@@ -223,14 +235,15 @@ impl DcNetEnclave {
 
     /// This method can be used for creating signing keys and KEM private keys.
     /// Use unseal_to_pubkey to unseal the key and compute its public key.
-    fn new_sgx_protected_key(&self, role: String) -> EnclaveResult<SealedKey> {
+    /// Returns (sealed sk, AttestedPublicKey)
+    fn new_sgx_protected_key(&self, role: String) -> EnclaveResult<(Vec<u8>, AttestedPublicKey)> {
         Ok(ecall_allowed::new_sgx_keypair(self.enclave.geteid(), role)?)
     }
 
     /// Returns the public key corresponding to the sealed secret key
     pub fn unseal_to_public_key_on_p256(
         &self,
-        sealed_private_key: &SealedKey,
+        sealed_private_key: &Vec<u8>,
     ) -> EnclaveResult<SgxProtectedKeyPub> {
         Ok(ecall_allowed::unseal_to_public_key(
             self.enclave.geteid(),
@@ -365,11 +378,11 @@ impl DcNetEnclave {
     pub fn new_aggregator(
         &self,
     ) -> EnclaveResult<(SealedSigPrivKey, EntityId, AggRegistrationBlob)> {
-        let sealed_sk = self.new_sgx_protected_key("agg".to_string())?;
+        let (sealed_sk, attested_pk) = self.new_sgx_protected_key("agg".to_string())?;
         Ok((
-            SealedSigPrivKey(sealed_sk.clone()),
-            EntityId::from(&sealed_sk.attested_pk.pk),
-            AggRegistrationBlob(sealed_sk.attested_pk),
+            SealedSigPrivKey(sealed_sk),
+            EntityId::from(&attested_pk.pk),
+            AggRegistrationBlob(attested_pk),
         ))
     }
 
@@ -471,7 +484,7 @@ mod enclave_tests {
     use env_logger::{Builder, Env};
     use hex::FromHex;
     use interface::{
-        DcMessage, EntityId, SealedFootprintTicket, SealedKey, SgxProtectedKeyPub,
+        DcMessage, EntityId, SealedFootprintTicket, SealedKeyPair, SgxProtectedKeyPub,
         UserSubmissionReq, DC_NET_MESSAGE_LENGTH, SEALED_SGX_SIGNING_KEY_LENGTH, USER_ID_LENGTH,
     };
     use log::*;
@@ -524,6 +537,7 @@ mod enclave_tests {
             msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
             shared_secrets: user_reg_shared_secrets,
             prev_round_output: RoundOutput::default(),
+            server_pks: spks,
         };
 
         let resp_1 = enc
@@ -556,7 +570,7 @@ mod enclave_tests {
             anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
             round: 1u32,
             shared_secrets: user_reg_shared_secrets,
-            prev_round_output: RoundOutput::default(),
+            server_pks: spks,
         };
 
         let resp_1 = enc.user_reserve_slot(&req_1, &user_reg_sealed_key).unwrap();
@@ -587,6 +601,7 @@ mod enclave_tests {
             msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
             prev_round_output: Default::default(),
             shared_secrets: user_reg_shared_secrets,
+            server_pks: server_pks.clone(),
         };
 
         log::info!("submitting for user {:?}", req_1.user_id);
@@ -620,6 +635,7 @@ mod enclave_tests {
             msg: DcMessage([2u8; DC_NET_MESSAGE_LENGTH]),
             prev_round_output: Default::default(),
             shared_secrets: user_2.0,
+            server_pks,
         };
         let resp_2 = enc.user_submit_round_msg(&req_2, &user_2.1).unwrap();
 
@@ -735,6 +751,7 @@ mod enclave_tests {
             msg: DcMessage([9u8; DC_NET_MESSAGE_LENGTH]),
             prev_round_output: RoundOutput::default(),
             shared_secrets: user.0,
+            server_pks,
         };
 
         log::info!("🏁 submitting {:?}", req_0.msg);

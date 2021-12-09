@@ -4,12 +4,7 @@ use crate::user_request::EntityId;
 
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
-#[allow(unused_imports)]
-use sgx_types::sgx_status_t;
-use std::format;
-use std::vec;
-#[allow(unused_imports)]
-use std::{convert::TryFrom, vec::Vec};
+use std::vec::Vec;
 
 use rand_core::RngCore;
 use sgx_types::{sgx_ec256_public_t, SGX_ECP256_KEY_SIZE};
@@ -108,41 +103,40 @@ impl Debug for AttestedPublicKey {
 }
 
 /// An enclave-generated private signing key
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Deserialize)]
-pub struct SealedKey {
-    pub sealed_sk: Vec<u8>,
-    pub attested_pk: AttestedPublicKey,
-}
-
-/// We implement Default for all Sealed* types
-/// Invariant: default values are "ready to use" in ecall.
-/// That usually means we have allocated enough memory for the enclave to write to.
-impl Default for SealedKey {
-    fn default() -> Self {
-        SealedKey {
-            sealed_sk: vec![0u8; 1024], // 1024 seems enough
-            attested_pk: AttestedPublicKey::default(),
-        }
-    }
-}
-
-impl Debug for SealedKey {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("SealedKey")
-            .field("sealed_sk", &format!("{} bytes", self.sealed_sk.len()))
-            .field("pk", &self.attested_pk)
-            .finish()
-    }
-}
+// #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+// #[derive(Clone, Serialize, Deserialize)]
+// pub struct SealedKeyPair {
+//     pub sealed_sk: Vec<u8>,
+//     pub attested_pk: AttestedPublicKey,
+// }
+//
+// /// We implement Default for all Sealed* types
+// /// Invariant: default values are "ready to use" in ecall.
+// /// That usually means we have allocated enough memory for the enclave to write to.
+// impl Default for SealedKeyPair {
+//     fn default() -> Self {
+//         SealedKeyPair {
+//             sealed_sk: vec![0u8; 1024], // 1024 seems enough
+//             attested_pk: AttestedPublicKey::default(),
+//         }
+//     }
+// }
+//
+// impl Debug for SealedKeyPair {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         f.debug_struct("SealedKey")
+//             .field("sealed_sk", &format!("{} bytes", self.sealed_sk.len()))
+//             .field("pk", &self.attested_pk)
+//             .finish()
+//     }
+// }
 
 /// Contains a server's signing and KEM pubkeys
-/// Invariant: Sig public key represents identity. As a corollary, anytrust group id is computed from Sig pubkeys.
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ServerPubKeyPackage {
     pub sig: SgxSigningPubKey,
     pub kem: KemPubKey,
-    /// proving the association of the two keys
+    /// One attestation proving the association of the two keys
     pub attestation: Vec<u8>,
 }

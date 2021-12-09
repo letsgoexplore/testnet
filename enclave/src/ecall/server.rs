@@ -4,7 +4,7 @@ use crate::crypto::{
     derive_round_secret, KemPrvKey, SgxPrivateKey, SharedSecretsDb, SignMutable, Signable,
 };
 use crate::messages_types;
-use crate::unseal::{MarshallAs, UnmarshalledAs, UnsealableAs};
+use crate::unseal::{MarshallAs, UnmarshalledAs, UnsealableInto};
 use ecall::keygen::new_sgx_keypair_ext_internal;
 use interface::*;
 use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
@@ -24,16 +24,12 @@ pub fn new_server(
     let kem_key = new_sgx_keypair_ext_internal(&"server_kem".to_string())?;
 
     let reg = ServerRegistrationBlob {
-        sig: sig_key.1,
-        kem: kem_key.1,
+        sig: sig_key.1.pk,
+        kem: kem_key.1.pk,
         attestation: vec![0],
     };
 
-    Ok((
-        SealedSigPrivKey(sig_key.2),
-        SealedKemPrivKey(kem_key.2),
-        reg,
-    ))
+    Ok((sig_key.0.seal_into()?, kem_key.0.seal_into()?, reg))
 }
 
 /// Verifies and adds the given user registration blob to the database of pubkeys and
@@ -61,7 +57,7 @@ pub fn recv_user_registration(
         .insert(EntityId::from(&user_pk.pk), user_pk.clone());
 
     // Derive secrets
-    let my_kem_sk: SgxPrivateKey = input.2.unseal()?;
+    let my_kem_sk: SgxPrivateKey = input.2.unseal_into()?;
     let mut others_kem_pks = vec![];
     for (_, k) in pk_db.users.iter() {
         others_kem_pks.push(k.pk);
@@ -71,7 +67,7 @@ pub fn recv_user_registration(
 
     debug!("shared_secrets {:?}", shared_secrets);
 
-    Ok((pk_db, shared_secrets.to_sealed_db()?))
+    Ok((pk_db, shared_secrets.seal_into()?))
 }
 
 pub fn recv_aggregator_registration(
@@ -119,14 +115,19 @@ use std::iter::FromIterator;
 pub fn unblind_aggregate(
     input: &(RoundSubmissionBlob, SealedSigPrivKey, SealedSharedSecretDb),
 ) -> SgxResult<(UnblindedAggregateShareBlob, SealedSharedSecretDb)> {
-    // Added SealedSharedSecretDb to the return type
-    unimplemented!();
-    /*
     let round_msg = input.0.unmarshal()?;
-    let sig_key = input.1.unseal()?;
-    let secret_db = input.2.unseal()?;
+    let sig_key = input.1.unseal_into()?;
+    let shared_secrets = input.2.unseal_into()?;
 
-    let user_ids_in_secret_db = BTreeSet::from_iter(secret_db.db.keys().map(EntityId::from));
+    if round_msg.round != shared_secrets.round {
+        error!(
+            "wrong round. round_msg.round {} != shared_secrets.round {}",
+            round_msg.round, shared_secrets.round
+        );
+        return Err(SGX_ERROR_INVALID_PARAMETER);
+    }
+
+    let user_ids_in_secret_db = BTreeSet::from_iter(shared_secrets.db.keys().map(EntityId::from));
     if !(round_msg.user_ids == user_ids_in_secret_db
         || round_msg.user_ids.is_subset(&user_ids_in_secret_db))
     {
@@ -136,7 +137,7 @@ pub fn unblind_aggregate(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    let round_secret = derive_round_secret(round_msg.round, &secret_db).map_err(|_| {
+    let round_secret = derive_round_secret(round_msg.round, &shared_secrets).map_err(|_| {
         error!("crypto error");
         SGX_ERROR_INVALID_PARAMETER
     })?;
@@ -154,12 +155,15 @@ pub fn unblind_aggregate(
     // sign
     unblined_agg.sign_mut(&sig_key)?;
 
-    Ok(unblined_agg.marshal()?)
-    */
+    Ok((
+        unblined_agg.marshal()?,
+        shared_secrets.ratchet().seal_into()?,
+    ))
 }
 
 use crypto::MultiSignable;
 use std::vec::Vec;
+use unseal::SealInto;
 
 pub fn derive_round_output(
     input: &(SealedSigPrivKey, Vec<UnblindedAggregateShareBlob>),
@@ -198,7 +202,7 @@ pub fn derive_round_output(
         server_sigs: vec![],
     };
 
-    let (sig, pk) = round_output.sign(&signing_sk.unseal()?)?;
+    let (sig, pk) = round_output.sign(&signing_sk.unseal_into()?)?;
 
     round_output.server_sigs.push(Signature { pk, sig });
 
