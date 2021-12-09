@@ -85,7 +85,7 @@ impl MultiSignable for RoundOutput {
     }
 
     fn verify_multisig(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>> {
-        log::warn!(
+        log::debug!(
             "verifying RoundOutput (with {} signatures) against a list of {} server PKs",
             self.server_sigs.len(),
             pks.len()

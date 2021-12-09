@@ -39,11 +39,13 @@ impl Default for AggregatedMessage {
 impl Signable for AggregatedMessage {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
+        hasher.input(b"Begin AggregatedMessage");
         hasher.input(&self.anytrust_group_id);
         for id in self.user_ids.iter() {
             hasher.input(id);
         }
         hasher.input(&self.aggregated_msg.digest());
+        hasher.input(b"End AggregatedMessage");
 
         hasher.result().to_vec()
     }
@@ -77,28 +79,21 @@ pub struct UnblindedAggregateShare {
 
 impl Signable for UnblindedAggregateShare {
     fn digest(&self) -> Vec<u8> {
-        warn!("sig not implemented");
-        Default::default()
+        let mut hasher = Sha256::new();
+        hasher.input(b"Begin UnblindedAggregateShare");
+        hasher.input(self.encrypted_msg.digest());
+        hasher.input(self.key_share.digest());
+        hasher.input(b"End UnblindedAggregateShare");
+
+        hasher.result().to_vec()
     }
 
     fn get_sig(&self) -> SgxSignature {
-        warn!("sig not implemented");
-        Default::default()
+        self.sig
     }
 
     fn get_pk(&self) -> SgxSigningPubKey {
-        warn!("sig not implemented");
-        Default::default()
-    }
-
-    fn sign(&self, _ssk: &SgxSigningKey) -> sgx_types::SgxResult<(SgxSignature, SgxSigningPubKey)> {
-        warn!("sig not implemented");
-        Ok((Default::default(), Default::default()))
-    }
-
-    fn verify(&self) -> sgx_types::SgxResult<bool> {
-        warn!("sig not implemented");
-        Ok(true)
+        self.pk
     }
 }
 
