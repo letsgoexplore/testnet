@@ -189,6 +189,8 @@ fn serialize_to_ptr<T: Serialize>(
     Ok(())
 }
 
+use std::untrusted::time::InstantEx; // get time for perf test
+
 fn generic_ecall<I, O>(
     ecall_id: EcallId,
     inp: *const u8,
@@ -202,6 +204,8 @@ where
     I: serde::de::DeserializeOwned,
     O: serde::Serialize,
 {
+    let start_time = std::time::Instant::now();
+
     debug!("starting {}", ecall_id.as_str());
     debug!("input received {} bytes", inp_len);
 
@@ -221,7 +225,7 @@ where
             e
         }
     };
-    debug!("done ecall {}", ecall_id.as_str());
+    debug!("done ecall {}. took {} us", ecall_id.as_str(), start_time.elapsed().as_micros());
 
     ret
 }
