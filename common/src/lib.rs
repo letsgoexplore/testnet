@@ -15,4 +15,5 @@ pub mod dc_proto {
     tonic::include_proto!("dc_proto");
 }
 
-extern crate pretty_env_logger;
+#[macro_use]
+extern crate log;

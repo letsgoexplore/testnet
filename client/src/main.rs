@@ -17,6 +17,7 @@ use clap::{App, AppSettings, Arg, SubCommand};
 
 fn main() -> Result<(), UserError> {
     // Do setup
+    env_logger::init();
     let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
 
     let state_arg = Arg::with_name("user-state")

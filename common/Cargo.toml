@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 log = "0.4.11"
-pretty_env_logger = "0.4.0"
+#pretty_env_logger = "0.4.0"
 #base64 = {version = "0.13.0", default-features = false}
 base64 = "0.13.0"
 hexdump = "0.1.0"

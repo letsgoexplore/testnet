@@ -207,7 +207,6 @@ where
     let start_time = std::time::Instant::now();
 
     debug!("starting {}", ecall_id.as_str());
-    debug!("input received {} bytes", inp_len);
 
     let input: I = unmarshal_or_abort!(I, inp, inp_len);
 

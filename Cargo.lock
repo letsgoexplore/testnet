@@ -545,7 +545,6 @@ dependencies = [
  "hexdump",
  "interface",
  "log 0.4.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "pretty_env_logger",
  "prost",
  "quick-error 2.0.1",
  "rand 0.8.4",
@@ -623,7 +622,7 @@ version = "1.0.0"
 dependencies = [
  "bitvec",
  "byteorder 1.3.4",
- "env_logger 0.7.1 (git+https://github.com/mesalock-linux/env_logger-sgx)",
+ "env_logger 0.7.1",
  "hex",
  "hkdf",
  "interface",
@@ -715,22 +714,9 @@ dependencies = [
 [[package]]
 name = "env_logger"
 version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
-dependencies = [
- "atty",
- "humantime 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 1.5.4",
- "termcolor 1.1.2",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.7.1"
 source = "git+https://github.com/mesalock-linux/env_logger-sgx#839ef5144497dd61e7a5dc99ace41c561b576f20"
 dependencies = [
- "humantime 1.3.0 (git+https://github.com/mesalock-linux/humantime-sgx)",
+ "humantime 1.3.0",
  "log 0.4.14 (git+https://github.com/mesalock-linux/log-sgx)",
  "regex 1.3.1",
  "sgx_tstd",
@@ -1103,15 +1089,6 @@ name = "httpdate"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6456b8a6c8f33fee7d958fcd1b60d55b11940a79e63ae87013e6d22e26034440"
-
-[[package]]
-name = "humantime"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df004cfca50ef23c36850aaaa59ad52cc70d0e90243c3c7737a4dd32dc7a3c4f"
-dependencies = [
- "quick-error 1.2.3",
-]
 
 [[package]]
 name = "humantime"
@@ -1588,16 +1565,6 @@ name = "ppv-lite86"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac74c624d6b2d21f425f752262f42188365d7b8ff1aff74c82e45136510a4857"
-
-[[package]]
-name = "pretty_env_logger"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "926d36b9553851b8b0005f1275891b392ee4d2d833852c417ed025477350fb9d"
-dependencies = [
- "env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.4.14 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "proc-macro-hack"
@@ -2211,6 +2178,7 @@ dependencies = [
  "base64",
  "clap",
  "common",
+ "env_logger 0.9.0",
  "interface",
  "serde 1.0.126",
  "thiserror",
