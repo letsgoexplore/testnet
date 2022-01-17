@@ -18,10 +18,7 @@ SERVER_ROUNDOUTPUT="server/round_output.txt"
 AGG_SERVICE_ADDR="localhost:8785"
 SERVER_SERVICE_ADDR="localhost:8122"
 
-# -q to reduce clutter
-CMD_PREFIX="cargo run -q -- "
-
-NUM_SERVERS=2
+NUM_SERVERS=1
 NUM_USERS=2
 NUM_AGGREGATORS=1
 NUM_USERS_PER_AGGREGATOR=2
@@ -30,6 +27,13 @@ NUM_TEST_ROUNDS=3
 
 # We define four messages, separated by semicolons. The leading ; is because we index by 1
 MSGS_STR=";testing;hello;world;yo"
+
+build() {
+    make -C enclave
+    for d in "client" "server" "aggregator"; do 
+        pushd $d && cargo build --release && popd
+    done
+}
 
 # Checks that the given constants make sense
 check() {
@@ -79,6 +83,7 @@ clean() {
 setup_servers() {
     touch $USER_SERVERKEYS
     cd server
+    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
 
     # Accumulate the server registration data in this variable. The separator we use is ';'
     SERVER_REGS=""
@@ -133,6 +138,7 @@ setup_servers() {
 # Creates new aggregators wrt the server KEM pubkeys
 setup_aggregators() {
     cd aggregator
+    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-aggregator
 
     # Accumulate the aggregator registration data in this variable. The separator we use is ';'
     AGG_REGS=""
@@ -160,6 +166,7 @@ setup_aggregators() {
 
     # Now do the registrations
     cd ../server
+    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
 
     # Read the regs into a variable
     IFS=';' read -ra AGG_REGS <<< "$AGG_REGS"
@@ -179,6 +186,7 @@ setup_aggregators() {
 # Creates new clients wrt the server KEM pubkeys
 setup_clients() {
     cd client
+    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-client
 
     # Accumulate the client registration data in this variable. The separator we use is ';'
     USER_REGS=""
@@ -200,6 +208,7 @@ setup_clients() {
 
     # Now do the registrations
     cd ../server
+    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
 
     # Read the regs into an array
     IFS=';' read -ra USER_REGS <<< "$USER_REGS"
@@ -218,6 +227,7 @@ setup_clients() {
 # Starts round $ROUND with all the aggregators
 start_round() {
     cd aggregator
+    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-aggregator
 
     echo "Starting round $ROUND"
 
@@ -235,6 +245,7 @@ start_round() {
 # Encrypts the messages and sends them to the aggregators
 encrypt_msgs() {
     cd client
+    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-client
 
     # Read the messages into a variable
     IFS=';' read -ra MSGS <<< "$MSGS_STR"
@@ -284,6 +295,7 @@ encrypt_msgs() {
 
     # Then send user messages to the base-level aggregators
     cd aggregator
+    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-aggregator
 
     # Now send them to the base-level aggregators, parititoning the users
     i=0
@@ -341,6 +353,7 @@ propagate_aggregates() {
 # Decrypts the aggregated messages using the server's secrets
 decrypt_msgs() {
     cd server
+    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
 
     # Create and clear the unblinded shares file
     touch "../$SERVER_SHARES"
@@ -375,9 +388,15 @@ decrypt_msgs() {
 }
 
 clean
+build
 check
 
+start_time=$(date +%s)
 setup_servers
+end_time=$(date +%s)
+elapsed=$(( end_time - start_time ))
+echo "took $elapsed seconds"
+exit 0
 setup_aggregators
 setup_clients
 
