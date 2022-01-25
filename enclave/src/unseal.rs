@@ -10,7 +10,6 @@ use sgx_tseal::SgxSealedData;
 use sgx_types::sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 use sgx_types::{sgx_sealed_data_t, SgxError, SgxResult};
 use std::borrow::ToOwned;
-use std::collections::BTreeSet;
 use std::vec::Vec;
 
 fn serialize_to_vec<T: Serialize>(v: &T) -> SgxResult<Vec<u8>> {

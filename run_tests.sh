@@ -147,7 +147,7 @@ setup_aggregators() {
     for i in $(seq 1 $NUM_AGGREGATORS); do
         STATE="${AGG_STATE%.txt}$i.txt"
         AGG_REG=$(
-            $CMD_PREFIX new --agg-state "../$STATE" --server-keys "../$AGG_SERVERKEYS"
+            $CMD_PREFIX new --leaf-agg --agg-state "../$STATE" --server-keys "../$AGG_SERVERKEYS"
         )
 
         # Append
@@ -277,6 +277,7 @@ encrypt_msgs() {
             | $CMD_PREFIX encrypt-msg \
                   --user-state "../$STATE" \
                   --round $ROUND \
+                  --times-talked $ROUND \
                   --prev-round-output $PREV_ROUND_OUTPUT
         )
 

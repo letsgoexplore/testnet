@@ -39,7 +39,7 @@ fn main() -> Result<(), AggregatorError> {
         .value_name("INTEGER")
         .required(true)
         .takes_value(true)
-        .help("The current round number of the DC net");
+        .help("The current round number within this window of the DC net");
 
     let matches = App::new("SGX DCNet Client")
         .version("0.1.0")
@@ -55,6 +55,14 @@ fn main() -> Result<(), AggregatorError> {
                         .required(true)
                         .takes_value(true)
                         .help("The file to which the new aggregator state will be written"),
+                )
+                .arg(
+                    Arg::with_name("leaf-agg")
+                        .short("l")
+                        .long("leaf-agg")
+                        .required(false)
+                        .takes_value(false)
+                        .help("This flag is set if this aggregator is a leaf aggregator"),
                 )
                 .arg(
                     Arg::with_name("server-keys")
@@ -129,8 +137,10 @@ fn main() -> Result<(), AggregatorError> {
         let keysfile = File::open(pubkeys_filename)?;
         let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
 
+        let is_leaf_agg = matches.is_present("leaf-agg");
+
         // Make a new state and agg registration. Save the state and and print the registration
-        let (state, reg_blob) = AggregatorState::new(&enclave, pubkeys)?;
+        let (state, reg_blob) = AggregatorState::new(&enclave, pubkeys, is_leaf_agg)?;
         let state_path = matches.value_of("agg-state").unwrap();
         save_state(&dbg!(state_path), &state)?;
         save_to_stdout(&reg_blob)?;
@@ -138,10 +148,7 @@ fn main() -> Result<(), AggregatorError> {
 
     if let Some(matches) = matches.subcommand_matches("start-round") {
         // Load the round
-        let round = {
-            let round_str = matches.value_of("round").unwrap();
-            cli_util::parse_u32(&round_str)?
-        };
+        let round = cli_util::parse_u32(matches.value_of("round").unwrap())?;
 
         // Now update the state and save it
         let state_path = matches.value_of("agg-state").unwrap();
@@ -178,10 +185,7 @@ fn main() -> Result<(), AggregatorError> {
     if let Some(matches) = matches.subcommand_matches("start-service") {
         // Load the args
         let bind_addr = matches.value_of("bind").unwrap().to_string();
-        let round = {
-            let round_str = matches.value_of("round").unwrap();
-            cli_util::parse_u32(&round_str)?
-        };
+        let round = cli_util::parse_u32(matches.value_of("round").unwrap())?;
         let round_dur = {
             let secs = cli_util::parse_u32(matches.value_of("round-duration").unwrap())?;
             std::time::Duration::from_secs(secs as u64)

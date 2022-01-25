@@ -2,8 +2,8 @@ use crypto::RoundSecret;
 use crypto::SgxSigningKey;
 use crypto::{SignMutable, Signable};
 use interface::{
-    DcMessage, DcRoundMessage, EntityId, SgxSignature, SgxSigningPubKey, DC_NET_N_SLOTS,
-    FOOTPRINT_BIT_SIZE,
+    DcMessage, DcRoundMessage, EntityId, RateLimitNonce, SgxSignature, SgxSigningPubKey,
+    DC_NET_N_SLOTS, FOOTPRINT_BIT_SIZE,
 };
 use sgx_tcrypto::SgxRsaPubKey;
 use sgx_types::SgxError;
@@ -13,27 +13,16 @@ use std::collections::BTreeSet;
 use std::vec::Vec;
 
 /// A (potentially aggregated) message that's produced by an enclave
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct AggregatedMessage {
     pub round: u32,
     pub anytrust_group_id: EntityId,
     pub user_ids: BTreeSet<EntityId>,
+    /// This is only Some for user-submitted messages
+    pub rate_limit_nonce: Option<RateLimitNonce>,
     pub aggregated_msg: DcRoundMessage,
     pub tee_sig: SgxSignature,
     pub tee_pk: SgxSigningPubKey,
-}
-
-impl Default for AggregatedMessage {
-    fn default() -> Self {
-        AggregatedMessage {
-            round: 0,
-            anytrust_group_id: EntityId::default(),
-            user_ids: BTreeSet::new(),
-            aggregated_msg: DcRoundMessage::default(),
-            tee_sig: SgxSignature::default(),
-            tee_pk: SgxSigningPubKey::default(),
-        }
-    }
 }
 
 impl Signable for AggregatedMessage {

@@ -37,7 +37,7 @@ pub(crate) struct ServiceState {
     pub(crate) enclave: DcNetEnclave,
     /// Contains the URL of the anytrust leader. If `None`, it's you.
     pub(crate) leader_url: Option<String>,
-    /// A map from round number to the round's output
+    /// A map from round+window to the round's output
     pub(crate) round_outputs: BTreeMap<u32, RoundOutput>,
 }
 
@@ -199,12 +199,16 @@ async fn submit_share(
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
-/// Returns the output of the specified round
+/// Returns the output of the specified round+window
 #[get("/round-result/{round}")]
 async fn round_result(
-    (round, state): (web::Path<u32>, web::Data<Arc<Mutex<ServiceState>>>),
+    (window, round, state): (
+        web::Path<u32>,
+        web::Path<u32>,
+        web::Data<Arc<Mutex<ServiceState>>>,
+    ),
 ) -> Result<HttpResponse, ApiError> {
-    // Unwrap the round
+    // Unwrap the round+window and make it a struct
     let web::Path(round) = round;
 
     // Unpack state
@@ -240,7 +244,7 @@ async fn round_result(
         }
         // If the given round's output doesn't exist in memory, error out
         None => {
-            info!("received request for invalid round {}", round);
+            info!("received request for invalid round r{}w{}", round, window);
             HttpResponse::NotFound().body("Invalid round")
         }
     };

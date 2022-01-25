@@ -208,7 +208,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .iter()
             .flat_map(|msg| msg.0.to_vec())
             .collect::<Vec<u8>>();
-        info!("Round {} output: {}", round, base64::encode(round_msg));
+        info!("round {} output: {}", round, base64::encode(round_msg));
     }
 
     if let Some(matches) = matches.subcommand_matches("start-service") {

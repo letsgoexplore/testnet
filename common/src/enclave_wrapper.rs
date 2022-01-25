@@ -4,6 +4,7 @@ use sgx_urts;
 use sgx_status_t::SGX_SUCCESS;
 use sgx_types::*;
 use sgx_urts::SgxEnclave;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 use interface::*;
@@ -112,6 +113,8 @@ mod ecall_allowed {
     use interface::*;
     use EcallId::*;
 
+    use std::collections::BTreeSet;
+
     match_ecall_ids! {
         (
             EcallNewSgxKeypair,
@@ -145,15 +148,14 @@ mod ecall_allowed {
             user_submit
         ),
         (
-            EcallUserReserveSlot,
-            (&UserReservationReq, &SealedSigPrivKey),
-            RoundSubmissionBlob,
-            user_reserve_slot
-        ),
-        (
             EcallAddToAggregate,
-            (&RoundSubmissionBlob, &SignedPartialAggregate, &SealedSigPrivKey),
-            SignedPartialAggregate,
+            (
+                &RoundSubmissionBlob,
+                &SignedPartialAggregate,
+                &Option<BTreeSet<RateLimitNonce>>,
+                &SealedSigPrivKey
+            ),
+            (SignedPartialAggregate, Option<BTreeSet<RateLimitNonce>>),
             add_to_agg
         ),
         (
@@ -191,7 +193,6 @@ mod ecall_allowed {
     }
 }
 
-
 impl DcNetEnclave {
     pub fn init(enclave_file: &'static str) -> EnclaveResult<Self> {
         let enclave_path = PathBuf::from(enclave_file);
@@ -216,7 +217,10 @@ impl DcNetEnclave {
         )
         .map_err(EnclaveError::SgxError)?;
 
-        info!("============== enclave created. took {}us", start_time.elapsed().as_micros());
+        info!(
+            "============== enclave created. took {}us",
+            start_time.elapsed().as_micros()
+        );
         Ok(Self { enclave })
     }
 
@@ -267,20 +271,6 @@ impl DcNetEnclave {
         )?)
     }
 
-    /// Constructs a round message for sending to an aggregator
-    /// SGX will
-    ///     1. Check the signature on the preivous round output against a signing key (might have to change API a bit for that)
-    ///     2. Check that the current round is prev_round+1
-    ///     3. Make a new footprint reservation for this round
-    pub fn user_reserve_slot(
-        &self,
-        submission_req: &UserReservationReq,
-        sealed_usk: &SealedSigPrivKey,
-    ) -> EnclaveResult<RoundSubmissionBlob> {
-        // TODO: user_reserve_slot is essentially the same as user_submit_round_msg. Consider merging the two.
-        ecall_allowed::user_reserve_slot(self.enclave.geteid(), (submission_req, sealed_usk))
-    }
-
     /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
     pub fn new_aggregate(
         &self,
@@ -297,14 +287,19 @@ impl DcNetEnclave {
     pub fn add_to_aggregate(
         &self,
         agg: &mut SignedPartialAggregate,
+        observed_nonces: &mut Option<BTreeSet<RateLimitNonce>>,
         new_input: &RoundSubmissionBlob,
         signing_key: &SealedSigPrivKey,
     ) -> EnclaveResult<()> {
-        let new_agg =
-            ecall_allowed::add_to_agg(self.enclave.geteid(), (new_input, agg, signing_key))?;
+        let (new_agg, new_observed_nonces) = ecall_allowed::add_to_agg(
+            self.enclave.geteid(),
+            (new_input, agg, observed_nonces, signing_key),
+        )?;
 
+        // Update the agg and nonces
         agg.0.clear();
         agg.0.extend_from_slice(&new_agg.0);
+        *observed_nonces = new_observed_nonces;
 
         Ok(())
     }
@@ -475,12 +470,12 @@ mod enclave_tests {
     use env_logger::{Builder, Env};
     use hex::FromHex;
     use interface::{
-        DcMessage, EntityId, SealedFootprintTicket, SealedKeyPair, SgxProtectedKeyPub,
-        UserSubmissionReq, DC_NET_MESSAGE_LENGTH, SEALED_SGX_SIGNING_KEY_LENGTH, USER_ID_LENGTH,
+        DcMessage, EntityId, SealedFootprintTicket, SgxProtectedKeyPub, UserSubmissionReq,
+        DC_NET_MESSAGE_LENGTH, SEALED_SGX_SIGNING_KEY_LENGTH, USER_ID_LENGTH,
     };
     use log::*;
     use sgx_types::SGX_ECP256_KEY_SIZE;
-    use std::vec;
+    use std::{collections::BTreeSet, vec};
 
     fn init_logger() {
         let env = Env::default()
@@ -521,17 +516,22 @@ mod enclave_tests {
         let (user_reg_shared_secrets, user_reg_sealed_key, user_reg_uid, user_reg_proof) =
             enc.new_user(&spks).unwrap();
 
+        let msg = UserMsg::TalkAndReserve {
+            msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
+            prev_round_output: RoundOutput::default(),
+            times_talked: 0,
+        };
+
         let req_1 = UserSubmissionReq {
             user_id: user_reg_uid,
             anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
-            round: 0u32,
-            msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
+            round: 0,
+            msg,
             shared_secrets: user_reg_shared_secrets,
-            prev_round_output: RoundOutput::default(),
             server_pks: spks,
         };
 
-        let resp_1 = enc
+        let (resp_1, _) = enc
             .user_submit_round_msg(&req_1, &user_reg_sealed_key)
             .unwrap();
 
@@ -556,15 +556,20 @@ mod enclave_tests {
         let (user_reg_shared_secrets, user_reg_sealed_key, user_reg_uid, user_reg_proof) =
             enc.new_user(&spks).unwrap();
 
-        let req_1 = UserReservationReq {
+        let msg = UserMsg::Reserve { times_talked: 0 };
+
+        let req_1 = UserSubmissionReq {
             user_id: user_reg_uid,
             anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
-            round: 1u32,
+            round: 0,
+            msg,
             shared_secrets: user_reg_shared_secrets,
             server_pks: spks,
         };
 
-        let resp_1 = enc.user_reserve_slot(&req_1, &user_reg_sealed_key).unwrap();
+        let (resp_1, _) = enc
+            .user_submit_round_msg(&req_1, &user_reg_sealed_key)
+            .unwrap();
 
         enc.destroy();
     }
@@ -585,19 +590,24 @@ mod enclave_tests {
 
         log::info!("user {:?} created", user_reg_uid);
 
+        let msg1 = UserMsg::TalkAndReserve {
+            msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
+            prev_round_output: RoundOutput::default(),
+            times_talked: 0,
+        };
+
         let req_1 = UserSubmissionReq {
             user_id: user_reg_uid,
             anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
-            round: 0u32,
-            msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
-            prev_round_output: Default::default(),
+            round: 0,
+            msg: msg1,
             shared_secrets: user_reg_shared_secrets,
             server_pks: server_pks.clone(),
         };
 
         log::info!("submitting for user {:?}", req_1.user_id);
 
-        let resp_1 = enc
+        let (resp_1, _) = enc
             .user_submit_round_msg(&req_1, &user_reg_sealed_key)
             .unwrap();
 
@@ -607,31 +617,40 @@ mod enclave_tests {
         log::info!("aggregator {:?} created", agg.1);
 
         let mut empty_agg = enc.new_aggregate(0, &EntityId::default()).unwrap();
-        enc.add_to_aggregate(&mut empty_agg, &resp_1, &agg.0)
+        let mut observed_nonces = Some(BTreeSet::new());
+        enc.add_to_aggregate(&mut empty_agg, &mut observed_nonces, &resp_1, &agg.0)
             .unwrap();
 
         // this should error because user is already in
         assert!(enc
-            .add_to_aggregate(&mut empty_agg, &resp_1, &agg.0)
+            .add_to_aggregate(&mut empty_agg, &mut observed_nonces, &resp_1, &agg.0)
             .is_err());
 
         log::info!("error expected");
 
         let user_2 = enc.new_user(&server_pks).unwrap();
 
+        let msg2 = UserMsg::TalkAndReserve {
+            msg: DcMessage([2u8; DC_NET_MESSAGE_LENGTH]),
+            prev_round_output: RoundOutput::default(),
+            times_talked: 0,
+        };
+
         let req_2 = UserSubmissionReq {
             user_id: user_2.2,
             anytrust_group_id: user_2.0.anytrust_group_id(),
-            round: 0u32,
-            msg: DcMessage([2u8; DC_NET_MESSAGE_LENGTH]),
-            prev_round_output: Default::default(),
+            round: 0,
+            msg: msg2,
             shared_secrets: user_2.0,
             server_pks,
         };
-        let resp_2 = enc.user_submit_round_msg(&req_2, &user_2.1).unwrap();
+        let (resp_2, _) = enc.user_submit_round_msg(&req_2, &user_2.1).unwrap();
 
-        enc.add_to_aggregate(&mut empty_agg, &resp_2, &agg.0)
+        enc.add_to_aggregate(&mut empty_agg, &mut observed_nonces, &resp_2, &agg.0)
             .unwrap();
+
+        // Ensure we saw two distinct nonces
+        assert_eq!(observed_nonces.unwrap().len(), 2);
 
         enc.destroy();
     }
@@ -735,26 +754,33 @@ mod enclave_tests {
 
         log::info!("user {:?} created. pk={:?}", user.2, user_pk.pk);
 
+        let dc_msg = DcMessage([9u8; DC_NET_MESSAGE_LENGTH]);
+        let msg0 = UserMsg::TalkAndReserve {
+            msg: dc_msg,
+            prev_round_output: RoundOutput::default(),
+            times_talked: 0,
+        };
+
         let req_0 = UserSubmissionReq {
             user_id: user.2,
             anytrust_group_id: user.0.anytrust_group_id(),
             round: 0,
-            msg: DcMessage([9u8; DC_NET_MESSAGE_LENGTH]),
-            prev_round_output: RoundOutput::default(),
+            msg: msg0,
             shared_secrets: user.0,
             server_pks,
         };
 
         log::info!("🏁 submitting {:?}", req_0.msg);
 
-        let resp_0 = enc.user_submit_round_msg(&req_0, &user.1).unwrap();
+        let (resp_0, _) = enc.user_submit_round_msg(&req_0, &user.1).unwrap();
 
         let aggregator = enc.new_aggregator().expect("agg");
 
         log::info!("🏁 aggregator {:?} created", aggregator.1);
 
         let mut empty_agg = enc.new_aggregate(0, &EntityId::default()).unwrap();
-        enc.add_to_aggregate(&mut empty_agg, &resp_0, &aggregator.0)
+        let mut observed_nonces = Some(BTreeSet::new());
+        enc.add_to_aggregate(&mut empty_agg, &mut observed_nonces, &resp_0, &aggregator.0)
             .unwrap();
 
         // finalize the aggregate
@@ -773,7 +799,7 @@ mod enclave_tests {
             enc.recv_aggregator_registration(&mut pk_db, &aggregator.2)
                 .unwrap();
             // unblind
-            let unblined_agg = enc
+            let (unblined_agg, _) = enc
                 .unblind_aggregate(&final_agg_0, &s.0, &secret_db)
                 .unwrap();
             decryption_shares.push(unblined_agg);
@@ -792,13 +818,18 @@ mod enclave_tests {
             .unwrap();
         info!("✅ round_output {:?}", round_output_r0);
 
+        let msg1 = UserMsg::TalkAndReserve {
+            msg: dc_msg,
+            prev_round_output: round_output_r0,
+            times_talked: 1,
+        };
         let mut req_r1 = req_0.clone();
-        req_r1.round = 1;
-        req_r1.prev_round_output = round_output_r0;
+        req_r1.msg = msg1;
 
         info!("🏁 starting round 1");
-        let resp_1 = enc.user_submit_round_msg(&req_r1, &user.1).unwrap();
+        let (resp_1, _) = enc.user_submit_round_msg(&req_r1, &user.1).unwrap();
 
-        // assert_eq!(round_output.dc_msg, req_1.msg);
+        // Ensure we saw one nonce
+        assert_eq!(observed_nonces.unwrap().len(), 2);
     }
 }

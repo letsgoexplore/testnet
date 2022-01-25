@@ -13,9 +13,22 @@ pub const DC_NET_N_SLOTS: usize = 128;
 /// The number of bytes in each DC net slot
 pub const DC_NET_MESSAGE_LENGTH: usize = 256;
 
+/// There are these many rounds per window
+pub const DC_NET_ROUNDS_PER_WINDOW: u32 = 100;
+/// A user is allowed to talk this many times per window
+pub const DC_NET_MSGS_PER_WINDOW: u32 = 10;
+
 /// The size of an anytrust shared secret
 pub const SERVER_KEY_LENGTH: usize = DC_NET_MESSAGE_LENGTH;
 
 /// The size of a sealed secret key. Although the secret key is only 32-byte, the sealed version is
 /// quite large and we can't go much smaller than 1024.
 pub const SEALED_SGX_SIGNING_KEY_LENGTH: usize = 1024;
+
+/// Gets the window that this round belongs to
+pub fn round_window(round: u32) -> u32 {
+    let relative_round = round % DC_NET_ROUNDS_PER_WINDOW;
+    (round - relative_round)
+        .checked_div(DC_NET_ROUNDS_PER_WINDOW)
+        .unwrap()
+}

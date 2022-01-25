@@ -4,8 +4,8 @@ use std::collections::BTreeSet;
 
 use common::enclave_wrapper::DcNetEnclave;
 use interface::{
-    compute_group_id, AggRegistrationBlob, EntityId, RoundSubmissionBlob, SealedSigPrivKey,
-    ServerPubKeyPackage, SignedPartialAggregate,
+    compute_group_id, AggRegistrationBlob, EntityId, RateLimitNonce, RoundSubmissionBlob,
+    SealedSigPrivKey, ServerPubKeyPackage, SignedPartialAggregate, DC_NET_ROUNDS_PER_WINDOW,
 };
 use serde::{Deserialize, Serialize};
 
@@ -19,13 +19,18 @@ pub struct AggregatorState {
     signing_key: SealedSigPrivKey,
     /// A partial aggregate of received user messages
     partial_agg: Option<SignedPartialAggregate>,
+    /// The observed rate limiting nonces from this window. This is Some iff this aggregator is a
+    /// leaf aggregator
+    observed_nonces: Option<BTreeSet<RateLimitNonce>>,
 }
 
 impl AggregatorState {
-    /// Makes a new aggregate given the pubkeys of the servers
+    /// Makes a new aggregate given the pubkeys of the servers. leaf_node = true iff this
+    /// aggregator is a leaf-level aggregator
     pub(crate) fn new(
         enclave: &DcNetEnclave,
         pubkeys: Vec<ServerPubKeyPackage>,
+        leaf_node: bool,
     ) -> Result<(AggregatorState, AggRegistrationBlob)> {
         let (sealed_ask, agg_id, reg_data) = enclave.new_aggregator()?;
 
@@ -33,11 +38,19 @@ impl AggregatorState {
             pubkeys.iter().map(|pk| pk.kem.get_entity_id()).collect();
         let anytrust_group_id = compute_group_id(&anytrust_ids);
 
+        // If this is a leaf node, we collect nonces
+        let observed_nonces = if leaf_node {
+            Some(BTreeSet::new())
+        } else {
+            None
+        };
+
         let state = AggregatorState {
             agg_id,
             anytrust_group_id,
             signing_key: sealed_ask,
             partial_agg: None,
+            observed_nonces,
         };
 
         Ok((state, reg_data))
@@ -48,6 +61,11 @@ impl AggregatorState {
         // Make a new partial aggregate and put it in the local state
         let partial_agg = enclave.new_aggregate(round, &self.anytrust_group_id)?;
         self.partial_agg = Some(partial_agg);
+
+        // If the round marks a new window, clear the nonces too
+        if round % DC_NET_ROUNDS_PER_WINDOW == 0 {
+            self.observed_nonces.as_mut().map(|s| s.clear());
+        }
 
         Ok(())
     }
@@ -62,7 +80,12 @@ impl AggregatorState {
             .partial_agg
             .as_mut()
             .ok_or(AggregatorError::Uninitialized)?;
-        let _ = enclave.add_to_aggregate(partial_agg, input_blob, &self.signing_key)?;
+        let _ = enclave.add_to_aggregate(
+            partial_agg,
+            &mut self.observed_nonces,
+            input_blob,
+            &self.signing_key,
+        )?;
         Ok(())
     }
 

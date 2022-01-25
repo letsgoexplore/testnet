@@ -120,7 +120,7 @@ async fn round_finalization_loop(
                 ref mut round,
             } = *handle;
 
-            info!("Round {} complete", round);
+            info!("round {} complete", round);
 
             info!("Forwarding aggregate to {:?}", forward_urls);
             for forward_url in forward_urls {
@@ -131,10 +131,10 @@ async fn round_finalization_loop(
             info!("Saving state");
             save_state(&state_path, agg_state).expect("failed to save state");
 
-            *round = *round + 1;
-            if let Err(e) = agg_state.clear(&enclave, *round) {
-                error!("Could not start new round: {:?}", e);
-            }
+            *round += 1;
+            agg_state
+                .clear(&enclave, *round)
+                .expect("could not start new round");
         }
     }
 }

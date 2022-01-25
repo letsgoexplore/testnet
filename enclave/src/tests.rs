@@ -52,11 +52,7 @@ fn sign() -> () {
 
     let mut mutable = AggregatedMessage {
         user_ids: BTreeSet::from_iter(vec![EntityId::default()].into_iter()),
-        anytrust_group_id: Default::default(),
-        round: 0,
-        aggregated_msg: Default::default(),
-        tee_sig: Default::default(),
-        tee_pk: Default::default(),
+        ..Default::default()
     };
 
     mutable.sign_mut(&sk).expect("sign");

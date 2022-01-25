@@ -126,6 +126,7 @@ pub fn unblind_aggregate(
         );
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
+    let round = shared_secrets.round;
 
     let user_ids_in_secret_db = BTreeSet::from_iter(shared_secrets.db.keys().map(EntityId::from));
     if !(round_msg.user_ids == user_ids_in_secret_db
@@ -137,7 +138,7 @@ pub fn unblind_aggregate(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    let round_secret = derive_round_secret(round_msg.round, &shared_secrets).map_err(|_| {
+    let round_secret = derive_round_secret(round, &shared_secrets).map_err(|_| {
         error!("crypto error");
         SGX_ERROR_INVALID_PARAMETER
     })?;

@@ -38,7 +38,6 @@ use std::cell::RefCell;
 /// group of any-trust server
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct SharedSecretsDb {
-    /// round number
     pub round: u32,
     /// a dictionary of keys
     pub db: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret>,
@@ -89,8 +88,8 @@ impl SharedSecretsDb {
         }
 
         Ok(SharedSecretsDb {
-            round: 0,
             db: server_secrets,
+            ..Default::default()
         })
     }
 
@@ -120,6 +119,43 @@ impl SharedSecretsDb {
     }
 }
 
+/// Derives the rate limit nonce for this round. This will be random if the user is submitting
+/// cover traffic. Otherwise it will be a pseudorandom function of the the window, private key, and
+/// times talked.
+pub fn derive_round_nonce(
+    anytrust_group_id: &EntityId,
+    round: u32,
+    signing_sk: &SgxPrivateKey,
+    msg: &UserMsg,
+) -> SgxResult<RateLimitNonce> {
+    // Extract the talking counter. If this is cover traffic, return a random nonce immediately
+    let times_talked = match msg {
+        UserMsg::TalkAndReserve { times_talked, .. } => *times_talked,
+        UserMsg::Reserve { times_talked } => *times_talked,
+        UserMsg::Cover => {
+            return Ok(sgx_rand::random());
+        }
+    };
+
+    // Check that the times talked is less than the per-window limit
+    if times_talked >= DC_NET_MSGS_PER_WINDOW {
+        error!("❌ can't send. rate limit has been exceeded");
+        return Err(sgx_status_t::SGX_ERROR_SERVICE_UNAVAILABLE);
+    }
+
+    let window = round_window(round);
+
+    // Now deterministically make the nonce. nonce = H(sk, group_id, window, times_talked)
+    let mut h = Sha256::new();
+    h.input(b"rate-limit-nonce");
+    h.input(anytrust_group_id);
+    h.input(signing_sk);
+    h.input(window.to_le_bytes());
+    h.input(times_talked.to_le_bytes());
+
+    Ok(RateLimitNonce::from_bytes(&h.result()))
+}
+
 /// A RoundSecret is an one-time pad for a given round derived from a set of
 /// DiffieHellmanSharedSecret, one for each anytrust server.
 pub type RoundSecret = DcRoundMessage;
@@ -135,9 +171,10 @@ pub fn derive_round_secret(
         // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
         let mut seed = [0u8; 32];
 
-        // info contains round
+        // info contains round and window
         let mut info = [0; 32];
-        LittleEndian::write_u32(&mut info, round);
+        let cursor = &mut info;
+        LittleEndian::write_u32(cursor, round);
         hk.expand(&info, &mut seed)?;
 
         let mut seed_u32 = [0u32; 8]; // Chacha PRNG in SGX SDK uses u32 as seeds
