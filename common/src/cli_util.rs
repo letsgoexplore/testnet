@@ -23,6 +23,10 @@ pub fn parse_u32(s: &str) -> Result<u32> {
     Ok(u32::from_str_radix(s, 10)?)
 }
 
+pub fn parse_u64(s: &str) -> Result<u64> {
+    Ok(u64::from_str_radix(s, 10)?)
+}
+
 /// file -> base64::decode -> cbor::decode
 pub fn load<R, D>(f: R) -> Result<D>
 where

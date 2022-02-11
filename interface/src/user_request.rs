@@ -1,5 +1,5 @@
-use std::collections::BTreeSet;
 use std::prelude::v1::*;
+use std::{collections::BTreeSet, vec};
 
 use crate::{ecall_interface_types::*, params::*, sgx_protected_keys::*};
 
@@ -74,10 +74,10 @@ pub type Footprint = u32;
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct DcRoundMessage {
-    #[serde(with = "BigArray")]
-    pub scheduling_msg: [Footprint; FOOTPRINT_N_SLOTS],
-    #[serde(with = "BigArray")]
-    pub aggregated_msg: [DcMessage; DC_NET_N_SLOTS],
+    // Contains FOOTPRINT_N_SLOTS elements
+    pub scheduling_msg: Vec<Footprint>,
+    // Contains DC_NET_N_SLOTS elements
+    pub aggregated_msg: Vec<DcMessage>,
 }
 
 /// Used to generate round secrets
@@ -101,8 +101,8 @@ impl Rand for DcRoundMessage {
 impl Default for DcRoundMessage {
     fn default() -> Self {
         DcRoundMessage {
-            scheduling_msg: [0; FOOTPRINT_N_SLOTS],
-            aggregated_msg: [DcMessage::default(); DC_NET_N_SLOTS],
+            scheduling_msg: vec![0; FOOTPRINT_N_SLOTS],
+            aggregated_msg: vec![DcMessage::default(); DC_NET_N_SLOTS],
         }
     }
 }
@@ -249,12 +249,12 @@ pub enum UserMsg {
         msg: DcMessage,
         /// Output of previous round signed by one or more anytrust server
         prev_round_output: RoundOutput,
-        /// The number of times the user has already spoken this window
-        times_talked: u32,
+        /// The number of times the user has already talked or reserved this window
+        times_participated: u32,
     },
     Reserve {
-        /// The number of times the user has already spoken this window
-        times_talked: u32,
+        /// The number of times the user has already talked or reserved this window
+        times_participated: u32,
     },
     Cover,
 }

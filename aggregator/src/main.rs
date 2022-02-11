@@ -14,7 +14,7 @@ use crate::{
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
 use interface::{RoundSubmissionBlob, ServerPubKeyPackage};
-use std::fs::File;
+use std::{fs::File, time::SystemTime};
 
 use clap::{App, AppSettings, Arg, SubCommand};
 use log::info;
@@ -57,12 +57,16 @@ fn main() -> Result<(), AggregatorError> {
                         .help("The file to which the new aggregator state will be written"),
                 )
                 .arg(
-                    Arg::with_name("leaf-agg")
+                    Arg::with_name("level")
                         .short("l")
-                        .long("leaf-agg")
-                        .required(false)
-                        .takes_value(false)
-                        .help("This flag is set if this aggregator is a leaf aggregator"),
+                        .long("level")
+                        .required(true)
+                        .takes_value(true)
+                        .value_name("LEVEL")
+                        .help(
+                            "Indicates the level in the aggregation tree of this aggregator. 0 \
+                            means this is a leaf aggregator.",
+                        ),
                 )
                 .arg(
                     Arg::with_name("server-keys")
@@ -127,6 +131,24 @@ fn main() -> Result<(), AggregatorError> {
                         .value_name("DURATION")
                         .required(true)
                         .help("The duration of a single DC net round, in seconds"),
+                )
+                .arg(
+                    Arg::with_name("start-time")
+                        .short("t")
+                        .long("start-time")
+                        .value_name("TIME")
+                        .required(true)
+                        .help(
+                            "The time the specified round will start, in seconds since Unix epoch",
+                        ),
+                )
+                .arg(
+                    Arg::with_name("no-persist")
+                        .short("n")
+                        .long("no-persist")
+                        .required(false)
+                        .takes_value(false)
+                        .help("If this is set, the service will not persist its state to disk"),
                 ),
         )
         .get_matches();
@@ -137,10 +159,10 @@ fn main() -> Result<(), AggregatorError> {
         let keysfile = File::open(pubkeys_filename)?;
         let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
 
-        let is_leaf_agg = matches.is_present("leaf-agg");
+        let level = cli_util::parse_u32(matches.value_of("level").unwrap())?;
 
         // Make a new state and agg registration. Save the state and and print the registration
-        let (state, reg_blob) = AggregatorState::new(&enclave, pubkeys, is_leaf_agg)?;
+        let (state, reg_blob) = AggregatorState::new(&enclave, pubkeys, level)?;
         let state_path = matches.value_of("agg-state").unwrap();
         save_state(&dbg!(state_path), &state)?;
         save_to_stdout(&reg_blob)?;
@@ -190,6 +212,14 @@ fn main() -> Result<(), AggregatorError> {
             let secs = cli_util::parse_u32(matches.value_of("round-duration").unwrap())?;
             std::time::Duration::from_secs(secs as u64)
         };
+        // Compute the start time as an std::Instant. This is kinda roundabout because we're
+        // converting a system time to a monotonic time. This doesn't handle clock changes.
+        let start_time = {
+            let secs_since_epoch = std::time::Duration::from_secs(cli_util::parse_u64(
+                matches.value_of("start-time").unwrap(),
+            )?);
+            SystemTime::UNIX_EPOCH + secs_since_epoch
+        };
         let forward_urls: Vec<String> = matches
             .value_of("forward-to")
             .unwrap()
@@ -208,13 +238,22 @@ fn main() -> Result<(), AggregatorError> {
         agg_state.clear(&enclave, round)?;
         info!("Initialized round {}", round);
 
+        // If no-persist is set, then the state path is None
+        let agg_state_path = if matches.is_present("no-persist") {
+            None
+        } else {
+            Some(state_path)
+        };
+
+        let level = agg_state.level;
         let state = service::ServiceState {
             agg_state,
             enclave,
             forward_urls,
             round,
+            agg_state_path,
         };
-        start_service(bind_addr, state_path, state, round_dur).unwrap();
+        start_service(bind_addr, state, round_dur, start_time, level).unwrap();
     }
 
     Ok(())

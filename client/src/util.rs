@@ -5,7 +5,6 @@ use std::{
     io::{BufRead, BufReader},
 };
 
-use clap::ArgMatches;
 use common::{cli_util, enclave_wrapper::EnclaveError};
 use serde::Serialize;
 use thiserror::Error;
@@ -22,15 +21,13 @@ pub enum UserError {
     Ser(#[from] cli_util::SerializationError),
 }
 
-pub(crate) fn load_state(matches: &ArgMatches) -> Result<UserState> {
-    let save_filename = matches.value_of("user-state").unwrap();
-    let save_file = File::open(save_filename)?;
+pub(crate) fn load_state(save_path: &str) -> Result<UserState> {
+    let save_file = File::open(save_path)?;
     Ok(cli_util::load(save_file)?)
 }
 
-pub(crate) fn save_state(matches: &ArgMatches, state: &UserState) -> Result<()> {
-    let save_filename = matches.value_of("user-state").unwrap();
-    let save_file = File::create(save_filename)?;
+pub(crate) fn save_state(save_path: &str, state: &UserState) -> Result<()> {
+    let save_file = File::create(save_path)?;
     Ok(cli_util::save(save_file, state)?)
 }
 

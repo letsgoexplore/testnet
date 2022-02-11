@@ -8,17 +8,25 @@ use interface::RoundSubmissionBlob;
 use core::ops::DerefMut;
 use std::{
     sync::{Arc, Mutex},
-    time::Duration,
+    time::{Duration, SystemTime},
 };
 
-use actix_rt::Arbiter;
+use actix_rt::{
+    spawn,
+    time::{delay_until, Instant},
+    Arbiter,
+};
 use actix_web::{
     client::Client,
     http::{StatusCode, Uri},
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError,
 };
+use futures::future::FutureExt;
 use log::{error, info};
 use thiserror::Error;
+
+// We take 5 seconds at the end of every round for the aggregates to propagate up the tree
+const PROPAGATION_SECS: u64 = 5;
 
 #[derive(Debug, Error)]
 enum ApiError {
@@ -35,8 +43,11 @@ impl ResponseError for ApiError {}
 pub(crate) struct ServiceState {
     pub(crate) agg_state: AggregatorState,
     pub(crate) enclave: DcNetEnclave,
+    /// The URLs of the next aggregators
     pub(crate) forward_urls: Vec<String>,
     pub(crate) round: u32,
+    /// The path to this aggregator's state file. If `None`, state is not persisted to disk
+    pub(crate) agg_state_path: Option<String>,
 }
 
 /// Receives a partial aggregate from an aggregator or a user
@@ -62,94 +73,140 @@ async fn submit_agg(
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
-/// Sends a finalized aggregate to base_url/submit-agg
-async fn send_aggregate(agg_state: &AggregatorState, enclave: &DcNetEnclave, base_url: &str) {
-    // Finalize and serialize the aggregate
-    let agg = match agg_state.finalize_aggregate(enclave) {
-        Ok(a) => a,
-        Err(e) => {
-            error!("Could not finalize aggregate: {:?}", e);
-            return;
-        }
-    };
-    let mut body = Vec::new();
-    cli_util::save(&mut body, &agg).expect("could not serialize aggregate");
+/// Finalizes and serializes the current aggregator state. Returns the pyaload nad all the
+/// forwarding URLs
+fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
+    let handle = state.lock().unwrap();
+    let ServiceState {
+        ref agg_state,
+        ref enclave,
+        ref forward_urls,
+        ..
+    } = *handle;
 
-    // Send the serialized contents
-    let client = Client::builder().timeout(Duration::from_secs(20)).finish();
-    let post_path: Uri = [base_url, "/submit-agg"].concat().parse().expect(&format!(
-        "Couldn't not append '/submit-agg' to forward URL {}",
-        base_url
-    ));
-    match client.post(post_path).send_body(body).await {
-        Ok(res) => {
-            if res.status() == StatusCode::OK {
-                info!("Successfully sent finalize aggregate")
-            } else {
-                error!("Could not send finalized aggregate: {:?}", res)
+    // Finalize and serialize the aggregate
+    let agg = agg_state
+        .finalize_aggregate(enclave)
+        .expect("could not finalize aggregate");
+    let mut payload = Vec::new();
+    cli_util::save(&mut payload, &agg).expect("could not serialize aggregate");
+
+    (payload, forward_urls.clone())
+}
+
+/// Sends a finalized aggregate to base_url/submit-agg for all base_url in forward_urls
+async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
+    info!("Forwarding aggregate to {:?}", forward_urls);
+    for base_url in forward_urls {
+        // Send the serialized contents
+        let client = Client::builder().finish();
+        let post_path: Uri = [&base_url, "/submit-agg"].concat().parse().expect(&format!(
+            "Couldn't not append '/submit-agg' to forward URL {}",
+            base_url
+        ));
+        match client.post(post_path).send_body(payload.clone()).await {
+            Ok(res) => {
+                if res.status() == StatusCode::OK {
+                    info!("Successfully sent finalize aggregate")
+                } else {
+                    error!("Could not send finalized aggregate: {:?}", res)
+                }
             }
+            Err(e) => error!("Could not send finalized aggregate: {:?}", e),
         }
-        Err(e) => error!("Could not send finalized aggregate: {:?}", e),
     }
+}
+
+// Saves the state and start the next round
+fn start_next_round(state: Arc<Mutex<ServiceState>>) {
+    let mut handle = state.lock().unwrap();
+    let ServiceState {
+        ref mut agg_state,
+        ref enclave,
+        ref mut round,
+        ref agg_state_path,
+        ..
+    } = *handle;
+
+    info!("round {} complete", round);
+    // Save the state if a path is specified
+    agg_state_path.as_ref().map(|path| {
+        info!("Saving state");
+        match save_state(path, agg_state) {
+            Err(e) => error!("failed to save agg state {:?}", e),
+            _ => (),
+        }
+    });
+
+    // Increment the round and clear the state
+    *round += 1;
+    agg_state
+        .clear(&enclave, *round)
+        .expect("could not start new round");
+}
+
+// This converts future system time to a monotonic instant. Doing this has weird edge cases in
+// practice and we don't deal with them for now
+fn systime_to_instant(time: SystemTime) -> Instant {
+    let now_inst = std::time::Instant::now();
+    let now_sys = SystemTime::now();
+    let delta = time
+        .duration_since(now_sys)
+        .expect("expected next instant to be in the future");
+    Instant::from_std(now_inst + delta)
 }
 
 /// Every `round_dur`, ends the round and forwards the finalized aggregate to the next aggregator
 /// or anytrust server up the tree
 async fn round_finalization_loop(
-    state_path: String,
     state: Arc<Mutex<ServiceState>>,
     round_dur: Duration,
+    mut start_time: SystemTime,
+    level: u32,
 ) {
-    // Every round_dur seconds, end the round, save the state, and send the finalized aggregate to
-    // the next aggregator up the tree
-    let mut interval = actix_rt::time::interval(round_dur);
-    // The first tick fires immediately, so get that out of the way
-    interval.tick().await;
-    // Now start the round loop
+    let one_sec = Duration::from_secs(1);
+    let propagation_dur = Duration::from_secs(PROPAGATION_SECS);
+
+    // Wait until the start time, then start the round loop
+    delay_until(systime_to_instant(start_time)).await;
     loop {
-        interval.tick().await;
+        // We send our aggregate `level` seconds after the official end of the round
+        let end_time = start_time + round_dur + level * one_sec;
 
-        // The round has ended. Save the state and forward the aggregate before starting the
-        // new round
-        {
-            let mut handle = state.lock().unwrap();
-            let ServiceState {
-                ref mut agg_state,
-                ref enclave,
-                ref forward_urls,
-                ref mut round,
-            } = *handle;
+        // Wait
+        delay_until(systime_to_instant(end_time)).await;
 
-            info!("round {} complete", round);
+        // The round has ended. Serialize the aggregate and forward it in the background. Time out
+        // after 1 second
+        let (agg_payload, forward_urls) = get_agg_payload(&state);
+        spawn(
+            actix_rt::time::timeout(one_sec, send_aggregate(agg_payload, forward_urls))
+                .map(|_| error!("timeout for sending aggregation was hit")),
+        );
 
-            info!("Forwarding aggregate to {:?}", forward_urls);
-            for forward_url in forward_urls {
-                send_aggregate(agg_state, enclave, forward_url).await;
-            }
+        // Start the next round early
+        start_next_round(state.clone());
 
-            // Save the state and start the next round
-            info!("Saving state");
-            save_state(&state_path, agg_state).expect("failed to save state");
-
-            *round += 1;
-            agg_state
-                .clear(&enclave, *round)
-                .expect("could not start new round");
-        }
+        // The official round start time is right after propagation terminates. We update this so
+        // that end_time is calculated correctly.
+        start_time = start_time + round_dur + propagation_dur;
     }
 }
 
 #[actix_rt::main]
 pub(crate) async fn start_service(
     bind_addr: String,
-    state_path: String,
     state: ServiceState,
     round_dur: Duration,
+    start_time: SystemTime,
+    level: u32,
 ) -> std::io::Result<()> {
     let state = Arc::new(Mutex::new(state));
     let state_copy = state.clone();
 
-    Arbiter::spawn(round_finalization_loop(state_path, state_copy, round_dur));
+    Arbiter::spawn(round_finalization_loop(
+        state_copy, round_dur, start_time, level,
+    ));
 
     // Start the web server
     HttpServer::new(move || {

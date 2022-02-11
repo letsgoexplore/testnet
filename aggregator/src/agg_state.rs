@@ -19,6 +19,8 @@ pub struct AggregatorState {
     signing_key: SealedSigPrivKey,
     /// A partial aggregate of received user messages
     partial_agg: Option<SignedPartialAggregate>,
+    /// The level in the aggregation tree of this aggregator. 0 means this is a leaf aggregator.
+    pub(crate) level: u32,
     /// The observed rate limiting nonces from this window. This is Some iff this aggregator is a
     /// leaf aggregator
     observed_nonces: Option<BTreeSet<RateLimitNonce>>,
@@ -30,7 +32,7 @@ impl AggregatorState {
     pub(crate) fn new(
         enclave: &DcNetEnclave,
         pubkeys: Vec<ServerPubKeyPackage>,
-        leaf_node: bool,
+        level: u32,
     ) -> Result<(AggregatorState, AggRegistrationBlob)> {
         let (sealed_ask, agg_id, reg_data) = enclave.new_aggregator()?;
 
@@ -38,8 +40,8 @@ impl AggregatorState {
             pubkeys.iter().map(|pk| pk.kem.get_entity_id()).collect();
         let anytrust_group_id = compute_group_id(&anytrust_ids);
 
-        // If this is a leaf node, we collect nonces
-        let observed_nonces = if leaf_node {
+        // If this is a leaf aggregator, we collect nonces
+        let observed_nonces = if level == 0 {
             Some(BTreeSet::new())
         } else {
             None
@@ -50,6 +52,7 @@ impl AggregatorState {
             anytrust_group_id,
             signing_key: sealed_ask,
             partial_agg: None,
+            level,
             observed_nonces,
         };
 

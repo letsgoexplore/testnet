@@ -519,7 +519,7 @@ mod enclave_tests {
         let msg = UserMsg::TalkAndReserve {
             msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
             prev_round_output: RoundOutput::default(),
-            times_talked: 0,
+            times_participated: 0,
         };
 
         let req_1 = UserSubmissionReq {
@@ -556,7 +556,9 @@ mod enclave_tests {
         let (user_reg_shared_secrets, user_reg_sealed_key, user_reg_uid, user_reg_proof) =
             enc.new_user(&spks).unwrap();
 
-        let msg = UserMsg::Reserve { times_talked: 0 };
+        let msg = UserMsg::Reserve {
+            times_participated: 0,
+        };
 
         let req_1 = UserSubmissionReq {
             user_id: user_reg_uid,
@@ -593,7 +595,7 @@ mod enclave_tests {
         let msg1 = UserMsg::TalkAndReserve {
             msg: DcMessage([1u8; DC_NET_MESSAGE_LENGTH]),
             prev_round_output: RoundOutput::default(),
-            times_talked: 0,
+            times_participated: 0,
         };
 
         let req_1 = UserSubmissionReq {
@@ -633,7 +635,7 @@ mod enclave_tests {
         let msg2 = UserMsg::TalkAndReserve {
             msg: DcMessage([2u8; DC_NET_MESSAGE_LENGTH]),
             prev_round_output: RoundOutput::default(),
-            times_talked: 0,
+            times_participated: 0,
         };
 
         let req_2 = UserSubmissionReq {
@@ -758,7 +760,7 @@ mod enclave_tests {
         let msg0 = UserMsg::TalkAndReserve {
             msg: dc_msg,
             prev_round_output: RoundOutput::default(),
-            times_talked: 0,
+            times_participated: 0,
         };
 
         let req_0 = UserSubmissionReq {
@@ -821,7 +823,7 @@ mod enclave_tests {
         let msg1 = UserMsg::TalkAndReserve {
             msg: dc_msg,
             prev_round_output: round_output_r0,
-            times_talked: 1,
+            times_participated: 1,
         };
         let mut req_r1 = req_0.clone();
         req_r1.msg = msg1;

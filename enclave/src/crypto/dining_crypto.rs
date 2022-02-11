@@ -129,29 +129,31 @@ pub fn derive_round_nonce(
     msg: &UserMsg,
 ) -> SgxResult<RateLimitNonce> {
     // Extract the talking counter. If this is cover traffic, return a random nonce immediately
-    let times_talked = match msg {
-        UserMsg::TalkAndReserve { times_talked, .. } => *times_talked,
-        UserMsg::Reserve { times_talked } => *times_talked,
+    let times_participated = match msg {
+        UserMsg::TalkAndReserve {
+            times_participated, ..
+        } => *times_participated,
+        UserMsg::Reserve { times_participated } => *times_participated,
         UserMsg::Cover => {
             return Ok(sgx_rand::random());
         }
     };
 
     // Check that the times talked is less than the per-window limit
-    if times_talked >= DC_NET_MSGS_PER_WINDOW {
+    if times_participated >= DC_NET_MSGS_PER_WINDOW {
         error!("❌ can't send. rate limit has been exceeded");
         return Err(sgx_status_t::SGX_ERROR_SERVICE_UNAVAILABLE);
     }
 
     let window = round_window(round);
 
-    // Now deterministically make the nonce. nonce = H(sk, group_id, window, times_talked)
+    // Now deterministically make the nonce. nonce = H(sk, group_id, window, times_participated)
     let mut h = Sha256::new();
     h.input(b"rate-limit-nonce");
     h.input(anytrust_group_id);
     h.input(signing_sk);
     h.input(window.to_le_bytes());
-    h.input(times_talked.to_le_bytes());
+    h.input(times_participated.to_le_bytes());
 
     Ok(RateLimitNonce::from_bytes(&h.result()))
 }
