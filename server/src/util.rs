@@ -4,7 +4,6 @@ use common::{cli_util, enclave_wrapper::EnclaveError};
 
 use std::fs::File;
 
-use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -20,15 +19,13 @@ pub enum ServerError {
     Ser(#[from] cli_util::SerializationError),
 }
 
-pub(crate) fn load_state(matches: &ArgMatches) -> Result<ServerState> {
-    let save_filename = matches.value_of("server-state").unwrap();
-    let save_file = File::open(save_filename)?;
+pub(crate) fn load_state(save_path: &str) -> Result<ServerState> {
+    let save_file = File::open(save_path)?;
     Ok(cli_util::load(save_file)?)
 }
 
-pub(crate) fn save_state(matches: &ArgMatches, state: &ServerState) -> Result<()> {
-    let save_filename = matches.value_of("server-state").unwrap();
-    let save_file = File::create(save_filename)?;
+pub(crate) fn save_state(save_path: &str, state: &ServerState) -> Result<()> {
+    let save_file = File::create(save_path)?;
     Ok(cli_util::save(save_file, state)?)
 }
 

@@ -1,4 +1,7 @@
-use crate::{util::ServerError, ServerState};
+use crate::{
+    util::{save_state, ServerError},
+    ServerState,
+};
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
 use interface::{RoundOutput, RoundSubmissionBlob, UnblindedAggregateShareBlob};
 
@@ -37,18 +40,22 @@ pub(crate) struct ServiceState {
     pub(crate) enclave: DcNetEnclave,
     /// Contains the URL of the anytrust leader. If `None`, it's you.
     pub(crate) leader_url: Option<String>,
-    /// A map from round+window to the round's output
+    /// A map from round to the round's output
     pub(crate) round_outputs: BTreeMap<u32, RoundOutput>,
+    /// The path to this server's state file. If `None`, state is not persisted to disk
+    pub(crate) server_state_path: Option<String>,
 }
 
 impl ServiceState {
     pub(crate) fn new(
         server_state: ServerState,
+        server_state_path: Option<String>,
         enclave: DcNetEnclave,
         leader_url: Option<String>,
     ) -> ServiceState {
         ServiceState {
             server_state,
+            server_state_path,
             enclave,
             leader_url,
             round_outputs: BTreeMap::new(),
@@ -78,7 +85,7 @@ fn leader_finish_round(state: &mut ServiceState) {
     round_outputs.insert(round, output);
     info!("Output of round {} now available", round);
 
-    // Clear the state and increment the round
+    // Clear the state
     round_shares.clear();
 }
 
@@ -123,43 +130,57 @@ async fn submit_agg(
     // Parse aggregation
     let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
 
-    // Unpack the state
+    // Do the processing step. Unblind the input, add the share, and if we're the leader we finish
+    // the round by combining the shares
     let mut state_handle = state.get_ref().lock().unwrap();
-    let ServiceState {
-        ref leader_url,
-        ref mut round_shares,
-        ref enclave,
-        ref mut server_state,
-        ..
-    } = state_handle.deref_mut();
-    let group_size = server_state.anytrust_group_size;
+    {
+        let ServiceState {
+            ref leader_url,
+            ref mut round_shares,
+            ref enclave,
+            ref mut server_state,
+            ..
+        } = state_handle.deref_mut();
+        let group_size = server_state.anytrust_group_size;
 
-    // Unblind the input
-    let share = server_state.unblind_aggregate(enclave, &agg_data)?;
+        // Unblind the input
+        let share = server_state.unblind_aggregate(enclave, &agg_data)?;
 
-    match leader_url {
-        // We're the leader
-        None => {
-            // Since we're the leader, add this share to the current round's shares
-            round_shares.push(share);
-            info!(
-                "I now have {}/{} round shares",
-                round_shares.len(),
-                group_size
-            );
+        match leader_url {
+            // We're the leader
+            None => {
+                // Since we're the leader, add this share to the current round's shares
+                round_shares.push(share);
+                info!(
+                    "I now have {}/{} round shares",
+                    round_shares.len(),
+                    group_size
+                );
 
-            // If all the shares are in, that's the end of the round
-            if round_shares.len() == group_size {
-                info!("Finishing round");
-                leader_finish_round(state_handle.deref_mut());
+                // If all the shares are in, that's the end of the round
+                if round_shares.len() == group_size {
+                    info!("Finishing round");
+                    leader_finish_round(state_handle.deref_mut());
+                }
+            }
+            // We're a follower. Send the unblinded aggregate to the leader
+            Some(url) => {
+                // This might take a while so do it in a separate thread
+                Arbiter::spawn(send_share_to_leader(url.clone(), share));
             }
         }
-        // We're a follower. Send the unblinded aggregate to the leader
-        Some(url) => {
-            // This might take a while so do it in a separate thread
-            Arbiter::spawn(send_share_to_leader(url.clone(), share));
-        }
     }
+
+    // Save the state if a path is specified
+    let server_state = &state_handle.server_state;
+    let server_state_path = &state_handle.server_state_path;
+    server_state_path.as_ref().map(|path| {
+        info!("Saving state");
+        match save_state(path, server_state) {
+            Err(e) => error!("failed to save server state {:?}", e),
+            _ => (),
+        }
+    });
 
     Ok(HttpResponse::Ok().body("OK\n"))
 }
@@ -199,16 +220,12 @@ async fn submit_share(
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
-/// Returns the output of the specified round+window
+/// Returns the output of the specified round
 #[get("/round-result/{round}")]
 async fn round_result(
-    (window, round, state): (
-        web::Path<u32>,
-        web::Path<u32>,
-        web::Data<Arc<Mutex<ServiceState>>>,
-    ),
+    (round, state): (web::Path<u32>, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
-    // Unwrap the round+window and make it a struct
+    // Unwrap the round and make it a struct
     let web::Path(round) = round;
 
     // Unpack state
@@ -244,7 +261,53 @@ async fn round_result(
         }
         // If the given round's output doesn't exist in memory, error out
         None => {
-            info!("received request for invalid round r{}w{}", round, window);
+            info!("received request for invalid round {}", round);
+            HttpResponse::NotFound().body("Invalid round")
+        }
+    };
+
+    Ok(res)
+}
+
+/// Returns just the base64-encoded message of the specified round
+#[get("/round-msg/{round}")]
+async fn round_msg(
+    (round, state): (web::Path<u32>, web::Data<Arc<Mutex<ServiceState>>>),
+) -> Result<HttpResponse, ApiError> {
+    // Unwrap the round and make it a struct
+    let web::Path(round) = round;
+
+    // Unpack state
+    let handle = state.get_ref().lock().unwrap();
+    let ServiceState {
+        ref round_outputs,
+        ref leader_url,
+        ..
+    } = *handle;
+
+    // I am not the leader. Don't ask me for round results
+    if leader_url.is_some() {
+        return Ok(HttpResponse::NotFound().body("Followers don't store round results"));
+    }
+
+    // Try to get the requested output
+    let res = match round_outputs.get(&round) {
+        // If the given round's output exists in memory, return it
+        Some(round_output) => {
+            // Give the raw payload
+            let blob = round_output
+                .dc_msg
+                .aggregated_msg
+                .iter()
+                .flat_map(|msg| msg.0.to_vec())
+                .collect::<Vec<u8>>();
+
+            let body = base64::encode(&blob);
+            HttpResponse::Ok().body(body)
+        }
+        // If the given round's output doesn't exist in memory, error out
+        None => {
+            info!("received request for invalid round {}", round);
             HttpResponse::NotFound().body("Invalid round")
         }
     };
@@ -265,9 +328,10 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
     // Start the web server
     HttpServer::new(move || {
         App::new().data(state.clone()).configure(|cfg| {
-            cfg.service(submit_agg);
-            cfg.service(submit_share);
-            cfg.service(round_result);
+            cfg.service(submit_agg)
+                .service(submit_share)
+                .service(round_result)
+                .service(round_msg);
         })
     })
     .workers(1)

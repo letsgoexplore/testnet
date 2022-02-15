@@ -35,6 +35,7 @@ start_client() {
         --user-state "../$STATE" \
         --round $ROUND \
         --bind "localhost:$CLIENT_SERVICE_PORT" \
+        --no-persist \
         --agg-url "http://localhost:$AGGREGATOR_PORT" &
 
     cd ..
@@ -44,9 +45,12 @@ start_client() {
 start_root_agg() {
     cd aggregator
 
-    # Start the aggregator in 7 sec from now
+    # Build first so that build time doesn't get included in the start time
+    cargo build
+
+    # Start the aggregator in 5 sec from now
     NOW=$(date +%s)
-    START_TIME=$(($NOW + 7))
+    START_TIME=$(($NOW + 5))
 
     STATE="${USER_STATE%.txt}1.txt"
     $CMD_PREFIX start-service \
@@ -55,6 +59,7 @@ start_root_agg() {
         --bind "localhost:$AGGREGATOR_PORT" \
         --start-time $START_TIME \
         --round-duration 10000 \
+        --no-persist \
         --forward-to "http://localhost:$SERVER_LEADER_PORT" &
 
     cd ..
@@ -66,6 +71,7 @@ start_leader() {
 
     STATE="${SERVER_STATE%.txt}$LEADER.txt"
     $CMD_PREFIX start-service \
+        --no-persist \
         --server-state "../$STATE" \
         --bind "localhost:$SERVER_LEADER_PORT" &
 
@@ -107,43 +113,19 @@ encrypt_msg() {
         --data-binary "$PAYLOAD"
 }
 
-# Submits the toplevel aggregate to the leader and followers
-submit_agg() {
-    cd server
-
-    for i in $(seq 0 $NUM_FOLLOWERS); do
-        PORT=$(($SERVER_LEADER_PORT + $i))
-
-        curl "http://localhost:$PORT/submit-agg" \
-            -X POST \
-            -H "Content-Type: text/plain" \
-            --data-binary "@../$AGG_FINALAGG"
-    done
-
-    cd ..
-}
-
-# Submits the followers' shares to the leader
-submit_shares() {
-    cd server
-
-    # Read the non-leaders' shares line by line
-    while IFS="" read -r SHARE || [ -n "$SHARE" ]
-    do
-        # Send the share to the leader
-        curl "http://localhost:$SERVER_LEADER_PORT/submit-share" \
-            -X POST \
-            -H "Content-Type: text/plain" \
-            --data-binary "$SHARE"
-    done < "../$SERVER_SHARES_PARTIAL"
-
-    cd ..
+force_root_round_end() {
+    # Force the round to end
+    curl "http://localhost:$AGGREGATOR_PORT/force-round-end"
 }
 
 # Returns the round result
 get_round_result() {
-    # Now get the round result
     curl -s "http://localhost:$SERVER_LEADER_PORT/round-result/$1"
+}
+
+# Returns the just the msg of the round result
+get_round_msg() {
+    curl -s "http://localhost:$SERVER_LEADER_PORT/round-msg/$1"
 }
 
 kill_servers() {
@@ -174,12 +156,12 @@ elif [[ $1 == "start-agg" ]]; then
     start_client
 elif [[ $1 == "encrypt-msg" ]]; then
     encrypt_msg $2
-elif [[ $1 == "submit-agg" ]]; then
-    submit_agg
-elif [[ $1 == "submit-shares" ]]; then
-    submit_shares
+elif [[ $1 == "force-root-round-end" ]]; then
+    force_root_round_end
 elif [[ $1 == "round-result" ]]; then
     get_round_result $2
+elif [[ $1 == "round-msg" ]]; then
+    get_round_msg $2
 elif [[ $1 == "stop-servers" ]]; then
     kill_servers
 elif [[ $1 == "stop-aggs" ]]; then
@@ -190,4 +172,6 @@ elif [[ $1 == "stop-all" ]]; then
     kill_clients 2> /dev/null || true
     kill_aggregators 2> /dev/null || true
     kill_servers 2> /dev/null || true
+else
+    echo "Did not recognize command"
 fi

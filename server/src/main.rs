@@ -122,6 +122,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                             http://192.168.0.10:9000 . If this node is the leader, this flag is \
                             omitted.",
                         ),
+                )
+                .arg(
+                    Arg::with_name("no-persist")
+                        .short("n")
+                        .long("no-persist")
+                        .required(false)
+                        .takes_value(false)
+                        .help("If this is set, the service will not persist its state to disk"),
                 ),
         )
         .get_matches();
@@ -130,13 +138,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Make a new state and registration message
         let (state, reg_blob) = ServerState::new(&enclave)?;
         // Save the state and output the registration blob
-        save_state(&matches, &state)?;
+        let state_path = matches.value_of("server-state").unwrap();
+        save_state(&state_path, &state)?;
         save_to_stdout(&reg_blob)?;
     }
 
     if let Some(matches) = matches.subcommand_matches("get-pubkeys") {
         // Get the server's pubkey package and print it
-        let state = load_state(&matches)?;
+        let state_path = matches.value_of("server-state").unwrap();
+        let state = load_state(&state_path)?;
         save_to_stdout(&state.pubkey_pkg)?;
     }
 
@@ -145,9 +155,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         let reg_blob: UserRegistrationBlob = load_from_stdin()?;
 
         // Feed it to the state and save the new state
-        let mut state = load_state(&matches)?;
+        let state_path = matches.value_of("server-state").unwrap();
+        let mut state = load_state(&state_path)?;
         state.recv_user_registration(&enclave, &reg_blob)?;
-        save_state(&matches, &state)?;
+        save_state(&state_path, &state)?;
 
         println!("OK");
     }
@@ -157,9 +168,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         let reg_blob: AggRegistrationBlob = load_from_stdin()?;
 
         // Feed it to the state and save the new state
-        let mut state = load_state(&matches)?;
+        let state_path = matches.value_of("server-state").unwrap();
+        let mut state = load_state(&state_path)?;
         state.recv_aggregator_registration(&enclave, &reg_blob)?;
-        save_state(&matches, &state)?;
+        save_state(&state_path, &state)?;
 
         println!("OK");
     }
@@ -169,9 +181,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         let reg_blob: ServerRegistrationBlob = load_from_stdin()?;
 
         // Feed it to the state and save the new state
-        let mut state = load_state(&matches)?;
+        let state_path = matches.value_of("server-state").unwrap();
+        let mut state = load_state(&state_path)?;
         state.recv_server_registration(&enclave, &reg_blob)?;
-        save_state(&matches, &state)?;
+        save_state(&state_path, &state)?;
 
         println!("OK");
     }
@@ -181,12 +194,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         let agg_blob: RoundSubmissionBlob = load_from_stdin()?;
 
         // Feed it to the state and print the result
-        let mut state = load_state(&matches)?;
+        let state_path = matches.value_of("server-state").unwrap();
+        let mut state = load_state(&state_path)?;
         let agg = state.unblind_aggregate(&enclave, &agg_blob)?;
         save_to_stdout(&agg)?;
 
         // The shared secrets were ratcheted, so we have to save the new state
-        save_state(&matches, &state)?;
+        save_state(&state_path, &state)?;
     }
 
     if let Some(matches) = matches.subcommand_matches("combine-shares") {
@@ -196,7 +210,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let shares: Vec<UnblindedAggregateShareBlob> = cli_util::load_multi(sharefile)?;
 
         // Feed it to the state and output the result
-        let state = load_state(&matches)?;
+        let state_path = matches.value_of("server-state").unwrap();
+        let state = load_state(&state_path)?;
         let round_output = state.derive_round_output(&enclave, &shares)?;
         save_to_stdout(&round_output)?;
 
@@ -222,14 +237,27 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .expect("the leader-url parameter must be a URL");
         });
 
-        // Feed it to the state and print the result
-        let server_state = load_state(&matches)?;
+        // Load the aggregator state and clear it for this round
+        let state_path = matches.value_of("server-state").unwrap().to_string();
+        let server_state = load_state(&state_path)?;
         info!(
             "Loaded server state. Group size is {}",
             server_state.anytrust_group_size
         );
 
-        let state = service::ServiceState::new(server_state, enclave.clone(), leader_url);
+        // If no-persist is set, then the state path is None
+        let server_state_path = if matches.is_present("no-persist") {
+            None
+        } else {
+            Some(state_path)
+        };
+
+        let state = service::ServiceState::new(
+            server_state,
+            server_state_path,
+            enclave.clone(),
+            leader_url,
+        );
         start_service(bind_addr, state).unwrap();
     }
 

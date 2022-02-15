@@ -18,6 +18,7 @@ use actix_rt::{
 };
 use actix_web::{
     client::Client,
+    get,
     http::{StatusCode, Uri},
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError,
 };
@@ -69,6 +70,31 @@ async fn submit_agg(
     } = handle.deref_mut();
     // Add to aggregate
     agg_state.add_to_aggregate(enclave, &agg_data)?;
+
+    Ok(HttpResponse::Ok().body("OK\n"))
+}
+
+/// Forces the current round to end. Only for debugging purposes
+#[get("/force-round-end")]
+async fn force_round_end(
+    state: web::Data<Arc<Mutex<ServiceState>>>,
+) -> Result<HttpResponse, ApiError> {
+    let state = state.get_ref();
+
+    // End the round. Serialize the aggregate and forward it in the background. Time out
+    // after 1 second
+    let send_timeout = Duration::from_secs(1);
+    let (agg_payload, forward_urls) = get_agg_payload(&*state);
+    spawn(
+        actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(|r| {
+            if r.is_err() {
+                error!("timeout for sending aggregation was hit");
+            }
+        }),
+    );
+
+    // Start the next round immediately
+    start_next_round(state.clone());
 
     Ok(HttpResponse::Ok().body("OK\n"))
 }
@@ -165,6 +191,7 @@ async fn round_finalization_loop(
     level: u32,
 ) {
     let one_sec = Duration::from_secs(1);
+    let send_timeout = one_sec;
     let propagation_dur = Duration::from_secs(PROPAGATION_SECS);
 
     // Wait until the start time, then start the round loop
@@ -180,8 +207,13 @@ async fn round_finalization_loop(
         // after 1 second
         let (agg_payload, forward_urls) = get_agg_payload(&state);
         spawn(
-            actix_rt::time::timeout(one_sec, send_aggregate(agg_payload, forward_urls))
-                .map(|_| error!("timeout for sending aggregation was hit")),
+            actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(
+                |r| {
+                    if r.is_err() {
+                        error!("timeout for sending aggregation was hit");
+                    }
+                },
+            ),
         );
 
         // Start the next round early
@@ -211,7 +243,7 @@ pub(crate) async fn start_service(
     // Start the web server
     HttpServer::new(move || {
         App::new().data(state.clone()).configure(|cfg| {
-            cfg.service(submit_agg);
+            cfg.service(submit_agg).service(force_round_end);
         })
     })
     .workers(1)
