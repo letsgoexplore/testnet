@@ -1182,8 +1182,6 @@ dependencies = [
  "rand_core 0.6.3",
  "serde 1.0.118",
  "serde 1.0.126",
- "serde-big-array 0.3.0",
- "serde-big-array 0.3.2",
  "sgx_rand",
  "sgx_rand_derive",
  "sgx_tcrypto",
@@ -1912,25 +1910,6 @@ version = "1.0.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec7505abeacaec74ae4778d9d9328fe5a5d04253220a85c4ee022239fc996d03"
 dependencies = [
- "serde_derive 1.0.126",
-]
-
-[[package]]
-name = "serde-big-array"
-version = "0.3.0"
-source = "git+https://github.com/mesalock-linux/serde-big-array-sgx#94122c5167aee38b39b09a620a60db2c28cf7428"
-dependencies = [
- "serde 1.0.118",
- "serde_derive 1.0.118",
-]
-
-[[package]]
-name = "serde-big-array"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18b20e7752957bbe9661cff4e0bb04d183d0948cdab2ea58cdb9df36a61dfe62"
-dependencies = [
- "serde 1.0.126",
  "serde_derive 1.0.126",
 ]
 

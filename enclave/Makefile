@@ -64,7 +64,7 @@ CUSTOM_COMMON_PATH := ./vendor/common
 ######## Cargo Settings ########
 # The tmp dir to hold intermediate compilation output
 # this must correspond to .cargo/config.toml
-TARGET_DIR := /tmp/sgxdcnet/target/debug
+TARGET_DIR := /tmp/sgxdcnet/target/release
 
 ######## Enclave Settings ########
 
@@ -128,7 +128,7 @@ $(TARGET_DIR)/Enclave_t.o: $(Enclave_EDL_Files)
 	@echo "CC   <=  $<"
 
 $(TARGET_DIR)/enclave.so: $(TARGET_DIR)/Enclave_t.o
-	@cargo build
+	@cargo build --release
 	@$(CXX) $(TARGET_DIR)/Enclave_t.o -o $@ $(RustEnclave_Link_Flags)
 	@echo "LINK =>  $@"
 

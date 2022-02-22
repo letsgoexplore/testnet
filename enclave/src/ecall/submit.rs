@@ -12,6 +12,7 @@ use core::convert::TryInto;
 use crypto;
 use crypto::{MultiSignable, SgxPrivateKey, SharedSecretsDb, SignMutable};
 use interface::UserSubmissionReq;
+use log::debug;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 use sgx_tcrypto::SgxEccHandle;
 use sgx_types::sgx_status_t::SGX_ERROR_SERVICE_UNAVAILABLE;
@@ -20,7 +21,6 @@ use sha2::Digest;
 use sha2::Sha256;
 use std::collections::BTreeSet;
 use std::convert::TryFrom;
-use std::debug;
 use std::iter::FromIterator;
 use std::prelude::v1::*;
 use unseal::SealInto;
@@ -269,7 +269,7 @@ pub fn user_submit_internal(
             debug!("✅ slot {} will include msg {:?}", msg_slot, msg,);
 
             round_msg.scheduling_msg[next_slot] = next_fp;
-            round_msg.aggregated_msg[msg_slot] = *msg;
+            round_msg.aggregated_msg[msg_slot] = msg.clone();
         }
         // If the user is just reserving, write to reservation slots
         UserMsg::Reserve { .. } => {

@@ -164,7 +164,7 @@ fn main() -> Result<(), AggregatorError> {
         // Make a new state and agg registration. Save the state and and print the registration
         let (state, reg_blob) = AggregatorState::new(&enclave, pubkeys, level)?;
         let state_path = matches.value_of("agg-state").unwrap();
-        save_state(&dbg!(state_path), &state)?;
+        save_state(&state_path, &state)?;
         save_to_stdout(&reg_blob)?;
     }
 

@@ -6,16 +6,14 @@ use crate::{ecall_interface_types::*, params::*, sgx_protected_keys::*};
 use sha2::{Digest, Sha256};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-big_array! { BigArray; }
-
-// a wrapper around RawMessage so that we can impl traits
+// a wrapper around RawMessage so that we can impl traits. This stores DC_NET_MESSAGE_LENGTH bytes
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Copy, Serialize, Deserialize)]
-pub struct DcMessage(#[serde(with = "BigArray")] pub [u8; DC_NET_MESSAGE_LENGTH]);
+#[derive(Clone, Serialize, Deserialize)]
+pub struct DcMessage(pub Vec<u8>);
 
 impl Default for DcMessage {
     fn default() -> DcMessage {
-        DcMessage([0u8; DC_NET_MESSAGE_LENGTH])
+        DcMessage(vec![0u8; DC_NET_MESSAGE_LENGTH])
     }
 }
 
@@ -49,20 +47,8 @@ impl Debug for DcMessage {
     }
 }
 
-impl From<[u8; DC_NET_MESSAGE_LENGTH]> for DcMessage {
-    fn from(raw: [u8; DC_NET_MESSAGE_LENGTH]) -> Self {
-        DcMessage(raw)
-    }
-}
-
 impl AsRef<[u8]> for DcMessage {
     fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl AsRef<[u8; DC_NET_MESSAGE_LENGTH]> for DcMessage {
-    fn as_ref(&self) -> &[u8; DC_NET_MESSAGE_LENGTH] {
         &self.0
     }
 }

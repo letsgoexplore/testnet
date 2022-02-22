@@ -7,12 +7,13 @@ use crate::messages_types;
 use crate::unseal::{MarshallAs, UnmarshalledAs, UnsealableInto};
 use ecall::keygen::new_sgx_keypair_ext_internal;
 use interface::*;
+use log::debug;
 use sgx_types::sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 use sgx_types::SgxResult;
 use std::borrow::ToOwned;
 use std::collections::{BTreeMap, BTreeSet};
 use std::string::ToString;
-use std::{debug, vec};
+use std::vec;
 
 /// This file implements ecalls used by an anytrust server
 
