@@ -34,8 +34,10 @@ impl Debug for DiffieHellmanSharedSecret {
 
 use std::cell::RefCell;
 
-/// A ServerSecrets consists of an array of shared secrets established between a user and with a
-/// group of any-trust server
+/// A SharedSecretsDb is a map of entity public keys to DH secrets
+/// This is used by both servers and users.
+/// When used by servers, the keys are user pks
+/// When used by users, the keys are server pks
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct SharedSecretsDb {
     pub round: u32,
@@ -162,14 +164,25 @@ pub fn derive_round_nonce(
 /// DiffieHellmanSharedSecret, one for each anytrust server.
 pub type RoundSecret = DcRoundMessage;
 
-/// Derives a RoundSecret as the XOR of `HKDF(server_secrets[i], round)` for all `i` in `0`...`len(server_secrets)`
+use std::collections::BTreeSet;
+/// Derives a RoundSecret as the XOR of `HKDF(shared_secrets[i], round)` for all `i` in `Some(entity_ids_to_use)`,
+/// if entity_ids_to_use is None, for all `i` in `shared_secrets.keys()`.
 pub fn derive_round_secret(
     round: u32,
-    server_secrets: &SharedSecretsDb,
+    shared_secrets: &SharedSecretsDb,
+    entity_ids_to_use: Option<&BTreeSet<EntityId>>,
 ) -> CryptoResult<RoundSecret> {
     let mut round_secret = RoundSecret::default();
-    for (_, server_secret) in server_secrets.db.iter() {
-        let hk = Hkdf::<Sha256>::new(None, server_secret.as_ref());
+
+    for (pk, shard_secret) in shared_secrets.db.iter() {
+        // skip entries not in entity_ids_to_use
+        if let Some(eids) = entity_ids_to_use {
+            if !eids.contains(&EntityId::from(pk)) {
+                continue;
+            }
+        }
+
+        let hk = Hkdf::<Sha256>::new(None, shard_secret.as_ref());
         // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
         let mut seed = [0u8; 32];
 

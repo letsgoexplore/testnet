@@ -297,7 +297,7 @@ pub fn user_submit_internal(
 
     // debug!("round msg: {:?}", round_msg);
 
-    let round_key = match crypto::derive_round_secret(round, &shared_secrets) {
+    let round_key = match crypto::derive_round_secret(round, &shared_secrets, None) {
         Ok(k) => k,
         Err(e) => {
             error!("can't derive round secret {}", e);
