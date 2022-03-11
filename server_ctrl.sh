@@ -106,11 +106,16 @@ encrypt_msg() {
         PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
     fi
 
-    # Send the share to the leader
+    # Do the operation
     curl "http://localhost:$CLIENT_SERVICE_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "$PAYLOAD"
+}
+
+send_cover() {
+    # Do a POST. No payload necessary
+    curl -X POST "http://localhost:$CLIENT_SERVICE_PORT/send-cover"
 }
 
 force_root_round_end() {
@@ -156,6 +161,8 @@ elif [[ $1 == "start-agg" ]]; then
     start_client
 elif [[ $1 == "encrypt-msg" ]]; then
     encrypt_msg $2
+elif [[ $1 == "send-cover" ]]; then
+    send_cover $2
 elif [[ $1 == "force-root-round-end" ]]; then
     force_root_round_end
 elif [[ $1 == "round-result" ]]; then
