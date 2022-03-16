@@ -217,12 +217,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // Log the raw round result in base64
         let round = round_output.round;
-        let round_msg = &round_output
-            .dc_msg
-            .aggregated_msg
-            .iter()
-            .flat_map(|msg| msg.0.to_vec())
-            .collect::<Vec<u8>>();
+        let round_msg = &round_output.dc_msg.aggregated_msg.as_row_major();
         info!("round {} output: {}", round, base64::encode(round_msg));
     }
 

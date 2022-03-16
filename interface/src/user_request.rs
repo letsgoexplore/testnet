@@ -1,7 +1,7 @@
 use std::prelude::v1::*;
 use std::{collections::BTreeSet, vec};
 
-use crate::{ecall_interface_types::*, params::*, sgx_protected_keys::*};
+use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected_keys::*};
 
 use sha2::{Digest, Sha256};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
@@ -58,12 +58,12 @@ pub type Footprint = u32;
 
 /// What's broadcast through the channel
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct DcRoundMessage {
     // Contains FOOTPRINT_N_SLOTS elements
     pub scheduling_msg: Vec<Footprint>,
-    // Contains DC_NET_N_SLOTS elements
-    pub aggregated_msg: Vec<DcMessage>,
+    // Contains DC_NET_N_SLOTS rows, each of which is DC_NET_MESSAGE_LENGTH bytes
+    pub aggregated_msg: Array2D<u8>,
 }
 
 /// Used to generate round secrets
@@ -76,9 +76,8 @@ impl Rand for DcRoundMessage {
             m.scheduling_msg[i] = rng.next_u32();
         }
 
-        for i in 0..m.aggregated_msg.len() {
-            m.aggregated_msg[i] = DcMessage::rand(rng);
-        }
+        m.aggregated_msg =
+            Array2D::filled_by_row_major(|| rng.gen(), DC_NET_N_SLOTS, DC_NET_MESSAGE_LENGTH);
 
         m
     }
@@ -88,22 +87,22 @@ impl Default for DcRoundMessage {
     fn default() -> Self {
         DcRoundMessage {
             scheduling_msg: vec![0; FOOTPRINT_N_SLOTS],
-            aggregated_msg: vec![DcMessage::default(); DC_NET_N_SLOTS],
+            aggregated_msg: Array2D::filled_with(0u8, DC_NET_N_SLOTS, DC_NET_MESSAGE_LENGTH),
         }
-    }
-}
-
-impl PartialEq for DcRoundMessage {
-    fn eq(&self, other: &Self) -> bool {
-        self.aggregated_msg == other.aggregated_msg && self.scheduling_msg == other.scheduling_msg
     }
 }
 
 impl Debug for DcRoundMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        // First convert aggregated_msg back to a vec of DcMessages
+        let aggregated_msg: Vec<DcMessage> = self
+            .aggregated_msg
+            .rows_iter()
+            .map(|row_it| DcMessage(row_it.cloned().collect()))
+            .collect();
         f.debug_struct("DcRoundMessage")
             .field("scheduling_msg", &self.scheduling_msg)
-            .field("aggregated_msg", &self.aggregated_msg)
+            .field("aggregated_msg", &aggregated_msg)
             .finish()
     }
 }
@@ -116,9 +115,7 @@ impl DcRoundMessage {
             b.extend(&i.to_le_bytes())
         }
 
-        for i in self.aggregated_msg.iter() {
-            b.extend(&i.0)
-        }
+        b.extend(&self.aggregated_msg.as_row_major());
 
         b
     }

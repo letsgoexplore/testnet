@@ -295,12 +295,7 @@ async fn round_msg(
         // If the given round's output exists in memory, return it
         Some(round_output) => {
             // Give the raw payload
-            let blob = round_output
-                .dc_msg
-                .aggregated_msg
-                .iter()
-                .flat_map(|msg| msg.0.to_vec())
-                .collect::<Vec<u8>>();
+            let blob = round_output.dc_msg.aggregated_msg.as_row_major();
 
             let body = base64::encode(&blob);
             HttpResponse::Ok().body(body)

@@ -269,7 +269,10 @@ pub fn user_submit_internal(
             debug!("✅ slot {} will include msg {:?}", msg_slot, msg,);
 
             round_msg.scheduling_msg[next_slot] = next_fp;
-            round_msg.aggregated_msg[msg_slot] = msg.clone();
+            // Copy the message into the 2d array
+            for (i, b) in msg.0.iter().enumerate() {
+                round_msg.aggregated_msg.set(msg_slot, i, *b).unwrap();
+            }
         }
         // If the user is just reserving, write to reservation slots
         UserMsg::Reserve { .. } => {

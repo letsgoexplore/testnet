@@ -24,8 +24,7 @@ cfg_if! {
     }
 }
 
-use std::prelude::v1::*;
-
+mod array2d;
 mod ecall_interface_types;
 mod params;
 mod sgx_protected_keys;

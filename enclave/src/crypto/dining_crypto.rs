@@ -227,14 +227,28 @@ impl Xor for DcMessage {
 
 impl Xor for DcRoundMessage {
     fn xor(&self, other: &Self) -> Self {
+        assert_eq!(
+            self.aggregated_msg.num_rows(),
+            other.aggregated_msg.num_rows()
+        );
+        assert_eq!(
+            self.aggregated_msg.num_columns(),
+            other.aggregated_msg.num_columns()
+        );
+
         let mut result = self.clone();
 
+        // XOR the scheduling messages
         for i in 0..result.scheduling_msg.len() {
             result.scheduling_msg[i] ^= other.scheduling_msg[i];
         }
 
-        for i in 0..result.aggregated_msg.len() {
-            result.aggregated_msg[i].xor_mut(&other.aggregated_msg[i]);
+        // XOR the 2d round messages
+        for row in 0..result.aggregated_msg.num_rows() {
+            for column in 0..result.aggregated_msg.num_columns() {
+                let b = other.aggregated_msg.get(row, column).unwrap();
+                *result.aggregated_msg.get_mut(row, column).unwrap() ^= b;
+            }
         }
 
         result
