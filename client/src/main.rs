@@ -30,6 +30,14 @@ fn main() -> Result<(), UserError> {
         .takes_value(true)
         .help("A file that contains this user's previous state");
 
+    let states_arg = Arg::with_name("user-state")
+        .short("s")
+        .long("user-state")
+        .value_name("FILES")
+        .required(true)
+        .takes_value(true)
+        .help("A comma-separated list of files that contain a user's previous state");
+
     let round_arg = Arg::with_name("round")
         .short("r")
         .long("round")
@@ -87,8 +95,11 @@ fn main() -> Result<(), UserError> {
         )
         .subcommand(
             SubCommand::with_name("send-empty")
-                .about("Sends the empty message as cover traffic for the system")
-                .arg(state_arg.clone())
+                .about(
+                    "Constructs an empty message as cover traffic for the system. STDOUT is \
+                    newline-separated encrypted messages"
+                )
+                .arg(states_arg.clone())
                 .arg(round_arg.clone())
         )
         .subcommand(
@@ -193,14 +204,17 @@ fn main() -> Result<(), UserError> {
         // Load the round
         let round = cli_util::parse_u32(matches.value_of("round").unwrap())?;
 
-        // Now encrypt the message and output it
-        let state_path = matches.value_of("user-state").unwrap().to_string();
-        let mut state = load_state(&state_path)?;
-        let ciphertext = state.submit_round_msg(&enclave, round, msg)?;
-        save_to_stdout(&ciphertext)?;
+        // Expect a comma-separated list of state files
+        let state_paths = matches.value_of("user-state").unwrap().to_string();
+        for state_path in state_paths.split(',') {
+            // Now encrypt the message and output it
+            let mut state = load_state(&state_path)?;
+            let ciphertext = state.submit_round_msg(&enclave, round, msg.clone())?;
+            save_to_stdout(&ciphertext)?;
 
-        // The shared secrets were ratcheted, so we have to save the new state
-        save_state(&state_path, &state)?;
+            // The shared secrets were ratcheted, so we have to save the new state
+            save_state(&state_path, &state)?;
+        }
     }
 
     if let Some(matches) = matches.subcommand_matches("encrypt-msg") {
