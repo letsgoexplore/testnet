@@ -34,6 +34,11 @@ pub(crate) fn load_from_stdin<D: for<'a> Deserialize<'a>>() -> Result<D> {
     Ok(cli_util::load(stdin)?)
 }
 
+pub(crate) fn load_multi_from_stdin<D: for<'a> Deserialize<'a>>() -> Result<Vec<D>> {
+    let stdin = std::io::stdin();
+    Ok(cli_util::load_multi(stdin)?)
+}
+
 pub(crate) fn save_to_stdout<S: Serialize>(val: &S) -> Result<()> {
     let stdout = std::io::stdout();
     cli_util::save(stdout, val)?;

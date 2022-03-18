@@ -13,7 +13,7 @@ use crate::{
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
 use interface::{DcMessage, RoundOutput, ServerPubKeyPackage, UserMsg, DC_NET_MESSAGE_LENGTH};
-use std::fs::File;
+use std::{ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};
 
@@ -62,6 +62,20 @@ fn main() -> Result<(), UserError> {
                     .help(
                         "A file that contains newline-delimited pubkey packages of the servers \
                         that this user wishes to register with"
+                    )
+                )
+                .arg(
+                    Arg::with_name("num-regs")
+                    .short("n")
+                    .long("num-regs")
+                    .value_name("INTEGER")
+                    .required(false)
+                    .takes_value(true)
+                    .default_value("1")
+                    .help(
+                        "The number of registrations to make. If this is set, a counter will be \
+                        appended to the provided user-state file. STDOUT is newline-separated \
+                        registration blobs."
                     )
                 )
         )
@@ -135,12 +149,40 @@ fn main() -> Result<(), UserError> {
         let pubkeys_filename = matches.value_of("server-keys").unwrap();
         let keysfile = File::open(pubkeys_filename)?;
         let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
+        let num_regs = cli_util::parse_u32(matches.value_of("num-regs").unwrap())?;
+        let state_path = Path::new(matches.value_of("user-state").unwrap());
 
         // Make a new state and user registration. Save the state and and print the registration
-        let state_path = matches.value_of("user-state").unwrap().to_string();
-        let (state, reg_blob) = UserState::new(&enclave, pubkeys)?;
-        save_state(&state_path, &state)?;
-        save_to_stdout(&reg_blob)?;
+        if num_regs == 1 {
+            let (state, reg_blob) = UserState::new(&enclave, pubkeys)?;
+            save_state(&state_path, &state)?;
+            save_to_stdout(&reg_blob)?;
+        } else {
+            // Output n state files and print n newline-separated registration blobs
+            let empty_str = OsString::default();
+            let ext = state_path.extension().unwrap_or(&empty_str);
+            let file_stem = state_path.file_stem().unwrap_or(&empty_str);
+
+            for i in 1..=num_regs {
+                // Make a new state filename. It's "$file$i.$ext"
+                let filename_i = format!(
+                    "{}{}.{}",
+                    file_stem.to_str().unwrap(),
+                    i,
+                    ext.to_str().unwrap()
+                );
+                let state_path_i = state_path.with_file_name(filename_i);
+
+                // Make a new user
+                let (state, reg_blob) = UserState::new(&enclave, pubkeys.clone())?;
+
+                // Save to the state
+                save_state(&state_path_i, &state)?;
+
+                // Output the registration blob to stdout, followed by a newline
+                save_to_stdout(&reg_blob)?;
+            }
+        }
     }
 
     // Send cover traffic

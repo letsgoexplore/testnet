@@ -3,6 +3,7 @@ use crate::user_state::UserState;
 use std::{
     fs::File,
     io::{BufRead, BufReader},
+    path::Path,
 };
 
 use common::{cli_util, enclave_wrapper::EnclaveError};
@@ -26,7 +27,7 @@ pub(crate) fn load_state(save_path: &str) -> Result<UserState> {
     Ok(cli_util::load(save_file)?)
 }
 
-pub(crate) fn save_state(save_path: &str, state: &UserState) -> Result<()> {
+pub(crate) fn save_state(save_path: impl AsRef<Path>, state: &UserState) -> Result<()> {
     let save_file = File::create(save_path)?;
     Ok(cli_util::save(save_file, state)?)
 }

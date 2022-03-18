@@ -8,7 +8,7 @@ mod util;
 use crate::{
     server_state::ServerState,
     service::start_service,
-    util::{load_from_stdin, load_state, save_state, save_to_stdout},
+    util::{load_from_stdin, load_multi_from_stdin, load_state, save_state, save_to_stdout},
 };
 
 use common::{cli_util, enclave_wrapper::DcNetEnclave};
@@ -61,7 +61,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         )
         .subcommand(
             SubCommand::with_name("register-user")
-                .about("Registers a user with this server")
+                .about(
+                    "Registers a user with this server. STDIN is newline-separated user \
+                    registration blobs",
+                )
                 .arg(state_arg.clone()),
         )
         .subcommand(
@@ -151,13 +154,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if let Some(matches) = matches.subcommand_matches("register-user") {
-        // Parse a user registration blob from stdin
-        let reg_blob: UserRegistrationBlob = load_from_stdin()?;
+        // Parse user registration blobs from stdin
+        let reg_blobs: Vec<UserRegistrationBlob> = load_multi_from_stdin()?;
 
-        // Feed it to the state and save the new state
+        // Feed them to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
         let mut state = load_state(&state_path)?;
-        state.recv_user_registration(&enclave, &reg_blob)?;
+        for reg_blob in reg_blobs {
+            state.recv_user_registration(&enclave, &reg_blob)?;
+        }
         save_state(&state_path, &state)?;
 
         println!("OK");

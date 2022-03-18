@@ -192,32 +192,20 @@ setup_clients() {
     USER_REGS=""
 
     # Make new clients and capture the registration data
-    for i in $(seq 1 $NUM_USERS); do
-        STATE="${USER_STATE%.txt}$i.txt"
-        USER_REG=$(
-            $CMD_PREFIX new --user-state "../$STATE" --server-keys "../$USER_SERVERKEYS"
-        )
-
-        # Append
-        if [[ i -eq 1 ]]; then
-            USER_REGS="$USER_REG"
-        else
-            USER_REGS="$USER_REGS;$USER_REG"
-        fi
-    done
+    USER_REG=$(
+        $CMD_PREFIX new \
+            --num-regs $NUM_USERS \
+            --user-state "../$USER_STATE" \
+            --server-keys "../$USER_SERVERKEYS"
+    )
 
     # Now do the registrations
     cd ../server
     CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
 
-    # Read the regs into an array
-    IFS=';' read -ra USER_REGS <<< "$USER_REGS"
-
-    for USER_REG in "${USER_REGS[@]}"; do
-        for i in $(seq 1 $NUM_SERVERS); do
-            STATE="${SERVER_STATE%.txt}$i.txt"
-            echo $USER_REG | $CMD_PREFIX register-user --server-state "../$STATE"
-        done
+    for i in $(seq 1 $NUM_SERVERS); do
+        STATE="${SERVER_STATE%.txt}$i.txt"
+        echo "$USER_REG" | $CMD_PREFIX register-user --server-state "../$STATE"
     done
 
     echo "Set up clients"
