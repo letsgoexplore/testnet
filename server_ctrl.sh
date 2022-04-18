@@ -118,6 +118,11 @@ send_cover() {
     curl -X POST "http://localhost:$CLIENT_SERVICE_PORT/send-cover"
 }
 
+reserve_slot() {
+    # Do a POST. No payload necessary
+    curl -X POST "http://localhost:$CLIENT_SERVICE_PORT/reserve-slot"
+}
+
 force_root_round_end() {
     # Force the round to end
     curl "http://localhost:$AGGREGATOR_PORT/force-round-end"
@@ -162,7 +167,9 @@ elif [[ $1 == "start-agg" ]]; then
 elif [[ $1 == "encrypt-msg" ]]; then
     encrypt_msg $2
 elif [[ $1 == "send-cover" ]]; then
-    send_cover $2
+    send_cover
+elif [[ $1 == "reserve-slot" ]]; then
+    reserve_slot
 elif [[ $1 == "force-root-round-end" ]]; then
     force_root_round_end
 elif [[ $1 == "round-result" ]]; then
