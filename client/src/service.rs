@@ -116,6 +116,42 @@ async fn encrypt_msg(
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
+/// Reserves a talking slot for the next round
+#[post("/reserve-slot")]
+async fn reserve_slot(
+    state: web::Data<Arc<Mutex<ServiceState>>>,
+) -> Result<HttpResponse, ApiError> {
+    // Unpack state
+    let mut handle = state.get_ref().lock().unwrap();
+    let ServiceState {
+        ref mut user_state,
+        ref enclave,
+        ref agg_url,
+        round,
+        ref user_state_path,
+        ..
+    } = handle.deref_mut();
+
+    // Encrypt a reservation and send it
+    let msg = UserMsg::Reserve {
+        times_participated: user_state.get_times_participated(),
+    };
+    let ciphertext = user_state.submit_round_msg(&enclave, *round, msg)?;
+    send_ciphertext(&ciphertext, agg_url).await;
+
+    // Increment the round and save the user state
+    *round += 1;
+    user_state_path.as_ref().map(|path| {
+        info!("Saving state");
+        match save_state(path, user_state) {
+            Err(e) => error!("failed to save user state {:?}", e),
+            _ => (),
+        }
+    });
+
+    Ok(HttpResponse::Ok().body("OK\n"))
+}
+
 /// Sends cover traffic
 #[post("/send-cover")]
 async fn send_cover(state: web::Data<Arc<Mutex<ServiceState>>>) -> Result<HttpResponse, ApiError> {
