@@ -217,6 +217,7 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
     HttpServer::new(move || {
         App::new().data(state.clone()).configure(|cfg| {
             cfg.service(encrypt_msg);
+            cfg.service(reserve_slot);
             cfg.service(send_cover);
         })
     })
