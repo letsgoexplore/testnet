@@ -244,8 +244,8 @@ impl Xor for DcRoundMessage {
         }
 
         // XOR the 2d round messages
-        for row in 0..result.aggregated_msg.num_rows() {
-            for column in 0..result.aggregated_msg.num_columns() {
+        for column in 0..result.aggregated_msg.num_columns() {
+            for row in 0..result.aggregated_msg.num_rows() {
                 let b = other.aggregated_msg.get(row, column).unwrap();
                 *result.aggregated_msg.get_mut(row, column).unwrap() ^= b;
             }
