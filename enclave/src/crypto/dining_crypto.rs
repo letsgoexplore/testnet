@@ -202,31 +202,30 @@ pub fn derive_round_secret(
 }
 
 // various functions for computing a.xor(b)
-pub trait Xor {
-    // xor returns xor(self, other)
-    fn xor(&self, other: &Self) -> Self;
+pub trait Xor: Clone {
     // xor_mut computes and sets self = xor(self, other)
     fn xor_mut(&mut self, other: &Self)
     where
-        Self: Sized,
-    {
-        *self = self.xor(other);
+        Self: Sized;
+
+    // xor returns xor(self, other)
+    fn xor(&self, other: &Self) -> Self {
+        let mut copy = self.clone();
+        copy.xor_mut(other);
+        copy
     }
 }
 
 impl Xor for DcMessage {
-    fn xor(&self, other: &Self) -> Self {
-        let mut result = DcMessage::default();
-        for i in 0..DC_NET_MESSAGE_LENGTH {
-            result.0[i] = self.0[i] ^ other.0[i];
+    fn xor_mut(&mut self, other: &Self) {
+        for (lhs, rhs) in self.0.iter_mut().zip(other.0.iter()) {
+            *lhs ^= rhs
         }
-
-        result
     }
 }
 
 impl Xor for DcRoundMessage {
-    fn xor(&self, other: &Self) -> Self {
+    fn xor_mut(&mut self, other: &Self) {
         assert_eq!(
             self.aggregated_msg.num_rows(),
             other.aggregated_msg.num_rows()
@@ -236,21 +235,24 @@ impl Xor for DcRoundMessage {
             other.aggregated_msg.num_columns()
         );
 
-        let mut result = self.clone();
-
         // XOR the scheduling messages
-        for i in 0..result.scheduling_msg.len() {
-            result.scheduling_msg[i] ^= other.scheduling_msg[i];
+        for (lhs, rhs) in self
+            .scheduling_msg
+            .as_mut_slice()
+            .iter_mut()
+            .zip(other.scheduling_msg.as_slice().iter())
+        {
+            *lhs ^= rhs;
         }
 
-        // XOR the 2d round messages
-        for column in 0..result.aggregated_msg.num_columns() {
-            for row in 0..result.aggregated_msg.num_rows() {
-                let b = other.aggregated_msg.get(row, column).unwrap();
-                *result.aggregated_msg.get_mut(row, column).unwrap() ^= b;
-            }
+        // XOR the round messages
+        for (lhs, rhs) in self
+            .aggregated_msg
+            .as_mut_slice()
+            .iter_mut()
+            .zip(other.aggregated_msg.as_slice().iter())
+        {
+            *lhs ^= rhs;
         }
-
-        result
     }
 }

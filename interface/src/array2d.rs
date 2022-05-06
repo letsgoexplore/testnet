@@ -1204,6 +1204,16 @@ impl<T> Array2D<T> {
             None
         }
     }
+
+    /// Returns a reference to the underlying flat array
+    pub fn as_slice(&self) -> &[T] {
+        self.array.as_slice()
+    }
+
+    /// Returns a mutable reference to the underlying flat array
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        self.array.as_mut_slice()
+    }
 }
 
 impl<T> Index<(usize, usize)> for Array2D<T> {

@@ -72,12 +72,12 @@ impl Rand for DcRoundMessage {
     fn rand<R: Rng>(rng: &mut R) -> Self {
         let mut m = DcRoundMessage::default();
 
-        for i in 0..m.scheduling_msg.len() {
-            m.scheduling_msg[i] = rng.next_u32();
+        // Fill scheduling slots with random u32s
+        for s in m.scheduling_msg.as_mut_slice() {
+            *s = rng.gen::<u32>();
         }
-
-        m.aggregated_msg =
-            Array2D::filled_by_row_major(|| rng.gen(), DC_NET_N_SLOTS, DC_NET_MESSAGE_LENGTH);
+        // Fill msg slots with random bytes
+        rng.fill_bytes(m.aggregated_msg.as_mut_slice());
 
         m
     }
