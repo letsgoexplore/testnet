@@ -108,12 +108,22 @@ impl DcRoundMessage {
     pub fn rand_from_csprng<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
         let mut m = DcRoundMessage::default();
 
-        // Fill scheduling slots with random u32s
-        for s in m.scheduling_msg.as_mut_slice() {
-            *s = rng.next_u32();
-        }
         // Fill msg slots with random bytes
         rng.fill_bytes(m.aggregated_msg.as_mut_slice());
+
+        // Fill scheduling slots with random u32s
+        // This code is taken from the rand::Fill impl for [u32]:
+        // https://github.com/rust-random/rand/blob/f0f15b5ece4dabca62520bac936970a8b3e25d2f/src/rng.rs#L348-L364=
+        let buf = &mut m.scheduling_msg;
+        rng.fill_bytes(unsafe {
+            core::slice::from_raw_parts_mut(
+                buf.as_mut_ptr() as *mut u8,
+                buf.len() * core::mem::size_of::<u32>(),
+            )
+        });
+        for x in buf {
+            *x = x.to_le();
+        }
 
         m
     }
