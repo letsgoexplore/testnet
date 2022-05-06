@@ -14,6 +14,8 @@ extern crate quick_error;
 extern crate byteorder;
 extern crate hex;
 extern crate hkdf;
+extern crate rand;
+extern crate rand_chacha;
 extern crate sha2;
 
 #[macro_use]

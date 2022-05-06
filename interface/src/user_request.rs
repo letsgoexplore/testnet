@@ -66,23 +66,6 @@ pub struct DcRoundMessage {
     pub aggregated_msg: Array2D<u8>,
 }
 
-/// Used to generate round secrets
-#[cfg(feature = "trusted")]
-impl Rand for DcRoundMessage {
-    fn rand<R: Rng>(rng: &mut R) -> Self {
-        let mut m = DcRoundMessage::default();
-
-        // Fill scheduling slots with random u32s
-        for s in m.scheduling_msg.as_mut_slice() {
-            *s = rng.gen::<u32>();
-        }
-        // Fill msg slots with random bytes
-        rng.fill_bytes(m.aggregated_msg.as_mut_slice());
-
-        m
-    }
-}
-
 impl Default for DcRoundMessage {
     fn default() -> Self {
         DcRoundMessage {
@@ -107,6 +90,8 @@ impl Debug for DcRoundMessage {
     }
 }
 
+use rand_core::{CryptoRng, RngCore};
+
 impl DcRoundMessage {
     /// used by signature
     pub fn digest(&self) -> Vec<u8> {
@@ -118,6 +103,19 @@ impl DcRoundMessage {
         b.extend(&self.aggregated_msg.as_row_major());
 
         b
+    }
+
+    pub fn rand_from_csprng<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+        let mut m = DcRoundMessage::default();
+
+        // Fill scheduling slots with random u32s
+        for s in m.scheduling_msg.as_mut_slice() {
+            *s = rng.next_u32();
+        }
+        // Fill msg slots with random bytes
+        rng.fill_bytes(m.aggregated_msg.as_mut_slice());
+
+        m
     }
 }
 

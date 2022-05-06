@@ -14,8 +14,6 @@ use std::fmt::Display;
 use std::fmt::Result as FmtResult;
 use std::fmt::{Debug, Formatter};
 
-use sgx_rand::{ChaChaRng, Rand, Rng, SeedableRng};
-
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DiffieHellmanSharedSecret([u8; SGX_ECP256_KEY_SIZE]);
@@ -160,6 +158,9 @@ pub fn derive_round_nonce(
     Ok(RateLimitNonce::from_bytes(&h.result()))
 }
 
+use rand::SeedableRng;
+use rand_chacha::ChaCha20Rng;
+
 /// A RoundSecret is an one-time pad for a given round derived from a set of
 /// DiffieHellmanSharedSecret, one for each anytrust server.
 pub type RoundSecret = DcRoundMessage;
@@ -192,10 +193,8 @@ pub fn derive_round_secret(
         LittleEndian::write_u32(cursor, round);
         hk.expand(&info, &mut seed)?;
 
-        let mut seed_u32 = [0u32; 8]; // Chacha PRNG in SGX SDK uses u32 as seeds
-        byteorder::LittleEndian::read_u32_into(&seed, &mut seed_u32);
-        let mut rng = ChaChaRng::from_seed(&seed_u32);
-        round_secret.xor_mut(&DcRoundMessage::rand(&mut rng));
+        let mut rng = ChaCha20Rng::from_seed(seed);
+        round_secret.xor_mut(&DcRoundMessage::rand_from_csprng(&mut rng));
     }
 
     Ok(round_secret)

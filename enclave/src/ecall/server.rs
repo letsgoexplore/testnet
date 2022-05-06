@@ -140,10 +140,11 @@ pub fn unblind_aggregate(
     }
 
     // decrypt key is derived from secret shares with users (identified by round_msg.user_ids)
-    let round_secret = derive_round_secret(round, &shared_secrets, Some(&round_msg.user_ids)).map_err(|_| {
-        error!("crypto error");
-        SGX_ERROR_INVALID_PARAMETER
-    })?;
+    let round_secret = derive_round_secret(round, &shared_secrets, Some(&round_msg.user_ids))
+        .map_err(|_| {
+            error!("crypto error");
+            SGX_ERROR_INVALID_PARAMETER
+        })?;
 
     // XOR server's secrets
     // round_msg.aggregated_msg.xor_mut(&round_secret);

@@ -628,6 +628,8 @@ dependencies = [
  "interface",
  "log 0.4.14 (git+https://github.com/mesalock-linux/log-sgx)",
  "quick-error 1.2.2",
+ "rand 0.8.4",
+ "rand_chacha 0.3.1",
  "serde 1.0.118",
  "serde_cbor 0.11.1 (git+https://github.com/mesalock-linux/cbor-sgx)",
  "sgx_rand",
