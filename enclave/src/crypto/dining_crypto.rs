@@ -8,8 +8,9 @@ use hkdf::Hkdf;
 use sha2::Sha256;
 
 use super::*;
+use rand::SeedableRng;
 use sgx_tcrypto::SgxEccHandle;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 use std::fmt::Result as FmtResult;
 use std::fmt::{Debug, Formatter};
@@ -158,14 +159,10 @@ pub fn derive_round_nonce(
     Ok(RateLimitNonce::from_bytes(&h.result()))
 }
 
-use rand::SeedableRng;
-use rand_chacha::ChaCha20Rng;
-
 /// A RoundSecret is an one-time pad for a given round derived from a set of
 /// DiffieHellmanSharedSecret, one for each anytrust server.
 pub type RoundSecret = DcRoundMessage;
 
-use std::collections::BTreeSet;
 /// Derives a RoundSecret as the XOR of `HKDF(shared_secrets[i], round)` for all `i` in `Some(entity_ids_to_use)`,
 /// if entity_ids_to_use is None, for all `i` in `shared_secrets.keys()`.
 pub fn derive_round_secret(
@@ -173,6 +170,9 @@ pub fn derive_round_secret(
     shared_secrets: &SharedSecretsDb,
     entity_ids_to_use: Option<&BTreeSet<EntityId>>,
 ) -> CryptoResult<RoundSecret> {
+    //type MyRng = rand_chacha::ChaCha20Rng;
+    type MyRng = Aes128Rng; // This is defined in interface::aes_rng
+
     let mut round_secret = RoundSecret::default();
 
     for (pk, shard_secret) in shared_secrets.db.iter() {
@@ -185,7 +185,7 @@ pub fn derive_round_secret(
 
         let hk = Hkdf::<Sha256>::new(None, shard_secret.as_ref());
         // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
-        let mut seed = [0u8; 32];
+        let mut seed = <MyRng as SeedableRng>::Seed::default();
 
         // info contains round and window
         let mut info = [0; 32];
@@ -193,7 +193,7 @@ pub fn derive_round_secret(
         LittleEndian::write_u32(cursor, round);
         hk.expand(&info, &mut seed)?;
 
-        let mut rng = ChaCha20Rng::from_seed(seed);
+        let mut rng = MyRng::from_seed(seed);
         round_secret.xor_mut(&DcRoundMessage::rand_from_csprng(&mut rng));
     }
 

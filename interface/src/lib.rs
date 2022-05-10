@@ -24,6 +24,7 @@ cfg_if! {
     }
 }
 
+mod aes_rng;
 mod array2d;
 mod ecall_interface_types;
 mod params;
@@ -31,6 +32,7 @@ mod sgx_protected_keys;
 mod sgx_signature;
 mod user_request;
 
+pub use aes_rng::*;
 pub use ecall_interface_types::*;
 pub use params::*;
 #[allow(dead_code)]
