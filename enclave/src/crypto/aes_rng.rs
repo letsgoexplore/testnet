@@ -1,10 +1,12 @@
-use aes::Aes128;
-use cipher::{BlockCipherKey, FromBlockCipher, NewBlockCipher, StreamCipher};
-use ctr::{Ctr, Ctr64LE};
-use rand_core::{CryptoRng, Error as RandError, RngCore, SeedableRng};
+use aes_ctr::stream_cipher::generic_array::typenum::U16;
+use aes_ctr::stream_cipher::generic_array::GenericArray;
+use aes_ctr::stream_cipher::{NewStreamCipher, SyncStreamCipher};
+use aes_ctr::Aes128Ctr;
+
+use rand::{CryptoRng, Error as RandError, RngCore, SeedableRng};
 
 /// An RNG whose stream is an AES-CTR keystream
-pub struct Aes128Rng(Ctr64LE<Aes128>);
+pub struct Aes128Rng(Aes128Ctr);
 
 impl RngCore for Aes128Rng {
     fn next_u32(&mut self) -> u32 {
@@ -25,15 +27,12 @@ impl RngCore for Aes128Rng {
 }
 
 impl SeedableRng for Aes128Rng {
-    type Seed = BlockCipherKey<Aes128>;
+    type Seed = GenericArray<u8, U16>;
 
     /// The RNG is the keystream of AES-CTR(key=seed, iv=00...0), using 64-bit counters
     fn from_seed(seed: Self::Seed) -> Aes128Rng {
-        let key = seed;
-        let iv = BlockCipherKey::<Aes128>::default();
-
-        let ciph = Aes128::new(&key);
-        let stream = Ctr::from_block_cipher(ciph, &iv);
+        let iv = GenericArray::from_slice(b"very secret key.");
+        let stream = Aes128Ctr::new(&seed, iv);
         Aes128Rng(stream)
     }
 }

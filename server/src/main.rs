@@ -11,7 +11,7 @@ use crate::{
     util::{load_from_stdin, load_multi_from_stdin, load_state, save_state, save_to_stdout},
 };
 
-use common::{cli_util, enclave_wrapper::DcNetEnclave};
+use common::{cli_util, ecall_wrapper::DcNetEnclave};
 use interface::{
     AggRegistrationBlob, RoundSubmissionBlob, ServerRegistrationBlob, UnblindedAggregateShareBlob,
     UserRegistrationBlob,

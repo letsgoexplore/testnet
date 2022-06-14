@@ -1,29 +1,25 @@
-use crypto::RoundSecret;
 use crypto::SgxSigningKey;
 use crypto::{SignMutable, Signable};
-use interface::{
-    DcMessage, DcRoundMessage, EntityId, RateLimitNonce, SgxSignature, SgxSigningPubKey,
-    DC_NET_N_SLOTS, FOOTPRINT_BIT_SIZE,
-};
-use sgx_tcrypto::SgxRsaPubKey;
+use interface::{RoundSecret, SgxSignature, SgxSigningPubKey};
 use sgx_types::SgxError;
 use sha2::Digest;
 use sha2::Sha256;
-use std::collections::BTreeSet;
 use std::vec::Vec;
 
-/// A (potentially aggregated) message that's produced by an enclave
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct AggregatedMessage {
-    pub round: u32,
-    pub anytrust_group_id: EntityId,
-    pub user_ids: BTreeSet<EntityId>,
-    /// This is only Some for user-submitted messages
-    pub rate_limit_nonce: Option<RateLimitNonce>,
-    pub aggregated_msg: DcRoundMessage,
-    pub tee_sig: SgxSignature,
-    pub tee_pk: SgxSigningPubKey,
-}
+// /// A (potentially aggregated) message that's produced by an enclave
+// #[derive(Serialize, Deserialize, Clone, Debug, Default)]
+// pub struct AggregatedMessage {
+//     pub round: u32,
+//     pub anytrust_group_id: EntityId,
+//     pub user_ids: BTreeSet<EntityId>,
+//     /// This is only Some for user-submitted messages
+//     pub rate_limit_nonce: Option<RateLimitNonce>,
+//     pub aggregated_msg: DcRoundMessage,
+//     pub tee_sig: SgxSignature,
+//     pub tee_pk: SgxSigningPubKey,
+// }
+
+use interface::AggregatedMessage;
 
 impl Signable for AggregatedMessage {
     fn digest(&self) -> Vec<u8> {

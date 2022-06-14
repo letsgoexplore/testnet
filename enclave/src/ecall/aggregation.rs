@@ -1,20 +1,16 @@
 use crypto::Signable;
 use crypto::*;
 use interface::*;
-use messages_types::AggregatedMessage;
 use sgx_types::SgxResult;
 use std::prelude::v1::*;
-use types::*;
 
-use crate::unseal::{UnmarshalledAs, UnsealableInto};
+use crate::unseal::UnsealableInto;
 use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
-use sgx_types::sgx_status_t::{SGX_ERROR_SERVICE_UNAVAILABLE, SGX_SUCCESS};
 use std::collections::BTreeSet;
-use unseal::MarshallAs;
 
 pub fn add_to_aggregate_internal(
     input: &(
-        RoundSubmissionBlob,
+        AggregatedMessage,
         SignedPartialAggregate,
         Option<BTreeSet<RateLimitNonce>>,
         SealedSigPrivKey,
@@ -23,19 +19,18 @@ pub fn add_to_aggregate_internal(
     let (incoming_msg, current_aggregation, observed_nonces, sealed_sk) = input;
 
     // Error if asked to add an empty msg to an empty aggregation
-    if current_aggregation.0.is_empty() && incoming_msg.0.is_empty() {
+    if current_aggregation.is_empty() && incoming_msg.is_empty() {
         error!("cannot add an empty message to an empty aggregate");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
     // If incoming_msg is empty we just return the current aggregation as is. No op.
-    if incoming_msg.0.is_empty() {
+    if incoming_msg.is_empty() {
         warn!("empty incoming_msg. not changing the aggregation");
         return Ok((current_aggregation.clone(), observed_nonces.clone()));
     }
 
     // now we are sure incoming_msg is not empty we treat it as untrusted input and verify signature
-    let incoming_msg = incoming_msg.unmarshal()?;
     // FIXME: check incoming_msg.pk against a list of accepted public keys
     if !incoming_msg.verify()? {
         error!("can't verify sig on incoming_msg");
@@ -66,14 +61,14 @@ pub fn add_to_aggregate_internal(
     let tee_signing_key = sealed_sk.unseal_into()?;
 
     // if the current aggregation is empty we create a single-msg aggregation
-    if current_aggregation.0.is_empty() {
+    if current_aggregation.is_empty() {
         let mut agg = incoming_msg.clone();
         agg.sign_mut(&tee_signing_key)?;
-        return Ok((incoming_msg.marshal()?, new_observed_nonces));
+        return Ok((incoming_msg.clone(), new_observed_nonces));
     } else {
         // now that we know both current_aggregation and incoming_msg are not empty
         // we first validate they match
-        let mut current_aggregation = current_aggregation.unmarshal()?;
+        let mut current_aggregation = current_aggregation.clone();
         if current_aggregation.round != incoming_msg.round {
             error!("current_aggregation.round_info != incoming_msg.round_info");
             return Err(SGX_ERROR_INVALID_PARAMETER);
@@ -107,6 +102,6 @@ pub fn add_to_aggregate_internal(
 
         debug!("✅ new agg with users {:?}", current_aggregation.user_ids);
 
-        Ok((current_aggregation.marshal()?, new_observed_nonces))
+        Ok((current_aggregation, new_observed_nonces))
     }
 }

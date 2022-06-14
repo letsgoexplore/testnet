@@ -1,6 +1,6 @@
 use crate::server_state::ServerState;
 
-use common::{cli_util, enclave_wrapper::EnclaveError};
+use common::{cli_util, ecall_wrapper::EnclaveError};
 
 use std::fs::File;
 

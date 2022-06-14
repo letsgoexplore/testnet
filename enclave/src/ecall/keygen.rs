@@ -1,14 +1,11 @@
-use crate::unseal::UnsealableInto;
 use core::convert::TryFrom;
-use crypto::{SgxPrivateKey, SharedSecretsDb};
+use crypto::SgxPrivateKey;
 use interface::*;
 use sgx_rand::Rng;
-use sgx_types::sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
+use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;
 use sgx_types::SgxResult;
-use std::string::String;
 use std::string::ToString;
 use std::vec;
-use std::vec::Vec;
 
 pub fn new_sgx_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, AttestedPublicKey)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
@@ -26,5 +23,3 @@ pub fn new_sgx_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, Att
 
     Ok((sk, attested_key))
 }
-
-use std::borrow::ToOwned;

@@ -7,9 +7,12 @@ extern crate sgx_urts;
 extern crate tonic;
 
 pub mod cli_util;
-pub mod enclave_wrapper;
+pub mod enclave;
 
-use enclave_wrapper::EnclaveResult;
+mod aes_prng;
+mod ecall_wrapper;
+
+use enclave::EnclaveResult;
 
 pub mod dc_proto {
     tonic::include_proto!("dc_proto");

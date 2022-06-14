@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, ServerError},
     ServerState,
 };
-use common::{cli_util, enclave_wrapper::DcNetEnclave};
+use common::{cli_util, ecall_wrapper::DcNetEnclave};
 use interface::{RoundOutput, RoundSubmissionBlob, UnblindedAggregateShareBlob};
 
 use core::ops::DerefMut;

@@ -36,14 +36,18 @@ impl_enum! {
         EcallNewSgxKeypair = 1,
         EcallUnsealToPublicKey = 2,
         EcallNewUser = 3,
-        EcallNewServer = 11,
-        EcallUserSubmit = 4,
-        EcallAddToAggregate = 5,
-        EcallRecvUserRegistration = 6,
-        EcallUnblindAggregate = 7,
-        EcallDeriveRoundOutput = 8,
-        EcallRecvAggregatorRegistration = 9,
-        EcallRecvServerRegistration = 10,
+        EcallNewServer = 4,
+        EcallUserSubmit = 5,
+        EcallAddToAggregate = 6,
+        EcallRecvUserRegistration =7,
+        EcallRecvUserRegistrationBatch = 8,
+        EcallUnblindAggregate = 9,
+        EcallUnblindAggregatePartial = 10,
+        EcallUnblindAggregateMerge = 11,
+        EcallDeriveRoundOutput = 12,
+        EcallRecvAggregatorRegistration = 13,
+        EcallRecvServerRegistration = 14,
+        EcallLeakDHSecrets = 15,
     }
 }
 
@@ -58,9 +62,13 @@ impl EcallId {
             EcallId::EcallAddToAggregate => "EcallAddToAggregate",
             EcallId::EcallRecvUserRegistration => "EcallRecvUserRegistration",
             EcallId::EcallUnblindAggregate => "EcallUnblindAgg",
+            EcallId::EcallUnblindAggregatePartial => "EcallUnblindAggPartial",
+            EcallId::EcallUnblindAggregateMerge => "EcallUnblindAggMerge",
             EcallId::EcallDeriveRoundOutput => "EcallDeriveRoundOutput",
             EcallId::EcallRecvAggregatorRegistration => "EcallRecvAggregatorRegistration",
             EcallId::EcallRecvServerRegistration => "EcallRecvServerRegistration",
+            EcallId::EcallRecvUserRegistrationBatch => "EcallRecvUserRegistrationBatch",
+            EcallId::EcallLeakDHSecrets => "EcallLeakDHSecrets",
         }
     }
 }
@@ -75,10 +83,7 @@ pub struct MarshalledSignedUserMessage(pub Vec<u8>);
 
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to
 /// aggregators of all levels as well as anytrust nodes.
-/// Inside an enclave this is deserialized to an AggregatedMessage
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct RoundSubmissionBlob(pub Vec<u8>);
+pub type RoundSubmissionBlob = crate::AggregatedMessage;
 
 /// The unblinded aggregate output by a single anytrust node
 /// This serialized to a UnblindedAggregateShare defined in enclave/message_types.rs
@@ -87,10 +92,7 @@ pub struct RoundSubmissionBlob(pub Vec<u8>);
 pub struct UnblindedAggregateShareBlob(pub Vec<u8>);
 
 /// The state of an aggregator. This can only be opened from within the enclave.
-/// Inside an enclave this is deserialized to an AggregatedMessage
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct SignedPartialAggregate(pub Vec<u8>);
+pub type SignedPartialAggregate = crate::AggregatedMessage;
 
 /// Describes user registration information. This contains key encapsulations as well as a linkably
 /// attested signature pubkey.

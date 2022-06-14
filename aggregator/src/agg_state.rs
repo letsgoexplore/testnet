@@ -2,7 +2,7 @@ use crate::util::{AggregatorError, Result};
 
 use std::collections::BTreeSet;
 
-use common::enclave_wrapper::DcNetEnclave;
+use common::ecall_wrapper::DcNetEnclave;
 use interface::{
     compute_group_id, AggRegistrationBlob, EntityId, RateLimitNonce, RoundSubmissionBlob,
     SealedSigPrivKey, ServerPubKeyPackage, SignedPartialAggregate, DC_NET_ROUNDS_PER_WINDOW,

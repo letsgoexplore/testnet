@@ -3,20 +3,17 @@ extern crate sgx_types;
 
 use self::interface::*;
 use crate::crypto::Xor;
-use crate::messages_types::AggregatedMessage;
-use crate::unseal::{MarshallAs, UnsealableInto};
+use crate::unseal::UnsealableInto;
 use attestation::Attested;
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
-use core::convert::TryInto;
 use crypto;
-use crypto::{MultiSignable, SgxPrivateKey, SharedSecretsDb, SignMutable};
+use crypto::{MultiSignable, SgxPrivateKey, SignMutable};
 use interface::UserSubmissionReq;
 use log::debug;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
-use sgx_tcrypto::SgxEccHandle;
 use sgx_types::sgx_status_t::SGX_ERROR_SERVICE_UNAVAILABLE;
-use sgx_types::{SgxError, SgxResult};
+use sgx_types::SgxResult;
 use sha2::Digest;
 use sha2::Sha256;
 use std::collections::BTreeSet;
@@ -126,7 +123,7 @@ fn derive_reservation(
 
         let hash = h.result().to_vec();
 
-        (LittleEndian::read_u32(&hash))
+        LittleEndian::read_u32(&hash)
     };
 
     // hash three things to u32
@@ -213,7 +210,7 @@ pub fn user_submit_internal(
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
 
-    debug!("✅ shared secrets matches anytrust groupid");
+    debug!("✅ shared secrets matches anytrust group id");
 
     // Derive the pseudorandom rate-limiting nonce
     let rate_limit_nonce = crypto::derive_round_nonce(anytrust_group_id, round, &signing_sk, msg)?;
@@ -231,18 +228,15 @@ pub fn user_submit_internal(
     {
         let msg_slot = derive_msg_slot(cur_slot, prev_round_output)?;
         if round > 0 {
-            debug!("✅ user {} will try to send in slot {}", uid, msg_slot);
-
             check_reservation(&server_sig_pks, round, prev_round_output, cur_slot, cur_fp)?;
-
             debug!(
                 "✅ user {} is permitted to send msg at slot {} for round {}",
                 uid, msg_slot, round
             );
         } else {
-            debug!(
-                "✅ user {} is permitted to send at slot {} because it's r0w0",
-                uid, msg_slot
+            info!(
+                "✅ user is permitted to send at slot {} because it's round 0",
+                msg_slot
             );
         }
     } else {
@@ -250,7 +244,7 @@ pub fn user_submit_internal(
     }
 
     if !msg.is_cover() {
-        debug!(
+        info!(
             "✅ user is scheduled for slot {} for next round with fp {}",
             next_slot, next_fp,
         );
@@ -329,5 +323,5 @@ pub fn user_submit_internal(
     }
 
     // If everything is fine, we are ready to ratchet
-    Ok((agg_msg.marshal()?, shared_secrets.ratchet().seal_into()?))
+    Ok((agg_msg, shared_secrets.ratchet().seal_into()?))
 }

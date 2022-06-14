@@ -9,9 +9,9 @@ pub const FOOTPRINT_BIT_SIZE: usize = 3;
 pub const FOOTPRINT_N_SLOTS: usize = DC_NET_N_SLOTS * 4;
 
 /// The number of slots in a DC net message
-pub const DC_NET_N_SLOTS: usize = 128;
+pub const DC_NET_N_SLOTS: usize = 10_000;
 /// The number of bytes in each DC net slot
-pub const DC_NET_MESSAGE_LENGTH: usize = 256;
+pub const DC_NET_MESSAGE_LENGTH: usize = 160;
 
 /// There are these many rounds per window
 pub const DC_NET_ROUNDS_PER_WINDOW: u32 = 100;
@@ -32,3 +32,8 @@ pub fn round_window(round: u32) -> u32 {
         .checked_div(DC_NET_ROUNDS_PER_WINDOW)
         .unwrap()
 }
+
+pub const ENCLAVE_LOG_LEVEL: &str = "warn"; // "debug" or "info"
+
+/// Number of threads for deriving round secrets
+pub const N_THREADS_DERIVE_ROUND_SECRET: usize = 10;

@@ -1,6 +1,6 @@
 use crate::util::Result;
 
-use common::enclave_wrapper::DcNetEnclave;
+use common::ecall_wrapper::DcNetEnclave;
 use interface::{
     AggRegistrationBlob, EntityId, RoundOutput, RoundSubmissionBlob, SealedKemPrivKey,
     SealedSharedSecretDb, SealedSigPrivKey, ServerPubKeyPackage, ServerRegistrationBlob,

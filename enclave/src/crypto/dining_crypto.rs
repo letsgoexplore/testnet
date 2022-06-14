@@ -1,5 +1,5 @@
 use interface::*;
-use sgx_types::{sgx_sha256_init, sgx_status_t};
+use sgx_types::sgx_status_t;
 
 use std::prelude::v1::*;
 
@@ -7,11 +7,11 @@ use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
 use sha2::Sha256;
 
+use self::aes_rng::Aes128Rng;
 use super::*;
 use rand::SeedableRng;
 use sgx_tcrypto::SgxEccHandle;
 use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::Display;
 use std::fmt::Result as FmtResult;
 use std::fmt::{Debug, Formatter};
 
@@ -30,8 +30,6 @@ impl Debug for DiffieHellmanSharedSecret {
         f.write_str(&hex::encode(&self.0))
     }
 }
-
-use std::cell::RefCell;
 
 /// A SharedSecretsDb is a map of entity public keys to DH secrets
 /// This is used by both servers and users.
@@ -52,8 +50,6 @@ impl Debug for SharedSecretsDb {
             .finish()
     }
 }
-
-use std::convert::TryFrom;
 
 impl SharedSecretsDb {
     /// Derive shared secrets (using DH). Used at registration time
@@ -158,10 +154,6 @@ pub fn derive_round_nonce(
 
     Ok(RateLimitNonce::from_bytes(&h.result()))
 }
-
-/// A RoundSecret is an one-time pad for a given round derived from a set of
-/// DiffieHellmanSharedSecret, one for each anytrust server.
-pub type RoundSecret = DcRoundMessage;
 
 /// Derives a RoundSecret as the XOR of `HKDF(shared_secrets[i], round)` for all `i` in `Some(entity_ids_to_use)`,
 /// if entity_ids_to_use is None, for all `i` in `shared_secrets.keys()`.

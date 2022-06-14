@@ -7,14 +7,14 @@ pub trait Attested {
 
 impl Attested for ServerPubKeyPackage {
     fn verify_attestation(&self) -> bool {
-        warn!("TODO: actually check attestation for ServerPubKeyPackage");
+        // warn!("TODO: actually check attestation for ServerPubKeyPackage");
         true
     }
 }
 
 impl Attested for AttestedPublicKey {
     fn verify_attestation(&self) -> bool {
-        warn!("TODO: actually check attestation for ServerPubKeyPackage");
+        // warn!("TODO: actually check attestation for ServerPubKeyPackage");
         true
     }
 }

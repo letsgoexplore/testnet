@@ -11,7 +11,7 @@ use crate::{
     util::{base64_from_stdin, load_state, save_state, save_to_stdout, UserError},
 };
 
-use common::{cli_util, enclave_wrapper::DcNetEnclave};
+use common::{cli_util, ecall_wrapper::DcNetEnclave};
 use interface::{DcMessage, RoundOutput, ServerPubKeyPackage, UserMsg, DC_NET_MESSAGE_LENGTH};
 use std::{ffi::OsString, fs::File, path::Path};
 

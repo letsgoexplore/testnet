@@ -11,11 +11,12 @@ extern crate sgx_tunittest;
 #[macro_use]
 extern crate quick_error;
 
+extern crate aes_ctr;
 extern crate byteorder;
 extern crate hex;
 extern crate hkdf;
 extern crate rand;
-extern crate rand_chacha;
+extern crate rand_core;
 extern crate sha2;
 
 #[macro_use]

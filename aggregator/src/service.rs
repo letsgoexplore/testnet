@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, AggregatorError},
     AggregatorState,
 };
-use common::{cli_util, enclave_wrapper::DcNetEnclave};
+use common::{cli_util, ecall_wrapper::DcNetEnclave};
 use interface::RoundSubmissionBlob;
 
 use core::ops::DerefMut;

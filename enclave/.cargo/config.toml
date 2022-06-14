@@ -1,0 +1,5 @@
+[build]
+rustflags =[
+    "-Ctarget-feature=+aes,+ssse3",
+    "--emit","asm"
+]

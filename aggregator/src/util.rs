@@ -2,7 +2,7 @@ use crate::agg_state::AggregatorState;
 
 use std::{fs::File, io};
 
-use common::{cli_util, enclave_wrapper::EnclaveError};
+use common::{cli_util, ecall_wrapper::EnclaveError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

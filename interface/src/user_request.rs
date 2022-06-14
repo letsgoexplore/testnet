@@ -38,11 +38,11 @@ impl std::cmp::PartialEq for DcMessage {
 
 impl Debug for DcMessage {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        // Try interpreting as UTF-8. If it fails, write out the base64
-        if let Ok(s) = String::from_utf8(self.0.to_vec()) {
-            f.write_str(&s)
+        if self.0.iter().all(|&b: &u8| b == 0) {
+            // if all zero, return "EMPTY"
+            f.write_str("EMPTY")
         } else {
-            f.write_str(&base64::encode(&self.0))
+            f.write_str(&hex::encode(&self.0))
         }
     }
 }
@@ -129,6 +129,10 @@ impl DcRoundMessage {
     }
 }
 
+/// A RoundSecret is an one-time pad for a given round derived from a set of
+/// DiffieHellmanSharedSecret shared by user and anytrust servers.
+pub type RoundSecret = DcRoundMessage;
+
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EntityId(pub [u8; USER_ID_LENGTH]);
@@ -160,11 +164,11 @@ impl From<[u8; USER_ID_LENGTH]> for EntityId {
 impl From<&SgxProtectedKeyPub> for EntityId {
     fn from(pk: &SgxProtectedKeyPub) -> Self {
         let mut hasher = Sha256::new();
-        hasher.update("anytrust_group_id");
-        hasher.update(pk.gx);
-        hasher.update(pk.gy);
+        hasher.input("anytrust_group_id");
+        hasher.input(pk.gx);
+        hasher.input(pk.gy);
 
-        let digest = hasher.finalize();
+        let digest = hasher.result();
 
         let mut id = EntityId::default();
         id.0.copy_from_slice(&digest);
@@ -190,11 +194,11 @@ pub fn compute_group_id(ids: &BTreeSet<EntityId>) -> EntityId {
     // The group ID of a set of entities is the hash of their IDs, concatenated in ascending order.
     // There's also the context str of "grp" prepended.
     let mut hasher = Sha256::new();
-    hasher.update(b"grp");
+    hasher.input(b"grp");
     for id in ids {
-        hasher.update(&id.0);
+        hasher.input(&id.0);
     }
-    let digest = hasher.finalize();
+    let digest = hasher.result();
 
     let mut id = EntityId::default();
     id.0.copy_from_slice(&digest);
@@ -211,7 +215,7 @@ pub fn compute_anytrust_group_id(keys: &[SgxSigningPubKey]) -> EntityId {
 /// number may not exceed DC_NET_MSGS_PER_WINDOW. If a token ever repeats then the aggregator will
 /// know that the user is disobeying its talking limit.
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Default)]
 pub struct RateLimitNonce([u8; 32]);
 
 impl RateLimitNonce {
@@ -228,6 +232,12 @@ impl Rand for RateLimitNonce {
         let mut nonce = RateLimitNonce::default();
         rng.fill_bytes(&mut nonce.0);
         nonce
+    }
+}
+
+impl Debug for RateLimitNonce {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(&hex::encode(self.0))
     }
 }
 
@@ -270,4 +280,26 @@ pub struct UserSubmissionReq {
     pub shared_secrets: SealedSharedSecretDb,
     /// A list of server public keys (can be verified using the included attestation)
     pub server_pks: Vec<ServerPubKeyPackage>,
+}
+
+use crate::SgxSignature;
+
+/// A (potentially aggregated) message that's produced by an enclave
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct AggregatedMessage {
+    pub round: u32,
+    pub anytrust_group_id: EntityId,
+    pub user_ids: BTreeSet<EntityId>,
+    /// This is only Some for user-submitted messages
+    pub rate_limit_nonce: Option<RateLimitNonce>,
+    pub aggregated_msg: DcRoundMessage,
+    pub tee_sig: SgxSignature,
+    pub tee_pk: SgxSigningPubKey,
+}
+
+impl AggregatedMessage {
+    pub fn is_empty(&self) -> bool {
+        self.user_ids.is_empty()
+    }
 }

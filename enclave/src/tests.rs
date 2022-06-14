@@ -1,5 +1,4 @@
 use crate::interface::*;
-use crate::messages_types::AggregatedMessage;
 use crate::sgx_tunittest::*;
 use crate::std::prelude::v1::*;
 use crypto;
