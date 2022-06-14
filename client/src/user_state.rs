@@ -1,6 +1,6 @@
 use crate::util::Result;
 
-use common::ecall_wrapper::DcNetEnclave;
+use common::enclave::DcNetEnclave;
 use serde::{Deserialize, Serialize};
 
 use interface::{

@@ -2,3 +2,6 @@
 
 members = ["common", "client", "interface", "aggregator", "server", "enclave" ]
 #exclude = ["enclave"]
+
+[profile.release]
+lto = true

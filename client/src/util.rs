@@ -6,7 +6,7 @@ use std::{
     path::Path,
 };
 
-use common::{cli_util, ecall_wrapper::EnclaveError};
+use common::{cli_util, enclave::EnclaveError};
 use serde::Serialize;
 use thiserror::Error;
 
