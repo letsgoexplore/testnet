@@ -37,3 +37,16 @@ pub fn new_user(
 
     Ok((server_secrets.seal_into()?, sk.seal_into()?, pk))
 }
+
+
+pub fn new_user_batch(
+    (anytrust_server_pks, n_user): &(Vec<ServerPubKeyPackage>, usize),
+) -> SgxResult<Vec<(SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob)>> {
+    let mut users = vec![];
+    for _ in 0..*n_user {
+        let u = new_user(anytrust_server_pks)?;
+        users.push(u);
+    }
+
+    Ok(users)
+}

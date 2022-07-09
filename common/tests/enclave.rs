@@ -283,11 +283,9 @@ fn many_user_one_server() {
     info!("created a server");
 
     // create a bunch of fake user
-    let users = (0..num_of_users)
-        .map(|_| enc.new_user(&server_pks).unwrap())
-        .collect::<Vec<_>>();
+    let users = enc.new_user_batch(&server_pks, num_of_users).unwrap();
     let user_pks = (0..num_of_users)
-        .map(|i| users[i].3.clone())
+        .map(|i| users[i].2.clone())
         .collect::<Vec<_>>();
 
     info!("{} user created", num_of_users);
@@ -341,7 +339,7 @@ fn many_user_one_server() {
         };
 
         let req_0 = UserSubmissionReq {
-            user_id: user.2,
+            user_id: EntityId::from(&user.2),
             anytrust_group_id: user.0.anytrust_group_id(),
             round: 0,
             msg: msg0,
@@ -374,9 +372,9 @@ fn many_user_one_server() {
     };
 
     for unblind_func in &[
-        UnblindMethod::SingleThreadUnblind,
+        // UnblindMethod::SingleThreadUnblind,
         UnblindMethod::MultiThreadUnblind(10),
-        UnblindMethod::OutOfEnclaveMultiThreadUnblind(10),
+        // UnblindMethod::OutOfEnclaveMultiThreadUnblind(10),
     ] {
         info!("========= decryption begins");
         let start = Instant::now();

@@ -346,6 +346,18 @@ impl DcNetEnclave {
         Ok((u.0, u.1, EntityId::from(&u.2), u.2))
     }
 
+    pub fn new_user_batch(
+        &self,
+        server_pks: &[ServerPubKeyPackage],
+        n_users: usize,
+    ) -> EnclaveResult<Vec<(
+        SealedSharedSecretDb,
+        SealedSigPrivKey,
+        UserRegistrationBlob,
+    )>> {
+        ecall_allowed::new_user_batch(self.enclave.geteid(), (server_pks, n_users))
+    }
+
     /// Create a new TEE protected secret key for an aggregator.
     /// Returns sealed private key, entity id, and an AggRegistrationBlob that contains the
     /// attestation information to send to anytrust nodes.

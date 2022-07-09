@@ -53,22 +53,22 @@ pub extern "C" fn ecall_entrypoint(
 
     // make sure this matches exact with that in enclave_wrapper.rs
     let r = match_ecall_ids! {
-            ecall_id, inp, inp_len, output, output_cap, output_used,
-            (
-                EcallNewSgxKeypair,
-                String,
-                (Vec<u8>, AttestedPublicKey), // (sealed sk, public key)
-                |role: &String| {
+        ecall_id, inp, inp_len, output, output_cap, output_used,
+        (
+            EcallNewSgxKeypair,
+            String,
+            (Vec<u8>, AttestedPublicKey), // (sealed sk, public key)
+            |role: &String| {
                 let (sk, pk) = keygen::new_sgx_keypair_ext_internal(role)?;
-
                 let sealed_sk: SealedSigPrivKey = sk.seal_into()?;
                 Ok((sealed_sk.0, pk))
-            }),
-            (
-                EcallUnsealToPublicKey,
-               Vec<u8>, // sealed sk
-                SgxProtectedKeyPub,
-                |sealed_sk: &Vec<u8>| {
+            }
+        ),
+        (
+            EcallUnsealToPublicKey,
+           Vec<u8>, // sealed sk
+            SgxProtectedKeyPub,
+            |sealed_sk: &Vec<u8>| {
                 let sk: SgxPrivateKey = SealedSigPrivKey(sealed_sk.to_vec()).unseal_into()?;
 
                 SgxProtectedKeyPub::try_from(&sk)
@@ -81,6 +81,14 @@ pub extern "C" fn ecall_entrypoint(
             // output
             (SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob),
             user::new_user
+        ),
+        (
+            EcallNewUserBatch,
+            // input
+            (Vec < ServerPubKeyPackage >, usize),
+            // output
+            Vec<(SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob)>,
+            user::new_user_batch
         ),
         (
             EcallNewServer,
@@ -232,9 +240,9 @@ fn generic_ecall<I, O>(
     output_used: *mut usize,
     internal_fn: fn(&I) -> SgxResult<O>,
 ) -> sgx_status_t
-where
-    I: serde::de::DeserializeOwned,
-    O: serde::Serialize,
+    where
+        I: serde::de::DeserializeOwned,
+        O: serde::Serialize,
 {
     let start_time = std::time::Instant::now();
 

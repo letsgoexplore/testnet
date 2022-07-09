@@ -129,6 +129,12 @@ pub mod ecall_allowed {
             new_user
         ),
         (
+            EcallNewUserBatch,
+            (&[ServerPubKeyPackage], usize), // input
+            Vec<(SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob)>, // output
+            new_user_batch
+        ),
+        (
             EcallNewServer,
             // input
             (),
