@@ -27,26 +27,34 @@ pub struct UserState {
 }
 
 impl UserState {
-    /// Creates a new user state and registration blob for the server
-    pub fn new(
+    /// Creates a `n` UserStates and registration blobs for the server
+    pub fn new_multi(
         enclave: &DcNetEnclave,
+        n: usize,
         pubkeys: Vec<ServerPubKeyPackage>,
-    ) -> Result<(UserState, UserRegistrationBlob)> {
-        let (sealed_shared_secrets, sealed_usk, user_id, reg_blob) = enclave.new_user(&pubkeys)?;
+    ) -> Result<Vec<(UserState, UserRegistrationBlob)>> {
+        let vec = enclave.new_user_batch(&pubkeys, n)?;
 
-        let kem_pubkeys: Vec<KemPubKey> = pubkeys.iter().map(|p| p.kem).collect();
-        let anytrust_group_id = compute_anytrust_group_id(&kem_pubkeys);
+        let users_and_reg_blobs = vec
+            .into_iter()
+            .map(|(sealed_shared_secrets, sealed_usk, reg_blob)| {
+                let user_id = EntityId::from(&reg_blob);
+                let kem_pubkeys: Vec<KemPubKey> = pubkeys.iter().map(|p| p.kem).collect();
+                let anytrust_group_id = compute_anytrust_group_id(&kem_pubkeys);
 
-        let state = UserState {
-            user_id,
-            anytrust_group_id,
-            signing_key: sealed_usk.to_owned(),
-            shared_secrets: sealed_shared_secrets.to_owned(),
-            anytrust_group_keys: pubkeys,
-            times_participated: 0,
-        };
+                let state = UserState {
+                    user_id,
+                    anytrust_group_id,
+                    signing_key: sealed_usk.to_owned(),
+                    shared_secrets: sealed_shared_secrets.to_owned(),
+                    anytrust_group_keys: pubkeys.clone(),
+                    times_participated: 0,
+                };
+                (state, reg_blob)
+            })
+            .collect();
 
-        Ok((state, reg_blob))
+        Ok(users_and_reg_blobs)
     }
 
     pub fn get_times_participated(&self) -> u32 {

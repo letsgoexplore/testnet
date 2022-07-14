@@ -82,7 +82,7 @@ fn main() -> Result<(), UserError> {
                     .default_value("1")
                     .help(
                         "The number of registrations to make. If this is set, a counter will be \
-                        appended to the provided user-state file. STDOUT is newline-separated \
+                        appended to the provided user-state filename. STDOUT is newline-separated \
                         registration blobs."
                     )
                 )
@@ -165,7 +165,7 @@ fn main() -> Result<(), UserError> {
 
         // Make a new state and user registration. Save the state and and print the registration
         if num_regs == 1 {
-            let (state, reg_blob) = UserState::new(&enclave, pubkeys)?;
+            let (state, reg_blob) = UserState::new_multi(&enclave, 1, pubkeys)?.pop().unwrap();
             save_state(&state_path, &state)?;
             save_to_stdout(&reg_blob)?;
         } else {
@@ -174,7 +174,10 @@ fn main() -> Result<(), UserError> {
             let ext = state_path.extension().unwrap_or(&empty_str);
             let file_stem = state_path.file_stem().unwrap_or(&empty_str);
 
-            for i in 1..=num_regs {
+            // Make `num_regs` new users
+            let states_and_regs =
+                UserState::new_multi(&enclave, num_regs as usize, pubkeys.clone())?;
+            for (i, (state, reg_blob)) in states_and_regs.into_iter().enumerate() {
                 // Make a new state filename. It's "$file$i.$ext"
                 let filename_i = format!(
                     "{}{}.{}",
@@ -183,9 +186,6 @@ fn main() -> Result<(), UserError> {
                     ext.to_str().unwrap()
                 );
                 let state_path_i = state_path.with_file_name(filename_i);
-
-                // Make a new user
-                let (state, reg_blob) = UserState::new(&enclave, pubkeys.clone())?;
 
                 // Save to the state
                 save_state(&state_path_i, &state)?;
@@ -222,10 +222,8 @@ fn main() -> Result<(), UserError> {
         let msg = base64_from_stdin()?;
         assert!(
             msg.len() <= DC_NET_MESSAGE_LENGTH,
-            format!(
-                "input message must be less than {} bytes long",
-                DC_NET_MESSAGE_LENGTH
-            )
+            "input message must be less than {} bytes long",
+            DC_NET_MESSAGE_LENGTH
         );
 
         // Pad out the message and put it in the correct wrapper
