@@ -160,9 +160,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Feed them to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
         let mut state = load_state(&state_path)?;
-        for reg_blob in reg_blobs {
-            state.recv_user_registration(&enclave, &reg_blob)?;
-        }
+        state.recv_user_registrations(&enclave, &reg_blobs)?;
+
         save_state(&state_path, &state)?;
 
         println!("OK");

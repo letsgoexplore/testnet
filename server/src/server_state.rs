@@ -82,16 +82,16 @@ impl ServerState {
     }
 
     /// Registers a user with this server
-    pub fn recv_user_registration(
+    pub fn recv_user_registrations(
         &mut self,
         enclave: &DcNetEnclave,
-        input_blob: &UserRegistrationBlob,
+        input_blobs: &[UserRegistrationBlob],
     ) -> Result<()> {
-        enclave.recv_user_registration(
+        enclave.recv_user_registration_batch(
             &mut self.pubkeys,
             &mut self.shared_secrets,
             &self.decap_key,
-            input_blob,
+            input_blobs,
         )?;
 
         Ok(())
