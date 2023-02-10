@@ -158,9 +158,9 @@ fn derive_reservation(
 
     (
         prev_slot_idx % FOOTPRINT_N_SLOTS,
-        prev_slot_val,
+        prev_slot_val % (DC_NET_N_SLOTS as u32),
         next_slot_idx % FOOTPRINT_N_SLOTS,
-        next_slot_val,
+        next_slot_val % (DC_NET_N_SLOTS as u32),
     )
 }
 

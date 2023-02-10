@@ -182,7 +182,7 @@ fn main() -> Result<(), UserError> {
                 let filename_i = format!(
                     "{}{}.{}",
                     file_stem.to_str().unwrap(),
-                    i,
+                    i + 1,
                     ext.to_str().unwrap()
                 );
                 let state_path_i = state_path.with_file_name(filename_i);
