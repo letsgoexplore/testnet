@@ -31,7 +31,8 @@ MSGS_STR=";testing;hello;world;yo"
 build() {
     make -C enclave
     for d in "client" "server" "aggregator"; do
-        pushd $d && cargo build --release && popd
+        # pushd $d && cargo build --release && popd
+        pushd $d && cargo build && popd
     done
 }
 
@@ -83,7 +84,8 @@ clean() {
 setup_servers() {
     touch $USER_SERVERKEYS
     cd server
-    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
+    # CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
+    CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-server
 
     # Accumulate the server registration data in this variable. The separator we use is ';'
     SERVER_REGS=""
@@ -138,7 +140,8 @@ setup_servers() {
 # Creates new aggregators wrt the server KEM pubkeys
 setup_aggregators() {
     cd aggregator
-    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-aggregator
+    # CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-aggregator
+    CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-aggregator
 
     # Accumulate the aggregator registration data in this variable. The separator we use is ';'
     AGG_REGS=""
@@ -166,7 +169,8 @@ setup_aggregators() {
 
     # Now do the registrations
     cd ../server
-    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
+    # CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
+    CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-server
 
     # Read the regs into a variable
     IFS=';' read -ra AGG_REGS <<< "$AGG_REGS"
@@ -186,7 +190,8 @@ setup_aggregators() {
 # Creates new clients wrt the server KEM pubkeys
 setup_clients() {
     cd client
-    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-client
+    # CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-client
+    CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-client
 
     # Accumulate the client registration data in this variable. The separator we use is ';'
     USER_REGS=""
@@ -201,7 +206,8 @@ setup_clients() {
 
     # Now do the registrations
     cd ../server
-    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
+    # CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
+    CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-server
 
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
@@ -215,7 +221,8 @@ setup_clients() {
 # Starts round $ROUND with all the aggregators
 start_round() {
     cd aggregator
-    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-aggregator
+    # CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-aggregator
+    CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-aggregator
 
     echo "Starting round $ROUND"
 
@@ -233,7 +240,8 @@ start_round() {
 # Encrypts the messages and sends them to the aggregators
 encrypt_msgs() {
     cd client
-    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-client
+    # CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-client
+    CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-client
 
     # Read the messages into a variable
     IFS=';' read -ra MSGS <<< "$MSGS_STR"
@@ -283,7 +291,8 @@ encrypt_msgs() {
 
     # Then send user messages to the base-level aggregators
     cd aggregator
-    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-aggregator
+    # CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-aggregator
+    CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-aggregator
 
     # Now send them to the base-level aggregators, parititoning the users
     i=0
@@ -341,7 +350,8 @@ propagate_aggregates() {
 # Decrypts the aggregated messages using the server's secrets
 decrypt_msgs() {
     cd server
-    CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
+    # CMD_PREFIX=/tmp/sgxdcnet/target/release/sgxdcnet-server
+    CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-server
 
     # Create and clear the unblinded shares file
     touch "../$SERVER_SHARES"
