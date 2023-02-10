@@ -243,7 +243,7 @@ impl DcNetEnclave {
         signing_key: &SealedSigPrivKey,
         shared_secrets: &SealedSharedSecretDb,
     ) -> EnclaveResult<(UnblindedAggregateShareBlob, SealedSharedSecretDb)> {
-        self.unblind_aggregate_insecure(
+        self.unblind_aggregate_mt(
             toplevel_agg,
             signing_key,
             shared_secrets,
