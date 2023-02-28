@@ -17,6 +17,8 @@ use std::{ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};
 
+use log::debug;
+
 fn main() -> Result<(), UserError> {
     // Do setup
     env_logger::init();
@@ -163,16 +165,24 @@ fn main() -> Result<(), UserError> {
         let num_regs = cli_util::parse_u32(matches.value_of("num-regs").unwrap())?;
         let state_path = Path::new(matches.value_of("user-state").unwrap());
 
+        let empty_str = OsString::default();
+        let ext = state_path.extension().unwrap_or(&empty_str);
+        let file_stem = state_path.file_stem().unwrap_or(&empty_str);
+    
         // Make a new state and user registration. Save the state and and print the registration
         if num_regs == 1 {
             let (state, reg_blob) = UserState::new_multi(&enclave, 1, pubkeys)?.pop().unwrap();
-            save_state(&state_path, &state)?;
+            let filename = format!("{}{}.{}",
+                file_stem.to_str().unwrap(),
+                1,
+                ext.to_str().unwrap()
+            );
+            let curr_state_path = state_path.with_file_name(filename);
+
+            save_state(&curr_state_path, &state)?;
             save_to_stdout(&reg_blob)?;
         } else {
             // Output n state files and print n newline-separated registration blobs
-            let empty_str = OsString::default();
-            let ext = state_path.extension().unwrap_or(&empty_str);
-            let file_stem = state_path.file_stem().unwrap_or(&empty_str);
 
             // Make `num_regs` new users
             let states_and_regs =
@@ -254,6 +264,8 @@ fn main() -> Result<(), UserError> {
             times_participated: state.get_times_participated(),
         };
 
+        debug!("msg before submit: {:?}", msg);
+
         // Now encrypt the message and output it
         let ciphertext = state.submit_round_msg(&enclave, round, msg)?;
         save_to_stdout(&ciphertext)?;
@@ -302,6 +314,8 @@ fn main() -> Result<(), UserError> {
         } else {
             Some(state_path)
         };
+
+        // debug!("user_state_path: {:?}", user_state_path);
 
         let state = service::ServiceState {
             user_state,

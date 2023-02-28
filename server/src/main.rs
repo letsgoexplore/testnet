@@ -222,7 +222,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Log the raw round result in base64
         let round = round_output.round;
         let round_msg = &round_output.dc_msg.aggregated_msg.as_row_major();
-        info!("round {} output: {}", round, base64::encode(round_msg));
+        // info!("round {} output: {}", round, base64::encode(round_msg));
+        info!("round {} output: {:?}", round, round_msg);
     }
 
     if let Some(matches) = matches.subcommand_matches("start-service") {

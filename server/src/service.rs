@@ -1,5 +1,5 @@
 use crate::{
-    util::{save_state, ServerError},
+    util::{save_state, save_output, ServerError},
     ServerState,
 };
 use common::{cli_util, enclave::DcNetEnclave};
@@ -9,7 +9,7 @@ use core::ops::DerefMut;
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use actix_rt::Arbiter;
@@ -67,6 +67,8 @@ impl ServiceState {
 /// Finish the round as the anytrust leader. This means computing the round output and clearing the
 /// caches.
 fn leader_finish_round(state: &mut ServiceState) {
+    let start = Instant::now();
+
     let ServiceState {
         ref server_state,
         ref mut round_outputs,
@@ -82,11 +84,25 @@ fn leader_finish_round(state: &mut ServiceState) {
         .derive_round_output(enclave, &round_shares)
         .unwrap();
     let round = output.round;
+
+    debug!("output: {:?}", output);
+    
+    let mut output_path = "../server/round_output.txt".to_owned();
+    output_path.insert(22, std::char::from_digit(round, 10).unwrap());
+    debug!("output path: {:?}", output_path);
+    match save_output(&output_path[..], &output) {
+        Err(e) => error!("failed to save round output: {:?}", e),
+        _ => (),
+    };
+    
     round_outputs.insert(round, output);
     info!("Output of round {} now available", round);
 
     // Clear the state
     round_shares.clear();
+
+    let duration = start.elapsed();
+    debug!("[server] leader_finish_round: {:?}", duration);
 }
 
 /// Sends the given unblinded share to `base_url/submit-share`
@@ -125,6 +141,8 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
 async fn submit_agg(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
+    let start = Instant::now();
+
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
@@ -143,8 +161,14 @@ async fn submit_agg(
         } = state_handle.deref_mut();
         let group_size = server_state.anytrust_group_size;
 
+        let unblind_start = Instant::now();
         // Unblind the input
         let share = server_state.unblind_aggregate(enclave, &agg_data)?;
+        let unblind_duration = unblind_start.elapsed();
+        debug!("[server] unblind_aggregate: {:?}", unblind_duration);
+
+
+        // debug!("unblinded share: {:?}", share);
 
         match leader_url {
             // We're the leader
@@ -181,6 +205,9 @@ async fn submit_agg(
             _ => (),
         }
     });
+
+    let duration = start.elapsed();
+    debug!("[server] submit_agg: {:?}", duration);
 
     Ok(HttpResponse::Ok().body("OK\n"))
 }
@@ -296,8 +323,13 @@ async fn round_msg(
         Some(round_output) => {
             // Give the raw payload
             let blob = round_output.dc_msg.aggregated_msg.as_row_major();
+            debug!("round-msg: {:?}", blob);
 
             let body = base64::encode(&blob);
+            // let body = match str::from_utf8(&blob) {
+            //     Ok(v) => v,
+            //     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+            // };
             HttpResponse::Ok().body(body)
         }
         // If the given round's output doesn't exist in memory, error out

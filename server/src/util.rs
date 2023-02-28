@@ -1,4 +1,5 @@
 use crate::server_state::ServerState;
+use interface::RoundOutput;
 
 use common::{cli_util, enclave::EnclaveError};
 
@@ -27,6 +28,11 @@ pub(crate) fn load_state(save_path: &str) -> Result<ServerState> {
 pub(crate) fn save_state(save_path: &str, state: &ServerState) -> Result<()> {
     let save_file = File::create(save_path)?;
     Ok(cli_util::save(save_file, state)?)
+}
+
+pub(crate) fn save_output(save_path: &str, output: &RoundOutput) -> Result<()> {
+    let save_file = File::create(save_path)?;
+    Ok(cli_util::save(save_file, output)?)
 }
 
 pub(crate) fn load_from_stdin<D: for<'a> Deserialize<'a>>() -> Result<D> {

@@ -8,7 +8,7 @@ use interface::{DcMessage, RoundOutput, RoundSubmissionBlob, UserMsg, DC_NET_MES
 use core::ops::DerefMut;
 use std::{
     sync::{Arc, Mutex},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use actix_web::{
@@ -48,6 +48,8 @@ pub(crate) struct ServiceState {
 async fn encrypt_msg(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
+    let start = Instant::now();
+
     // Unpack state
     let mut handle = state.get_ref().lock().unwrap();
     let ServiceState {
@@ -59,8 +61,11 @@ async fn encrypt_msg(
         ..
     } = handle.deref_mut();
 
+    // debug!("payload: {:?}", payload);
     // The payload is msg COMMA prev_rount_output
     let mut payload_it = payload.split(',');
+
+    // debug!("payload_it: {:?}", payload_it);
 
     // Load the message first. It's just a base64 string of length <= DC_NET_MESSAGE_LENGTH
     let dc_msg: DcMessage = {
@@ -82,25 +87,44 @@ async fn encrypt_msg(
             )));
         }
 
+        debug!("msg_bytes: {:?}", msg_bytes);
+
         // Copy into a DC net buffer
         let mut buf = DcMessage::default();
         buf.0[..msg_bytes.len()].copy_from_slice(&msg_bytes);
         buf
     };
 
+    // debug!("dc_msg: {:?}", dc_msg.0);
+
     let encoded_round_output = payload_it.next();
     let prev_round_output: RoundOutput = match encoded_round_output {
         Some(s) => cli_util::load(s.trim().as_bytes())?,
         None => RoundOutput::default(),
     };
+
+    // debug!("prev_round_output: {:?}", prev_round_output);
+
     let msg = UserMsg::TalkAndReserve {
         msg: dc_msg,
         prev_round_output,
         times_participated: user_state.get_times_participated(),
     };
 
+    debug!("msg before submit: {:?}", msg);
+
     // Encrypt the message and send it
+
+    let start_submit = Instant::now();
     let ciphertext = user_state.submit_round_msg(&enclave, *round, msg)?;
+    let duration_submit = start_submit.elapsed();
+    debug!("[client] submit_round_msg: {:?}", duration_submit);
+
+
+    debug!("round: {}", ciphertext.round);
+    debug!("scheduling_msg.len(): {}", ciphertext.aggregated_msg.scheduling_msg.len());
+    debug!("aggregated_msg.len(): {} * {}", ciphertext.aggregated_msg.aggregated_msg.num_rows(), ciphertext.aggregated_msg.aggregated_msg.num_columns());
+
     send_ciphertext(&ciphertext, agg_url).await;
 
     // Increment the round and save the user state
@@ -112,6 +136,9 @@ async fn encrypt_msg(
             _ => (),
         }
     });
+
+    let duration = start.elapsed();
+    debug!("[client] encrypt-msg: {:?}", duration);
 
     Ok(HttpResponse::Ok().body("OK\n"))
 }
@@ -169,7 +196,7 @@ async fn send_cover(state: web::Data<Arc<Mutex<ServiceState>>>) -> Result<HttpRe
     // Encrypt an empty message and send it
     let ciphertext = user_state.submit_round_msg(&enclave, *round, UserMsg::Cover)?;
     send_ciphertext(&ciphertext, agg_url).await;
-
+    debug!("send success!");
     // Increment the round and save the user state
     *round += 1;
     user_state_path.as_ref().map(|path| {
@@ -185,6 +212,8 @@ async fn send_cover(state: web::Data<Arc<Mutex<ServiceState>>>) -> Result<HttpRe
 
 /// Sends a ciphertext to base_url/submit-agg
 async fn send_ciphertext(ciphertext: &RoundSubmissionBlob, base_url: &str) {
+    let start = Instant::now();
+
     // Serialize the ciphertext
     let mut body = Vec::new();
     cli_util::save(&mut body, ciphertext).expect("could not serialize ciphertext");
@@ -196,17 +225,25 @@ async fn send_ciphertext(ciphertext: &RoundSubmissionBlob, base_url: &str) {
         "Couldn't not append '/submit-agg' to forward URL {}",
         base_url
     ));
+
+    debug!("post_path: {:?}", post_path);
+    debug!("body.len(): {:?}", body.len());
+
     debug!("Sending");
+
     match client.post(post_path).send_body(body).await {
         Ok(res) => {
             if res.status() == StatusCode::OK {
                 info!("Successfully sent ciphertext")
             } else {
-                error!("Could not send ciphertext: {:?}", res)
+                error!("Could not send ciphertext1: {:?}", res)
             }
         }
-        Err(e) => error!("Could not send ciphertext: {:?}", e),
+        Err(e) => error!("Could not send ciphertext2: {:?}", e),
     }
+
+    let duration = start.elapsed();
+    debug!("[client] send_ciphertext: {:?}", duration);
 }
 
 #[actix_rt::main]

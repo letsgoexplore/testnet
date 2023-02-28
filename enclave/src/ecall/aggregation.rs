@@ -62,6 +62,7 @@ pub fn add_to_aggregate_internal(
 
     // if the current aggregation is empty we create a single-msg aggregation
     if current_aggregation.is_empty() {
+        debug!("current aggregation is empty");
         let mut agg = incoming_msg.clone();
         agg.sign_mut(&tee_signing_key)?;
         return Ok((incoming_msg.clone(), new_observed_nonces));
@@ -88,8 +89,8 @@ pub fn add_to_aggregate_internal(
         }
 
         debug!("✅ various checks passed now we can aggregate");
-        // debug!("incoming msg: {:?}", incoming_msg);
-        // debug!("current agg: {:?}", current_aggregation);
+        debug!("incoming msg: {:?}", incoming_msg);
+        debug!("current agg: {:?}", current_aggregation);
 
         // aggregate in the new message
         current_aggregation.user_ids.extend(&incoming_msg.user_ids);

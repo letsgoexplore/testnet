@@ -19,14 +19,14 @@ AGG_SERVICE_ADDR="localhost:8785"
 SERVER_SERVICE_ADDR="localhost:8122"
 
 NUM_SERVERS=1
-NUM_USERS=2
+NUM_USERS=50
 NUM_AGGREGATORS=1
-NUM_USERS_PER_AGGREGATOR=2
+NUM_USERS_PER_AGGREGATOR=50
 
-NUM_TEST_ROUNDS=3
+NUM_TEST_ROUNDS=2
 
 # We define four messages, separated by semicolons. The leading ; is because we index by 1
-MSGS_STR=";testing;hello;world;yo"
+# MSGS_STR=";testing;hello;world;yo"
 
 build() {
     make -C enclave
@@ -244,12 +244,12 @@ encrypt_msgs() {
     CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-client
 
     # Read the messages into a variable
-    IFS=';' read -ra MSGS <<< "$MSGS_STR"
+    # IFS=';' read -ra MSGS <<< "$MSGS_STR"
 
-    if [[ ${#MSGS[@]} -lt $NUM_USERS ]]; then
-        echo "Error: we don't have enough sample messages for $NUM_USERS users"
-        exit -1
-    fi
+    # if [[ ${#MSGS[@]} -lt $NUM_USERS ]]; then
+    #     echo "Error: we don't have enough sample messages for $NUM_USERS users"
+    #     exit -1
+    # fi
 
     # Accumulate the ciphertexts. The separator we use is ';'
     CIPHERTEXTS=""
@@ -257,7 +257,8 @@ encrypt_msgs() {
     # Encrypt all the messages in sequence
     for i in $(seq 1 $NUM_USERS); do
         STATE="${USER_STATE%.txt}$i.txt"
-        MSG="${MSGS[$i]}"
+        # MSG="${MSGS[$i]}"
+        MSG="hello"
         # Set the round output filename. If there was no previous round, it's /dev/null
         PREV_ROUND_OUTPUT=""
         if [[ $ROUND -eq 0 ]]; then
@@ -270,7 +271,7 @@ encrypt_msgs() {
         CIPHERTEXT=$(
             echo -ne "$MSG" \
             | base64 \
-            | $CMD_PREFIX encrypt-msg \
+            | RUST_LOG=debug $CMD_PREFIX encrypt-msg \
                   --user-state "../$STATE" \
                   --round $ROUND \
                   --prev-round-output $PREV_ROUND_OUTPUT
@@ -305,7 +306,7 @@ encrypt_msgs() {
         fi
         STATE="${AGG_STATE%.txt}$CURRENT_AGG.txt"
 
-        echo "$CIPHERTEXT" | $CMD_PREFIX input --agg-state "../$STATE"
+        echo "$CIPHERTEXT" | RUST_LOG=debug $CMD_PREFIX input --agg-state "../$STATE"
 
         i=$(($i + 1))
     done
@@ -389,7 +390,7 @@ clean
 build
 check
 
-start_time=$(date +%s)
+# start_time=$(date +%s)
 setup_servers
 #end_time=$(date +%s)
 #elapsed=$(( end_time - start_time ))

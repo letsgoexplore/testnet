@@ -23,7 +23,7 @@ use actix_web::{
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError,
 };
 use futures::future::FutureExt;
-use log::{error, info};
+use log::{error, info, debug};
 use thiserror::Error;
 
 // We take 5 seconds at the end of every round for the aggregates to propagate up the tree
@@ -56,6 +56,7 @@ pub(crate) struct ServiceState {
 async fn submit_agg(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
+    let start = std::time::Instant::now();
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
@@ -71,6 +72,10 @@ async fn submit_agg(
     // Add to aggregate
     agg_state.add_to_aggregate(enclave, &agg_data)?;
 
+    // debug!("[agg] submit-agg success");
+    let duration = start.elapsed();
+    debug!("[agg] submit_agg: {:?}", duration);
+
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
@@ -79,16 +84,22 @@ async fn submit_agg(
 async fn force_round_end(
     state: web::Data<Arc<Mutex<ServiceState>>>,
 ) -> Result<HttpResponse, ApiError> {
+    let start = std::time::Instant::now();
+
     let state = state.get_ref();
 
     // End the round. Serialize the aggregate and forward it in the background. Time out
     // after 1 second
-    let send_timeout = Duration::from_secs(1);
+    let send_timeout = Duration::from_secs(5);
     let (agg_payload, forward_urls) = get_agg_payload(&*state);
+
+    debug!("agg_payload.len: {}", agg_payload.len());
+    debug!("forward_urls: {:?}", forward_urls);
+
     spawn(
         actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(|r| {
             if r.is_err() {
-                error!("timeout for sending aggregation was hit");
+                error!("sending aggregation was hit");
             }
         }),
     );
@@ -96,12 +107,17 @@ async fn force_round_end(
     // Start the next round immediately
     start_next_round(state.clone());
 
+    let duration = start.elapsed();
+    debug!("[agg] force_round_end: {:?}", duration);
+
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
 /// Finalizes and serializes the current aggregator state. Returns the pyaload nad all the
 /// forwarding URLs
 fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
+    let start = std::time::Instant::now();
+
     let handle = state.lock().unwrap();
     let ServiceState {
         ref agg_state,
@@ -117,11 +133,16 @@ fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
     let mut payload = Vec::new();
     cli_util::save(&mut payload, &agg).expect("could not serialize aggregate");
 
+    let duration = start.elapsed();
+    debug!("[agg] get_agg_payload: {:?}", duration);
+
     (payload, forward_urls.clone())
 }
 
 /// Sends a finalized aggregate to base_url/submit-agg for all base_url in forward_urls
 async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
+    let start = std::time::Instant::now();
+
     info!("Forwarding aggregate to {:?}", forward_urls);
     for base_url in forward_urls {
         // Send the serialized contents
@@ -141,10 +162,15 @@ async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
             Err(e) => error!("Could not send finalized aggregate: {:?}", e),
         }
     }
+
+    let duration = start.elapsed();
+    debug!("[agg] send_aggregate: {:?}", duration);
 }
 
 // Saves the state and start the next round
 fn start_next_round(state: Arc<Mutex<ServiceState>>) {
+    let start = std::time::Instant::now();
+
     let mut handle = state.lock().unwrap();
     let ServiceState {
         ref mut agg_state,
@@ -169,6 +195,9 @@ fn start_next_round(state: Arc<Mutex<ServiceState>>) {
     agg_state
         .clear(&enclave, *round)
         .expect("could not start new round");
+
+    let duration = start.elapsed();
+    debug!("[agg] start_next_round: {:?}", duration);
 }
 
 // This converts future system time to a monotonic instant. Doing this has weird edge cases in
@@ -194,30 +223,37 @@ async fn round_finalization_loop(
     let send_timeout = one_sec;
     let propagation_dur = Duration::from_secs(PROPAGATION_SECS);
 
+    // debug!("start round_finalization_loop");
+
     // Wait until the start time, then start the round loop
     delay_until(systime_to_instant(start_time)).await;
     loop {
         // We send our aggregate `level` seconds after the official end of the round
         let end_time = start_time + round_dur + level * one_sec;
 
+        // debug!("systime_to_instant(end_time): {:?}", systime_to_instant(end_time));
+
         // Wait
         delay_until(systime_to_instant(end_time)).await;
 
-        // The round has ended. Serialize the aggregate and forward it in the background. Time out
-        // after 1 second
-        let (agg_payload, forward_urls) = get_agg_payload(&state);
-        spawn(
-            actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(
-                |r| {
-                    if r.is_err() {
-                        error!("timeout for sending aggregation was hit");
-                    }
-                },
-            ),
-        );
+        // // The round has ended. Serialize the aggregate and forward it in the background. Time out
+        // // after 1 second
+        // let (agg_payload, forward_urls) = get_agg_payload(&state);
+        // debug!("agg_payload.len: {}", agg_payload.len());
+        // debug!("forward_urls: {:?}", forward_urls);
 
-        // Start the next round early
-        start_next_round(state.clone());
+        // spawn(
+        //     actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(
+        //         |r| {
+        //             if r.is_err() {
+        //                 error!("timeout for sending aggregation was hit");
+        //             }
+        //         },
+        //     ),
+        // );
+
+        // // Start the next round early
+        // start_next_round(state.clone());
 
         // The official round start time is right after propagation terminates. We update this so
         // that end_time is calculated correctly.

@@ -83,7 +83,8 @@ fn derive_msg_slot(cur_slot: usize, prev_round_output: &RoundOutput) -> SgxResul
 
     // Do a bounds check
     if msg_slot > DC_NET_N_SLOTS {
-        error!("❌ can't send. scheduling failure. you need to wait for the next round.");
+        error!("❌ can't send. scheduling failure. you need to wait for the next round.
+            \tcur_slot: {}, num_zeros: {}, msg_slot: {}, DC_NET_N_SLOTS:{}", cur_slot, num_zeros, msg_slot, DC_NET_N_SLOTS);
         Err(SGX_ERROR_SERVICE_UNAVAILABLE)
     } else {
         Ok(msg_slot)
@@ -291,8 +292,6 @@ pub fn user_submit_internal(
         error!("shared_secrets.anytrust_group_id() != send_request.anytrust_group_id");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
-
-    // debug!("round msg: {:?}", round_msg);
 
     let round_key = match crypto::derive_round_secret(round, &shared_secrets, None) {
         Ok(k) => k,

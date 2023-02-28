@@ -11,35 +11,238 @@ SERVER_STATE="server/server-state.txt"
 SERVER_SHARES="server/shares.txt"
 SERVER_SHARES_PARTIAL="server/partial_shares.txt"
 
+USER_SERVERKEYS="client/server-keys.txt"
+AGG_SERVERKEYS="aggregator/server-keys.txt"
+
 SERVER_ROUNDOUTPUT="server/round_output.txt"
 
 CLIENT_SERVICE_PORT="8323"
-AGGREGATOR_PORT="8423"
-SERVER_LEADER_PORT="8523"
+AGGREGATOR_PORT="18423"
+SERVER_LEADER_PORT="18523"
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
 
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
-NUM_FOLLOWERS=1
+NUM_FOLLOWERS=0
 
-ROUND=3
+NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
+NUM_USERS=100
+NUM_AGGREGATORS=1
+
+ROUND=0
+
+clean() {
+    # The below pattern removes all files of the form "client/user-stateX.txt" for any X
+    rm -f ${USER_STATE%.txt}*.txt || true
+    rm -f $USER_SERVERKEYS || true
+    # rm -f ${AGG_STATE%.txt}*.txt || true
+    rm -f $AGG_ROOTSTATE || true
+    rm -f $AGG_SERVERKEYS || true
+    rm -f $AGG_FINALAGG || true
+    rm -f ${SERVER_STATE%.txt}*.txt || true
+    rm -f $SERVER_SHARES || true
+    rm -f $SERVER_SHARES_PARTIAL || true
+    rm -f ${SERVER_ROUNDOUTPUT%.txt}*.txt || true
+    echo "Cleaned"
+}
+
+# build() {
+#     make -C enclave
+#     for d in "client" "server" "aggregator"; do
+#         pushd $d && cargo build && popd
+#     done
+# }
+
+# Creates new servers and records their KEM pubkeys
+setup_server() {
+    touch $USER_SERVERKEYS
+    cd server
+
+    # Accumulate the server registration data in this variable. The separator we use is ';'
+    SERVER_REGS=""
+
+    # Make a bunch of servers and save their pubkeys in client/ and aggregator/
+    for i in $(seq 1 $NUM_SERVERS); do
+        STATE="${SERVER_STATE%.txt}$i.txt"
+
+        # Make a new server and save the registration data
+        SERVER_REG=$(
+            $CMD_PREFIX new --server-state "../$STATE"
+        )
+        # Append
+        if [[ i -eq 1 ]]; then
+            SERVER_REGS="$SERVER_REG"
+        else
+            SERVER_REGS="$SERVER_REGS;$SERVER_REG"
+        fi
+
+        # Save the server pubkeys
+        $CMD_PREFIX get-pubkeys --server-state "../$STATE" >> "../$USER_SERVERKEYS"
+    done
+
+    # Copy the pubkeys file to the aggregators
+    cp "../$USER_SERVERKEYS" "../$AGG_SERVERKEYS"
+
+    # Read the regs into a variable
+    IFS=';' read -ra SERVER_REGS <<< "$SERVER_REGS"
+
+    # Register the srvers with each other
+    i=1
+    for SERVER_REG in "${SERVER_REGS[@]}"; do
+        for j in $(seq 1 $NUM_SERVERS); do
+            # Don't register any serve with itself
+            if [[ $i -eq $j ]]; then
+                continue
+            fi
+
+            # Register server i with server j
+            STATE="${SERVER_STATE%.txt}$j.txt"
+            echo $SERVER_REG | $CMD_PREFIX register-server --server-state "../$STATE"
+        done
+
+        i=$(($i + 1))
+    done
+
+    echo "Set up server"
+    cd ..
+}
+
+# Creates new aggregators wrt the server KEM pubkeys
+setup_aggregator() {
+    # We only have one aggregator right now
+    cd aggregator
+
+    # Make a new root aggregator and capture the registration data
+    AGG_REG=$(
+        $CMD_PREFIX new --level 0 --agg-state "../$AGG_ROOTSTATE" --server-keys "../$AGG_SERVERKEYS"
+    )
+
+    # Now do the registration
+    cd ../server
+    for i in $(seq 1 $NUM_SERVERS); do
+        STATE="${SERVER_STATE%.txt}$i.txt"
+        echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
+    done
+
+    echo "Set up aggregator"
+    cd ..
+}
+
+setup_client() {
+    cd client
+
+    # Make new clients and capture the registration data
+    USER_REG=$(
+        $CMD_PREFIX new \
+            --num-regs $NUM_USERS \
+            --user-state "../$USER_STATE" \
+            --server-keys "../$USER_SERVERKEYS"
+    )
+
+    # Now do oteh registrations
+    cd ../server
+    for i in $(seq 1 $NUM_SERVERS); do
+        STATE="${SERVER_STATE%.txt}$i.txt"
+        echo "$USER_REG" | $CMD_PREFIX register-user --server-state "../$STATE"
+    done
+
+    echo "Set up clients"
+    cd ..
+}
+
+setup_env() {
+    clean
+    setup_server
+    setup_aggregator
+    setup_client
+}
 
 # Starts the first client
 start_client() {
     cd client
 
+    # CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-client
+    # for i in $(seq 1 $NUM_USERS); do
+    #     STATE="${USER_STATE%.txt}$i.txt"
+    #     USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
+
+    #     echo $USER_PORT
+
+    #     RUST_LOG=debug $CMD_PREFIX start-service \
+    #         --user-state "../$STATE" \
+    #         --round $ROUND \
+    #         --bind "localhost:$USER_PORT" \
+    #         --agg-url "http://localhost:$AGGREGATOR_PORT" &
+    # done
+
     STATE="${USER_STATE%.txt}1.txt"
-    $CMD_PREFIX start-service \
+
+    RUST_LOG=debug $CMD_PREFIX start-service \
         --user-state "../$STATE" \
         --round $ROUND \
         --bind "localhost:$CLIENT_SERVICE_PORT" \
-        --no-persist \
         --agg-url "http://localhost:$AGGREGATOR_PORT" &
+        # --no-persist \
 
     cd ..
 }
+
+test_multi_clients() {
+    # start the aggregator
+    start_root_agg
+
+    # start clients and send the ciphertexts
+    # CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-client
+    for i in $(seq 1 $NUM_USERS); do
+        echo "client $i begins to send msg"
+        # start one client at a time
+        cd client
+        STATE="${USER_STATE%.txt}$i.txt"
+        USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
+
+        RUST_LOG=debug $CMD_PREFIX start-service \
+            --user-state "../$STATE" \
+            --round $ROUND \
+            --bind "localhost:$USER_PORT" \
+            --agg-url "http://localhost:$AGGREGATOR_PORT" &
+
+        cd ..
+        # encrypt-msg
+        # Base64-encode the given message
+        PAYLOAD=$(base64 <<< "$1")
+
+        # If this isn't the first round, append the previous round output to the payload. Separate with
+        # a comma.
+        if [[ $ROUND -gt 0 ]]; then
+            PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
+            PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
+        fi
+
+        # Do the operation
+        echo "$PAYLOAD" > payload.txt
+                
+        sleep 3 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        -X POST \
+        -H "Content-Type: text/plain" \
+        --data-binary "@payload.txt")
+
+        sleep 1 && kill_clients
+
+    done
+
+
+    # all ciphertexts have been submitted to the aggregator
+    # start server
+    start_leader
+    sleep 3 && force_root_round_end
+    sleep 2
+    kill_clients 2> /dev/null || true
+    kill_aggregators 2> /dev/null || true
+    kill_servers 2> /dev/null || true
+}
+
 
 # Starts the root aggregator
 start_root_agg() {
@@ -53,14 +256,15 @@ start_root_agg() {
     START_TIME=$(($NOW + 5))
 
     STATE="${USER_STATE%.txt}1.txt"
-    $CMD_PREFIX start-service \
+
+    RUST_LOG=debug $CMD_PREFIX start-service \
         --agg-state "../$AGG_ROOTSTATE" \
         --round $ROUND \
         --bind "localhost:$AGGREGATOR_PORT" \
         --start-time $START_TIME \
         --round-duration 10000 \
-        --no-persist \
         --forward-to "http://localhost:$SERVER_LEADER_PORT" &
+        # --no-persist \
 
     cd ..
 }
@@ -70,10 +274,11 @@ start_leader() {
     cd server
 
     STATE="${SERVER_STATE%.txt}$LEADER.txt"
-    $CMD_PREFIX start-service \
-        --no-persist \
+
+    RUST_LOG=debug $CMD_PREFIX start-service \
         --server-state "../$STATE" \
         --bind "localhost:$SERVER_LEADER_PORT" &
+        # --no-persist \
 
     cd ..
 }
@@ -96,21 +301,36 @@ start_followers() {
 }
 
 encrypt_msg() {
-    # Base64-encode the given message
-    PAYLOAD=$(base64 <<< "$1")
+    # for i in $(seq 1 $NUM_USERS); do
+        # Base64-encode the given message
+        PAYLOAD=$(base64 <<< "$1")
 
-    # If this isn't the first round, append the previous round output to the payload. Separate with
-    # a comma.
-    if [[ $ROUND -gt 0 ]]; then
-        PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
-        PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
-    fi
+        # If this isn't the first round, append the previous round output to the payload. Separate with
+        # a comma.
+        if [[ $ROUND -gt 0 ]]; then
+            PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
+            PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
+        fi
 
-    # Do the operation
+        # Do the operation
+        # curl "http://localhost:$CLIENT_SERVICE_PORT/encrypt-msg" \
+        #     -X POST \
+        #     -H "Content-Type: text/plain" \
+        #     --data-binary "$PAYLOAD"
+        
+        echo "$PAYLOAD" > payload.txt
+
+        # USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
+        # curl "http://localhost:$USER_PORT/encrypt-msg" \
+        # -X POST \
+        # -H "Content-Type: text/plain" \
+        # --data-binary "@payload.txt"
+    # done
+    
     curl "http://localhost:$CLIENT_SERVICE_PORT/encrypt-msg" \
-        -X POST \
-        -H "Content-Type: text/plain" \
-        --data-binary "$PAYLOAD"
+    -X POST \
+    -H "Content-Type: text/plain" \
+    --data-binary "@payload.txt"
 }
 
 send_cover() {
@@ -153,8 +373,13 @@ kill_clients() {
 # Commands with parameters:
 #     encrypt-msg <MSG> takes a plain string. E.g., `./server_ctrl.sh encrypt-msg hello`
 #     get-round-result <ROUND> takes an integer. E.g., `./server_ctrl.sh get-round-result 4`
+#     test-multi-clients <MSG> takes a plain string. E.g., `./server_ctrl.sh test-multi-clients hello`
 
-if [[ $1 == "start-leader" ]]; then
+if [[ $1 == "clean" ]]; then
+    clean
+elif [[ $1 == "setup-env" ]]; then
+    setup_env
+elif [[ $1 == "start-leader" ]]; then
     start_leader
 elif [[ $1 == "start-followers" ]]; then
     start_followers
@@ -162,8 +387,8 @@ elif [[ $1 == "start-agg" ]]; then
     start_root_agg
 elif [[ $1 == "start-client" ]]; then
     start_client
-elif [[ $1 == "start-agg" ]]; then
-    start_client
+# elif [[ $1 == "start-agg" ]]; then
+#     start_client
 elif [[ $1 == "encrypt-msg" ]]; then
     encrypt_msg $2
 elif [[ $1 == "send-cover" ]]; then
@@ -186,6 +411,8 @@ elif [[ $1 == "stop-all" ]]; then
     kill_clients 2> /dev/null || true
     kill_aggregators 2> /dev/null || true
     kill_servers 2> /dev/null || true
+elif [[ $1 == "test-multi-clients" ]]; then
+    test_multi_clients $2
 else
     echo "Did not recognize command"
 fi
