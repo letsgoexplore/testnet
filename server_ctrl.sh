@@ -28,7 +28,7 @@ LEADER=1
 NUM_FOLLOWERS=0
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=100
+NUM_USERS=1
 NUM_AGGREGATORS=1
 
 ROUND=0
@@ -229,9 +229,9 @@ test_multi_clients() {
         --data-binary "@payload.txt")
 
         sleep 1 && kill_clients
-
     done
 
+    rm payload.txt
 
     # all ciphertexts have been submitted to the aggregator
     # start server

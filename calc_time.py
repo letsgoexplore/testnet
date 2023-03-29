@@ -1,3 +1,5 @@
+# run `./server_ctrl.sh test-multi-clients hello &> output.txt`
+# use python3 
 filename = "output.txt"
 
 client_submit_round_msg = []
@@ -33,7 +35,7 @@ def count_talking_clients(line: str) -> int:
     start_index = line.find('scheduling_msg: [') + len('scheduling_msg: [')
     end_index = line.find('], aggregated_msg: [')
     scheduling_msgs = line[start_index : end_index].split(', ')
-    print(f"Number of reserved talknig clients for next round: {len(scheduling_msgs) - scheduling_msgs.count('0')}")
+    print(f"Number of reserved talking clients for next round: {len(scheduling_msgs) - scheduling_msgs.count('0')}")
 
     start_index = line.rfind('aggregated_msg: [') + len('aggregated_msg: [')
     end_index = line.rfind('] }, server_sigs')
