@@ -9,14 +9,20 @@ use interface::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+extern crate ed25519_dalek;
+use ed25519_dalek::SecretKey;
+
+use common::types_nosgx::{AggRegistrationBlobNoSGX};
+use crate::agg_nosgx::{new_aggregator};
+
+#[derive(Serialize, Deserialize)]
 pub struct AggregatorState {
     /// A unique identifier for this aggregator. Computed as the hash of the aggregator's pubkey.
     agg_id: EntityId,
     /// A unique for the set anytrust servers that this aggregator is registered with
     anytrust_group_id: EntityId,
     /// This aggregator's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedSigPrivKey,
+    signing_key: SecretKey,
     /// A partial aggregate of received user messages
     partial_agg: Option<SignedPartialAggregate>,
     /// The level in the aggregation tree of this aggregator. 0 means this is a leaf aggregator.
@@ -30,11 +36,11 @@ impl AggregatorState {
     /// Makes a new aggregate given the pubkeys of the servers. leaf_node = true iff this
     /// aggregator is a leaf-level aggregator
     pub(crate) fn new(
-        enclave: &DcNetEnclave,
         pubkeys: Vec<ServerPubKeyPackage>,
         level: u32,
-    ) -> Result<(AggregatorState, AggRegistrationBlob)> {
-        let (sealed_ask, agg_id, reg_data) = enclave.new_aggregator()?;
+    ) -> Result<(AggregatorState, AggRegistrationBlobNoSGX)> {
+        // let (sealed_ask, agg_id, reg_data) = enclave.new_aggregator()?;
+        let (sk, agg_id, reg_data) = new_aggregator()?;
 
         let anytrust_ids: BTreeSet<EntityId> =
             pubkeys.iter().map(|pk| pk.kem.get_entity_id()).collect();
@@ -50,7 +56,7 @@ impl AggregatorState {
         let state = AggregatorState {
             agg_id,
             anytrust_group_id,
-            signing_key: sealed_ask,
+            signing_key: sk,
             partial_agg: None,
             level,
             observed_nonces,
@@ -83,12 +89,12 @@ impl AggregatorState {
             .partial_agg
             .as_mut()
             .ok_or(AggregatorError::Uninitialized)?;
-        let _ = enclave.add_to_aggregate(
-            partial_agg,
-            &mut self.observed_nonces,
-            input_blob,
-            &self.signing_key,
-        )?;
+        // let _ = enclave.add_to_aggregate(
+        //     partial_agg,
+        //     &mut self.observed_nonces,
+        //     input_blob,
+        //     &self.signing_key,
+        // )?;
         Ok(())
     }
 

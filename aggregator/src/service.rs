@@ -40,7 +40,7 @@ enum ApiError {
 }
 impl ResponseError for ApiError {}
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub(crate) struct ServiceState {
     pub(crate) agg_state: AggregatorState,
     pub(crate) enclave: DcNetEnclave,
