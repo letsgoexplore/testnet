@@ -25,6 +25,7 @@ hkdf = "0.8.0"
 sha2 = "0.8.0"
 byteorder = "1.4.3"
 
+ed25519-dalek = { version = "0.9.1", features = ["serde"]  }
 
 sgx_types = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_serialize = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
