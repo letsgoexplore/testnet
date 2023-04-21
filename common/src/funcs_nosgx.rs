@@ -1,4 +1,7 @@
-use interface::EntityId;
+use interface::{
+    EntityId,
+    DcRoundMessage,
+};
 use ed25519_dalek::{
     SecretKey,
     PublicKey,
@@ -17,6 +20,7 @@ use crate::types_nosgx::{
     AggregatedMessageNoSGX,
     SignableNoSGX,
     SignMutableNoSGX,
+    XorNoSGX,
 };
 
 pub fn pk_to_entityid(pk: &PublicKey) -> EntityId {
@@ -63,5 +67,38 @@ impl SignMutableNoSGX for AggregatedMessageNoSGX {
         self.sig = sig;
 
         Ok(())
+    }
+}
+
+impl XorNoSGX for DcRoundMessage {
+    fn xor_mut_nosgx(&mut self, other: &Self) {
+        assert_eq!(
+            self.aggregated_msg.num_rows(),
+            other.aggregated_msg.num_rows()
+        );
+        assert_eq!(
+            self.aggregated_msg.num_columns(),
+            other.aggregated_msg.num_columns()
+        );
+
+        // XOR the scheduling messages
+        for (lhs, rhs) in self
+            .scheduling_msg
+            .as_mut_slice()
+            .iter_mut()
+            .zip(other.scheduling_msg.as_slice().iter())
+        {
+            *lhs ^= rhs;
+        }
+
+        // XOR the round messages
+        for (lhs, rhs) in self
+            .aggregated_msg
+            .as_mut_slice()
+            .iter_mut()
+            .zip(other.aggregated_msg.as_slice().iter())
+        {
+            *lhs ^= rhs;
+        }
     }
 }

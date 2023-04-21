@@ -31,6 +31,7 @@ pub struct AggregatedMessageNoSGX {
     pub sig: Signature,
     pub pk: PublicKey,
 }
+
 impl Default for AggregatedMessageNoSGX {
     fn default() -> Self {
         AggregatedMessageNoSGX {
@@ -90,3 +91,18 @@ pub type SignedPartialAggregateNoSGX = AggregatedMessageNoSGX;
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to
 /// aggregators of all levels as well as anytrust nodes.
 pub type RoundSubmissionBlobNoSGX = AggregatedMessageNoSGX;
+
+// Move the Xor trait out of enclave
+pub trait XorNoSGX: Clone {
+    // xor_mut_nosgx computes and sets self = xor(self, other)
+    fn xor_mut_nosgx(&mut self, other: &Self)
+    where
+        Self: Sized;
+
+    // xor_nosgx returns xor(self, other)
+    fn xor_nosgx(&self, other: &Self) -> Self {
+        let mut copy = self.clone();
+        copy.xor_mut_nosgx(other);
+        copy
+    }
+}
