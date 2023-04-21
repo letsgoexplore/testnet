@@ -2,10 +2,9 @@ use crate::util::{AggregatorError, Result};
 
 use std::collections::BTreeSet;
 
-use common::enclave::DcNetEnclave;
 use interface::{
-    compute_group_id, EntityId, RateLimitNonce, RoundSubmissionBlob,
-    SealedSigPrivKey, ServerPubKeyPackage, DC_NET_ROUNDS_PER_WINDOW,
+    compute_group_id, EntityId, RateLimitNonce,
+    ServerPubKeyPackage, DC_NET_ROUNDS_PER_WINDOW,
 };
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +20,7 @@ use crate::agg_nosgx::{
     new_aggregator,
     new_aggregate,
     finalize_aggregate,
+    add_to_aggregate,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -29,7 +29,7 @@ pub struct AggregatorState {
     agg_id: EntityId,
     /// A unique for the set anytrust servers that this aggregator is registered with
     anytrust_group_id: EntityId,
-    /// This aggregator's signing key. Can only be accessed from within the enclave.
+    /// This aggregator's signing key.
     signing_key: SecretKey,
     /// A partial aggregate of received user messages
     partial_agg: Option<SignedPartialAggregateNoSGX>,
@@ -47,7 +47,6 @@ impl AggregatorState {
         pubkeys: Vec<ServerPubKeyPackage>,
         level: u32,
     ) -> Result<(AggregatorState, AggRegistrationBlobNoSGX)> {
-        // let (sealed_ask, agg_id, reg_data) = enclave.new_aggregator()?;
         let (sk, agg_id, reg_data) = new_aggregator()?;
 
         let anytrust_ids: BTreeSet<EntityId> =
@@ -76,7 +75,6 @@ impl AggregatorState {
     /// Clears whatever aggregate exists and makes an empty one for the given round
     pub(crate) fn clear(&mut self, round: u32) -> Result<()> {
         // Make a new partial aggregate and put it in the local state
-        // let partial_agg = enclave.new_aggregate(round, &self.anytrust_group_id)?;
         let partial_agg = new_aggregate(round, &self.anytrust_group_id)?;
 
         self.partial_agg = Some(partial_agg);
@@ -92,19 +90,18 @@ impl AggregatorState {
     /// Adds the given input to the partial aggregate
     pub(crate) fn add_to_aggregate(
         &mut self,
-        enclave: &DcNetEnclave,
-        input_blob: &RoundSubmissionBlob,
+        input_blob: &RoundSubmissionBlobNoSGX,
     ) -> Result<()> {
         let partial_agg = self
             .partial_agg
             .as_mut()
             .ok_or(AggregatorError::Uninitialized)?;
-        // let _ = enclave.add_to_aggregate(
-        //     partial_agg,
-        //     &mut self.observed_nonces,
-        //     input_blob,
-        //     &self.signing_key,
-        // )?;
+        let _ = add_to_aggregate(
+            partial_agg,
+            &mut self.observed_nonces,
+            input_blob,
+            &self.signing_key,
+        )?;
         Ok(())
     }
 

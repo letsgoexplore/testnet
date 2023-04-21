@@ -16,6 +16,7 @@ use common::types_nosgx::{
     AggregatedMessageNoSGX,
     SignableNoSGX,
     SignMutableNoSGX,
+    XorNoSGX,
 };
 use common::funcs_nosgx::{pk_to_entityid};
 use std::collections::BTreeSet;
@@ -170,7 +171,7 @@ fn add_to_agg(
         current_aggregation.user_ids.extend(&incoming_msg.user_ids);
         current_aggregation
             .aggregated_msg
-            .xor_mut(&incoming_msg.aggregated_msg);
+            .xor_mut_nosgx(&incoming_msg.aggregated_msg);
 
         // sign
         current_aggregation.sign_mut(&sk);

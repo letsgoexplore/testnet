@@ -2,8 +2,11 @@ use crate::{
     util::{save_state, AggregatorError},
     AggregatorState,
 };
-use common::{cli_util, enclave::DcNetEnclave};
-use interface::RoundSubmissionBlob;
+use common::cli_util;
+
+use common::types_nosgx::{
+    RoundSubmissionBlobNoSGX,
+};
 
 use core::ops::DerefMut;
 use std::{
@@ -43,7 +46,6 @@ impl ResponseError for ApiError {}
 // #[derive(Clone)]
 pub(crate) struct ServiceState {
     pub(crate) agg_state: AggregatorState,
-    pub(crate) enclave: DcNetEnclave,
     /// The URLs of the next aggregators
     pub(crate) forward_urls: Vec<String>,
     pub(crate) round: u32,
@@ -60,17 +62,16 @@ async fn submit_agg(
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
-    let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
+    let agg_data: RoundSubmissionBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
 
     // Unpack state
     let mut handle = state.get_ref().lock().unwrap();
     let ServiceState {
         ref mut agg_state,
-        ref enclave,
         ..
     } = handle.deref_mut();
     // Add to aggregate
-    agg_state.add_to_aggregate(enclave, &agg_data)?;
+    agg_state.add_to_aggregate(&agg_data)?;
 
     // debug!("[agg] submit-agg success");
     let duration = start.elapsed();
@@ -121,7 +122,6 @@ fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
     let handle = state.lock().unwrap();
     let ServiceState {
         ref agg_state,
-        ref enclave,
         ref forward_urls,
         ..
     } = *handle;
@@ -174,7 +174,6 @@ fn start_next_round(state: Arc<Mutex<ServiceState>>) {
     let mut handle = state.lock().unwrap();
     let ServiceState {
         ref mut agg_state,
-        ref enclave,
         ref mut round,
         ref agg_state_path,
         ..

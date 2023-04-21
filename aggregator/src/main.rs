@@ -13,8 +13,9 @@ use crate::{
     util::{load_from_stdin, load_state, save_state, save_to_stdout},
 };
 
-use common::{cli_util, enclave::DcNetEnclave};
-use interface::{RoundSubmissionBlob, ServerPubKeyPackage};
+use common::cli_util;
+use common::types_nosgx::RoundSubmissionBlobNoSGX;
+use interface::ServerPubKeyPackage;
 use std::{fs::File, time::SystemTime};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -24,8 +25,6 @@ fn main() -> Result<(), AggregatorError> {
     env_logger::init();
 
     // Do setup
-    let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
-
     let state_arg = Arg::with_name("agg-state")
         .short("s")
         .long("agg-state")
@@ -184,12 +183,12 @@ fn main() -> Result<(), AggregatorError> {
 
     if let Some(matches) = matches.subcommand_matches("input") {
         // Load the STDIN input and load the state
-        let round_blob: RoundSubmissionBlob = load_from_stdin()?;
+        let round_blob: RoundSubmissionBlobNoSGX = load_from_stdin()?;
         let state_path = matches.value_of("agg-state").unwrap();
         let mut state = load_state(&state_path)?;
 
         // Pass the input to the state and save the result
-        state.add_to_aggregate(&enclave, &round_blob)?;
+        state.add_to_aggregate(&round_blob)?;
         save_state(&state_path, &state)?;
 
         println!("OK");
@@ -249,7 +248,6 @@ fn main() -> Result<(), AggregatorError> {
         let level = agg_state.level;
         let state = service::ServiceState {
             agg_state,
-            enclave,
             forward_urls,
             round,
             agg_state_path,
