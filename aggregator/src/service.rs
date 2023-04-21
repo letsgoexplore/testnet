@@ -128,7 +128,7 @@ fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
 
     // Finalize and serialize the aggregate
     let agg = agg_state
-        .finalize_aggregate(enclave)
+        .finalize_aggregate()
         .expect("could not finalize aggregate");
     let mut payload = Vec::new();
     cli_util::save(&mut payload, &agg).expect("could not serialize aggregate");
@@ -193,7 +193,7 @@ fn start_next_round(state: Arc<Mutex<ServiceState>>) {
     // Increment the round and clear the state
     *round += 1;
     agg_state
-        .clear(&enclave, *round)
+        .clear(*round)
         .expect("could not start new round");
 
     let duration = start.elapsed();

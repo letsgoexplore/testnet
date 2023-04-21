@@ -4,16 +4,24 @@ use std::collections::BTreeSet;
 
 use common::enclave::DcNetEnclave;
 use interface::{
-    compute_group_id, AggRegistrationBlob, EntityId, RateLimitNonce, RoundSubmissionBlob,
-    SealedSigPrivKey, ServerPubKeyPackage, SignedPartialAggregate, DC_NET_ROUNDS_PER_WINDOW,
+    compute_group_id, EntityId, RateLimitNonce, RoundSubmissionBlob,
+    SealedSigPrivKey, ServerPubKeyPackage, DC_NET_ROUNDS_PER_WINDOW,
 };
 use serde::{Deserialize, Serialize};
 
 extern crate ed25519_dalek;
 use ed25519_dalek::SecretKey;
 
-use common::types_nosgx::{AggRegistrationBlobNoSGX};
-use crate::agg_nosgx::{new_aggregator};
+use common::types_nosgx::{
+    AggRegistrationBlobNoSGX,
+    SignedPartialAggregateNoSGX,
+    RoundSubmissionBlobNoSGX,
+};
+use crate::agg_nosgx::{
+    new_aggregator,
+    new_aggregate,
+    finalize_aggregate,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct AggregatorState {
@@ -24,7 +32,7 @@ pub struct AggregatorState {
     /// This aggregator's signing key. Can only be accessed from within the enclave.
     signing_key: SecretKey,
     /// A partial aggregate of received user messages
-    partial_agg: Option<SignedPartialAggregate>,
+    partial_agg: Option<SignedPartialAggregateNoSGX>,
     /// The level in the aggregation tree of this aggregator. 0 means this is a leaf aggregator.
     pub(crate) level: u32,
     /// The observed rate limiting nonces from this window. This is Some iff this aggregator is a
@@ -66,9 +74,11 @@ impl AggregatorState {
     }
 
     /// Clears whatever aggregate exists and makes an empty one for the given round
-    pub(crate) fn clear(&mut self, enclave: &DcNetEnclave, round: u32) -> Result<()> {
+    pub(crate) fn clear(&mut self, round: u32) -> Result<()> {
         // Make a new partial aggregate and put it in the local state
-        let partial_agg = enclave.new_aggregate(round, &self.anytrust_group_id)?;
+        // let partial_agg = enclave.new_aggregate(round, &self.anytrust_group_id)?;
+        let partial_agg = new_aggregate(round, &self.anytrust_group_id)?;
+
         self.partial_agg = Some(partial_agg);
 
         // If the round marks a new window, clear the nonces too
@@ -100,12 +110,12 @@ impl AggregatorState {
 
     /// Packages the current aggregate into a message that can be sent to the next aggregator or an
     /// anytrust node
-    pub(crate) fn finalize_aggregate(&self, enclave: &DcNetEnclave) -> Result<RoundSubmissionBlob> {
+    pub(crate) fn finalize_aggregate(&self) -> Result<RoundSubmissionBlobNoSGX> {
         let partial_agg = self
             .partial_agg
             .as_ref()
             .ok_or(AggregatorError::Uninitialized)?;
-        let blob = enclave.finalize_aggregate(partial_agg)?;
+        let blob = finalize_aggregate(partial_agg)?;
 
         Ok(blob)
     }

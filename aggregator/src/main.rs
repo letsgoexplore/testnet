@@ -176,7 +176,7 @@ fn main() -> Result<(), AggregatorError> {
         // Now update the state and save it
         let state_path = matches.value_of("agg-state").unwrap();
         let mut state = load_state(&state_path)?;
-        state.clear(&enclave, round)?;
+        state.clear(round)?;
         save_state(&state_path, &state)?;
 
         println!("OK");
@@ -201,7 +201,7 @@ fn main() -> Result<(), AggregatorError> {
         let state = load_state(&state_path)?;
 
         // Pass the input to the state and print the result
-        let agg_blob = state.finalize_aggregate(&enclave)?;
+        let agg_blob = state.finalize_aggregate()?;
         save_to_stdout(&agg_blob)?;
     }
 
@@ -236,7 +236,7 @@ fn main() -> Result<(), AggregatorError> {
         // Load the aggregator state and clear it for this round
         let state_path = matches.value_of("agg-state").unwrap().to_string();
         let mut agg_state = load_state(&state_path)?;
-        agg_state.clear(&enclave, round)?;
+        agg_state.clear(round)?;
         info!("Initialized round {}", round);
 
         // If no-persist is set, then the state path is None
