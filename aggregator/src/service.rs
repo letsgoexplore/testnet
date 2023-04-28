@@ -4,9 +4,7 @@ use crate::{
 };
 use common::cli_util;
 
-use common::types_nosgx::{
-    RoundSubmissionBlobNoSGX,
-};
+use common::types_nosgx::AggregatedMessageNoSGX;
 
 use core::ops::DerefMut;
 use std::{
@@ -62,7 +60,7 @@ async fn submit_agg(
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
-    let agg_data: RoundSubmissionBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
+    let agg_data: AggregatedMessageNoSGX = cli_util::load(&mut payload.as_bytes())?;
 
     // Unpack state
     let mut handle = state.get_ref().lock().unwrap();
@@ -235,24 +233,24 @@ async fn round_finalization_loop(
         // Wait
         delay_until(systime_to_instant(end_time)).await;
 
-        // // The round has ended. Serialize the aggregate and forward it in the background. Time out
-        // // after 1 second
-        // let (agg_payload, forward_urls) = get_agg_payload(&state);
+        // The round has ended. Serialize the aggregate and forward it in the background. Time out
+        // after 1 second
+        let (agg_payload, forward_urls) = get_agg_payload(&state);
         // debug!("agg_payload.len: {}", agg_payload.len());
         // debug!("forward_urls: {:?}", forward_urls);
 
-        // spawn(
-        //     actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(
-        //         |r| {
-        //             if r.is_err() {
-        //                 error!("timeout for sending aggregation was hit");
-        //             }
-        //         },
-        //     ),
-        // );
+        spawn(
+            actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(
+                |r| {
+                    if r.is_err() {
+                        error!("timeout for sending aggregation was hit");
+                    }
+                },
+            ),
+        );
 
-        // // Start the next round early
-        // start_next_round(state.clone());
+        // Start the next round early
+        start_next_round(state.clone());
 
         // The official round start time is right after propagation terminates. We update this so
         // that end_time is calculated correctly.

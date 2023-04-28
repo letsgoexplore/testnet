@@ -13,12 +13,10 @@ use ed25519_dalek::SecretKey;
 
 use common::types_nosgx::{
     AggRegistrationBlobNoSGX,
-    SignedPartialAggregateNoSGX,
-    RoundSubmissionBlobNoSGX,
+    AggregatedMessageNoSGX,
 };
 use crate::agg_nosgx::{
     new_aggregator,
-    new_aggregate,
     finalize_aggregate,
     add_to_aggregate,
 };
@@ -32,7 +30,7 @@ pub struct AggregatorState {
     /// This aggregator's signing key.
     signing_key: SecretKey,
     /// A partial aggregate of received user messages
-    partial_agg: Option<SignedPartialAggregateNoSGX>,
+    partial_agg: Option<AggregatedMessageNoSGX>,
     /// The level in the aggregation tree of this aggregator. 0 means this is a leaf aggregator.
     pub(crate) level: u32,
     /// The observed rate limiting nonces from this window. This is Some iff this aggregator is a
@@ -75,7 +73,7 @@ impl AggregatorState {
     /// Clears whatever aggregate exists and makes an empty one for the given round
     pub(crate) fn clear(&mut self, round: u32) -> Result<()> {
         // Make a new partial aggregate and put it in the local state
-        let partial_agg = new_aggregate(round, &self.anytrust_group_id)?;
+        let partial_agg: AggregatedMessageNoSGX = Default::default();
 
         self.partial_agg = Some(partial_agg);
 
@@ -90,7 +88,7 @@ impl AggregatorState {
     /// Adds the given input to the partial aggregate
     pub(crate) fn add_to_aggregate(
         &mut self,
-        input_blob: &RoundSubmissionBlobNoSGX,
+        input_blob: &AggregatedMessageNoSGX,
     ) -> Result<()> {
         let partial_agg = self
             .partial_agg
@@ -107,7 +105,7 @@ impl AggregatorState {
 
     /// Packages the current aggregate into a message that can be sent to the next aggregator or an
     /// anytrust node
-    pub(crate) fn finalize_aggregate(&self) -> Result<RoundSubmissionBlobNoSGX> {
+    pub(crate) fn finalize_aggregate(&self) -> Result<AggregatedMessageNoSGX> {
         let partial_agg = self
             .partial_agg
             .as_ref()

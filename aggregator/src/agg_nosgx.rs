@@ -11,8 +11,6 @@ use interface::{
 };
 use common::types_nosgx::{
     AggRegistrationBlobNoSGX,
-    SignedPartialAggregateNoSGX,
-    RoundSubmissionBlobNoSGX,
     AggregatedMessageNoSGX,
     SignableNoSGX,
     SignMutableNoSGX,
@@ -27,8 +25,15 @@ use log::{error, debug, warn};
 /// Returns secret key, entity id, and an AggRegistrationBlobNoSGX that contains the
 /// information to send to anytrust nodes.
 pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlobNoSGX)> {
-    let mut csprng = OsRng::new().unwrap();
+    let mut csprng = match OsRng::new() {
+        Ok(val) => val,
+        Err(e) => {
+            error!("Rand OsRng error!");
+            return Err(AggregatorError::InvalidParameter);
+        }
+    };
     let sk = SecretKey::generate(&mut csprng);
+    // The standard hash function used for most ed25519 libraries is SHA-512
     let pk = PublicKey::from_secret::<Sha512>(&sk);
 
     let blob = AggRegistrationBlobNoSGX {
@@ -43,22 +48,14 @@ pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlobNoSGX
     ))
 }
 
-/// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
-pub fn new_aggregate(
-    _round: u32,
-    _anytrust_group_id: &EntityId,
-) -> Result<SignedPartialAggregateNoSGX> {
-    // A new aggregator is simply an empty blob
-    Ok(Default::default())    
-}
-
+/// TODO: Consider removing this function
 /// Constructs an aggregate message from the given state. The returned blob is to be sent to
 /// the parent aggregator or an anytrust server.
-/// Note: this is an identity function because SignedPartialAggregateNoSGX and RoundSubmissionBlobNoSGX
+/// Note: this is an identity function because AggregatedMessageNoSGX and AggregatedMessageNoSGX
 /// are exact the same thing.
 pub fn finalize_aggregate(
-    agg: &SignedPartialAggregateNoSGX,
-) -> Result<RoundSubmissionBlobNoSGX> {
+    agg: &AggregatedMessageNoSGX,
+) -> Result<AggregatedMessageNoSGX> {
     return Ok(agg.clone());
 }
 
@@ -66,9 +63,9 @@ pub fn finalize_aggregate(
 /// Note: if marshalled_current_aggregation is empty (len = 0), an empty aggregation is created
 ///  and the signed message is aggregated into that.
 pub fn add_to_aggregate(
-    agg: &mut SignedPartialAggregateNoSGX,
+    agg: &mut AggregatedMessageNoSGX,
     observed_nonces: &mut Option<BTreeSet<RateLimitNonce>>,
-    new_input: &RoundSubmissionBlobNoSGX,
+    new_input: &AggregatedMessageNoSGX,
     signing_key: &SecretKey,
 ) -> Result<()> {
     let (new_agg, new_observed_nonces) = add_to_agg((new_input, agg, observed_nonces, signing_key))?;
@@ -83,11 +80,11 @@ pub fn add_to_aggregate(
 fn add_to_agg(
     input: (
         &AggregatedMessageNoSGX,
-        &SignedPartialAggregateNoSGX,
+        &AggregatedMessageNoSGX,
         &Option<BTreeSet<RateLimitNonce>>,
         &SecretKey,
     ),
-) -> Result<(SignedPartialAggregateNoSGX, Option<BTreeSet<RateLimitNonce>>)> {
+) -> Result<(AggregatedMessageNoSGX, Option<BTreeSet<RateLimitNonce>>)> {
     let (incoming_msg, current_aggregation, observed_nonces, sk) = input;
 
     // Error if asked to add an empty msg to an empty aggregation
@@ -105,7 +102,7 @@ fn add_to_agg(
     // now we are sure incoming_msg is not empty we treat it as untrusted input and verify signature
     match incoming_msg.verify() {
         Ok(()) => {
-            debug!("signature verification succeed");
+            debug!("signature verification succeeded");
         },
         Err(e) => {
             error!("can't verify sig on incoming_msg");
