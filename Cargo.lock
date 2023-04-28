@@ -656,7 +656,7 @@ dependencies = [
  "log 0.4.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "prost",
  "quick-error 2.0.1",
- "rand 0.8.4",
+ "rand 0.6.5",
  "rand_core 0.6.3",
  "serde 1.0.126",
  "serde_cbor 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
