@@ -10,7 +10,7 @@ use interface::{
 };
 use common::types_nosgx::{
     AggRegistrationBlobNoSGX,
-    AggregatedMessageNoSGX,
+    AggregatedMessage,
     SignableNoSGX,
     SignMutableNoSGX,
     XorNoSGX,
@@ -50,11 +50,11 @@ pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlobNoSGX
 /// TODO: Consider removing this function
 /// Constructs an aggregate message from the given state. The returned blob is to be sent to
 /// the parent aggregator or an anytrust server.
-/// Note: this is an identity function because AggregatedMessageNoSGX and AggregatedMessageNoSGX
+/// Note: this is an identity function because AggregatedMessage and AggregatedMessage
 /// are exact the same thing.
 pub fn finalize_aggregate(
-    agg: &AggregatedMessageNoSGX,
-) -> Result<AggregatedMessageNoSGX> {
+    agg: &AggregatedMessage,
+) -> Result<AggregatedMessage> {
     return Ok(agg.clone());
 }
 
@@ -62,9 +62,9 @@ pub fn finalize_aggregate(
 /// Note: if marshalled_current_aggregation is empty (len = 0), an empty aggregation is created
 ///  and the signed message is aggregated into that.
 pub fn add_to_aggregate(
-    agg: &mut AggregatedMessageNoSGX,
+    agg: &mut AggregatedMessage,
     observed_nonces: &mut Option<BTreeSet<RateLimitNonce>>,
-    new_input: &AggregatedMessageNoSGX,
+    new_input: &AggregatedMessage,
     signing_key: &SecretKey,
 ) -> Result<()> {
     let (new_agg, new_observed_nonces) = add_to_agg((new_input, agg, observed_nonces, signing_key))?;
@@ -78,12 +78,12 @@ pub fn add_to_aggregate(
 
 fn add_to_agg(
     input: (
-        &AggregatedMessageNoSGX,
-        &AggregatedMessageNoSGX,
+        &AggregatedMessage,
+        &AggregatedMessage,
         &Option<BTreeSet<RateLimitNonce>>,
         &SecretKey,
     ),
-) -> Result<(AggregatedMessageNoSGX, Option<BTreeSet<RateLimitNonce>>)> {
+) -> Result<(AggregatedMessage, Option<BTreeSet<RateLimitNonce>>)> {
     let (incoming_msg, current_aggregation, observed_nonces, sk) = input;
 
     // Error if asked to add an empty msg to an empty aggregation

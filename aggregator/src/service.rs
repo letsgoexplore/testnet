@@ -4,7 +4,7 @@ use crate::{
 };
 use common::cli_util;
 
-use common::types_nosgx::AggregatedMessageNoSGX;
+use common::types_nosgx::AggregatedMessage;
 
 use core::ops::DerefMut;
 use std::{
@@ -60,7 +60,7 @@ async fn submit_agg(
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
-    let agg_data: AggregatedMessageNoSGX = cli_util::load(&mut payload.as_bytes())?;
+    let agg_data: AggregatedMessage = cli_util::load(&mut payload.as_bytes())?;
 
     // Unpack state
     let mut handle = state.get_ref().lock().unwrap();

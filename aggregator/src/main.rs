@@ -14,7 +14,7 @@ use crate::{
 };
 
 use common::cli_util;
-use common::types_nosgx::AggregatedMessageNoSGX;
+use common::types_nosgx::AggregatedMessage;
 use interface::ServerPubKeyPackage;
 use std::{fs::File, time::SystemTime};
 
@@ -183,7 +183,7 @@ fn main() -> Result<(), AggregatorError> {
 
     if let Some(matches) = matches.subcommand_matches("input") {
         // Load the STDIN input and load the state
-        let round_blob: AggregatedMessageNoSGX = load_from_stdin()?;
+        let round_blob: AggregatedMessage = load_from_stdin()?;
         let state_path = matches.value_of("agg-state").unwrap();
         let mut state = load_state(&state_path)?;
 

@@ -21,7 +21,7 @@ pub struct AggRegistrationBlobNoSGX {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct AggregatedMessageNoSGX {
+pub struct AggregatedMessage {
     pub round: u32,
     pub anytrust_group_id: EntityId,
     pub user_ids: BTreeSet<EntityId>,
@@ -32,9 +32,9 @@ pub struct AggregatedMessageNoSGX {
     pub pk: PublicKey,
 }
 
-impl Default for AggregatedMessageNoSGX {
+impl Default for AggregatedMessage {
     fn default() -> Self {
-        AggregatedMessageNoSGX {
+        AggregatedMessage {
             round: Default::default(),
             anytrust_group_id: EntityId::default(),
             user_ids: BTreeSet::new(),
@@ -47,7 +47,7 @@ impl Default for AggregatedMessageNoSGX {
 }
 
 
-impl AggregatedMessageNoSGX {
+impl AggregatedMessage {
     pub fn is_empty(&self) -> bool {
         self.user_ids.is_empty()
     }
@@ -82,16 +82,16 @@ pub trait SignableNoSGX {
     }
 }
 
-impl SignableNoSGX for AggregatedMessageNoSGX {
+impl SignableNoSGX for AggregatedMessage {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
-        hasher.input(b"Begin AggregatedMessageNoSGX");
+        hasher.input(b"Begin AggregatedMessage");
         hasher.input(&self.anytrust_group_id);
         for id in self.user_ids.iter() {
             hasher.input(id);
         }
         hasher.input(&self.aggregated_msg.digest());
-        hasher.input(b"End AggregatedMessageNoSGX");
+        hasher.input(b"End AggregatedMessage");
 
         hasher.result().to_vec()
     }
@@ -109,7 +109,7 @@ pub trait SignMutableNoSGX {
     fn sign_mut(&mut self, _: &SecretKey) -> Result<(), SignatureError>;
 }
 
-impl SignMutableNoSGX for AggregatedMessageNoSGX {
+impl SignMutableNoSGX for AggregatedMessage {
     fn sign_mut(&mut self, sk: &SecretKey) -> Result<(), SignatureError> {
         let (sig, pk) = self.sign(sk)?;
         self.pk = pk;
@@ -177,7 +177,7 @@ mod tests {
         let mut csprng = OsRng::new().unwrap();
 
         let sk = SecretKey::generate(&mut csprng);
-        let mut agg_msg = AggregatedMessageNoSGX::default();
+        let mut agg_msg = AggregatedMessage::default();
         
         // sign the aggregated message using secret key
         agg_msg.sign_mut(&sk)?;
