@@ -306,3 +306,17 @@ impl AggregatedMessageObsolete {
         self.user_ids.is_empty()
     }
 }
+
+/// A user submitted message that's produced by an enclave
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct UserSubmittedMessage {
+    pub round: u32,
+    pub anytrust_group_id: EntityId,
+    pub user_ids: EntityId,
+    /// This is only Some for user-submitted messages
+    pub rate_limit_nonce: Option<RateLimitNonce>,
+    pub aggregated_msg: DcRoundMessage,
+    pub tee_sig: SgxSignature,
+    pub tee_pk: SgxSigningPubKey,
+}

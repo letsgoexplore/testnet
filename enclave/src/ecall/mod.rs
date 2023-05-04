@@ -101,7 +101,7 @@ pub extern "C" fn ecall_entrypoint(
         (
             EcallUserSubmit,
             (UserSubmissionReq, SealedSigPrivKey),
-            (RoundSubmissionBlob, SealedSharedSecretDb),
+            (UserSubmissionBlob, SealedSharedSecretDb),
             submit::user_submit_internal
         ),
         (

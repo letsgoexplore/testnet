@@ -16,9 +16,7 @@ use sgx_types::sgx_status_t::SGX_ERROR_SERVICE_UNAVAILABLE;
 use sgx_types::SgxResult;
 use sha2::Digest;
 use sha2::Sha256;
-use std::collections::BTreeSet;
 use std::convert::TryFrom;
-use std::iter::FromIterator;
 use std::prelude::v1::*;
 use unseal::SealInto;
 
@@ -169,7 +167,7 @@ fn derive_reservation(
 /// returns a submission and the ratcheted shared secrets
 pub fn user_submit_internal(
     (send_request, signing_sk): &(UserSubmissionReq, SealedSigPrivKey),
-) -> SgxResult<(RoundSubmissionBlob, SealedSharedSecretDb)> {
+) -> SgxResult<(UserSubmissionBlob, SealedSharedSecretDb)> {
     let UserSubmissionReq {
         user_id,
         anytrust_group_id,
@@ -305,8 +303,8 @@ pub fn user_submit_internal(
     let encrypted_msg = round_key.xor(&round_msg);
 
     // Construct the output blob
-    let mut agg_msg = AggregatedMessageObsolete {
-        user_ids: BTreeSet::from_iter(vec![*user_id].into_iter()),
+    let mut agg_msg = UserSubmittedMessage {
+        user_ids: *user_id,
         anytrust_group_id: *anytrust_group_id,
         round,
         rate_limit_nonce: Some(rate_limit_nonce),
