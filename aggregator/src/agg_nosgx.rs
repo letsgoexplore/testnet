@@ -6,7 +6,6 @@ use sha2::Sha512;
 
 use interface::{
     EntityId,
-    AggregatedMessage,
     RateLimitNonce,
 };
 use common::types_nosgx::{
@@ -28,7 +27,7 @@ pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlobNoSGX
     let mut csprng = match OsRng::new() {
         Ok(val) => val,
         Err(e) => {
-            error!("Rand OsRng error!");
+            error!("Rand OsRng error:{:?}", e);
             return Err(AggregatorError::InvalidParameter);
         }
     };
@@ -105,7 +104,7 @@ fn add_to_agg(
             debug!("signature verification succeeded");
         },
         Err(e) => {
-            error!("can't verify sig on incoming_msg");
+            error!("can't verify sig on incoming_msg: {:?}", e);
             return Err(AggregatorError::InvalidParameter);
         }
     }
@@ -136,7 +135,13 @@ fn add_to_agg(
     if current_aggregation.is_empty() {
         debug!("current aggregation is emtpy");
         let mut agg = incoming_msg.clone();
-        agg.sign_mut(&sk);
+        match agg.sign_mut(&sk) {
+            Ok(()) => (),
+            Err(e) => {
+                error!("can't sign on aggregation: {:?}", e);
+                return Err(AggregatorError::InvalidParameter);
+            }
+        };
         return Ok((incoming_msg.clone(), new_observed_nonces));
     } else {
         // now that we know both current_aggregation and incoming_msg are not empty
@@ -171,7 +176,13 @@ fn add_to_agg(
             .xor_mut_nosgx(&incoming_msg.aggregated_msg);
 
         // sign
-        current_aggregation.sign_mut(&sk);
+        match current_aggregation.sign_mut(&sk){
+            Ok(()) => (),
+            Err(e) => {
+                error!("can't sign on current aggregation: {:?}", e);
+                return Err(AggregatorError::InvalidParameter);
+            }
+        };
 
         debug!("✅ new agg with users {:?}", current_aggregation.user_ids);
 
