@@ -285,9 +285,12 @@ pub struct UserSubmissionReq {
 use crate::SgxSignature;
 
 /// A (potentially aggregated) message that's produced by an enclave
+/// Not used anymore.
+/// Clients use UserSubmittedMessage
+/// Aggregators and servers use AggregatedMessage
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct AggregatedMessage {
+pub struct AggregatedMessageObsolete {
     pub round: u32,
     pub anytrust_group_id: EntityId,
     pub user_ids: BTreeSet<EntityId>,
@@ -298,7 +301,7 @@ pub struct AggregatedMessage {
     pub tee_pk: SgxSigningPubKey,
 }
 
-impl AggregatedMessage {
+impl AggregatedMessageObsolete {
     pub fn is_empty(&self) -> bool {
         self.user_ids.is_empty()
     }

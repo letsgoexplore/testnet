@@ -305,7 +305,7 @@ pub fn user_submit_internal(
     let encrypted_msg = round_key.xor(&round_msg);
 
     // Construct the output blob
-    let mut agg_msg = AggregatedMessage {
+    let mut agg_msg = AggregatedMessageObsolete {
         user_ids: BTreeSet::from_iter(vec![*user_id].into_iter()),
         anytrust_group_id: *anytrust_group_id,
         round,

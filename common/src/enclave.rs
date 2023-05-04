@@ -182,7 +182,7 @@ impl DcNetEnclave {
     /// The multi thread version
     pub fn unblind_aggregate_mt(
         &self,
-        toplevel_agg: &AggregatedMessage,
+        toplevel_agg: &AggregatedMessageObsolete,
         signing_key: &SealedSigPrivKey,
         shared_secrets: &SealedSharedSecretDb,
         n_threads: usize,
@@ -239,7 +239,7 @@ impl DcNetEnclave {
     /// The multi thread version, with parameters taken from config file
     pub fn unblind_aggregate(
         &self,
-        toplevel_agg: &AggregatedMessage,
+        toplevel_agg: &AggregatedMessageObsolete,
         signing_key: &SealedSigPrivKey,
         shared_secrets: &SealedSharedSecretDb,
     ) -> EnclaveResult<(UnblindedAggregateShareBlob, SealedSharedSecretDb)> {
@@ -255,7 +255,7 @@ impl DcNetEnclave {
     /// the security of SGX
     pub fn unblind_aggregate_insecure(
         &self,
-        toplevel_agg: &AggregatedMessage,
+        toplevel_agg: &AggregatedMessageObsolete,
         signing_key: &SealedSigPrivKey,
         sealed_shared_secrets: &SealedSharedSecretDb,
         n_threads: usize,

@@ -85,7 +85,7 @@ pub struct MarshalledSignedUserMessage(pub Vec<u8>);
 
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to
 /// aggregators of all levels as well as anytrust nodes.
-pub type RoundSubmissionBlob = crate::AggregatedMessage;
+pub type RoundSubmissionBlob = crate::AggregatedMessageObsolete;
 
 /// The unblinded aggregate output by a single anytrust node
 /// This serialized to a UnblindedAggregateShare defined in enclave/message_types.rs
@@ -94,7 +94,7 @@ pub type RoundSubmissionBlob = crate::AggregatedMessage;
 pub struct UnblindedAggregateShareBlob(pub Vec<u8>);
 
 /// The state of an aggregator. This can only be opened from within the enclave.
-pub type SignedPartialAggregate = crate::AggregatedMessage;
+pub type SignedPartialAggregate = crate::AggregatedMessageObsolete;
 
 /// Describes user registration information. This contains key encapsulations as well as a linkably
 /// attested signature pubkey.

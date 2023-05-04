@@ -10,7 +10,7 @@ use std::collections::BTreeSet;
 
 pub fn add_to_aggregate_internal(
     input: &(
-        AggregatedMessage,
+        AggregatedMessageObsolete,
         SignedPartialAggregate,
         Option<BTreeSet<RateLimitNonce>>,
         SealedSigPrivKey,

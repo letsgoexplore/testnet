@@ -8,7 +8,7 @@ use std::vec::Vec;
 
 // /// A (potentially aggregated) message that's produced by an enclave
 // #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-// pub struct AggregatedMessage {
+// pub struct AggregatedMessageObsolete {
 //     pub round: u32,
 //     pub anytrust_group_id: EntityId,
 //     pub user_ids: BTreeSet<EntityId>,
@@ -19,18 +19,18 @@ use std::vec::Vec;
 //     pub tee_pk: SgxSigningPubKey,
 // }
 
-use interface::AggregatedMessage;
+use interface::AggregatedMessageObsolete;
 
-impl Signable for AggregatedMessage {
+impl Signable for AggregatedMessageObsolete {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
-        hasher.input(b"Begin AggregatedMessage");
+        hasher.input(b"Begin AggregatedMessageObsolete");
         hasher.input(&self.anytrust_group_id);
         for id in self.user_ids.iter() {
             hasher.input(id);
         }
         hasher.input(&self.aggregated_msg.digest());
-        hasher.input(b"End AggregatedMessage");
+        hasher.input(b"End AggregatedMessageObsolete");
 
         hasher.result().to_vec()
     }
@@ -44,7 +44,7 @@ impl Signable for AggregatedMessage {
     }
 }
 
-impl SignMutable for AggregatedMessage {
+impl SignMutable for AggregatedMessageObsolete {
     fn sign_mut(&mut self, sk: &SgxSigningKey) -> SgxError {
         let (sig, pk) = self.sign(sk)?;
         self.tee_pk = pk;
@@ -56,7 +56,7 @@ impl SignMutable for AggregatedMessage {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UnblindedAggregateShare {
-    pub encrypted_msg: AggregatedMessage,
+    pub encrypted_msg: AggregatedMessageObsolete,
     pub key_share: RoundSecret,
     pub sig: SgxSignature,
     pub pk: SgxSigningPubKey,

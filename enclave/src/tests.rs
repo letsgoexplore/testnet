@@ -49,7 +49,7 @@ fn test_keypair() -> crypto::CryptoResult<(SgxSigningKey, SgxSigningPubKey)> {
 fn sign() -> () {
     let (sk, pk) = test_keypair().unwrap();
 
-    let mut mutable = AggregatedMessage {
+    let mut mutable = AggregatedMessageObsolete {
         user_ids: BTreeSet::from_iter(vec![EntityId::default()].into_iter()),
         ..Default::default()
     };
@@ -63,7 +63,7 @@ fn sign() -> () {
 fn aggregate() {
     // let (keypair, signed_msg) = sign();
     //
-    // let agg = ecall::aggregate_internal(&signed_msg, &AggregatedMessage::zero(), &keypair.prv_key)
+    // let agg = ecall::aggregate_internal(&signed_msg, &AggregatedMessageObsolete::zero(), &keypair.prv_key)
     //     .expect("agg");
     //
     // assert!(agg.verify().expect("ver"));
