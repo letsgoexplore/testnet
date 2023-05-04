@@ -60,6 +60,7 @@ pub trait SignableNoSGX {
     
     fn sign(&self, sk: &SecretKey) -> Result<(Signature, PublicKey), SignatureError> {
         let dig: Vec<u8> = self.digest();
+        // The standard hash function used for most ed25519 libraries is SHA-512
         let pk = PublicKey::from_secret::<Sha512>(&sk);
         let sk_bytes: [u8; SECRET_KEY_LENGTH] = sk.to_bytes();
         let pk_bytes: [u8; PUBLIC_KEY_LENGTH] = pk.to_bytes();
@@ -162,5 +163,28 @@ impl XorNoSGX for DcRoundMessage {
         {
             *lhs ^= rhs;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::rngs::OsRng;
+
+    #[test]
+    fn test_sign_verify_agg_msg() -> Result<(), SignatureError> {
+        // generate secret key first
+        let mut csprng = OsRng::new().unwrap();
+
+        let sk = SecretKey::generate(&mut csprng);
+        let mut agg_msg = AggregatedMessageNoSGX::default();
+        
+        // sign the aggregated message using secret key
+        agg_msg.sign_mut(&sk)?;
+
+        // verify the aggregated message
+        agg_msg.verify()?;
+
+        Ok(())
     }
 }
