@@ -313,7 +313,7 @@ impl AggregatedMessageObsolete {
 pub struct UserSubmittedMessage {
     pub round: u32,
     pub anytrust_group_id: EntityId,
-    pub user_ids: EntityId,
+    pub user_id: EntityId,
     /// This is only Some for user-submitted messages
     pub rate_limit_nonce: Option<RateLimitNonce>,
     pub aggregated_msg: DcRoundMessage,

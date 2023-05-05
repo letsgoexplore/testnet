@@ -304,7 +304,7 @@ pub fn user_submit_internal(
 
     // Construct the output blob
     let mut agg_msg = UserSubmittedMessage {
-        user_ids: *user_id,
+        user_id: *user_id,
         anytrust_group_id: *anytrust_group_id,
         round,
         rate_limit_nonce: Some(rate_limit_nonce),

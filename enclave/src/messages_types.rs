@@ -103,7 +103,7 @@ impl Signable for UserSubmittedMessage {
         // for id in self.user_ids.iter() {
         //     hasher.input(id);
         // }
-        hasher.input(self.user_ids);
+        hasher.input(self.user_id);
         hasher.input(&self.aggregated_msg.digest());
         hasher.input(b"End UserSubmittedMessage");
 
