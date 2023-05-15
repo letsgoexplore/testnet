@@ -4,7 +4,11 @@ use crate::{
 };
 use common::cli_util;
 
-use common::types_nosgx::AggregatedMessage;
+use common::types_nosgx::{
+    AggregatedMessage,
+    SubmittedMessage,
+};
+use interface::UserSubmittedMessage;
 
 use core::ops::DerefMut;
 use std::{
@@ -51,7 +55,7 @@ pub(crate) struct ServiceState {
     pub(crate) agg_state_path: Option<String>,
 }
 
-/// Receives a partial aggregate from an aggregator or a user
+/// Receives a partial aggregate from user
 #[post("/submit-agg")]
 async fn submit_agg(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
@@ -60,7 +64,7 @@ async fn submit_agg(
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
-    let agg_data: AggregatedMessage = cli_util::load(&mut payload.as_bytes())?;
+    let data: UserSubmittedMessage = cli_util::load(&mut payload.as_bytes())?;
 
     // Unpack state
     let mut handle = state.get_ref().lock().unwrap();
@@ -68,12 +72,43 @@ async fn submit_agg(
         ref mut agg_state,
         ..
     } = handle.deref_mut();
+
     // Add to aggregate
+    let agg_data = SubmittedMessage::UserSubmit(data);
     agg_state.add_to_aggregate(&agg_data)?;
 
     // debug!("[agg] submit-agg success");
     let duration = start.elapsed();
     debug!("[agg] submit_agg: {:?}", duration);
+
+    Ok(HttpResponse::Ok().body("OK\n"))
+}
+
+/// Receives a partial aggregate from an aggregator
+#[post("/submit-agg-from-agg")]
+async fn submit_agg_from_agg(
+    (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
+) -> Result<HttpResponse, ApiError> {
+    let start = std::time::Instant::now();
+    // Strip whitespace from the payload
+    let payload = payload.split_whitespace().next().unwrap_or("");
+    // Parse aggregation
+    let data: AggregatedMessage = cli_util::load(&mut payload.as_bytes())?;
+
+    // Unpack state
+    let mut handle = state.get_ref().lock().unwrap();
+    let ServiceState {
+        ref mut agg_state,
+        ..
+    } = handle.deref_mut();
+
+    // Add to aggregate
+    let agg_data = SubmittedMessage::AggSubmit(data);
+    agg_state.add_to_aggregate(&agg_data)?;
+
+    // debug!("[agg] submit-agg-from-agg success");
+    let duration = start.elapsed();
+    debug!("[agg] submit_agg_from_agg: {:?}", duration);
 
     Ok(HttpResponse::Ok().body("OK\n"))
 }

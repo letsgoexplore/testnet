@@ -14,8 +14,8 @@ use crate::{
 };
 
 use common::cli_util;
-use common::types_nosgx::AggregatedMessage;
-use interface::ServerPubKeyPackage;
+use common::types_nosgx::{AggregatedMessage, SubmittedMessage};
+use interface::{ServerPubKeyPackage, UserSubmittedMessage};
 use std::{fs::File, time::SystemTime};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -87,8 +87,13 @@ fn main() -> Result<(), AggregatorError> {
                 .arg(round_arg.clone()),
         )
         .subcommand(
-            SubCommand::with_name("input")
-                .about("Adds the given round submission blob from STDIN to the aggregate")
+            SubCommand::with_name("input-agg")
+                .about("Adds the given aggregator round submission blob from STDIN to the aggregate")
+                .arg(state_arg.clone()),
+        )
+        .subcommand(
+            SubCommand::with_name("input-user")
+                .about("Adds the given user round submission blob from STDIN to the aggregate")
                 .arg(state_arg.clone()),
         )
         .subcommand(
@@ -181,13 +186,28 @@ fn main() -> Result<(), AggregatorError> {
         println!("OK");
     }
 
-    if let Some(matches) = matches.subcommand_matches("input") {
+    if let Some(matches) = matches.subcommand_matches("input-agg") {
         // Load the STDIN input and load the state
         let round_blob: AggregatedMessage = load_from_stdin()?;
         let state_path = matches.value_of("agg-state").unwrap();
         let mut state = load_state(&state_path)?;
 
         // Pass the input to the state and save the result
+        let round_blob = SubmittedMessage::AggSubmit(round_blob);
+        state.add_to_aggregate(&round_blob)?;
+        save_state(&state_path, &state)?;
+
+        println!("OK");
+    }
+
+    if let Some(matches) = matches.subcommand_matches("input-user") {
+        // Load the STDIN input and load the state
+        let round_blob: UserSubmittedMessage = load_from_stdin()?;
+        let state_path = matches.value_of("agg-state").unwrap();
+        let mut state = load_state(&state_path)?;
+
+        // Pass the input to the state and save the result
+        let round_blob = SubmittedMessage::UserSubmit(round_blob);
         state.add_to_aggregate(&round_blob)?;
         save_state(&state_path, &state)?;
 
