@@ -1,4 +1,4 @@
-use interface::EntityId;
+use interface::{EntityId, UserSubmissionMessage};
 use ed25519_dalek::{
     PublicKey,
     PUBLIC_KEY_LENGTH,
@@ -18,4 +18,8 @@ pub fn pk_to_entityid(pk: &PublicKey) -> EntityId {
     let mut id = EntityId::default();
     id.0.copy_from_slice(&digest);
     id
+}
+
+pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessage) -> Result<(), ()> {
+    Ok(())
 }

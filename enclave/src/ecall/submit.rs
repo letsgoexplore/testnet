@@ -303,7 +303,7 @@ pub fn user_submit_internal(
     let encrypted_msg = round_key.xor(&round_msg);
 
     // Construct the output blob
-    let mut agg_msg = UserSubmittedMessage {
+    let mut agg_msg = UserSubmissionMessage {
         user_id: *user_id,
         anytrust_group_id: *anytrust_group_id,
         round,

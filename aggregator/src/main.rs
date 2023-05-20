@@ -14,8 +14,8 @@ use crate::{
 };
 
 use common::cli_util;
-use common::types_nosgx::{AggregatedMessage, SubmittedMessage};
-use interface::{ServerPubKeyPackage, UserSubmittedMessage};
+use common::types_nosgx::{AggregatedMessage, SubmissionMessage};
+use interface::{ServerPubKeyPackage, UserSubmissionMessage};
 use std::{fs::File, time::SystemTime};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -193,7 +193,7 @@ fn main() -> Result<(), AggregatorError> {
         let mut state = load_state(&state_path)?;
 
         // Pass the input to the state and save the result
-        let round_blob = SubmittedMessage::AggSubmit(round_blob);
+        let round_blob = SubmissionMessage::AggSubmission(round_blob);
         state.add_to_aggregate(&round_blob)?;
         save_state(&state_path, &state)?;
 
@@ -202,12 +202,12 @@ fn main() -> Result<(), AggregatorError> {
 
     if let Some(matches) = matches.subcommand_matches("input-user") {
         // Load the STDIN input and load the state
-        let round_blob: UserSubmittedMessage = load_from_stdin()?;
+        let round_blob: UserSubmissionMessage = load_from_stdin()?;
         let state_path = matches.value_of("agg-state").unwrap();
         let mut state = load_state(&state_path)?;
 
         // Pass the input to the state and save the result
-        let round_blob = SubmittedMessage::UserSubmit(round_blob);
+        let round_blob = SubmissionMessage::UserSubmission(round_blob);
         state.add_to_aggregate(&round_blob)?;
         save_state(&state_path, &state)?;
 

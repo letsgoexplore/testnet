@@ -286,7 +286,7 @@ use crate::SgxSignature;
 
 /// A (potentially aggregated) message that's produced by an enclave
 /// Not used anymore.
-/// Clients use UserSubmittedMessage
+/// Clients use UserSubmissionMessage
 /// Aggregators and servers use AggregatedMessage
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -310,7 +310,7 @@ impl AggregatedMessageObsolete {
 /// A user submitted message that's produced by an enclave
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct UserSubmittedMessage {
+pub struct UserSubmissionMessage {
     pub round: u32,
     pub anytrust_group_id: EntityId,
     pub user_id: EntityId,
@@ -319,4 +319,10 @@ pub struct UserSubmittedMessage {
     pub aggregated_msg: DcRoundMessage,
     pub tee_sig: SgxSignature,
     pub tee_pk: SgxSigningPubKey,
+}
+
+impl UserSubmissionMessage {
+    pub fn is_empty(&self) -> bool {
+        false
+    }
 }

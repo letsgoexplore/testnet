@@ -11,7 +11,7 @@ use ed25519_dalek::{
 };
 use serde::{Serialize, Deserialize};
 use sha2::{Digest, Sha256, Sha512};
-use interface::{EntityId, RateLimitNonce, DcRoundMessage};
+use interface::{EntityId, RateLimitNonce, DcRoundMessage, UserSubmissionMessage};
 use std::{collections::BTreeSet, vec::Vec};
 
 #[derive(Serialize, Debug, Deserialize)]
@@ -164,6 +164,11 @@ impl XorNoSGX for DcRoundMessage {
             *lhs ^= rhs;
         }
     }
+}
+
+pub enum SubmissionMessage {
+    UserSubmission(UserSubmissionMessage),
+    AggSubmission(AggregatedMessage),
 }
 
 #[cfg(test)]

@@ -93,19 +93,19 @@ impl SignMutable for UnblindedAggregateShare {
 }
 
 
-use interface::UserSubmittedMessage;
+use interface::UserSubmissionMessage;
 
-impl Signable for UserSubmittedMessage {
+impl Signable for UserSubmissionMessage {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
-        hasher.input(b"Begin UserSubmittedMessage");
+        hasher.input(b"Begin UserSubmissionMessage");
         hasher.input(&self.anytrust_group_id);
         // for id in self.user_ids.iter() {
         //     hasher.input(id);
         // }
         hasher.input(self.user_id);
         hasher.input(&self.aggregated_msg.digest());
-        hasher.input(b"End UserSubmittedMessage");
+        hasher.input(b"End UserSubmissionMessage");
 
         hasher.result().to_vec()
     }
@@ -119,7 +119,7 @@ impl Signable for UserSubmittedMessage {
     }
 }
 
-impl SignMutable for UserSubmittedMessage {
+impl SignMutable for UserSubmissionMessage {
     fn sign_mut(&mut self, sk: &SgxSigningKey) -> SgxError {
         let (sig, pk) = self.sign(sk)?;
         self.tee_pk = pk;

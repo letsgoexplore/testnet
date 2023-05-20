@@ -7,7 +7,7 @@ use sha2::Sha512;
 use interface::{
     EntityId,
     RateLimitNonce,
-    UserSubmittedMessage,
+    UserSubmissionMessage,
 
 };
 use common::types_nosgx::{
@@ -16,9 +16,12 @@ use common::types_nosgx::{
     SignableNoSGX,
     SignMutableNoSGX,
     XorNoSGX,
-    SubmittedMessage,
+    SubmissionMessage,
 };
-use common::funcs_nosgx::{pk_to_entityid};
+use common::funcs_nosgx::{
+    pk_to_entityid,
+    verify_user_submission_msg,
+};
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
 
@@ -68,19 +71,19 @@ pub fn finalize_aggregate(
 pub fn add_to_aggregate(
     agg: &mut AggregatedMessage,
     observed_nonces: &mut Option<BTreeSet<RateLimitNonce>>,
-    new_input: &SubmittedMessage,
+    new_input: &SubmissionMessage,
     signing_key: &SecretKey,
 ) -> Result<()> {
     let mut new_agg = agg.clone();
     let mut new_observed_nonces = observed_nonces.clone();
 
     match new_input {
-        SubmittedMessage::UserSubmit(new_input) => {
+        SubmissionMessage::UserSubmission(new_input) => {
             let res = add_to_agg_user_submit((new_input, agg, observed_nonces, signing_key))?;
             new_agg = res.0;
             new_observed_nonces = res.1;
         },
-        SubmittedMessage::AggSubmit(new_input) => {
+        SubmissionMessage::AggSubmission(new_input) => {
             let res = add_to_agg((new_input, agg, observed_nonces, signing_key))?;
             new_agg = res.0;
             new_observed_nonces = res.1;
@@ -210,7 +213,7 @@ fn add_to_agg(
 
 fn add_to_agg_user_submit(
     input: (
-        &UserSubmittedMessage,
+        &UserSubmissionMessage,
         &AggregatedMessage,
         &Option<BTreeSet<RateLimitNonce>>,
         &SecretKey,
@@ -231,7 +234,7 @@ fn add_to_agg_user_submit(
     }
 
     // now we are sure incoming_msg is not empty we treat it as untrusted input and verify signature
-    match incoming_msg.verify() {
+    match verify_user_submission_msg(&incoming_msg) {
         Ok(()) => {
             debug!("signature verification succeeded");
         },
@@ -265,11 +268,12 @@ fn add_to_agg_user_submit(
     // if the current aggregation is empty we create a single-msg aggregation
     if current_aggregation.is_empty() {
         let mut agg = AggregatedMessage::default();
-        agg.round = incoming_msg.round;
-        agg.anytrust_group_id = incoming_msg.anytrust_group_id;
-        agg.user_ids = BTreeSet::from_iter(vec![incoming_msg.user_id.clone()].into_iter());
-        agg.rate_limit_nonce = incoming_msg.rate_limit_nonce;
-        agg.aggregated_msg = incoming_msg.aggregated_msg;
+        let incoming_msg_clone = incoming_msg.clone();
+        agg.round = incoming_msg_clone.round;
+        agg.anytrust_group_id = incoming_msg_clone.anytrust_group_id;
+        agg.user_ids = BTreeSet::from_iter(vec![incoming_msg_clone.user_id.clone()].into_iter());
+        agg.rate_limit_nonce = incoming_msg_clone.rate_limit_nonce;
+        agg.aggregated_msg = incoming_msg_clone.aggregated_msg;
         match agg.sign_mut(&sk) {
             Ok(()) => (),
             Err(e) => {
@@ -308,7 +312,7 @@ fn add_to_agg_user_submit(
         current_aggregation.user_ids.insert(incoming_msg.user_id.clone());
         current_aggregation
             .aggregated_msg
-            .xor_mut(&incoming_msg.aggregated_msg);
+            .xor_mut_nosgx(&incoming_msg.aggregated_msg);
 
         // sign
         match current_aggregation.sign_mut(&sk) {

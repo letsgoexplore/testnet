@@ -14,7 +14,7 @@ use ed25519_dalek::SecretKey;
 use common::types_nosgx::{
     AggRegistrationBlobNoSGX,
     AggregatedMessage,
-    SubmittedMessage,
+    SubmissionMessage,
 };
 use crate::agg_nosgx::{
     new_aggregator,
@@ -89,7 +89,7 @@ impl AggregatorState {
     /// Adds the given input to the partial aggregate
     pub(crate) fn add_to_aggregate(
         &mut self,
-        input_blob: &SubmittedMessage,
+        input_blob: &SubmissionMessage,
     ) -> Result<()> {
         let partial_agg = self
             .partial_agg
