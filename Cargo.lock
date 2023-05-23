@@ -669,6 +669,7 @@ dependencies = [
  "tokio 1.7.1",
  "tonic",
  "tonic-build",
+ "x25519-dalek",
 ]
 
 [[package]]
@@ -3350,4 +3351,15 @@ checksum = "d59cefebd0c892fa2dd6de581e937301d8552cb44489cdff035c6187cb63fa5e"
 dependencies = [
  "winapi 0.2.8",
  "winapi-build",
+]
+
+[[package]]
+name = "x25519-dalek"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ee1585dc1484373cbc1cee7aafda26634665cf449436fd6e24bfd1fad230538"
+dependencies = [
+ "clear_on_drop",
+ "curve25519-dalek",
+ "rand_core 0.3.1",
 ]
