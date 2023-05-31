@@ -20,9 +20,12 @@ use interface::{
     compute_anytrust_group_id,
     AttestedPublicKey,
 };
-use std::{collections::{BTreeSet, BTreeMap}, vec::Vec};
+use std::{collections::{BTreeSet, BTreeMap}, vec::Vec, convert::From};
+use crate::funcs_nosgx::pk_to_entityid;
 
-#[derive(Serialize, Debug, Deserialize)]
+use core::fmt::{Debug, Formatter};
+
+#[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct AggRegistrationBlobNoSGX {
     pub pk: PublicKey,
     pub role: std::string::String,
@@ -213,6 +216,13 @@ impl Debug for SealedSharedSecretDbServer {
 }
 
 pub type AggPublicKey = AggRegistrationBlobNoSGX;
+
+impl From<&ServerPubKeyPackageNoSGX> for EntityId {
+    // server's entity id is computed from the signing key
+    fn from(spk: &ServerPubKeyPackageNoSGX) -> Self {
+        pk_to_entityid(&spk.sig)
+    }
+}
 
 /// SignedPubKeyDbNoSGX is a signed mapping between entity id and public key
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]

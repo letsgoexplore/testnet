@@ -8,6 +8,9 @@ use std::fs::File;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use std::convert::From;
+use ed25519_dalek::SignatureError;
+
 pub(crate) type Result<T> = core::result::Result<T, ServerError>;
 
 #[derive(Debug, Error)]
@@ -18,6 +21,20 @@ pub enum ServerError {
     Io(#[from] std::io::Error),
     #[error("error in serialization/deserialization")]
     Ser(#[from] cli_util::SerializationError),
+    #[error("Unexpected Error")]
+    UnexpectedError,
+}
+
+impl From<SignatureError> for ServerError {
+    fn from(error: SignatureError) -> Self {
+        ServerError::UnexpectedError
+    }
+}
+
+impl From<rand::Error> for ServerError {
+    fn from(error: rand::Error) -> Self {
+        ServerError::UnexpectedError
+    }
 }
 
 pub(crate) fn load_state(save_path: &str) -> Result<ServerState> {
