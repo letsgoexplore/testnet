@@ -10,23 +10,31 @@ use interface::{
 use log::info;
 use serde::{Deserialize, Serialize};
 
+use ed25519_dalek::SecretKey;
+
+use common::types_nosgx::{
+    AggregatedMessage,
+    ServerPubKeyPackageNoSGX,
+    SealedSharedSecretDbServer,
+    SignedPubKeyDbNoSGX,
+};
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ServerState {
     /// A unique identifier for this aggregator. Computed as the hash of the server's KEM pubkey.
     pub server_id: EntityId,
-    /// This server's's signing key. Can only be accessed from within the enclave.
-    pub signing_key: SealedSigPrivKey,
-    /// This server's KEM decapsulation key. Can only be accessed from within the enclave.
-    pub decap_key: SealedKemPrivKey,
+    /// This server's's signing key.
+    pub signing_key: SecretKey,
+    /// This server's KEM decapsulation key.
+    pub decap_key: SecretKey,
     /// The KEM and signing public keys of this server
-    pub pubkey_pkg: ServerPubKeyPackage,
+    pub pubkey_pkg: ServerPubKeyPackageNoSGX,
     /// A partial aggregate of received user messages
-    pub partial_agg: Option<SignedPartialAggregate>,
-    /// A sealed database of secrets shared with users. Maps entity ID to shared secret. Can only
-    /// be accessed from within the enclave.
-    pub shared_secrets: SealedSharedSecretDb,
+    pub partial_agg: Option<AggregatedMessage>,
+    /// A sealed database of secrets shared with users. Maps entity ID to shared secret.
+    pub shared_secrets: SealedSharedSecretDbServer, //TODO: new type no sealed version
     /// A map of EntityIds to the corresponding public key
-    pub pubkeys: SignedPubKeyDb,
+    pub pubkeys: SignedPubKeyDbNoSGX,
     /// The size of this anytrust group, including this node
     pub anytrust_group_size: usize,
 }

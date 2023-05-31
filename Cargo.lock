@@ -2524,10 +2524,13 @@ dependencies = [
  "clap",
  "common",
  "dotenv",
+ "ed25519-dalek",
  "env_logger 0.9.0",
  "interface",
  "log 0.4.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.6.5",
  "serde 1.0.126",
+ "sha2 0.8.2",
  "thiserror",
 ]
 

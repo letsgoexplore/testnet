@@ -11,8 +11,16 @@ use ed25519_dalek::{
 };
 use serde::{Serialize, Deserialize};
 use sha2::{Digest, Sha256, Sha512};
-use interface::{EntityId, RateLimitNonce, DcRoundMessage, UserSubmissionMessage};
-use std::{collections::BTreeSet, vec::Vec};
+use interface::{
+    EntityId,
+    RateLimitNonce,
+    DcRoundMessage,
+    UserSubmissionMessage,
+    SgxProtectedKeyPub,
+    compute_anytrust_group_id,
+    AttestedPublicKey,
+};
+use std::{collections::{BTreeSet, BTreeMap}, vec::Vec};
 
 #[derive(Serialize, Debug, Deserialize)]
 pub struct AggRegistrationBlobNoSGX {
@@ -169,6 +177,49 @@ impl XorNoSGX for DcRoundMessage {
 pub enum SubmissionMessage {
     UserSubmission(UserSubmissionMessage),
     AggSubmission(AggregatedMessage),
+}
+
+/// Contains a server's signing and KEM pubkeys
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct ServerPubKeyPackageNoSGX {
+    pub sig: PublicKey,
+    pub kem: PublicKey,
+}
+
+/// Secrets shared between anytrust servers and users.
+/// This data structure is used only by servers.
+/// This is the server side, the key is user's signing key
+/// TODO: new type SealedSharedSecretDbClient, change client side
+#[derive(Default, Clone, Serialize, Deserialize)]
+pub struct SealedSharedSecretDbServer {
+    pub round: u32,
+    pub db: BTreeMap<SgxProtectedKeyPub, Vec<u8>>,
+}
+
+impl SealedSharedSecretDbServer {
+    pub fn anytrust_group_id(&self) -> EntityId {
+        let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        compute_anytrust_group_id(&keys)
+    }
+}
+
+impl Debug for SealedSharedSecretDbServer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let pks: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        f.debug_struct("SealedSharedSecretDbServer")
+            .field("pks", &pks)
+            .finish()
+    }
+}
+
+pub type AggPublicKey = AggRegistrationBlobNoSGX;
+
+/// SignedPubKeyDbNoSGX is a signed mapping between entity id and public key
+#[derive(Clone, Default, Serialize, Debug, Deserialize)]
+pub struct SignedPubKeyDbNoSGX {
+    pub users: BTreeMap<EntityId, AttestedPublicKey>,
+    pub servers: BTreeMap<EntityId, ServerPubKeyPackageNoSGX>,
+    pub aggregators: BTreeMap<EntityId, AggPublicKey>,
 }
 
 #[cfg(test)]
