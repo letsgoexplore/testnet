@@ -16,7 +16,6 @@ use common::types_nosgx::{
 };
 
 
-
 pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPackageNoSGX)> {
     let mut csprng = OsRng::new()?;
     let sig_key = SecretKey::generate(&mut csprng);
@@ -31,6 +30,5 @@ pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPacka
         kem: kem_key_pk,
     };
 
-    // TODO: seal_into
     Ok((sig_key, kem_key, EntityId::from(&reg), reg))
 }

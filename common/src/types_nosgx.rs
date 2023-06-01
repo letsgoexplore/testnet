@@ -25,6 +25,8 @@ use crate::funcs_nosgx::pk_to_entityid;
 
 use core::fmt::{Debug, Formatter};
 
+use x25519_dalek::SharedSecret;
+
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct AggRegistrationBlobNoSGX {
     pub pk: PublicKey,

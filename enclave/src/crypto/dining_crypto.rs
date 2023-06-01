@@ -60,7 +60,7 @@ impl SharedSecretsDb {
         let ecc_handle = SgxEccHandle::new();
         ecc_handle.open()?;
 
-        let mut server_secrets = BTreeMap::new();
+        let mut server_secrets: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret> = BTreeMap::new();
 
         for server_pk in other_pks.iter() {
             if !ecc_handle.check_point(&server_pk.into())? {

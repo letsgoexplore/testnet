@@ -19,7 +19,11 @@ use common::types_nosgx::{
     SignedPubKeyDbNoSGX,
 };
 
-#[derive(Clone, Serialize, Deserialize)]
+use crate::server_nosgx::{
+    new_server,
+};
+
+#[derive(Serialize, Deserialize)]
 pub struct ServerState {
     /// A unique identifier for this aggregator. Computed as the hash of the server's KEM pubkey.
     pub server_id: EntityId,
@@ -40,8 +44,8 @@ pub struct ServerState {
 }
 
 impl ServerState {
-    pub fn new(enclave: &DcNetEnclave) -> Result<(ServerState, ServerRegistrationBlob)> {
-        let (sealed_ssk, sealed_ksk, server_id, reg_blob) = enclave.new_server()?;
+    pub fn new(enclave: &DcNetEnclave) -> Result<(ServerState, ServerPubKeyPackageNoSGX)> {
+        let (ssk, ksk, server_id, reg_blob) = new_server()?;
         // Group size starts out as 1. This will increment every time an anytrust node is
         // registered with this node.
         let anytrust_group_size = 1;
@@ -50,12 +54,12 @@ impl ServerState {
 
         let state = ServerState {
             server_id,
-            signing_key: sealed_ssk,
-            decap_key: sealed_ksk,
+            signing_key: ssk,
+            decap_key: ksk,
             pubkey_pkg,
             partial_agg: None,
-            shared_secrets: SealedSharedSecretDb::default(),
-            pubkeys: SignedPubKeyDb::default(),
+            shared_secrets: SealedSharedSecretDbServer::default(),
+            pubkeys: SignedPubKeyDbNoSGX::default(),
             anytrust_group_size,
         };
 
