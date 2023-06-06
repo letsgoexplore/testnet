@@ -15,7 +15,7 @@ use ed25519_dalek::SecretKey;
 use common::types_nosgx::{
     AggregatedMessage,
     ServerPubKeyPackageNoSGX,
-    SealedSharedSecretDbServer,
+    SharedSecretDbServer,
     SignedPubKeyDbNoSGX,
 };
 
@@ -36,7 +36,7 @@ pub struct ServerState {
     /// A partial aggregate of received user messages
     pub partial_agg: Option<AggregatedMessage>,
     /// A sealed database of secrets shared with users. Maps entity ID to shared secret.
-    pub shared_secrets: SealedSharedSecretDbServer, //TODO: new type no sealed version
+    pub shared_secrets: SharedSecretDbServer, //TODO: new type no sealed version
     /// A map of EntityIds to the corresponding public key
     pub pubkeys: SignedPubKeyDbNoSGX,
     /// The size of this anytrust group, including this node
@@ -58,7 +58,7 @@ impl ServerState {
             decap_key: ksk,
             pubkey_pkg,
             partial_agg: None,
-            shared_secrets: SealedSharedSecretDbServer::default(),
+            shared_secrets: SharedSecretDbServer::default(),
             pubkeys: SignedPubKeyDbNoSGX::default(),
             anytrust_group_size,
         };
