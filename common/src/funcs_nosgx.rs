@@ -1,4 +1,8 @@
-use interface::{EntityId, UserSubmissionMessage};
+use interface::{
+    EntityId,
+    UserSubmissionMessage,
+    UserRegistrationBlob,
+};
 use ed25519_dalek::{
     PublicKey,
     PUBLIC_KEY_LENGTH,
@@ -21,5 +25,9 @@ pub fn pk_to_entityid(pk: &PublicKey) -> EntityId {
 }
 
 pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessage) -> Result<(), ()> {
+    Ok(())
+}
+
+pub fn verify_user_attestation(_reg_blob: &UserRegistrationBlob) {
     Ok(())
 }

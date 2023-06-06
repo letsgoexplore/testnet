@@ -20,7 +20,9 @@ use interface::{
     compute_anytrust_group_id,
     AttestedPublicKey,
 };
-use std::{collections::{BTreeSet, BTreeMap}, vec::Vec, convert::From};
+
+use std::prelude::v1::*;
+use std::collections::{BTreeSet, BTreeMap};
 use crate::funcs_nosgx::pk_to_entityid;
 
 use core::fmt::{Debug, Formatter};
@@ -211,6 +213,25 @@ impl SharedSecretDbServer {
     pub fn anytrust_group_id(&self) -> EntityId {
         let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
         compute_anytrust_group_id(&keys)
+    }
+
+    pub fn derive_shared_secrets(
+        my_sk: &SecretKey,
+        other_pks: &[SgxProtectedKeyPub],
+    ) -> Result<Self, SignatureError> {
+        let my_secret = StaticSecret::from(my_sk.to_bytes());
+
+        let mut server_secrets: BTreeMpa<SgxProtectedKeyPub, SharedSecret> = BTreeMap::new();
+
+        for client_pk in other_pks.iter() {
+            let shared_secret = my_secret.diffie_hellman(&client_pk);
+            server_secrets.insert(client_pk.to_owned(), shared_secret);
+        }
+
+        Ok(SharedSecretDbServer {
+            db: server_secrets,
+            ..Default::default()
+        })
     }
 }
 
