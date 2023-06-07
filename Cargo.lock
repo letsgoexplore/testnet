@@ -796,6 +796,7 @@ dependencies = [
  "sgx_tunittest",
  "sgx_types",
  "sha2 0.8.0",
+ "x25519-dalek",
 ]
 
 [[package]]
