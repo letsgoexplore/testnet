@@ -777,6 +777,7 @@ dependencies = [
  "aes-ctr",
  "bitvec",
  "byteorder 1.3.4",
+ "ed25519-dalek",
  "env_logger 0.7.1",
  "hex",
  "hkdf 0.8.0 (git+https://github.com/bl4ck5un/KDFs?branch=v0.8.0-sgx)",

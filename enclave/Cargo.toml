@@ -38,3 +38,4 @@ rand = {version ="0.8.4", default-features = false}
 rand_core = "0.6.3"
 
 x25519-dalek = "0.5.2"
+ed25519-dalek = { version = "0.9.1", default-features = false, features = ["serde"] }
