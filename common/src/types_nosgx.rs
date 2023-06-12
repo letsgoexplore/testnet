@@ -201,12 +201,15 @@ pub struct ServerPubKeyPackageNoSGX {
 /// Secrets shared between anytrust servers and users.
 /// This data structure is used only by servers.
 /// This is the server side, the key is user's signing key
-/// TODO: new type SharedSecretDbClient, change client side
-/// TODO: implement these traits
+/// TODO: new type SharedSecretDbClient, corresponds to client side
+/// TODO: upgrade Rust version, migrate project using x25519_dalek 1.2.0
+/// where StaticSecret implements Clone, Serialize and Deserialize traits
 /// #[derive(Clone, Serialize, Deserialize)]
 pub struct SharedSecretDbServer {
     pub round: u32,
-    pub db: BTreeMap<SgxProtectedKeyPub, SharedSecret>,
+    /// a dictionary of keys
+    /// We use StaticSecret to store SharedSecret, since SharedSecret is ephemeral
+    pub db: BTreeMap<SgxProtectedKeyPub, StaticSecret>,
 }
 
 impl SharedSecretDbServer {
@@ -225,7 +228,9 @@ impl SharedSecretDbServer {
 
         for client_pk in other_pks.iter() {
             let shared_secret = my_secret.diffie_hellman(&client_pk);
-            server_secrets.insert(client_pk.to_owned(), shared_secret);
+            // save ephemeral SharedSecret into StaticSecret
+            let shared_secret_bytes: [u8; 32] = shared_secret.as_bytes().to_owned().try_into();
+            server_secrets.insert(client_pk.to_owned(), StaticSecret::from(shared_secret_bytes));
         }
 
         Ok(SharedSecretDbServer {
@@ -243,34 +248,6 @@ impl Default for SharedSecretDbServer {
         }
     }
 }
-
-// impl Clone for SharedSecretDbServer {
-//     fn clone(&self) -> Self {
-//         let mut db_clone: BTreeMap<SgxProtectedKeyPub, SharedSecret> = BTreeMap::new();
-//         for (key, value) in &self.db {
-//             let shared_scret_bytes = value.as_bytes().clone();
-//             let mut csprng1 = OsRng::new().expect("create new osrng failed!");
-//             let secret1 = StaticSecret::new(&mut csprng1);
-//             let public1 = xPublicKey::from(&secret1);
-
-//             let mut csprng2 = OsRng::new().expect("create new osrng failed!");
-//             let secret2 = StaticSecret::new(&mut csprng2);
-//             let public2 = xPublicKey::from(&secret2);
-
-//             let mut shared_secret = secret1.diffie_hellman(&public2);
-//             // shared_secret.as_bytes()
-//             //TODO: as_bytes return immutable reference
-
-//             // db_clone.insert(key.clone(), );
-//         }
-
-//         SharedSecretDbServer {
-//             round: self.round,
-//             db: db_clone,
-//         }
-
-//     }
-// }
 
 impl Debug for SharedSecretDbServer {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
