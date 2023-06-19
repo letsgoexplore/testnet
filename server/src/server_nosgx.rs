@@ -15,7 +15,7 @@ use sha2::Sha512;
 
 use common::types_nosgx::{
     ServerPubKeyPackageNoSGX,
-    SharedSecretDbServer,
+    SharedSecretsDbServer,
     SignedPubKeyDbNoSGX,
     Sealed
 };
@@ -49,7 +49,7 @@ pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPacka
 
 pub fn recv_user_registration_batch(
     pubkeys: &mut SignedPubKeyDbNoSGX,
-    shared_secrets: &mut SharedSecretDbServer,
+    shared_secrets: &mut SharedSecretsDbServer,
     decap_key: &SecretKey,
     input_blob: &[UserRegistrationBlob],
 ) -> Result<()> {
@@ -65,7 +65,7 @@ pub fn recv_user_registration_batch(
 
 fn recv_user_reg_batch(
     input: (&SignedPubKeyDbNoSGX, &SecretKey, &Vec<UserRegistrationBlob>),
-) -> Result<(SignedPubKeyDb, SharedSecretDbServer)> {
+) -> Result<(SignedPubKeyDb, SharedSecretsDbServer)> {
     let mut pk_db: SignedPubKeyDbNoSGX = input.0.clone();
     let my_kem_sk = input.1;
 

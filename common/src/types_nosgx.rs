@@ -205,14 +205,14 @@ pub struct ServerPubKeyPackageNoSGX {
 /// TODO: upgrade Rust version, migrate project using x25519_dalek 1.2.0
 /// where StaticSecret implements Clone, Serialize and Deserialize traits
 /// #[derive(Clone, Serialize, Deserialize)]
-pub struct SharedSecretDbServer {
+pub struct SharedSecretsDbServer {
     pub round: u32,
     /// a dictionary of keys
     /// We use StaticSecret to store SharedSecret, since SharedSecret is ephemeral
     pub db: BTreeMap<SgxProtectedKeyPub, StaticSecret>,
 }
 
-impl SharedSecretDbServer {
+impl SharedSecretsDbServer {
     pub fn anytrust_group_id(&self) -> EntityId {
         let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
         compute_anytrust_group_id(&keys)
@@ -233,26 +233,26 @@ impl SharedSecretDbServer {
             server_secrets.insert(client_pk.to_owned(), StaticSecret::from(shared_secret_bytes));
         }
 
-        Ok(SharedSecretDbServer {
+        Ok(SharedSecretsDbServer {
             db: server_secrets,
             ..Default::default()
         })
     }
 }
 
-impl Default for SharedSecretDbServer {
+impl Default for SharedSecretsDbServer {
     fn default() -> Self {
-        SharedSecretDbServer {
+        SharedSecretsDbServer {
             round: 0,
             db: BTreeMap::new(),
         }
     }
 }
 
-impl Debug for SharedSecretDbServer {
+impl Debug for SharedSecretsDbServer {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let pks: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
-        f.debug_struct("SharedSecretDbServer")
+        f.debug_struct("SharedSecretsDbServer")
             .field("round", &self.round)
             .field("pks", &pks)
             .finish()
