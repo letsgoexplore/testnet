@@ -253,6 +253,7 @@ impl Debug for SharedSecretDbServer {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let pks: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
         f.debug_struct("SharedSecretDbServer")
+            .field("round", &self.round)
             .field("pks", &pks)
             .finish()
     }

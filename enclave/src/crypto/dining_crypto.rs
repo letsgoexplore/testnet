@@ -15,6 +15,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Result as FmtResult;
 use std::fmt::{Debug, Formatter};
 
+use ed25519_dalek::{PublicKey, PUBLIC_KEY_LENGTH};
+use x25519_dalek::StaticSecret;
+
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DiffieHellmanSharedSecret([u8; SGX_ECP256_KEY_SIZE]);
@@ -28,6 +31,52 @@ impl AsRef<[u8]> for DiffieHellmanSharedSecret {
 impl Debug for DiffieHellmanSharedSecret {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(&hex::encode(&self.0))
+    }
+}
+
+#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ServerPublicKey([u8; PUBLIC_KEY_LENGTH]);
+
+impl AsRef<[u8]> for ServerPublicKey {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl Debug for ServerPublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&hex::encode(&self.0))
+    }
+}
+
+/// A SharedSecretsDbClient is a map of entity public keys to DH secrets
+/// This is used by users only, the keys are server pks
+/// TODO: upgrade Rust version, migrate project using x25519_dalek 1.2.0
+/// where StaticSecret implements Clone, Serialize and Deserialize traits
+// #[derive(Clone, Default, Serialize, Deserialize)]
+pub struct SharedSecretsDbClient {
+    pub round: u32,
+    /// a dictionary of keys
+    /// We use StaticSecret to store SharedSecret, since SharedSecret is ephemeral
+    pub db: BTreeMap<ServerPublicKey, StaticSecret>,
+}
+
+impl Default for SharedSecretsDbClient {
+    fn default() -> Self {
+        SharedSecretsDbClient {
+            round: 0,
+            db: BTreeMap::new(),
+        }
+    }
+}
+
+impl Debug for SharedSecretsDbClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        let pks: Vec<ServerPublicKey> = self.db.keys().cloned().collect();
+        f.debug_struct("SharedSecretsDbClient")
+            .field("round", &self.round)
+            .field("pks", &pks)
+            .finish()
     }
 }
 
