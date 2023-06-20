@@ -129,6 +129,28 @@ impl DcRoundMessage {
     }
 }
 
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ServerPublicKey(pub [u8; PUBLIC_KEY_LENGTH]);
+
+impl AsRef<[u8]> for ServerPublicKey {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl Debug for ServerPublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(&hex::encode(&self.0))
+    }
+}
+
+impl Display for ServerPublicKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.write_str(&hex::encode(&self.0))
+    }
+}
+
 /// A RoundSecret is an one-time pad for a given round derived from a set of
 /// DiffieHellmanSharedSecret shared by user and anytrust servers.
 pub type RoundSecret = DcRoundMessage;

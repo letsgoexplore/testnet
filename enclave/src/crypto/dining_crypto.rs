@@ -15,7 +15,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Result as FmtResult;
 use std::fmt::{Debug, Formatter};
 
-use ed25519_dalek::{PublicKey, PUBLIC_KEY_LENGTH};
 use x25519_dalek::StaticSecret;
 
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
@@ -29,21 +28,6 @@ impl AsRef<[u8]> for DiffieHellmanSharedSecret {
 }
 
 impl Debug for DiffieHellmanSharedSecret {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&hex::encode(&self.0))
-    }
-}
-
-#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ServerPublicKey([u8; PUBLIC_KEY_LENGTH]);
-
-impl AsRef<[u8]> for ServerPublicKey {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl Debug for ServerPublicKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(&hex::encode(&self.0))
     }
@@ -79,6 +63,13 @@ impl Debug for SharedSecretsDbClient {
             .finish()
     }
 }
+
+// impl SharedSecretsDbClient {
+//     pub fn anytrust_group_id(&self) -> EntityId {
+//         let keys: Vec<ServerPublicKey> = self.db.keys().cloned().collect();
+//         // TODO
+//     }
+// }
 
 /// A SharedSecretsDb is a map of entity public keys to DH secrets
 /// This is used by both servers and users.

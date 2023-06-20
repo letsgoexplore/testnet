@@ -25,6 +25,9 @@ pub const SERVER_KEY_LENGTH: usize = DC_NET_MESSAGE_LENGTH;
 /// quite large and we can't go much smaller than 1024.
 pub const SEALED_SGX_SIGNING_KEY_LENGTH: usize = 1024;
 
+/// The size of a public key of a server
+pub const PUBLIC_KEY_LENGTH: usize = 32;
+
 /// Gets the window that this round belongs to
 pub fn round_window(round: u32) -> u32 {
     let relative_round = round % DC_NET_ROUNDS_PER_WINDOW;
