@@ -177,6 +177,20 @@ impl AsRef<[u8]> for EntityId {
     }
 }
 
+impl From<&ServerPublicKey> for EntityId {
+    fn from(pk: &ServerPublicKey) -> Self {
+        let mut hasher = Sha256::new();
+        hasher.input("anytrust_group_id");
+        hasher.input(pk.0);
+
+        let digest = hasher.result();
+
+        let mut id = EntityId::default();
+        id.0.copy_from_slice(&digest);
+        id
+    }
+}
+
 impl From<[u8; USER_ID_LENGTH]> for EntityId {
     fn from(raw: [u8; USER_ID_LENGTH]) -> Self {
         EntityId(raw)
