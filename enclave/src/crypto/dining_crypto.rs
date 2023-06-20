@@ -64,12 +64,12 @@ impl Debug for SharedSecretsDbClient {
     }
 }
 
-// impl SharedSecretsDbClient {
-//     pub fn anytrust_group_id(&self) -> EntityId {
-//         let keys: Vec<ServerPublicKey> = self.db.keys().cloned().collect();
-//         // TODO
-//     }
-// }
+impl SharedSecretsDbClient {
+    pub fn anytrust_group_id(&self) -> EntityId {
+        let keys: Vec<ServerPublicKey> = self.db.keys().cloned().collect();
+        compute_anytrust_group_id_spk(&keys)
+    }
+}
 
 /// A SharedSecretsDb is a map of entity public keys to DH secrets
 /// This is used by both servers and users.

@@ -246,6 +246,11 @@ pub fn compute_anytrust_group_id(keys: &[SgxSigningPubKey]) -> EntityId {
     compute_group_id(&keys.iter().map(|k| EntityId::from(k)).collect())
 }
 
+/// An anytrust_group_id is computed from server pub keys
+pub fn compute_anytrust_group_id_spk(keys: &[ServerPublicKey]) -> EntityId {
+    compute_group_id(&keys.iter().map(|k| EntityId::from(k)).collect())
+}
+
 /// This is a token that's intended to be used for rate limiting. It's just the sha256 hash of the
 /// current window along with the number of times the user has already talked this window. This
 /// number may not exceed DC_NET_MSGS_PER_WINDOW. If a token ever repeats then the aggregator will
