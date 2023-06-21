@@ -104,6 +104,26 @@ impl SharedSecretsDbClient {
             ..Default::default()
         })
     }
+
+    /// Return ratcheted keys
+    pub fn ratchet(&self) -> SharedSecretsDbClient {
+        let a = self
+            .db
+            .iter()
+            .map(|(&k, v)| {
+                let new_key = Sha256::digest(&v.to_bytes());
+                let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32]");
+                let new_sec = StaticSecret::from(secret_bytes);
+
+                (k, new_sec)
+            })
+            .collect();
+
+        SharedSecretsDbClient {
+            round: self.round + 1,
+            db: a,
+        }
+    }
 }
 
 /// A SharedSecretsDb is a map of entity public keys to DH secrets
