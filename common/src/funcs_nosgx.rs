@@ -28,6 +28,6 @@ pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessage) -> Resu
     Ok(())
 }
 
-pub fn verify_user_attestation(_reg_blob: &UserRegistrationBlob) {
+pub fn verify_user_attestation(_reg_blob: &UserRegistrationBlob) -> Result<(), ()> {
     Ok(())
 }
