@@ -15,7 +15,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Result as FmtResult;
 use std::fmt::{Debug, Formatter};
 
-use x25519_dalek::StaticSecret;
+use ed25519_dalek::PublicKey;
+use x25519_dalek::{
+    StaticSecret,
+    SharedSecret,
+    PublicKey as xPublicKey,
+};
 
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -68,6 +73,36 @@ impl SharedSecretsDbClient {
     pub fn anytrust_group_id(&self) -> EntityId {
         let keys: Vec<ServerPublicKey> = self.db.keys().cloned().collect();
         compute_anytrust_group_id_spk(&keys)
+    }
+
+    /// Derive shared secrets (using DH). Used at registration time
+    pub fn derive_shared_secrets(
+        my_sk: &SgxPrivateKey,
+        other_pks: &[PublicKey],
+    ) -> SgxResult<Self> {
+        // 1. Generate StaticSecret from client's secret key
+        let my_secret = StaticSecret::from(my_sk.r);
+
+        let mut client_secrets: BTreeMap<ServerPublicKey, StaticSecret> = BTreeMap::new();
+
+        for server_pk in other_pks.iter() {
+            // 2. Convert server pk (PublicKey) to xPublicKey
+            let pk = xPublicKey::from(server_pk.to_bytes());
+            // 3. Compute the DH secret for the client and xPublicKeys
+            let shared_secret = my_secret.diffie_hellman(&pk);
+            // 4. Save ephemeral SharedSecret into StaticSecret
+            let shared_secret_bytes: [u8; 32] = shared_secret.as_bytes().to_owned();
+
+            client_secrets.insert(
+                ServerPublicKey(server_pk.to_bytes()),
+                StaticSecret::from(shared_secret_bytes)
+            );
+        }
+
+        Ok(SharedSecretsDbClient {
+            db: client_secrets,
+            ..Default::default()
+        })
     }
 }
 
