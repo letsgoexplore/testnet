@@ -232,6 +232,44 @@ pub fn derive_round_nonce(
 
 /// Derives a RoundSecret as the XOR of `HKDF(shared_secrets[i], round)` for all `i` in `Some(entity_ids_to_use)`,
 /// if entity_ids_to_use is None, for all `i` in `shared_secrets.keys()`.
+/// This function is used only by the clients
+pub fn derive_round_secret_client(
+    round: u32,
+    shared_secrets: &SharedSecretsDbClient,
+    entity_ids_to_use: Option<&BTreeSet<EntityId>>,
+) -> CryptoResult<RoundSecret> {
+    type MyRng = Aes128Rng; // This is defined in interface::aes_rng
+
+    let mut round_secret = RoundSecret::default();
+
+    for (pk, shared_secret) in shared_secrets.db.iter() {
+        // skip entries not in entity_ids_to_use
+        if let Some(eids) = entity_ids_to_use {
+            if !eids.contains(&EntityId::from(pk)) {
+                continue;
+            }
+        }
+
+        let hk = Hkdf::<Sha256>::new(None, &shared_secret.to_bytes());
+        // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
+        let mut seed = <MyRng as SeedableRng>::Seed::default();
+
+        // info contains round and window
+        let mut info = [0; 32];
+        let cursor = &mut info;
+        LittleEndian::write_u32(cursor, round);
+        hk.expand(&info, &mut seed)?;
+
+        let mut rng = MyRng::from_seed(seed);
+        round_secret.xor_mut(&DcRoundMessage::rand_from_csprng(&mut  rng));
+    }
+
+    Ok(round_secret)
+
+}
+
+/// Derives a RoundSecret as the XOR of `HKDF(shared_secrets[i], round)` for all `i` in `Some(entity_ids_to_use)`,
+/// if entity_ids_to_use is None, for all `i` in `shared_secrets.keys()`.
 pub fn derive_round_secret(
     round: u32,
     shared_secrets: &SharedSecretsDb,
