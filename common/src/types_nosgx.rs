@@ -218,30 +218,30 @@ impl SharedSecretsDbServer {
         compute_anytrust_group_id(&keys)
     }
 
-    pub fn derive_shared_secrets(
-        my_sk: &SecretKey,
-        other_pks: &[SgxProtectedKeyPub],
-    ) -> Result<Self, SignatureError> {
-        // 1. Generate StaticSecret from server's secret key
-        let my_secret = StaticSecret::from(my_sk.to_bytes());
+    // pub fn derive_shared_secrets(
+    //     my_sk: &SecretKey,
+    //     other_pks: &[SgxProtectedKeyPub],
+    // ) -> Result<Self, SignatureError> {
+    //     // 1. Generate StaticSecret from server's secret key
+    //     let my_secret = StaticSecret::from(my_sk.to_bytes());
 
-        let mut server_secrets: BTreeMap<SgxProtectedKeyPub, StaticSecret> = BTreeMap::new();
+    //     let mut server_secrets: BTreeMap<SgxProtectedKeyPub, StaticSecret> = BTreeMap::new();
 
-         for client_pk in other_pks.iter() {
-            // TODO: 2. Convert client pk (SgxProtectedKeyPub) to xPublicKey
+    //      for client_pk in other_pks.iter() {
+    //         // TODO: 2. Convert client pk (SgxProtectedKeyPub) to xPublicKey
 
-            // 3. Compute the DH secret for the server and xPublicKeys
-            let shared_secret = my_secret.diffie_hellman(&client_pk);
-            // 4. Save ephemeral SharedSecret into StaticSecret
-            let shared_secret_bytes: [u8; 32] = shared_secret.as_bytes().to_owned();
-            server_secrets.insert(client_pk.to_owned(), StaticSecret::from(shared_secret_bytes));
-        }
+    //         // 3. Compute the DH secret for the server and xPublicKeys
+    //         let shared_secret = my_secret.diffie_hellman(&client_pk);
+    //         // 4. Save ephemeral SharedSecret into StaticSecret
+    //         let shared_secret_bytes: [u8; 32] = shared_secret.as_bytes().to_owned();
+    //         server_secrets.insert(client_pk.to_owned(), StaticSecret::from(shared_secret_bytes));
+    //     }
 
-        Ok(SharedSecretsDbServer {
-            db: server_secrets,
-            ..Default::default()
-        })
-    }
+    //     Ok(SharedSecretsDbServer {
+    //         db: server_secrets,
+    //         ..Default::default()
+    //     })
+    // }
 }
 
 impl Default for SharedSecretsDbServer {
