@@ -7,6 +7,11 @@ use sgx_types::SgxResult;
 use std::string::ToString;
 use std::vec;
 
+use ed25519_dalek::{
+    SecretKey,
+    PublicKey,
+};
+
 pub fn new_sgx_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, AttestedPublicKey)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
         error!("cant create rand {}", e);
@@ -23,3 +28,5 @@ pub fn new_sgx_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, Att
 
     Ok((sk, attested_key))
 }
+
+// pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(SecretKey, )>

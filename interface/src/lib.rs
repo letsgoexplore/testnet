@@ -3,6 +3,7 @@
 extern crate cfg_if;
 use cfg_if::cfg_if;
 extern crate hex;
+extern crate ed25519_dalek;
 
 cfg_if! {
     if #[cfg(feature = "untrusted")] {
@@ -30,6 +31,7 @@ mod params;
 mod sgx_protected_keys;
 mod sgx_signature;
 mod user_request;
+mod nosgx_protected_keys;
 
 pub use ecall_interface_types::*;
 pub use params::*;

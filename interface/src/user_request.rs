@@ -1,7 +1,7 @@
 use std::prelude::v1::*;
 use std::{collections::BTreeSet, vec};
 
-use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected_keys::*};
+use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected_keys::*, nosgx_protected_keys::*};
 
 use sha2::{Digest, Sha256};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
@@ -182,9 +182,9 @@ impl From<&ServerPublicKey> for EntityId {
         let mut hasher = Sha256::new();
         hasher.input("anytrust_group_id");
         hasher.input(pk.0);
-
+        
         let digest = hasher.result();
-
+        
         let mut id = EntityId::default();
         id.0.copy_from_slice(&digest);
         id
@@ -194,6 +194,19 @@ impl From<&ServerPublicKey> for EntityId {
 impl From<[u8; USER_ID_LENGTH]> for EntityId {
     fn from(raw: [u8; USER_ID_LENGTH]) -> Self {
         EntityId(raw)
+    }
+}
+
+impl From<&NoSgxPortectedKeyPub> for EntityId {
+    fn from(pk: &NoSgxPortectedKeyPub) -> Self {
+        let mut hasher = Sha256::new();
+        hasher.input("anytrust_group_id");
+        hasher.input(pk.0);
+
+        let digest = hasher.result();
+        let mut id = EntityId::default();
+        id.0.copy_from_slice(&digest);
+        id
     }
 }
 
