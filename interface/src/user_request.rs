@@ -197,8 +197,8 @@ impl From<[u8; USER_ID_LENGTH]> for EntityId {
     }
 }
 
-impl From<&NoSgxPortectedKeyPub> for EntityId {
-    fn from(pk: &NoSgxPortectedKeyPub) -> Self {
+impl From<&NoSgxProtectedKeyPub> for EntityId {
+    fn from(pk: &NoSgxProtectedKeyPub) -> Self {
         let mut hasher = Sha256::new();
         hasher.input("anytrust_group_id");
         hasher.input(pk.0);
@@ -227,6 +227,12 @@ impl From<&SgxProtectedKeyPub> for EntityId {
 
 impl From<&AttestedPublicKey> for EntityId {
     fn from(pk: &AttestedPublicKey) -> Self {
+        EntityId::from(&pk.pk)
+    }
+}
+
+impl From<&AttestedPublicKeyNoSGX> for EntityId {
+    fn from(pk: &AttestedPublicKeyNoSGX) -> Self {
         EntityId::from(&pk.pk)
     }
 }
