@@ -7,7 +7,9 @@ use ed25519_dalek::{
 
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
-use std::vec::Vec;
+use std::convert::TryFrom;
+use sgx_rand::{Rand, Rng}; 
+use sha2::{Digest, Sha512};
 
 use crate::user_request::EntityId;
 
@@ -58,3 +60,46 @@ impl Debug for AttestedPublicKeyNoSGX {
     }
 }
 
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
+pub struct NoSgxPrivateKey {
+    pub r: [u8; SECRET_KEY_LENGTH],
+}
+
+impl Rand for NoSgxPrivateKey {
+    fn rand<R: Rng>(rng: &mut R) -> Self {
+        let mut r = [0 as u8; SECRET_KEY_LENGTH];
+        rng.fill_bytes(&mut r);
+
+        NoSgxPrivateKey { r }
+    }
+}
+
+impl Debug for NoSgxPrivateKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("NoSgxPrivateKey")
+            .field("r", &hex::encode(&self.r))
+            .finish()
+    }
+}
+
+impl Display for NoSgxPrivateKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        std::write!(f, "{}", hex::encode(self.r))
+    }
+}
+
+impl AsRef<[u8]> for &NoSgxPrivateKey {
+    fn as_ref(&self) -> &[u8] {
+        &self.r
+    }
+}
+
+impl TryFrom<&NoSgxPrivateKey> for NoSgxProtectedKeyPub {
+    type Error = &'static str;
+    fn try_from(sk: &NoSgxPrivateKey) -> Result<Self, Self::Error> {
+        let sk = SecretKey::from_bytes(&sk.r).expect("Cannot generate the secret key from the given bytes");
+        let pk = PublicKey::from_secret::<Sha512>(&sk);
+        Ok(NoSgxProtectedKeyPub(pk.to_bytes()))
+    }
+}
