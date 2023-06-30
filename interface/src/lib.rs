@@ -4,18 +4,17 @@ extern crate cfg_if;
 use cfg_if::cfg_if;
 extern crate hex;
 extern crate ed25519_dalek;
+extern crate sha2;
 
 cfg_if! {
     if #[cfg(feature = "untrusted")] {
         #[macro_use]
         extern crate serde;
         extern crate std;
-        extern crate sha2;
     } else if #[cfg(feature = "trusted")] {
         #[macro_use]
         extern crate serde_sgx;
         extern crate sgx_tstd as std;
-        extern crate sgx_sha2 as sha2;
         extern crate byteorder;
         extern crate sgx_rand;
         extern crate sgx_rand_derive;
