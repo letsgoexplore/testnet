@@ -9,7 +9,7 @@ use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use std::convert::TryFrom;
 use sgx_rand::{Rand, Rng}; 
-use sha2::{Digest, Sha512};
+use sha2::Sha512;
 
 use crate::user_request::EntityId;
 
