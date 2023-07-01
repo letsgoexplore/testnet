@@ -8,7 +8,6 @@ use ed25519_dalek::{
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use std::convert::TryFrom;
-use sgx_rand::{Rand, Rng}; 
 use sha2::Sha512;
 
 use crate::user_request::EntityId;
@@ -66,6 +65,9 @@ pub struct NoSgxPrivateKey {
     pub r: [u8; SECRET_KEY_LENGTH],
 }
 
+#[cfg(feature = "trusted")]
+use sgx_rand::{Rand, Rng};
+#[cfg(feature = "trusted")]
 impl Rand for NoSgxPrivateKey {
     fn rand<R: Rng>(rng: &mut R) -> Self {
         let mut r = [0 as u8; SECRET_KEY_LENGTH];
