@@ -5,6 +5,7 @@ use interface::{
     AggRegistrationBlob, EntityId, RoundOutput, RoundSubmissionBlob, SealedKemPrivKey,
     SealedSharedSecretDb, SealedSigPrivKey, ServerPubKeyPackage, ServerRegistrationBlob,
     SignedPartialAggregate, SignedPubKeyDb, UnblindedAggregateShareBlob, UserRegistrationBlob,
+    ServerPubKeyPackageNoSGX,
 };
 
 use log::info;
@@ -14,7 +15,6 @@ use ed25519_dalek::SecretKey;
 
 use common::types_nosgx::{
     AggregatedMessage,
-    ServerPubKeyPackageNoSGX,
     SharedSecretsDbServer,
     SignedPubKeyDbNoSGX,
 };

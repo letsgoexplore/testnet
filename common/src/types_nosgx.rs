@@ -17,8 +17,9 @@ use interface::{
     DcRoundMessage,
     UserSubmissionMessage,
     SgxProtectedKeyPub,
-    compute_anytrust_group_id,
     AttestedPublicKey,
+    ServerPubKeyPackageNoSGX,
+    compute_anytrust_group_id,
 };
 
 use std::prelude::v1::*;
@@ -189,13 +190,6 @@ impl XorNoSGX for DcRoundMessage {
 pub enum SubmissionMessage {
     UserSubmission(UserSubmissionMessage),
     AggSubmission(AggregatedMessage),
-}
-
-/// Contains a server's signing and KEM pubkeys
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct ServerPubKeyPackageNoSGX {
-    pub sig: PublicKey,
-    pub kem: PublicKey,
 }
 
 /// Secrets shared between anytrust servers and users.

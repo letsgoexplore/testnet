@@ -38,3 +38,4 @@ pub use params::*;
 pub use sgx_protected_keys::*;
 pub use sgx_signature::*;
 pub use user_request::*;
+pub use nosgx_protected_keys::*;

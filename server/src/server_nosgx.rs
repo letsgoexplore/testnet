@@ -4,6 +4,7 @@ use crate::util::{Result, ServerError};
 use interface::{
     EntityId,
     UserRegistrationBlob,
+    ServerPubKeyPackageNoSGX,
 };
 
 use ed25519_dalek::{
@@ -14,7 +15,6 @@ use rand::rngs::OsRng;
 use sha2::Sha512;
 
 use common::types_nosgx::{
-    ServerPubKeyPackageNoSGX,
     SharedSecretsDbServer,
     SignedPubKeyDbNoSGX,
     Sealed

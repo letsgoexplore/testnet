@@ -9,7 +9,7 @@ use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use std::convert::TryFrom;
 use sgx_rand::{Rand, Rng}; 
-use sha2::{Digest, Sha512};
+use sha2::Sha512;
 
 use crate::user_request::EntityId;
 
@@ -102,4 +102,12 @@ impl TryFrom<&NoSgxPrivateKey> for NoSgxProtectedKeyPub {
         let pk = PublicKey::from_secret::<Sha512>(&sk);
         Ok(NoSgxProtectedKeyPub(pk.to_bytes()))
     }
+}
+
+/// Contains a server's signing and KEM pubkeys
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct ServerPubKeyPackageNoSGX {
+    pub sig: PublicKey,
+    pub kem: PublicKey,
 }
