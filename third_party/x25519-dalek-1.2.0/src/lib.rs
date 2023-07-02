@@ -161,6 +161,18 @@ extern crate rand_core;
 
 extern crate zeroize;
 
+cfg_if::cfg_if! {
+    if #[cfg(feature = "serde_sgx")] {
+        #[macro_use]
+        extern crate serde_sgx as our_serde;
+    } else if #[cfg(feature = "serde")] {
+        extern crate our_serde;
+    }
+}
+
+#[cfg(all(feature = "serde_sgx", feature = "serde"))]
+compile_error!("can't load both serde_sgx and serde");
+
 mod x25519;
 
 pub use crate::x25519::*;

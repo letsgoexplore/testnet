@@ -272,10 +272,21 @@ extern crate fiat_crypto;
 // Used for traits related to constant-time code.
 extern crate subtle;
 
+cfg_if::cfg_if! {
+    if #[cfg(feature = "serde_sgx")] {
+        #[macro_use]
+        extern crate serde_sgx as serde;
+    } else if #[cfg(feature = "serde")] {
+        #[macro_use]
+        extern crate serde;
+    }
+}
+
+#[cfg(all(feature = "serde_sgx", feature = "serde"))]
+compile_error!("can't load both serde_sgx and serde");
+
 #[cfg(all(test, feature = "serde"))]
 extern crate bincode;
-#[cfg(feature = "serde")]
-extern crate serde;
 
 // Internal macros. Must come first!
 #[macro_use]

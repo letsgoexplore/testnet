@@ -31,9 +31,9 @@ use zeroize::Zeroize;
 /// should they wish to erase public keys from memory.  Note that this erasure
 /// (in this crate) does *not* automatically happen, but either must be derived
 /// for Drop or explicitly called.
-#[cfg_attr(feature = "serde", serde(crate = "our_serde"))]
+#[cfg_attr(any(feature = "serde", feature = "serde_sgx"), serde(crate = "our_serde"))]
 #[cfg_attr(
-    feature = "serde",
+    any(feature = "serde", feature = "serde_sgx"),
     derive(our_serde::Serialize, our_serde::Deserialize)
 )]
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug, Zeroize)]
@@ -159,15 +159,15 @@ impl<'a> From<&'a ReusableSecret> for PublicKey {
 /// [`EphemeralSecret`] at all times, as that type enforces at compile-time that
 /// secret keys are never reused, which can have very serious security
 /// implications for many protocols.
-#[cfg_attr(feature = "serde", serde(crate = "our_serde"))]
+#[cfg_attr(any(feature = "serde", feature = "serde_sgx"), serde(crate = "our_serde"))]
 #[cfg_attr(
-    feature = "serde",
+    any(feature = "serde", feature = "serde_sgx"),
     derive(our_serde::Serialize, our_serde::Deserialize)
 )]
 #[derive(Clone, Zeroize)]
 #[zeroize(drop)]
 pub struct StaticSecret(
-    #[cfg_attr(feature = "serde", serde(with = "AllowUnreducedScalarBytes"))] pub(crate) Scalar,
+    #[cfg_attr(any(feature = "serde", feature = "serde_sgx"), serde(with = "AllowUnreducedScalarBytes"))] pub(crate) Scalar,
 );
 
 impl StaticSecret {
@@ -328,14 +328,14 @@ pub const X25519_BASEPOINT_BYTES: [u8; 32] = [
 /// Derived serialization methods will not work on a StaticSecret because x25519 requires
 /// non-canonical scalars which are rejected by curve25519-dalek. Thus we provide a way to convert
 /// the bytes directly to a scalar using Serde's remote derive functionality.
-#[cfg_attr(feature = "serde", serde(crate = "our_serde"))]
+#[cfg_attr(any(feature = "serde", feature = "serde_sgx"), serde(crate = "our_serde"))]
 #[cfg_attr(
-    feature = "serde",
+    any(feature = "serde", feature = "serde_sgx"),
     derive(our_serde::Serialize, our_serde::Deserialize)
 )]
-#[cfg_attr(feature = "serde", serde(remote = "Scalar"))]
+#[cfg_attr(any(feature = "serde", feature = "serde_sgx"), serde(remote = "Scalar"))]
 struct AllowUnreducedScalarBytes(
-    #[cfg_attr(feature = "serde", serde(getter = "Scalar::to_bytes"))] [u8; 32],
+    #[cfg_attr(any(feature = "serde", feature = "serde_sgx"), serde(getter = "Scalar::to_bytes"))] [u8; 32],
 );
 impl From<AllowUnreducedScalarBytes> for Scalar {
     fn from(bytes: AllowUnreducedScalarBytes) -> Scalar {

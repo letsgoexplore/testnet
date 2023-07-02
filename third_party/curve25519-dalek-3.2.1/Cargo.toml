@@ -53,6 +53,10 @@ packed_simd = { version = "0.3.4", package = "packed_simd_2", features = ["into_
 zeroize = { version = ">=1, <1.4", default-features = false }
 fiat-crypto = { version = "0.1.6", optional = true}
 
+# sgx deps
+serde_sgx = { package = "serde", git = "https://github.com/bl4ck5un/serde-sgx", features = ["derive"], version = "^1.0", optional = true}
+cfg-if = "1.0.0"
+
 [features]
 nightly = ["subtle/nightly"]
 default = ["std", "u64_backend"]
@@ -72,3 +76,5 @@ simd_backend = ["nightly", "u64_backend", "packed_simd"]
 # DEPRECATED: this is now an alias for `simd_backend` and may be removed
 # in some future release.
 avx2_backend = ["simd_backend"]
+
+serde_sgx = ["dep:serde_sgx"]

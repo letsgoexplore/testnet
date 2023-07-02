@@ -67,7 +67,8 @@ use zeroize::Zeroize;
 /// Holds the \\(u\\)-coordinate of a point on the Montgomery form of
 /// Curve25519 or its twist.
 #[derive(Copy, Clone, Debug, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(any(feature = "serde", feature = "serde_sgx"), serde(crate = "serde"))]
+#[cfg_attr(any(feature = "serde", feature = "serde_sgx"), derive(serde::Serialize, serde::Deserialize))]
 pub struct MontgomeryPoint(pub [u8; 32]);
 
 /// Equality of `MontgomeryPoint`s is defined mod p.
