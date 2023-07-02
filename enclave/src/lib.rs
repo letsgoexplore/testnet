@@ -28,7 +28,6 @@ extern crate serde_cbor;
 
 #[macro_use]
 extern crate log;
-extern crate bitvec;
 extern crate env_logger;
 
 use sgx_types::*;

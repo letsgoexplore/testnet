@@ -246,11 +246,11 @@ fn generic_ecall<I, O>(
 {
     let start_time = std::time::Instant::now();
 
-    debug!("starting {}", ecall_id.as_str());
+    debug!("serving {}", ecall_id.as_str());
 
     let input: I = unmarshal_or_abort!(I, inp, inp_len);
 
-    debug!("input unmarshalled {} bytes", inp_len);
+    debug!("input unmarshalled. {} bytes", inp_len);
 
     let result = match internal_fn(&input) {
         Ok(o) => o,
@@ -265,7 +265,7 @@ fn generic_ecall<I, O>(
         }
     };
     debug!(
-        "done ecall {}. took {} us",
+        "done serving {}. took {} us",
         ecall_id.as_str(),
         start_time.elapsed().as_micros()
     );
