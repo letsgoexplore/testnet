@@ -195,9 +195,8 @@ pub enum SubmissionMessage {
 /// This data structure is used only by servers.
 /// This is the server side, the key is user's signing key
 /// TODO: new type SharedSecretDbClient, corresponds to client side
-/// TODO: upgrade Rust version, migrate project using x25519_dalek 1.2.0
 /// where StaticSecret implements Clone, Serialize and Deserialize traits
-/// #[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SharedSecretsDbServer {
     pub round: u32,
     /// a dictionary of keys
