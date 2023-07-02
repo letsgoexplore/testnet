@@ -101,7 +101,7 @@ impl TryFrom<&NoSgxPrivateKey> for NoSgxProtectedKeyPub {
     type Error = &'static str;
     fn try_from(sk: &NoSgxPrivateKey) -> Result<Self, Self::Error> {
         let sk = SecretKey::from_bytes(&sk.r).expect("Cannot generate the secret key from the given bytes");
-        let pk = PublicKey::from_secret::<Sha512>(&sk);
+        let pk = PublicKey::from(&sk);
         Ok(NoSgxProtectedKeyPub(pk.to_bytes()))
     }
 }

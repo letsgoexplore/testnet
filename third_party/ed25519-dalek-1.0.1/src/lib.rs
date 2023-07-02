@@ -251,8 +251,22 @@ extern crate curve25519_dalek;
 extern crate merlin;
 #[cfg(any(feature = "batch", feature = "std", feature = "alloc", test))]
 extern crate rand;
-#[cfg(feature = "serde")]
-extern crate serde_crate as serde;
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "serde_sgx")] {
+        #[macro_use]
+        extern crate serde_sgx as serde;
+        extern crate serde_bytes_sgx as serde_bytes;
+    } else if #[cfg(feature = "serde")] {
+        #[macro_use]
+        extern crate serde_crate as serde;
+        extern crate serde_bytes;
+    }
+}
+
+#[cfg(all(feature = "serde_sgx", feature = "serde"))]
+compile_error!("can't load both serde_sgx and serde");
+
 extern crate sha2;
 extern crate zeroize;
 

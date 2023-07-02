@@ -22,11 +22,11 @@ use rand::{CryptoRng, RngCore};
 
 use sha2::Sha512;
 
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 use serde::de::Error as SerdeError;
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 use serde_bytes::{Bytes as SerdeBytes, ByteBuf as SerdeByteBuf};
 
 use zeroize::Zeroize;
@@ -176,7 +176,7 @@ impl SecretKey {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 impl Serialize for SecretKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -186,7 +186,7 @@ impl Serialize for SecretKey {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 impl<'d> Deserialize<'d> for SecretKey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -498,7 +498,7 @@ impl ExpandedSecretKey {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 impl Serialize for ExpandedSecretKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -509,7 +509,7 @@ impl Serialize for ExpandedSecretKey {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 impl<'d> Deserialize<'d> for ExpandedSecretKey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

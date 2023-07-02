@@ -23,11 +23,11 @@ use ed25519::signature::Verifier;
 
 pub use sha2::Sha512;
 
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 use serde::de::Error as SerdeError;
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 use serde_bytes::{Bytes as SerdeBytes, ByteBuf as SerdeByteBuf};
 
 use crate::constants::*;
@@ -354,7 +354,7 @@ impl Verifier<ed25519::Signature> for PublicKey {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 impl Serialize for PublicKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -364,7 +364,7 @@ impl Serialize for PublicKey {
     }
 }
 
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_sgx"))]
 impl<'d> Deserialize<'d> for PublicKey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
