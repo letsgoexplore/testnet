@@ -103,3 +103,11 @@ impl TryFrom<&NoSgxPrivateKey> for NoSgxProtectedKeyPub {
         Ok(NoSgxProtectedKeyPub(pk.to_bytes()))
     }
 }
+
+/// Contains a server's signing and KEM pubkeys
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct ServerPubKeyPackageNoSGX {
+    pub sig: PublicKey,
+    pub kem: PublicKey,
+}
