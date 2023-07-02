@@ -818,13 +818,13 @@ checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 [[package]]
 name = "ed25519-dalek"
 version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d07e8b8a8386c3b89a7a4b329fdfa4cb545de2545e9e2ebbc3dd3929253e426"
 dependencies = [
+ "cfg-if 1.0.0",
  "clear_on_drop",
  "curve25519-dalek",
  "failure",
  "rand 0.6.5",
+ "serde 1.0.118",
  "serde 1.0.164",
 ]
 

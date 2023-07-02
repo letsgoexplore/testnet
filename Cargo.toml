@@ -5,3 +5,6 @@ members = ["common", "client", "interface", "aggregator", "server", "enclave" ]
 
 [profile.release]
 lto = true
+
+[patch.crates-io]
+ed25519-dalek = {path = "third_party/ed25519-dalek-0.9.1"}

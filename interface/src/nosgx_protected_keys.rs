@@ -8,7 +8,7 @@ use ed25519_dalek::{
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use std::convert::TryFrom;
-use sha2::Sha512;
+use sha2::{Digest, Sha512};
 
 use crate::user_request::EntityId;
 
@@ -112,4 +112,17 @@ impl TryFrom<&NoSgxPrivateKey> for NoSgxProtectedKeyPub {
 pub struct ServerPubKeyPackageNoSGX {
     pub sig: PublicKey,
     pub kem: PublicKey,
+}
+
+impl From<&ServerPubKeyPackageNoSGX> for EntityId {
+    // server's entity id is computed from the signing key
+    fn from(pk: &ServerPubKeyPackageNoSGX) -> Self {
+        let mut hasher = sha2::Sha256::new();
+        hasher.input("anytrust_group_id");
+        hasher.input(pk.sig.as_bytes());
+
+        let digest = hasher.result();
+
+        EntityId(digest.into())
+    }
 }

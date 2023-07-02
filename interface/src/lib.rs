@@ -3,7 +3,6 @@
 extern crate cfg_if;
 use cfg_if::cfg_if;
 extern crate hex;
-extern crate ed25519_dalek;
 extern crate sha2;
 
 cfg_if! {
@@ -11,6 +10,7 @@ cfg_if! {
         #[macro_use]
         extern crate serde;
         extern crate std;
+        extern crate ed25519_dalek_untrusted as ed25519_dalek;
     } else if #[cfg(feature = "trusted")] {
         #[macro_use]
         extern crate serde_sgx;
@@ -19,6 +19,7 @@ cfg_if! {
         extern crate sgx_rand;
         extern crate sgx_rand_derive;
         extern crate sgx_tcrypto;
+        extern crate ed25519_dalek_trusted as ed25519_dalek;
     } else {
         compile_error!{"must be either trusted or untrusted"}
     }

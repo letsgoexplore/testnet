@@ -24,7 +24,6 @@ use interface::{
 
 use std::prelude::v1::*;
 use std::collections::{BTreeSet, BTreeMap};
-use crate::funcs_nosgx::pk_to_entityid;
 
 use core::fmt::{Debug, Formatter};
 
@@ -258,13 +257,6 @@ impl Debug for SharedSecretsDbServer {
 }
 
 pub type AggPublicKey = AggRegistrationBlobNoSGX;
-
-impl From<&ServerPubKeyPackageNoSGX> for EntityId {
-    // server's entity id is computed from the signing key
-    fn from(spk: &ServerPubKeyPackageNoSGX) -> Self {
-        pk_to_entityid(&spk.sig)
-    }
-}
 
 /// SignedPubKeyDbNoSGX is a signed mapping between entity id and public key
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
