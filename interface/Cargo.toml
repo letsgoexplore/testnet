@@ -11,26 +11,27 @@ description = "data structures shared by trusted & untrusted land"
 # both (must be SGX compatible e.g. no_std)
 cfg-if = "1.0"
 hex = { version = "0.4", default-features = false, features = ["alloc"] }
-sgx_types = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
+sgx_types = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 base64 = { version = "0.13", default-features = false, features = ["alloc"] }
 rand_core = {version="0.6", default-features = false}
-ed25519-dalek = { version = "0.9.1", default-features = false}
 sha2 = { version = "0.8.2", default-features = false}
 
 # untrusted
-serde = { version = "1.0", features = ["derive"], optional = true }
+serde = { version = "1.0", default-features = false, features = ["derive"], optional = true }
+ed25519-dalek-untrusted = { package = "ed25519-dalek", version = "1", default-features = false, features = ["serde"], optional = true}
 
 # trusted
-serde_sgx = { package = "serde", git = "https://github.com/mesalock-linux/serde-sgx", features = ["derive"], optional = true }
-sgx_tstd = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
-sgx_rand = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
-sgx_rand_derive = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
-sgx_tcrypto = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
-byteorder = { git = "https://github.com/mesalock-linux/byteorder-sgx", optional = true }
+serde_sgx = { package = "serde", git = "https://github.com/bl4ck5un/serde-sgx", features = ["derive"], optional = true }
+sgx_tstd = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
+sgx_rand = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
+sgx_rand_derive = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
+sgx_tcrypto = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
+byteorder = {version = "1.4.3", default-features = false, optional = true}
+ed25519-dalek-trusted = { package = "ed25519-dalek", version = "1", default-features = false, features = ["serde_sgx"], optional = true}
 
 [features]
 default = ["untrusted"]
-untrusted = ["serde"]
+untrusted = ["serde", "ed25519-dalek-untrusted"]
 
 trusted = [
     "serde_sgx",
@@ -39,4 +40,5 @@ trusted = [
     "sgx_rand_derive",
     "sgx_tcrypto",
     "byteorder",
+    "ed25519-dalek-trusted"
 ]

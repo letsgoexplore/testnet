@@ -66,8 +66,8 @@ impl DcNetEnclave {
         )
         .map_err(EnclaveError::SgxError)?;
 
-        info!(
-            "============== enclave created. took {}us",
+        debug!(
+            "enclave initiated. took {}us",
             start_time.elapsed().as_micros()
         );
         Ok(Self { enclave })
@@ -75,6 +75,7 @@ impl DcNetEnclave {
 
     pub fn destroy(self) {
         self.enclave.destroy();
+        debug!("enclave destroyed.");
     }
 
     /// This method can be used for creating signing keys and KEM private keys.

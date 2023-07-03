@@ -8,7 +8,7 @@ use ed25519_dalek::{
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use std::convert::TryFrom;
-use sha2::Sha512;
+use sha2::{Digest, Sha512};
 
 use crate::user_request::EntityId;
 
@@ -101,7 +101,28 @@ impl TryFrom<&NoSgxPrivateKey> for NoSgxProtectedKeyPub {
     type Error = &'static str;
     fn try_from(sk: &NoSgxPrivateKey) -> Result<Self, Self::Error> {
         let sk = SecretKey::from_bytes(&sk.r).expect("Cannot generate the secret key from the given bytes");
-        let pk = PublicKey::from_secret::<Sha512>(&sk);
+        let pk = PublicKey::from(&sk);
         Ok(NoSgxProtectedKeyPub(pk.to_bytes()))
+    }
+}
+
+/// Contains a server's signing and KEM pubkeys
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct ServerPubKeyPackageNoSGX {
+    pub sig: PublicKey,
+    pub kem: PublicKey,
+}
+
+impl From<&ServerPubKeyPackageNoSGX> for EntityId {
+    // server's entity id is computed from the signing key
+    fn from(pk: &ServerPubKeyPackageNoSGX) -> Self {
+        let mut hasher = sha2::Sha256::new();
+        hasher.input("anytrust_group_id");
+        hasher.input(pk.sig.as_bytes());
+
+        let digest = hasher.result();
+
+        EntityId(digest.into())
     }
 }

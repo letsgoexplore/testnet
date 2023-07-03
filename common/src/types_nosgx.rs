@@ -17,13 +17,13 @@ use interface::{
     DcRoundMessage,
     UserSubmissionMessage,
     SgxProtectedKeyPub,
-    compute_anytrust_group_id,
     AttestedPublicKey,
+    ServerPubKeyPackageNoSGX,
+    compute_anytrust_group_id,
 };
 
 use std::prelude::v1::*;
 use std::collections::{BTreeSet, BTreeMap};
-use crate::funcs_nosgx::pk_to_entityid;
 
 use core::fmt::{Debug, Formatter};
 
@@ -191,20 +191,12 @@ pub enum SubmissionMessage {
     AggSubmission(AggregatedMessage),
 }
 
-/// Contains a server's signing and KEM pubkeys
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct ServerPubKeyPackageNoSGX {
-    pub sig: PublicKey,
-    pub kem: PublicKey,
-}
-
 /// Secrets shared between anytrust servers and users.
 /// This data structure is used only by servers.
 /// This is the server side, the key is user's signing key
 /// TODO: new type SharedSecretDbClient, corresponds to client side
-/// TODO: upgrade Rust version, migrate project using x25519_dalek 1.2.0
 /// where StaticSecret implements Clone, Serialize and Deserialize traits
-/// #[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SharedSecretsDbServer {
     pub round: u32,
     /// a dictionary of keys
@@ -264,13 +256,6 @@ impl Debug for SharedSecretsDbServer {
 }
 
 pub type AggPublicKey = AggRegistrationBlobNoSGX;
-
-impl From<&ServerPubKeyPackageNoSGX> for EntityId {
-    // server's entity id is computed from the signing key
-    fn from(spk: &ServerPubKeyPackageNoSGX) -> Self {
-        pk_to_entityid(&spk.sig)
-    }
-}
 
 /// SignedPubKeyDbNoSGX is a signed mapping between entity id and public key
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
