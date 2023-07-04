@@ -42,7 +42,7 @@ impl Debug for DiffieHellmanSharedSecret {
 /// This is used by users only, the keys are server pks
 /// TODO: upgrade Rust version, migrate project using x25519_dalek 1.2.0
 /// where StaticSecret implements Clone, Serialize and Deserialize traits
-// #[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SharedSecretsDbClient {
     pub round: u32,
     /// a dictionary of keys
