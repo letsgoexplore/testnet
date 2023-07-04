@@ -19,6 +19,7 @@ use interface::{
     SgxProtectedKeyPub,
     AttestedPublicKey,
     ServerPubKeyPackageNoSGX,
+    NewDiffieHellmanSharedSecret,
     compute_anytrust_group_id,
 };
 
@@ -194,14 +195,12 @@ pub enum SubmissionMessage {
 /// Secrets shared between anytrust servers and users.
 /// This data structure is used only by servers.
 /// This is the server side, the key is user's signing key
-/// TODO: new type SharedSecretDbClient, corresponds to client side
-/// where StaticSecret implements Clone, Serialize and Deserialize traits
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SharedSecretsDbServer {
     pub round: u32,
     /// a dictionary of keys
-    /// We use StaticSecret to store SharedSecret, since SharedSecret is ephemeral
-    pub db: BTreeMap<SgxProtectedKeyPub, StaticSecret>,
+    /// We use NewDiffieHellmanSharedSecret to store SharedSecret, since SharedSecret is ephemeral
+    pub db: BTreeMap<SgxProtectedKeyPub, NewDiffieHellmanSharedSecret>,
 }
 
 impl SharedSecretsDbServer {
@@ -217,16 +216,16 @@ impl SharedSecretsDbServer {
     //     // 1. Generate StaticSecret from server's secret key
     //     let my_secret = StaticSecret::from(my_sk.to_bytes());
 
-    //     let mut server_secrets: BTreeMap<SgxProtectedKeyPub, StaticSecret> = BTreeMap::new();
+    //     let mut server_secrets: BTreeMap<SgxProtectedKeyPub, NewDiffieHellmanSharedSecret> = BTreeMap::new();
 
     //      for client_pk in other_pks.iter() {
     //         // TODO: 2. Convert client pk (SgxProtectedKeyPub) to xPublicKey
 
     //         // 3. Compute the DH secret for the server and xPublicKeys
     //         let shared_secret = my_secret.diffie_hellman(&client_pk);
-    //         // 4. Save ephemeral SharedSecret into StaticSecret
+    //         // 4. Save ephemeral SharedSecret into NewDiffieHellmanSharedSecret
     //         let shared_secret_bytes: [u8; 32] = shared_secret.as_bytes().to_owned();
-    //         server_secrets.insert(client_pk.to_owned(), StaticSecret::from(shared_secret_bytes));
+    //         server_secrets.insert(client_pk.to_owned(), NewDiffieHellmanSharedSecret(shared_secret_bytes));
     //     }
 
     //     Ok(SharedSecretsDbServer {

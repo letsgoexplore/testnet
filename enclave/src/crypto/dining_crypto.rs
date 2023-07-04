@@ -44,8 +44,8 @@ impl Debug for DiffieHellmanSharedSecret {
 pub struct SharedSecretsDbClient {
     pub round: u32,
     /// a dictionary of keys
-    /// We use StaticSecret to store SharedSecret, since SharedSecret is ephemeral
-    pub db: BTreeMap<NoSgxProtectedKeyPub, StaticSecret>,
+    /// We use NewDiffieHellmanSharedSecret to store SharedSecret, since SharedSecret is ephemeral
+    pub db: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret>,
 }
 
 impl Default for SharedSecretsDbClient {
@@ -81,19 +81,19 @@ impl SharedSecretsDbClient {
         // 1. Generate StaticSecret from client's secret key
         let my_secret = StaticSecret::from(my_sk.r);
 
-        let mut client_secrets: BTreeMap<NoSgxProtectedKeyPub, StaticSecret> = BTreeMap::new();
+        let mut client_secrets: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret> = BTreeMap::new();
 
         for server_pk in other_pks.iter() {
             // 2. Convert server pk (PublicKey) to xPublicKey
             let pk = xPublicKey::from(server_pk.to_bytes());
             // 3. Compute the DH secret for the client and xPublicKeys
             let shared_secret = my_secret.diffie_hellman(&pk);
-            // 4. Save ephemeral SharedSecret into StaticSecret
+            // 4. Save ephemeral SharedSecret into NewDiffieHellmanSharedSecret
             let shared_secret_bytes: [u8; 32] = shared_secret.as_bytes().to_owned();
 
             client_secrets.insert(
                 NoSgxProtectedKeyPub(server_pk.to_bytes()),
-                StaticSecret::from(shared_secret_bytes)
+                NewDiffieHellmanSharedSecret(shared_secret_bytes)
             );
         }
 
@@ -109,9 +109,9 @@ impl SharedSecretsDbClient {
             .db
             .iter()
             .map(|(&k, v)| {
-                let new_key = Sha256::digest(&v.to_bytes());
+                let new_key = Sha256::digest(&v.0);
                 let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32]");
-                let new_sec = StaticSecret::from(secret_bytes);
+                let new_sec = NewDiffieHellmanSharedSecret(secret_bytes);
 
                 (k, new_sec)
             })
@@ -268,7 +268,7 @@ pub fn derive_round_secret_client(
             }
         }
 
-        let hk = Hkdf::<Sha256>::new(None, &shared_secret.to_bytes());
+        let hk = Hkdf::<Sha256>::new(None, &shared_secret.as_ref());
         // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
         let mut seed = <MyRng as SeedableRng>::Seed::default();
 
