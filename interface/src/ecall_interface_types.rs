@@ -1,4 +1,5 @@
 use crate::sgx_protected_keys::{AttestedPublicKey, ServerPubKeyPackage, SgxProtectedKeyPub};
+use crate::nosgx_protected_keys::NoSgxProtectedKeyPub;
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
 use crate::DcRoundMessage;
@@ -141,6 +142,32 @@ impl Debug for SealedSharedSecretDb {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let pks: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
         f.debug_struct("SealedSharedSecretDb")
+            .field("pks", &pks)
+            .finish()
+    }
+}
+
+/// Enclave-protected secrets shared between anytrust servers and users.
+/// This data structure is use by users only
+/// The key is server's public key
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Default, Clone, Serialize, Deserialize)]
+pub struct SealedSharedSecretsDbClient {
+    pub round: u32,
+    pub db: BTreeMap<NoSgxProtectedKeyPub, Vec<u8>>,
+}
+
+impl SealedSharedSecretsDbClient {
+    pub fn anytrust_group_id(&self) -> EntityId {
+        let keys: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        crate::compute_anytrust_group_id_spk(&keys)
+    }
+}
+
+impl Debug for SealedSharedSecretsDbClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let pks: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        f.debug_struct("SealedSharedSecretsDbClient")
             .field("pks", &pks)
             .finish()
     }
