@@ -3,6 +3,7 @@ use crate::nosgx_protected_keys::NoSgxProtectedKeyPub;
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
 use crate::DcRoundMessage;
+use crate::params::SHARED_SECRET_LENGTH;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::vec::Vec;
@@ -170,6 +171,23 @@ impl Debug for SealedSharedSecretsDbClient {
         f.debug_struct("SealedSharedSecretsDbClient")
             .field("pks", &pks)
             .finish()
+    }
+}
+
+/// A shared secret is the long-term secret shared between an anytrust server and this user
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct NewDiffieHellmanSharedSecret([u8; SHARED_SECRET_LENGTH]);
+
+impl AsRef<[u8]> for NewDiffieHellmanSharedSecret {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl Debug for NewDiffieHellmanSharedSecret {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&hex::encode(&self.0))
     }
 }
 
