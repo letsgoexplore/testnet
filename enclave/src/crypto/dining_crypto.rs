@@ -75,7 +75,7 @@ impl SharedSecretsDbClient {
 
     /// Derive shared secrets (using DH). Used at registration time
     pub fn derive_shared_secrets(
-        my_sk: &SgxPrivateKey,
+        my_sk: &NoSgxPrivateKey,
         other_pks: &[PublicKey],
     ) -> SgxResult<Self> {
         // 1. Generate StaticSecret from client's secret key

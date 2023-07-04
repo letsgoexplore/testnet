@@ -1,5 +1,5 @@
 use crate::sgx_protected_keys::{AttestedPublicKey, ServerPubKeyPackage, SgxProtectedKeyPub};
-use crate::nosgx_protected_keys::NoSgxProtectedKeyPub;
+use crate::nosgx_protected_keys::{AttestedPublicKeyNoSGX, NoSgxProtectedKeyPub};
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
 use crate::DcRoundMessage;
@@ -105,6 +105,10 @@ pub type SignedPartialAggregate = crate::AggregatedMessageObsolete;
 /// Describes user registration information. This contains key encapsulations as well as a linkably
 /// attested signature pubkey.
 pub type UserRegistrationBlob = AttestedPublicKey;
+
+/// Describes user registration information. This contains key encapsulations as well as a linkably
+/// attested signature pubkey.
+pub type UserRegistrationBlobNew = AttestedPublicKeyNoSGX;
 
 /// Describes aggregator registration information. This contains a linkably attested signature
 /// pubkey.
