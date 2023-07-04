@@ -40,14 +40,12 @@ impl Debug for DiffieHellmanSharedSecret {
 
 /// A SharedSecretsDbClient is a map of entity public keys to DH secrets
 /// This is used by users only, the keys are server pks
-/// TODO: upgrade Rust version, migrate project using x25519_dalek 1.2.0
-/// where StaticSecret implements Clone, Serialize and Deserialize traits
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SharedSecretsDbClient {
     pub round: u32,
     /// a dictionary of keys
     /// We use StaticSecret to store SharedSecret, since SharedSecret is ephemeral
-    pub db: BTreeMap<ServerPublicKey, StaticSecret>,
+    pub db: BTreeMap<NoSgxProtectedKeyPub, StaticSecret>,
 }
 
 impl Default for SharedSecretsDbClient {
@@ -61,7 +59,7 @@ impl Default for SharedSecretsDbClient {
 
 impl Debug for SharedSecretsDbClient {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let pks: Vec<ServerPublicKey> = self.db.keys().cloned().collect();
+        let pks: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
         f.debug_struct("SharedSecretsDbClient")
             .field("round", &self.round)
             .field("pks", &pks)
@@ -71,7 +69,7 @@ impl Debug for SharedSecretsDbClient {
 
 impl SharedSecretsDbClient {
     pub fn anytrust_group_id(&self) -> EntityId {
-        let keys: Vec<ServerPublicKey> = self.db.keys().cloned().collect();
+        let keys: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
         compute_anytrust_group_id_spk(&keys)
     }
 
@@ -83,7 +81,7 @@ impl SharedSecretsDbClient {
         // 1. Generate StaticSecret from client's secret key
         let my_secret = StaticSecret::from(my_sk.r);
 
-        let mut client_secrets: BTreeMap<ServerPublicKey, StaticSecret> = BTreeMap::new();
+        let mut client_secrets: BTreeMap<NoSgxProtectedKeyPub, StaticSecret> = BTreeMap::new();
 
         for server_pk in other_pks.iter() {
             // 2. Convert server pk (PublicKey) to xPublicKey
@@ -94,7 +92,7 @@ impl SharedSecretsDbClient {
             let shared_secret_bytes: [u8; 32] = shared_secret.as_bytes().to_owned();
 
             client_secrets.insert(
-                ServerPublicKey(server_pk.to_bytes()),
+                NoSgxProtectedKeyPub(server_pk.to_bytes()),
                 StaticSecret::from(shared_secret_bytes)
             );
         }

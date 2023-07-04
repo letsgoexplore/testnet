@@ -16,6 +16,12 @@ use crate::user_request::EntityId;
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NoSgxProtectedKeyPub(pub [u8; PUBLIC_KEY_LENGTH]);
 
+impl AsRef<[u8]> for NoSgxProtectedKeyPub {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 impl Debug for NoSgxProtectedKeyPub {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         std::write!(f, "({})", hex::encode(&self.0))
@@ -24,7 +30,7 @@ impl Debug for NoSgxProtectedKeyPub {
 
 impl Display for NoSgxProtectedKeyPub {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        std::write!(f, "{}", hex::encode(self.0))
+        std::write!(f, "{}", hex::encode(&self.0))
     }
 }
 

@@ -129,28 +129,6 @@ impl DcRoundMessage {
     }
 }
 
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ServerPublicKey(pub [u8; PUBLIC_KEY_LENGTH]);
-
-impl AsRef<[u8]> for ServerPublicKey {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl Debug for ServerPublicKey {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.write_str(&hex::encode(&self.0))
-    }
-}
-
-impl Display for ServerPublicKey {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.write_str(&hex::encode(&self.0))
-    }
-}
-
 /// A RoundSecret is an one-time pad for a given round derived from a set of
 /// DiffieHellmanSharedSecret shared by user and anytrust servers.
 pub type RoundSecret = DcRoundMessage;
@@ -174,20 +152,6 @@ impl Debug for EntityId {
 impl AsRef<[u8]> for EntityId {
     fn as_ref(&self) -> &[u8] {
         &self.0
-    }
-}
-
-impl From<&ServerPublicKey> for EntityId {
-    fn from(pk: &ServerPublicKey) -> Self {
-        let mut hasher = Sha256::new();
-        hasher.input("anytrust_group_id");
-        hasher.input(pk.0);
-        
-        let digest = hasher.result();
-        
-        let mut id = EntityId::default();
-        id.0.copy_from_slice(&digest);
-        id
     }
 }
 
@@ -266,7 +230,7 @@ pub fn compute_anytrust_group_id(keys: &[SgxSigningPubKey]) -> EntityId {
 }
 
 /// An anytrust_group_id is computed from server pub keys
-pub fn compute_anytrust_group_id_spk(keys: &[ServerPublicKey]) -> EntityId {
+pub fn compute_anytrust_group_id_spk(keys: &[NoSgxProtectedKeyPub]) -> EntityId {
     compute_group_id(&keys.iter().map(|k| EntityId::from(k)).collect())
 }
 
