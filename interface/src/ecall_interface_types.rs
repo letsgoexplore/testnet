@@ -149,7 +149,7 @@ impl Debug for SealedSharedSecretDb {
 /// A signing keypair is an ECDSA keypair
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct SealedSigPrivkeyNoSGX(pub Vec<u8>);
+pub struct SealedSigPrivKeyNoSGX(pub Vec<u8>);
 
 /// A signing keypair is an ECDSA keypair
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
