@@ -87,6 +87,10 @@ pub trait SignMutable {
     fn sign_mut(&mut self, _: &SgxSigningKey) -> SgxError;
 }
 
+pub trait SignMutableUpdated {
+    fn sign_mut(&mut self, _: &NoSgxPrivateKey) -> SgxError;
+}
+
 pub trait MultiSignable {
     fn digest(&self) -> Vec<u8>;
     fn sign(&self, ssk: &SgxSigningKey) -> SgxResult<(SgxSignature, SgxSigningPubKey)> {
