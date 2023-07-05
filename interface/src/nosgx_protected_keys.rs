@@ -1,6 +1,7 @@
 use ed25519_dalek::{
     SecretKey,
     PublicKey,
+    Signature,
     SECRET_KEY_LENGTH,
     PUBLIC_KEY_LENGTH,
 };
@@ -131,4 +132,12 @@ impl From<&ServerPubKeyPackageNoSGX> for EntityId {
 
         EntityId(digest.into())
     }
+}
+
+/// Used by servers in round outputs
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Copy, Clone, Debug, Serialize, Desrialize)]
+pub struct SignatureNoSGX {
+    pub pk: PublicKey,
+    pub sig: Signature,
 }
