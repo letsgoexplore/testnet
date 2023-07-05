@@ -1,10 +1,13 @@
 use crypto::SgxSigningKey;
 use crypto::{SignMutable, Signable};
-use interface::{RoundSecret, SgxSignature, SgxSigningPubKey};
+use crypto::{SignableUpdated, SignMutableUpdated};
+use interface::{RoundSecret, SgxSignature, SgxSigningPubKey, NoSgxPrivateKey};
 use sgx_types::SgxError;
 use sha2::Digest;
 use sha2::Sha256;
 use std::vec::Vec;
+
+use ed25519_dalek::{Signature, PublicKey};
 
 // /// A (potentially aggregated) message that's produced by an enclave
 // #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -119,8 +122,42 @@ impl Signable for UserSubmissionMessage {
     }
 }
 
+impl SignableUpdated for UserSubmissionMessage {
+    fn digest(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.input(b"Begin UserSubmissionMessage");
+        hasher.input(&self.anytrust_group_id);
+        // for id in self.user_ids.iter() {
+        //     hasher.input(id);
+        // }
+        hasher.input(self.user_id);
+        hasher.input(&self.aggregated_msg.digest());
+        hasher.input(b"End UserSubmissionMessage");
+
+        hasher.result().to_vec()
+    }
+
+    fn get_sig(&self) -> Signature {
+        self.tee_sig
+    }
+
+    fn get_pk(&self) -> PublicKey {
+        self.tee_pk
+    }
+}
+
 impl SignMutable for UserSubmissionMessage {
     fn sign_mut(&mut self, sk: &SgxSigningKey) -> SgxError {
+        let (sig, pk) = self.sign(sk)?;
+        self.tee_pk = pk;
+        self.tee_sig = sig;
+
+        Ok(())
+    }
+}
+
+impl SignMutableUpdated for UserSubmissionMessage {
+    fn sign_mut(&mut self, sk: &NoSgxPrivateKey) -> SgxError {
         let (sig, pk) = self.sign(sk)?;
         self.tee_pk = pk;
         self.tee_sig = sig;
