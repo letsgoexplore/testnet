@@ -91,6 +91,22 @@ pub extern "C" fn ecall_entrypoint(
             user::new_user_batch
         ),
         (
+            EcallNewUserUpdated,
+            // input
+            Vec < ServerPubKeyPackageNoSGX >,
+            // output
+            (SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew),
+            user::new_user_updated
+        ),
+        (
+            EcallNewUserBatchUpdated,
+            // input
+            (Vec < ServerPubKeyPackageNoSGX >, usize),
+            // output
+            Vec<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)>,
+            user::new_user_batch_updated
+        ),
+        (
             EcallNewServer,
             // input
             (),
@@ -103,6 +119,12 @@ pub extern "C" fn ecall_entrypoint(
             (UserSubmissionReq, SealedSigPrivKey),
             (UserSubmissionBlob, SealedSharedSecretDb),
             submit::user_submit_internal
+        ),
+        (
+            EcallUserSubmitUpdated,
+            (UserSubmissionReqUpdated, SealedSigPrivKeyNoSGX),
+            (UserSubmissionBlob, SealedSharedSecretsDbClient),
+            submit::user_submit_internal_updated
         ),
         (
             EcallAddToAggregate,
