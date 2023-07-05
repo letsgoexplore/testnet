@@ -1,4 +1,5 @@
 use crate::interface::{RoundOutput, SgxSignature, SgxSigningPubKey};
+use crate::interface::{RoundOutputUpdated, NoSgxPrivateKey};
 use crate::types::CryptoError;
 use sgx_types::{SgxError, SgxResult, SGX_ECP256_KEY_SIZE};
 use std::vec::Vec;
@@ -7,6 +8,15 @@ pub type CryptoResult<T> = Result<T, CryptoError>;
 
 use sha2::Digest;
 use sha2::Sha256;
+
+use ed25519_dalek::{
+    SecretKey,
+    PublicKey,
+    Signature,
+    SECRET_KEY_LENGTH,
+    PUBLIC_KEY_LENGTH,
+    KEYPAIR_LENGTH,
+};
 
 pub trait Hashable {
     fn sha256(&self) -> [u8; 32];
@@ -52,6 +62,27 @@ pub trait Signable {
     }
 }
 
+pub trait SignableUpdated {
+    fn digest(&self) -> Vec<u8>;
+    fn get_sig(&self) -> Signature;
+    fn get_pk(&self) -> PublicKey;
+    fn sign(&self, ssk: &NoSgxPrivateKey) -> SgxResult<(Signature, PublicKey)> {
+        let dig = self.digest();
+
+        let pk: PublicKey = (&SecretKey::from_bytes(&ssk.r)).into();
+        let sk_bytes: [u8; SECRET_KEY_LENGTH] = sk.to_bytes();
+        let pk_bytes: [u8; PUBLIC_KEY_LENGTH] = pk.to_bytes();
+        let mut keypair_bytes: [u8; KEYPAIR_LENGTH] = [0; KEYPAIR_LENGTH];
+        keypair_bytes[..SECRET_KEY_LENGTH].copy_from_slice(&sk_bytes);
+        keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
+
+        let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
+        let sig: Signature = keypair.sign(dig.as_slice());
+
+        Ok((sig, pk))
+    }
+}
+
 pub trait SignMutable {
     fn sign_mut(&mut self, _: &SgxSigningKey) -> SgxError;
 }
@@ -68,7 +99,7 @@ pub trait MultiSignable {
 
         let sig = ecdsa_handler
             .ecdsa_sign_slice(&dig, &ssk.into())
-            .map(SgxSignature::from)?;
+            .map(SgxSignature::from)?;                
 
         Ok((sig, pk))
     }
@@ -115,6 +146,64 @@ impl MultiSignable for RoundOutput {
         }
 
         Ok(verified)
+    }
+}
+
+pub trait MultiSignableUpdated {
+    fn digest(&self) -> Vec<u8>;
+    fn sign(&self, ssk: &SecretKey) -> SgxResult<(Signature, PublicKey)> {
+        let dig = self.digest();
+
+        let pk: PublicKey = (&sk).into();
+        let sk_bytes: [u8; SECRET_KEY_LENGTH] = sk.to_bytes();
+        let pk_bytes: [u8; PUBLIC_KEY_LENGTH] = pk.to_bytes();
+        let mut keypair_bytes: [u8; KEYPAIR_LENGTH] = [0; KEYPAIR_LENGTH];
+        keypair_bytes[..SECRET_KEY_LENGTH].copy_from_slice(&sk_bytes);
+        keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
+
+        let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
+        let sig: Signature = keypair.sign(dig.as_slice());
+
+        Ok((sig, pk))
+    }
+    /// verify against a list of public keys
+    /// return indices of keys that verify
+    fn verify_multisig(&self, pks: &[PublicKey]) -> SgxResult<Vec<usize>>;
+}
+
+impl MultiSignable for RoundOutputUpdated {
+    fn digest(&self) -> Vec<u8> {
+        self.sha256().to_vec()
+    }
+
+    fn verify_multisig(&self, pks: &[PublicKey]) -> SgxResult<Vec<usize>> {
+        log::debug!(
+            "verifying RoundOutput (with {} signatures) against a list of {} server PKs",
+            self.server_sigs.len(),
+            pks.len()
+        );
+
+        // digest
+        let msg_hash = self.digest();
+
+        let mut verified = vec![];
+        for i in 0..self.server_sigs.len() {
+            let sig: Signature = self.server_sigs[i].sig;
+            let pk: PublicKey = self.server_sigs[i].pk;
+
+            // verify the signature
+            if pk.verify(msg_hash.as_slice(), &sig).is_ok() {
+                debug!("signature verified against {}", pk);
+            }
+
+            // check if pk is in the server PK list
+            match pks.iter().position(|&k| k == pk) {
+                Some(i) => verified.push(i),
+                None => {
+                    log::error!("PK {} is not in the server PK list", pk);
+                }
+            }
+        }
     }
 }
 
