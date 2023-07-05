@@ -141,3 +141,12 @@ pub struct SignatureNoSGX {
     pub pk: PublicKey,
     pub sig: Signature,
 }
+
+impl Default for SignatureNoSGX {
+    fn default() -> Self {
+        Self {
+            pk: PublicKey::default(),
+            sig: Signature::new([0u8; 64]),
+        }
+    }
+}
