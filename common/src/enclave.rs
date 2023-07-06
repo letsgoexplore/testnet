@@ -121,6 +121,17 @@ impl DcNetEnclave {
         )?)
     }
 
+    pub fn user_submit_round_msg_updated(
+        &self,
+        submission_req: &UserSubmissionReqUpdated,
+        sealed_usk: &SealedSigPrivKeyNoSGX,
+    ) -> EnclaveResult<(UserSubmissionBlob, SealedSharedSecretsDbClient)> {
+        Ok(ecall_allowed::user_submit_updated(
+            self.enclave.getid(),
+            (submission_req, sealed_usk),
+        )?)
+    }
+
     /// Makes an empty aggregation state for the given round and wrt the given anytrust nodes
     pub fn new_aggregate(
         &self,
@@ -357,6 +368,31 @@ impl DcNetEnclave {
         UserRegistrationBlob,
     )>> {
         ecall_allowed::new_user_batch(self.enclave.geteid(), (server_pks, n_users))
+    }
+
+    pub fn new_user_updated(
+        &self,
+        server_pks: &[ServerPubKeyPackageNoSGX],
+    ) -> EnclaveResult<(
+        SealedSharedSecretsDbClient,
+        SealedSigPrivKeyNoSGX,
+        EntityId,
+        UserRegistrationBlobNew,
+    )> {
+        let u = ecall_allowed::new_user_updated(self.enclave.geteid(), server_pks)?;
+        Ok((u.0, u.1, EntityId::from(&u.2), u.2))
+    }
+
+    pub fn new_user_batch_updated(
+        &self,
+        server_pks: &[ServerPubKeyPackageNoSGX],
+        n_users: usize,
+    ) -> EnclaveResult<Vec<(
+        SealedSharedSecretsDbClient,
+        SealedSigPrivKeyNoSGX,
+        UserRegistrationBlobNew,
+    )>> {
+        ecall_allowed::new_user_batch_updated(self.enclave.getid(), (server_pks, n_users))
     }
 
     /// Create a new TEE protected secret key for an aggregator.

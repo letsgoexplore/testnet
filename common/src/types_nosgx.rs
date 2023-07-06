@@ -6,7 +6,6 @@ use ed25519_dalek::{
     SECRET_KEY_LENGTH,
     PUBLIC_KEY_LENGTH,
     KEYPAIR_LENGTH,
-    SIGNATURE_LENGTH,
     SignatureError
 };
 use serde::{Serialize, Deserialize};

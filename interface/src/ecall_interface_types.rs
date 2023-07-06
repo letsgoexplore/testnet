@@ -1,5 +1,5 @@
 use crate::sgx_protected_keys::{AttestedPublicKey, ServerPubKeyPackage, SgxProtectedKeyPub};
-use crate::nosgx_protected_keys::{AttestedPublicKeyNoSGX, NoSgxProtectedKeyPub};
+use crate::nosgx_protected_keys::{AttestedPublicKeyNoSGX, NoSgxProtectedKeyPub, SignatureNoSGX};
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
 use crate::DcRoundMessage;
@@ -39,8 +39,11 @@ impl_enum! {
         EcallUnsealToPublicKey = 2,
         EcallNewUser = 3,
         EcallNewUserBatch = 16,
+        EcallNewUserUpdated = 17,
+        EcallNewUserBatchUpdated = 18,
         EcallNewServer = 4,
         EcallUserSubmit = 5,
+        EcallUserSubmitUpdated = 19,
         EcallAddToAggregate = 6,
         EcallRecvUserRegistration =7,
         EcallRecvUserRegistrationBatch = 8,
@@ -61,8 +64,11 @@ impl EcallId {
             EcallId::EcallUnsealToPublicKey => "EcallUnsealToPublicKey",
             EcallId::EcallNewUser => "EcallNewUser",
             EcallId::EcallNewUserBatch => "EcallNewUserBatch",
+            EcallId::EcallNewUserUpdated => "EcallNewUserUpdated",
+            EcallId::EcallNewUserBatchUpdated => "EcallNewUserBatchUpdated",
             EcallId::EcallNewServer => "EcallNewServer",
             EcallId::EcallUserSubmit => "EcallUserSubmit",
+            EcallId::EcallUserSubmitUpdated => "EcallUserSubmitUpdated",
             EcallId::EcallAddToAggregate => "EcallAddToAggregate",
             EcallId::EcallRecvUserRegistration => "EcallRecvUserRegistration",
             EcallId::EcallUnblindAggregate => "EcallUnblindAgg",
@@ -88,6 +94,8 @@ pub struct MarshalledSignedUserMessage(pub Vec<u8>);
 /// Contains the user's entity ID along with his submissions. This is passed to the base level
 /// aggregators only.
 pub type UserSubmissionBlob = crate::UserSubmissionMessage;
+
+pub type UserSubmissionBlobUpdated = crate::UserSubmissionMessageUpdated;
 
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to
 /// aggregators of all levels as well as anytrust nodes.
@@ -232,4 +240,12 @@ pub struct RoundOutput {
     pub round: u32,
     pub dc_msg: DcRoundMessage,
     pub server_sigs: Vec<Signature>,
+}
+
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Default, Serialize, Debug, Deserialize)]
+pub struct RoundOutputUpdated {
+    pub round: u32,
+    pub dc_msg: DcRoundMessage,
+    pub server_sigs: Vec<SignatureNoSGX>,
 }

@@ -4,11 +4,13 @@ use ed25519_dalek::{
     Signature,
     SECRET_KEY_LENGTH,
     PUBLIC_KEY_LENGTH,
+    SIGNATURE_LENGTH,
 };
 
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use std::convert::TryFrom;
+use std::vec::Vec;
 use sha2::{Digest, Sha512};
 
 use crate::user_request::EntityId;
@@ -134,19 +136,21 @@ impl From<&ServerPubKeyPackageNoSGX> for EntityId {
     }
 }
 
+/// Store the bytes of signatures
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Default, Debug, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
+pub struct NoSgxSignature(pub Vec<u8>);
+
+// impl Default for NoSgxSignature {
+//     fn default() -> Self {
+//         Self([0u8; SIGNATURE_LENGTH])
+//     }
+// }
+
 /// Used by servers in round outputs
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Copy, Clone, Debug, Serialize, Desrialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct SignatureNoSGX {
     pub pk: PublicKey,
-    pub sig: Signature,
-}
-
-impl Default for SignatureNoSGX {
-    fn default() -> Self {
-        Self {
-            pk: PublicKey::default(),
-            sig: Signature::new([0u8; 64]),
-        }
-    }
+    pub sig: NoSgxSignature,
 }

@@ -1,7 +1,7 @@
 use crypto::SgxSigningKey;
 use crypto::{SignMutable, Signable};
 use crypto::{SignableUpdated, SignMutableUpdated};
-use interface::{RoundSecret, SgxSignature, SgxSigningPubKey, NoSgxPrivateKey};
+use interface::{RoundSecret, SgxSignature, SgxSigningPubKey, NoSgxPrivateKey, NoSgxSignature};
 use sgx_types::SgxError;
 use sha2::Digest;
 use sha2::Sha256;
@@ -137,7 +137,7 @@ impl SignableUpdated for UserSubmissionMessage {
         hasher.result().to_vec()
     }
 
-    fn get_sig(&self) -> Signature {
+    fn get_sig(&self) -> NoSgxSignature {
         self.tee_sig
     }
 
@@ -157,7 +157,7 @@ impl SignMutable for UserSubmissionMessage {
 }
 
 impl SignMutableUpdated for UserSubmissionMessage {
-    fn sign_mut(&mut self, sk: &NoSgxPrivateKey) -> SgxError {
+    fn sign_mut_updated(&mut self, sk: &NoSgxPrivateKey) -> SgxError {
         let (sig, pk) = self.sign(sk)?;
         self.tee_pk = pk;
         self.tee_sig = sig;

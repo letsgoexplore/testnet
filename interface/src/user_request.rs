@@ -6,6 +6,8 @@ use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected
 use sha2::{Digest, Sha256};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
+use ed25519_dalek::{PublicKey, Signature};
+
 // a wrapper around RawMessage so that we can impl traits. This stores DC_NET_MESSAGE_LENGTH bytes
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize)]
@@ -270,6 +272,13 @@ impl Debug for RateLimitNonce {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum UserMsg {
+    TalkAndReserveUpdated {
+        msg: DcMessage,
+        /// Output of previous round signed by one or more anytrust server
+        prev_round_output: RoundOutputUpdated,
+        /// The number of times the user has already talked or reserved this window
+        time_participated: u32,
+    },
     TalkAndReserve {
         msg: DcMessage,
         /// Output of previous round signed by one or more anytrust server
@@ -304,6 +313,19 @@ pub struct UserSubmissionReq {
     pub shared_secrets: SealedSharedSecretDb,
     /// A list of server public keys (can be verified using the included attestation)
     pub server_pks: Vec<ServerPubKeyPackage>,
+}
+
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct UserSubmissionReqUpdated {
+    pub user_id: EntityId,
+    pub anytrust_group_id: EntityId,
+    pub round: u32,
+    pub msg: UserMsg,
+    /// A map from server KEM public key to sealed shared secret
+    pub shared_secrets: SealedSharedSecretsDbClient,
+    /// A list of server public keys (can be verified using the included attestation)
+    pub server_pks: Vec<ServerPubKeyPackageNoSGX>,
 }
 
 use crate::SgxSignature;
@@ -346,6 +368,26 @@ pub struct UserSubmissionMessage {
 }
 
 impl UserSubmissionMessage {
+    pub fn is_empty(&self) -> bool {
+        false
+    }
+}
+
+/// A user submitted message that's produced by an enclave
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct UserSubmissionMessageUpdated {
+    pub round: u32,
+    pub anytrust_group_id: EntityId,
+    pub user_id: EntityId,
+    /// This is only Some for user-submitted messages
+    pub rate_limit_nonce: Option<RateLimitNonce>,
+    pub aggregated_msg: DcRoundMessage,
+    pub tee_sig: NoSgxSignature,
+    pub tee_pk: PublicKey,
+}
+
+impl UserSubmissionMessageUpdated {
     pub fn is_empty(&self) -> bool {
         false
     }

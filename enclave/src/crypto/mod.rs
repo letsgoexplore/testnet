@@ -1,5 +1,5 @@
 use crate::interface::{RoundOutput, SgxSignature, SgxSigningPubKey};
-use crate::interface::{RoundOutputUpdated, NoSgxPrivateKey};
+use crate::interface::{RoundOutputUpdated, NoSgxPrivateKey, NoSgxSignature};
 use crate::types::CryptoError;
 use sgx_types::{SgxError, SgxResult, SGX_ECP256_KEY_SIZE};
 use std::vec::Vec;
@@ -13,6 +13,9 @@ use ed25519_dalek::{
     SecretKey,
     PublicKey,
     Signature,
+    Keypair,
+    Signer,
+    Verifier,
     SECRET_KEY_LENGTH,
     PUBLIC_KEY_LENGTH,
     KEYPAIR_LENGTH,
@@ -25,6 +28,16 @@ pub trait Hashable {
 use std::convert::TryInto;
 
 impl Hashable for RoundOutput {
+    fn sha256(&self) -> [u8; 32] {
+        let mut h = Sha256::new();
+        h.input(&self.round.to_le_bytes());
+        h.input(&self.dc_msg.digest());
+
+        h.result().try_into().unwrap()
+    }
+}
+
+impl Hashable for RoundOutputUpdated {
     fn sha256(&self) -> [u8; 32] {
         let mut h = Sha256::new();
         h.input(&self.round.to_le_bytes());
@@ -64,20 +77,20 @@ pub trait Signable {
 
 pub trait SignableUpdated {
     fn digest(&self) -> Vec<u8>;
-    fn get_sig(&self) -> Signature;
+    fn get_sig(&self) -> NoSgxSignature;
     fn get_pk(&self) -> PublicKey;
-    fn sign(&self, ssk: &NoSgxPrivateKey) -> SgxResult<(Signature, PublicKey)> {
+    fn sign(&self, ssk: &NoSgxPrivateKey) -> SgxResult<(NoSgxSignature, PublicKey)> {
         let dig = self.digest();
 
-        let pk: PublicKey = (&SecretKey::from_bytes(&ssk.r)).into();
-        let sk_bytes: [u8; SECRET_KEY_LENGTH] = sk.to_bytes();
+        let pk: PublicKey = (&SecretKey::from_bytes(&ssk.r).unwrap()).into();
+        let sk_bytes: [u8; SECRET_KEY_LENGTH] = ssk.r;
         let pk_bytes: [u8; PUBLIC_KEY_LENGTH] = pk.to_bytes();
         let mut keypair_bytes: [u8; KEYPAIR_LENGTH] = [0; KEYPAIR_LENGTH];
         keypair_bytes[..SECRET_KEY_LENGTH].copy_from_slice(&sk_bytes);
         keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
 
         let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
-        let sig: Signature = keypair.sign(dig.as_slice());
+        let sig = NoSgxSignature(keypair.sign(dig.as_slice()).to_bytes().to_vec());
 
         Ok((sig, pk))
     }
@@ -88,7 +101,7 @@ pub trait SignMutable {
 }
 
 pub trait SignMutableUpdated {
-    fn sign_mut(&mut self, _: &NoSgxPrivateKey) -> SgxError;
+    fn sign_mut_updated(&mut self, _: &NoSgxPrivateKey) -> SgxError;
 }
 
 pub trait MultiSignable {
@@ -155,18 +168,18 @@ impl MultiSignable for RoundOutput {
 
 pub trait MultiSignableUpdated {
     fn digest(&self) -> Vec<u8>;
-    fn sign(&self, ssk: &SecretKey) -> SgxResult<(Signature, PublicKey)> {
+    fn sign(&self, ssk: &SecretKey) -> SgxResult<(NoSgxSignature, PublicKey)> {
         let dig = self.digest();
 
-        let pk: PublicKey = (&sk).into();
-        let sk_bytes: [u8; SECRET_KEY_LENGTH] = sk.to_bytes();
+        let pk: PublicKey = ssk.into();
+        let sk_bytes: [u8; SECRET_KEY_LENGTH] = ssk.to_bytes();
         let pk_bytes: [u8; PUBLIC_KEY_LENGTH] = pk.to_bytes();
         let mut keypair_bytes: [u8; KEYPAIR_LENGTH] = [0; KEYPAIR_LENGTH];
         keypair_bytes[..SECRET_KEY_LENGTH].copy_from_slice(&sk_bytes);
         keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
 
         let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
-        let sig: Signature = keypair.sign(dig.as_slice());
+        let sig = NoSgxSignature(keypair.sign(dig.as_slice()).to_bytes().to_vec());
 
         Ok((sig, pk))
     }
@@ -175,7 +188,7 @@ pub trait MultiSignableUpdated {
     fn verify_multisig(&self, pks: &[PublicKey]) -> SgxResult<Vec<usize>>;
 }
 
-impl MultiSignable for RoundOutputUpdated {
+impl MultiSignableUpdated for RoundOutputUpdated {
     fn digest(&self) -> Vec<u8> {
         self.sha256().to_vec()
     }
@@ -192,22 +205,24 @@ impl MultiSignable for RoundOutputUpdated {
 
         let mut verified = vec![];
         for i in 0..self.server_sigs.len() {
-            let sig: Signature = self.server_sigs[i].sig;
+            let sig: Signature = Signature::new(self.server_sigs[i].sig.0.try_into().unwrap());
             let pk: PublicKey = self.server_sigs[i].pk;
 
             // verify the signature
             if pk.verify(msg_hash.as_slice(), &sig).is_ok() {
-                debug!("signature verified against {}", pk);
+                debug!("signature verified against {:?}", pk);
             }
 
             // check if pk is in the server PK list
             match pks.iter().position(|&k| k == pk) {
                 Some(i) => verified.push(i),
                 None => {
-                    log::error!("PK {} is not in the server PK list", pk);
+                    log::error!("PK {:?} is not in the server PK list", pk);
                 }
             }
         }
+
+        Ok(verified)
     }
 }
 
