@@ -191,6 +191,20 @@ impl From<&SgxProtectedKeyPub> for EntityId {
     }
 }
 
+impl From<&PublicKey> for EntityId {
+    fn from(pk: &PublicKey) -> Self {
+        let mut hasher = Sha256::new();
+        hasher.input("anytrust_group_id");
+        hasher.input(pk.to_bytes());
+
+        let digest = hasher.result();
+
+        let mut id = EntityId::default();
+        id.0.copy_from_slice(&digest);
+        id
+    }
+}
+
 impl From<&AttestedPublicKey> for EntityId {
     fn from(pk: &AttestedPublicKey) -> Self {
         EntityId::from(&pk.pk)
@@ -207,6 +221,13 @@ impl From<&ServerPubKeyPackage> for EntityId {
     // server's entity id is computed from the signing key
     fn from(spk: &ServerPubKeyPackage) -> Self {
         EntityId::from(&spk.sig)
+    }
+}
+
+impl From<&ServerPubKeyPackageNoSGX> for EntityId {
+    // server's entity id is computed from the signing key
+    fn from(pk: &ServerPubKeyPackageNoSGX) -> Self {
+        EntityId::from(&pk.sig)
     }
 }
 

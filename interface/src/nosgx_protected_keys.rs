@@ -123,19 +123,6 @@ pub struct ServerPubKeyPackageNoSGX {
     pub kem: PublicKey,
 }
 
-impl From<&ServerPubKeyPackageNoSGX> for EntityId {
-    // server's entity id is computed from the signing key
-    fn from(pk: &ServerPubKeyPackageNoSGX) -> Self {
-        let mut hasher = sha2::Sha256::new();
-        hasher.input("anytrust_group_id");
-        hasher.input(pk.sig.as_bytes());
-
-        let digest = hasher.result();
-
-        EntityId(digest.into())
-    }
-}
-
 /// Store the bytes of signatures
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Debug, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
