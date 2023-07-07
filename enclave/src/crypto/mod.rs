@@ -205,7 +205,7 @@ impl MultiSignableUpdated for RoundOutputUpdated {
 
         let mut verified = vec![];
         for i in 0..self.server_sigs.len() {
-            let sig: Signature = Signature::new(self.server_sigs[i].sig.0.try_into().unwrap());
+            let sig: Signature = Signature::new(self.server_sigs[i].sig.0.clone().try_into().unwrap());
             let pk: PublicKey = self.server_sigs[i].pk;
 
             // verify the signature

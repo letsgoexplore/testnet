@@ -12,7 +12,7 @@ use crate::{
 };
 
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, RoundOutput, ServerPubKeyPackage, UserMsg, DC_NET_MESSAGE_LENGTH};
+use interface::{DcMessage, RoundOutput, ServerPubKeyPackage, UserMsg, DC_NET_MESSAGE_LENGTH, RoundOutputUpdated};
 use std::{ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -245,12 +245,12 @@ fn main() -> Result<(), UserError> {
 
         // Load the previous round output. Load a placeholder output if this is the first round of
         // the first window
-        let prev_round_output: RoundOutput = if round > 0 {
+        let prev_round_output: RoundOutputUpdated = if round > 0 {
             let round_output_filename = matches.value_of("prev-round-output").unwrap();
             let round_file = File::open(round_output_filename)?;
             cli_util::load(round_file)?
         } else {
-            RoundOutput::default()
+            RoundOutputUpdated::default()
         };
 
         // Get the state

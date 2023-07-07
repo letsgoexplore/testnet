@@ -277,7 +277,7 @@ pub enum UserMsg {
         /// Output of previous round signed by one or more anytrust server
         prev_round_output: RoundOutputUpdated,
         /// The number of times the user has already talked or reserved this window
-        time_participated: u32,
+        times_participated: u32,
     },
     TalkAndReserve {
         msg: DcMessage,

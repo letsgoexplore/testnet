@@ -96,7 +96,7 @@ impl SignMutable for UnblindedAggregateShare {
 }
 
 
-use interface::UserSubmissionMessage;
+use interface::{UserSubmissionMessage, UserSubmissionMessageUpdated};
 
 impl Signable for UserSubmissionMessage {
     fn digest(&self) -> Vec<u8> {
@@ -122,7 +122,7 @@ impl Signable for UserSubmissionMessage {
     }
 }
 
-impl SignableUpdated for UserSubmissionMessage {
+impl SignableUpdated for UserSubmissionMessageUpdated {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
         hasher.input(b"Begin UserSubmissionMessage");
@@ -138,7 +138,7 @@ impl SignableUpdated for UserSubmissionMessage {
     }
 
     fn get_sig(&self) -> NoSgxSignature {
-        self.tee_sig
+        self.tee_sig.clone()
     }
 
     fn get_pk(&self) -> PublicKey {
@@ -156,7 +156,7 @@ impl SignMutable for UserSubmissionMessage {
     }
 }
 
-impl SignMutableUpdated for UserSubmissionMessage {
+impl SignMutableUpdated for UserSubmissionMessageUpdated {
     fn sign_mut_updated(&mut self, sk: &NoSgxPrivateKey) -> SgxError {
         let (sig, pk) = self.sign(sk)?;
         self.tee_pk = pk;

@@ -123,7 +123,7 @@ pub extern "C" fn ecall_entrypoint(
         (
             EcallUserSubmitUpdated,
             (UserSubmissionReqUpdated, SealedSigPrivKeyNoSGX),
-            (UserSubmissionBlob, SealedSharedSecretsDbClient),
+            (UserSubmissionBlobUpdated, SealedSharedSecretsDbClient),
             submit::user_submit_internal_updated
         ),
         (

@@ -369,6 +369,7 @@ pub fn user_submit_internal(
     // Write to the round message. It's all zeros by default
     let mut round_msg = DcRoundMessage::default();
     match msg {
+        UserMsg::TalkAndReserveUpdated { .. } => (),
         // If the user is talking and reserving, write to message and reservation slots
         UserMsg::TalkAndReserve {
             msg,
@@ -538,13 +539,13 @@ pub fn user_submit_internal_updated(
                 round_msg.aggregated_msg.set(msg_slot, i, *b).unwrap();
             }
         }
+        UserMsg::TalkAndReserve { .. } => (),
         // If the user is just reserving, write to reservation slots
         UserMsg::Reserve { .. } => {
             round_msg.scheduling_msg[next_slot] = next_fp;
         }
         // If this is cover traffic, the round message is all zeros
         UserMsg::Cover => (),
-        // UserMsg::TalkAndReserve => (),
     };
 
     // Now we encrypt the round message
