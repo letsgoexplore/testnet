@@ -6,6 +6,7 @@ use ed25519_dalek::{
     SECRET_KEY_LENGTH,
     PUBLIC_KEY_LENGTH,
     KEYPAIR_LENGTH,
+    SIGNATURE_LENGTH,
     SignatureError
 };
 use serde::{Serialize, Deserialize};
@@ -17,6 +18,7 @@ use interface::{
     UserSubmissionMessage,
     NoSgxProtectedKeyPub,
     AttestedPublicKey,
+    AttestedPublicKeyNoSGX,
     ServerPubKeyPackageNoSGX,
     NewDiffieHellmanSharedSecret,
     compute_anytrust_group_id_spk,
@@ -222,7 +224,7 @@ impl SharedSecretsDbServer {
             // 2. Convert client pk (NoSgxProtectedKeyPub) to xPublicKey
             let pk = xPublicKey::from(client_pk.0);
             // 3. Compute the DH secret for the server and xPublicKeys
-            let shared_secret = my_secret.diffie_hellman(&client_pk);
+            let shared_secret = my_secret.diffie_hellman(&pk);
             // 4. Save ephemeral SharedSecret into NewDiffieHellmanSharedSecret
             let shared_secret_bytes: [u8; 32] = shared_secret.as_bytes().to_owned();
             server_secrets.insert(client_pk.to_owned(), NewDiffieHellmanSharedSecret(shared_secret_bytes));
@@ -259,7 +261,7 @@ pub type AggPublicKey = AggRegistrationBlobNoSGX;
 /// SignedPubKeyDbNoSGX is a signed mapping between entity id and public key
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct SignedPubKeyDbNoSGX {
-    pub users: BTreeMap<EntityId, AttestedPublicKey>,
+    pub users: BTreeMap<EntityId, AttestedPublicKeyNoSGX>,
     pub servers: BTreeMap<EntityId, ServerPubKeyPackageNoSGX>,
     pub aggregators: BTreeMap<EntityId, AggPublicKey>,
 }
