@@ -3,7 +3,7 @@ use crate::util::{Result, ServerError};
 
 use interface::{
     EntityId,
-    UserRegistrationBlob,
+    UserRegistrationBlobNew,
     ServerPubKeyPackageNoSGX,
 };
 
@@ -51,7 +51,7 @@ pub fn recv_user_registration_batch(
     pubkeys: &mut SignedPubKeyDbNoSGX,
     shared_secrets: &mut SharedSecretsDbServer,
     decap_key: &SecretKey,
-    input_blob: &[UserRegistrationBlob],
+    input_blob: &[UserRegistrationBlobNew],
 ) -> Result<()> {
     let (new_pubkey_db, new_secrets_db) = recv_user_reg_batch(
         (pubkeys, decap_key, input_blob),
@@ -64,8 +64,8 @@ pub fn recv_user_registration_batch(
 }
 
 fn recv_user_reg_batch(
-    input: (&SignedPubKeyDbNoSGX, &SecretKey, &Vec<UserRegistrationBlob>),
-) -> Result<(SignedPubKeyDb, SharedSecretsDbServer)> {
+    input: (&SignedPubKeyDbNoSGX, &SecretKey, &Vec<UserRegistrationBlobNew>),
+) -> Result<(SignedPubKeyDbNoSGX, SharedSecretsDbServer)> {
     let mut pk_db: SignedPubKeyDbNoSGX = input.0.clone();
     let my_kem_sk = input.1;
 
@@ -81,6 +81,7 @@ fn recv_user_reg_batch(
             }
         }
 
+        // add user key to pubkey db
         pk_db.users.insert(EntityId::from(&u.pk), u.clone());
     }
 
@@ -90,6 +91,10 @@ fn recv_user_reg_batch(
         others_kem_pks.push(k.pk);
     }
 
-    // TODO: derive shared secrets
+    let shared_secrets = SharedSecretsDbServer::derive_shared_secrets(&my_kem_sk, &other_kem_pks)
+        .map_err(ServerError::UnexpectedError);
 
+    debug!("shared_secrets: {:?}", shared_secrets);
+
+    Ok((pk_db, shared_secrets))
 }

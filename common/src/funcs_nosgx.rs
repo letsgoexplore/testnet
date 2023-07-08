@@ -2,8 +2,9 @@ use std::collections::BTreeSet;
 use interface::{
     EntityId,
     UserSubmissionMessage,
-    UserRegistrationBlob,
+    UserRegistrationBlobNew,
     RoundSecret,
+    DcRoundMessage,
 };
 use ed25519_dalek::{
     PublicKey,
@@ -13,7 +14,8 @@ use ed25519_dalek::{
 extern crate sha2;
 use sha2::{Digest, Sha256};
 use rand::SeedableRng;
-use byteorder::LittleEndian;
+use byteorder::{ByteOrder, LittleEndian};
+use hkdf::{Hkdf, InvalidLength};
 
 use crate::aes_prng::Aes128Rng;
 use crate::types_nosgx::{SharedSecretsDbServer, XorNoSGX};
@@ -23,7 +25,7 @@ pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessage) -> Resu
     Ok(())
 }
 
-pub fn verify_user_attestation(_reg_blob: &UserRegistrationBlob) -> Result<(), ()> {
+pub fn verify_user_attestation(_reg_blob: &UserRegistrationBlobNew) -> Result<(), ()> {
     Ok(())
 }
 
@@ -31,7 +33,7 @@ pub fn derive_round_secret_server(
     round: u32,
     shared_secrets: &SharedSecretsDbServer,
     entity_ids_to_use: Option<&BTreeSet<EntityId>>,
-) -> Result<(), InvalidLength> {
+) -> Result<RoundSecret, InvalidLength> {
     type MyRng = Aes128Rng;
 
     let mut round_secret = RoundSecret::default();

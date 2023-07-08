@@ -4,7 +4,7 @@ use common::enclave::DcNetEnclave;
 use interface::{
     AggRegistrationBlob, EntityId, RoundOutput, RoundSubmissionBlob, SealedKemPrivKey,
     SealedSharedSecretDb, SealedSigPrivKey, ServerPubKeyPackage, ServerRegistrationBlob,
-    SignedPartialAggregate, SignedPubKeyDb, UnblindedAggregateShareBlob, UserRegistrationBlob,
+    SignedPartialAggregate, SignedPubKeyDb, UnblindedAggregateShareBlob, UserRegistrationBlobNew,
     ServerPubKeyPackageNoSGX,
 };
 
@@ -21,6 +21,7 @@ use common::types_nosgx::{
 
 use crate::server_nosgx::{
     new_server,
+    recv_user_registration_batch,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -96,10 +97,9 @@ impl ServerState {
     /// Registers a user with this server
     pub fn recv_user_registrations(
         &mut self,
-        enclave: &DcNetEnclave,
-        input_blobs: &[UserRegistrationBlob],
+        input_blobs: &[UserRegistrationBlobNew],
     ) -> Result<()> {
-        enclave.recv_user_registration_batch(
+        recv_user_registration_batch(
             &mut self.pubkeys,
             &mut self.shared_secrets,
             &self.decap_key,
