@@ -72,6 +72,7 @@ impl AggregatedMessage {
         self.user_ids.is_empty()
     }
 }
+pub type RoundSubmissionBlobUpdate = AggregatedMessage;
 
 pub trait SignableNoSGX {
     fn digest(&self) -> Vec<u8>;

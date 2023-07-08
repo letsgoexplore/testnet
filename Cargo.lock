@@ -2558,6 +2558,7 @@ dependencies = [
  "ed25519-dalek 0.9.1",
  "env_logger 0.9.3",
  "interface",
+ "itertools 0.10.5",
  "log 0.4.19",
  "rand 0.6.5",
  "serde 1.0.164",

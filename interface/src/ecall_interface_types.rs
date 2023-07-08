@@ -100,6 +100,7 @@ pub type UserSubmissionBlobUpdated = crate::UserSubmissionMessageUpdated;
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to
 /// aggregators of all levels as well as anytrust nodes.
 pub type RoundSubmissionBlob = crate::AggregatedMessageObsolete;
+// pub type RoundSubmissionBlobUpdate = AggregatedMessage;
 
 /// The unblinded aggregate output by a single anytrust node
 /// This serialized to a UnblindedAggregateShare defined in enclave/message_types.rs
@@ -228,6 +229,14 @@ pub struct SealedKemPrivKey(pub Vec<u8>);
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct SignedPubKeyDb {
+    pub users: BTreeMap<EntityId, AttestedPublicKey>,
+    pub servers: BTreeMap<EntityId, ServerPubKeyPackage>,
+    pub aggregators: BTreeMap<EntityId, AttestedPublicKey>,
+}
+
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Default, Serialize, Debug, Deserialize)]
+pub struct SignedPubKeyDbNoSGX {
     pub users: BTreeMap<EntityId, AttestedPublicKey>,
     pub servers: BTreeMap<EntityId, ServerPubKeyPackage>,
     pub aggregators: BTreeMap<EntityId, AttestedPublicKey>,
