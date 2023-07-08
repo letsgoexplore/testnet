@@ -253,9 +253,6 @@ pub fn unblind_aggregate(
             let rs =
                 unblind_aggregate_partial((round, &db_cloned, &user_ids))
                     .unwrap();
-            ///
-            
-            /// 
             tx_cloned.send(rs).unwrap();
         });
     }
@@ -333,6 +330,5 @@ pub fn derive_round_output(
     );
 
     Ok(round_output)
-    
 }
 
