@@ -21,6 +21,7 @@ use interface::{
     ServerPubKeyPackageNoSGX,
     NewDiffieHellmanSharedSecret,
     UserSubmissionMessageUpdated,
+    RoundSecret,
     compute_anytrust_group_id_spk,
 };
 
@@ -270,6 +271,45 @@ pub type RoundSubmissionBlobNoSGX = AggregatedMessage;
 
 /// Describes anytrust server registration information. This contains sig key and kem key.
 pub type ServerRegistrationBlobNoSGX = ServerPubKeyPackageNoSGX;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UnblindedAggregateSharedNoSGX {
+    pub encrypted_msg: AggregatedMessage,
+    pub key_share: RoundSecret,
+    pub sig: Signature,
+    pub pk: PublicKey,
+}
+
+impl SignableNoSGX for UnblindedAggregateSharedNoSGX {
+    fn digest(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.input(b"Begin UnblindedAggregateShareNoSGX");
+        hasher.input(self.encrypted_msg.digest());
+        hasher.input(self.key_share.digest());
+        hasher.input(b"End UnblindedAggregateShareNoSGX");
+
+        hasher.result().to_vec()
+    }
+
+    fn get_sig(&self) -> Signature {
+        self.sig
+    }
+
+    fn get_pk(&self) -> PublicKey {
+        self.pk
+    }
+}
+
+impl SignMutableNoSGX for UnblindedAggregateSharedNoSGX {
+    fn sign_mut(&mut self, ssk: &SecretKey) -> Result<(), SignatureError> {
+        let (sig, pk)  = self.sign(ssk)?;
+        self.sig = sig;
+        self.pk = pk;
+
+        Ok(())
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
