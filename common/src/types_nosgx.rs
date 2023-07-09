@@ -15,12 +15,12 @@ use interface::{
     EntityId,
     RateLimitNonce,
     DcRoundMessage,
-    UserSubmissionMessage,
     NoSgxProtectedKeyPub,
     AttestedPublicKey,
     AttestedPublicKeyNoSGX,
     ServerPubKeyPackageNoSGX,
     NewDiffieHellmanSharedSecret,
+    UserSubmissionMessageUpdated,
     compute_anytrust_group_id_spk,
 };
 
@@ -189,7 +189,7 @@ impl XorNoSGX for DcRoundMessage {
 }
 
 pub enum SubmissionMessage {
-    UserSubmission(UserSubmissionMessage),
+    UserSubmission(UserSubmissionMessageUpdated),
     AggSubmission(AggregatedMessage),
 }
 

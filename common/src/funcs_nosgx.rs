@@ -1,10 +1,10 @@
 use std::collections::BTreeSet;
 use interface::{
     EntityId,
-    UserSubmissionMessage,
     UserRegistrationBlobNew,
     RoundSecret,
     DcRoundMessage,
+    UserSubmissionMessageUpdated,
 };
 use ed25519_dalek::{
     PublicKey,
@@ -21,7 +21,7 @@ use crate::aes_prng::Aes128Rng;
 use crate::types_nosgx::{SharedSecretsDbServer, XorNoSGX};
 
 
-pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessage) -> Result<(), ()> {
+pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), ()> {
     Ok(())
 }
 

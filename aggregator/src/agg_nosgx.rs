@@ -7,7 +7,7 @@ use sha2::Sha512;
 use interface::{
     EntityId,
     RateLimitNonce,
-    UserSubmissionMessage,
+    UserSubmissionMessageUpdated,
 
 };
 use common::types_nosgx::{
@@ -213,7 +213,7 @@ fn add_to_agg(
 
 fn add_to_agg_user_submit(
     input: (
-        &UserSubmissionMessage,
+        &UserSubmissionMessageUpdated,
         &AggregatedMessage,
         &Option<BTreeSet<RateLimitNonce>>,
         &SecretKey,
