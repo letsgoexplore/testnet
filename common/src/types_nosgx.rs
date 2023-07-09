@@ -15,17 +15,19 @@ use interface::{
     EntityId,
     RateLimitNonce,
     DcRoundMessage,
-    UserSubmissionMessage,
     NoSgxProtectedKeyPub,
     AttestedPublicKey,
     AttestedPublicKeyNoSGX,
     ServerPubKeyPackageNoSGX,
     NewDiffieHellmanSharedSecret,
+    UserSubmissionMessageUpdated,
+    RoundSecret,
     compute_anytrust_group_id_spk,
 };
 
 use std::prelude::v1::*;
 use std::collections::{BTreeSet, BTreeMap};
+use std::convert::TryInto;
 
 use core::fmt::{Debug, Formatter};
 
@@ -190,7 +192,7 @@ impl XorNoSGX for DcRoundMessage {
 }
 
 pub enum SubmissionMessage {
-    UserSubmission(UserSubmissionMessage),
+    UserSubmission(UserSubmissionMessageUpdated),
     AggSubmission(AggregatedMessage),
 }
 
@@ -235,6 +237,25 @@ impl SharedSecretsDbServer {
             ..Default::default()
         })
     }
+
+    pub fn ratchet(&self) -> SharedSecretsDbServer {
+        let a = self
+            .db
+            .iter()
+            .map(|&sk, v| {
+                let new_key = Sha256::digest(&v.0);
+                let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32");
+                let new_sec = NewDiffieHellmanSharedSecret(secret_bytes);
+
+                (k, new_sec)
+            })
+            .collect();
+
+        SharedSecretsDbServer {
+            round: self.round + 1,
+            db: a,
+        }
+    }
 }
 
 impl Default for SharedSecretsDbServer {
@@ -264,6 +285,74 @@ pub struct SignedPubKeyDbNoSGX {
     pub users: BTreeMap<EntityId, AttestedPublicKeyNoSGX>,
     pub servers: BTreeMap<EntityId, ServerPubKeyPackageNoSGX>,
     pub aggregators: BTreeMap<EntityId, AggPublicKey>,
+}
+
+/// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to anytrust nodes.
+pub type RoundSubmissionBlobNoSGX = AggregatedMessage;
+
+/// Describes anytrust server registration information. This contains sig key and kem key.
+pub type ServerRegistrationBlobNoSGX = ServerPubKeyPackageNoSGX;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UnblindedAggregateSharedNoSGX {
+    pub encrypted_msg: AggregatedMessage,
+    pub key_share: RoundSecret,
+    pub sig: Signature,
+    pub pk: PublicKey,
+}
+
+impl SignableNoSGX for UnblindedAggregateSharedNoSGX {
+    fn digest(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.input(b"Begin UnblindedAggregateShareNoSGX");
+        hasher.input(self.encrypted_msg.digest());
+        hasher.input(self.key_share.digest());
+        hasher.input(b"End UnblindedAggregateShareNoSGX");
+
+        hasher.result().to_vec()
+    }
+
+    fn get_sig(&self) -> Signature {
+        self.sig
+    }
+
+    fn get_pk(&self) -> PublicKey {
+        self.pk
+    }
+}
+
+impl SignMutableNoSGX for UnblindedAggregateSharedNoSGX {
+    fn sign_mut(&mut self, ssk: &SecretKey) -> Result<(), SignatureError> {
+        let (sig, pk)  = self.sign(ssk)?;
+        self.sig = sig;
+        self.pk = pk;
+
+        Ok(())
+    }
+}
+
+/// The unblinded aggregate output by a single anytrust node
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UnblindedAggregateShareBlobNoSGX(pub Vec<u8>);
+
+pub trait MarshallAsNoSGX<T> {
+    fn marshal_nosgx(&self) -> Result<T, serde_cbor::Error>;
+}
+
+pub trait UnmarshalledAsNoSGX<T> {
+    fn unmarshal_nosgx(&self) -> Result<T, serde_cbor::Error>;
+}
+
+impl MarshallAsNoSGX<UnblindedAggregateShareBlobNoSGX> for UnblindedAggregateSharedNoSGX {
+    fn marshal_nosgx(&self) -> Result<UnblindedAggregateShareBlobNoSGX, serde_cbor::Error> {
+        Ok(UnblindedAggregateShareBlobNoSGX(serialize_to_vec(&self)?))
+    }
+}
+
+impl UnmarshalledAsNoSGX<UnblindedAggregateSharedNoSGX> for UnblindedAggregateShareBlobNoSGX {
+    fn unmarshal_nosgx(&self) -> Result<UnblindedAggregateSharedNoSGX, serde_cbor::Error> {
+        deserialize_from_vec(&self.0)
+    }
 }
 
 #[cfg(test)]

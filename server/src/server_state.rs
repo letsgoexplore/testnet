@@ -17,11 +17,16 @@ use common::types_nosgx::{
     AggregatedMessage,
     SharedSecretsDbServer,
     SignedPubKeyDbNoSGX,
+    RoundSubmissionBlobNoSGX,
+    UnblindedAggregateShareBlobNoSGX,
 };
 
 use crate::server_nosgx::{
     new_server,
     recv_user_registration_batch,
+    recv_aggregator_registration,
+    recv_server_registration,
+    unblind_aggregate,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -71,11 +76,10 @@ impl ServerState {
     /// unblinded aggregate as well as the ratcheted shared secrets
     pub fn unblind_aggregate(
         &mut self,
-        enclave: &DcNetEnclave,
-        toplevel_agg: &RoundSubmissionBlob,
-    ) -> Result<UnblindedAggregateShareBlob> {
+        toplevel_agg: &RoundSubmissionBlobNoSGX,
+    ) -> Result<UnblindedAggregateShareBlobNoSGX> {
         let (share, ratcheted_secrets) =
-            enclave.unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
+            unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
 
         // Ratchet the secrets forward
         self.shared_secrets = ratcheted_secrets;
@@ -89,9 +93,7 @@ impl ServerState {
         enclave: &DcNetEnclave,
         server_aggs: &[UnblindedAggregateShareBlob],
     ) -> Result<RoundOutput> {
-        enclave
-            .derive_round_output(&self.signing_key, server_aggs)
-            .map_err(Into::into)
+        derive_round_output(&self.signing_key, server_aggs)
     }
 
     /// Registers a user with this server
@@ -115,7 +117,7 @@ impl ServerState {
         enclave: &DcNetEnclave,
         input_blob: &AggRegistrationBlob,
     ) -> Result<()> {
-        enclave.recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
+        recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
 
         Ok(())
     }
@@ -128,7 +130,7 @@ impl ServerState {
         input_blob: &ServerRegistrationBlob,
     ) -> Result<()> {
         // Input the registration and increment the size of the group
-        enclave.recv_server_registration(&mut self.pubkeys, input_blob)?;
+        recv_server_registration(&mut self.pubkeys, input_blob)?;
         self.anytrust_group_size += 1;
 
         info!(

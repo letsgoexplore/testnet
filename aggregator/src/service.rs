@@ -8,7 +8,7 @@ use common::types_nosgx::{
     AggregatedMessage,
     SubmissionMessage,
 };
-use interface::UserSubmissionMessage;
+use interface::UserSubmissionMessageUpdated;
 
 use core::ops::DerefMut;
 use std::{
@@ -64,7 +64,7 @@ async fn submit_agg(
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
-    let data: UserSubmissionMessage = cli_util::load(&mut payload.as_bytes())?;
+    let data: UserSubmissionMessageUpdated = cli_util::load(&mut payload.as_bytes())?;
 
     // Unpack state
     let mut handle = state.get_ref().lock().unwrap();

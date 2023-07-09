@@ -1,10 +1,11 @@
 use std::collections::BTreeSet;
+use std::vec::Vec;
 use interface::{
     EntityId,
-    UserSubmissionMessage,
     UserRegistrationBlobNew,
     RoundSecret,
     DcRoundMessage,
+    UserSubmissionMessageUpdated,
 };
 use ed25519_dalek::{
     PublicKey,
@@ -20,8 +21,12 @@ use hkdf::{Hkdf, InvalidLength};
 use crate::aes_prng::Aes128Rng;
 use crate::types_nosgx::{SharedSecretsDbServer, XorNoSGX};
 
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use serde_cbor;
 
-pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessage) -> Result<(), ()> {
+
+pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), ()> {
     Ok(())
 }
 
@@ -61,4 +66,19 @@ pub fn derive_round_secret_server(
     }
 
     Ok(round_secret)
+}
+
+
+pub fn serialize_to_vec<T: Serialize>(v: &T) -> Result<Vec<u8>, serde_cbor::Error> {
+    serde_cbor::to_vec(v).map_err(|e| {
+        println!("can't serialize to vec {}", e);
+        e
+    })
+}
+
+pub fn deserialize_from_vec<T: DeserializeOwned>(bin: &[u8]) -> Result<T, serde_cbor::Error> {
+    serde_cbor::from_slice::<T>(bin).map_err(|e| {
+        println!("can't deserialize from vec {}", e);
+        e
+    })
 }

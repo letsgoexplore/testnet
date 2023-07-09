@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 
 use interface::{
     compute_group_id, EntityId, RateLimitNonce,
-    ServerPubKeyPackage, DC_NET_ROUNDS_PER_WINDOW,
+    ServerPubKeyPackage, DC_NET_ROUNDS_PER_WINDOW, ServerPubKeyPackageNoSGX,
 };
 use serde::{Deserialize, Serialize};
 
@@ -43,13 +43,13 @@ impl AggregatorState {
     /// Makes a new aggregate given the pubkeys of the servers. leaf_node = true iff this
     /// aggregator is a leaf-level aggregator
     pub(crate) fn new(
-        pubkeys: Vec<ServerPubKeyPackage>,
+        pubkeys: Vec<ServerPubKeyPackageNoSGX>,
         level: u32,
     ) -> Result<(AggregatorState, AggRegistrationBlobNoSGX)> {
         let (sk, agg_id, reg_data) = new_aggregator()?;
 
         let anytrust_ids: BTreeSet<EntityId> =
-            pubkeys.iter().map(|pk| pk.kem.get_entity_id()).collect();
+            pubkeys.iter().map(|pk| EntityId::from(pk.kem)).collect();
         let anytrust_group_id = compute_group_id(&anytrust_ids);
 
         // If this is a leaf aggregator, we collect nonces

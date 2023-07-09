@@ -1,12 +1,15 @@
 use std::{vec, vec::Vec};
-use std::iter::FromIterator;
-use std::sync::mpsc;
-use std::thread;
-use itertools::Itertools;
-use std::iter::FromIterator;
-use std::sync::mpsc;
-use std::thread;
-use itertools::Itertools;
+use crate::util::{Result, ServerError};
+
+use interface::{
+    EntityId,
+    UserRegistrationBlobNew,
+    ServerPubKeyPackageNoSGX,
+    RoundSecret,
+    RoundOutputUpdated,
+    DcRoundMessage,
+    SignatureNoSGX,
+};
 
 use ed25519_dalek::{
     SecretKey,
@@ -15,16 +18,21 @@ use ed25519_dalek::{
 use rand::rngs::OsRng;
 use sha2::Sha512;
 
+use std::time::Instant;
+
 use common::types_nosgx::{
+    Sealed,
+    XorNoSGX,
+    MarshallAsNoSGX,
+    UnmarshalledAsNoSGX,
     SharedSecretsDbServer,
     SignedPubKeyDbNoSGX,
     AggRegistrationBlobNoSGX,
+    ServerRegistrationBlobNoSGX,
     AggregatedMessage,
-    RoundSubmissionBlobUpdate,
-    AggRegistrationBlobNoSGX,
-    AggregatedMessage,
-    RoundSubmissionBlobUpdate,
-    Sealed
+    UnblindedAggregateShareBlobNoSGX,
+    RoundSubmissionBlobNoSGX,
+    UnblindedAggregateSharedNoSGX,
 };
 use common::user_request::{
     RoundSecret,
@@ -37,42 +45,10 @@ use common::funcs_nosgx::{
     verify_user_attestation,
     derive_round_secret_server,
 };
-use common::error::{
-    DCError,
-};
-use common::nosgx_protected_keys::{
-    SignatureNoSGX
-}
-
-use crate::util::{Result, ServerError};
-
-use interface::{
-    EntityId,
-    UserRegistrationBlob,
-    ServerPubKeyPackageNoSGX,
-    SealedSigPrivKeyNoSGX,
-    SealedSharedSecretsDbClient,
-    derive_round_secret_server,
-};
-use common::error::{
-    DCError,
-};
-use common::nosgx_protected_keys::{
-    SignatureNoSGX
-}
-
-use crate::util::{Result, ServerError};
-
-use interface::{
-    EntityId,
-    UserRegistrationBlob,
-    ServerPubKeyPackageNoSGX,
-    SealedSigPrivKeyNoSGX,
-    SealedSharedSecretsDbClient,
-};
 
 use log::{
     debug,
+    info,
     error,
 };
 
@@ -139,129 +115,73 @@ fn recv_user_reg_batch(
         others_kem_pks.push(k.pk);
     }
 
-    // TODO: derive shared secrets
+    let shared_secrets = SharedSecretsDbServer::derive_shared_secrets(&my_kem_sk, &other_kem_pks)
+        .map_err(ServerError::UnexpectedError);
 
+    debug!("shared_secrets: {:?}", shared_secrets);
+
+    Ok((pk_db, shared_secrets))
 }
 
-/// Registers an aggregator with this server
 pub fn recv_aggregator_registration(
     pubkeys: &mut SignedPubKeyDbNoSGX,
-    input_blob: &AggRegistrationBlobNoSGX,
+    input_blob: &AggRegistrationBlobNoSGX
 ) -> Result<()> {
+    let mut new_db = pubkeys.clone();
+    let agg_pk = input_blob;
 
-    let pk_db = pubkeys;
-    let attested_pk = input_blob;
-
-    // add user key to pubkey db
-    pk_db
+    // add agg key to pubkey db
+    new_db
         .aggregators
-        .insert(EntityId::from(&attested_pk.pk), attested_pk.to_owned())?;
+        .insert(EntityId::from(&agg_pk.pk), agg_pk.to_owned());
 
-    pk_db.aggregators.clear();
-    pk_db.aggregators.extend(pk_db.aggregators)?;
+    pubkeys.aggregators.clear();
+    pubkeys.aggregators.extend(new_db.aggregators);
 
     Ok(())
 }
 
 pub fn recv_server_registration(
     pubkeys: &mut SignedPubKeyDbNoSGX,
-    input_blob: &ServerPubKeyPackageNoSGX,
+    input_blob: &ServerRegistrationBlobNoSGX
 ) -> Result<()> {
-    // Input the registration and increment the size of the group
-    let pk_db = pubkeys;
-    let attested_pk = input_blob;
+    let mut new_db = pubkeys.clone();
+    let server_pk = input_blob;
 
-    if !attested_pk.verify_attestation() {
-        return Err(DCError::Error_invalid_parameter);
-    }
-
-    // add server's key package to pubkey db
-    pk_db
+    // add server key to pubkey db
+    new_db
         .servers
-        .insert(EntityId::from(&attested_pk.kem), attested_pk.clone())?;
+        .insert(EntityId::From(&agg_pk.kem), server_pk.clone());
 
     pubkeys.servers.clear();
-    pubkeys.servers.extend(pk_db.servers)?;
+    pubkeys.servers.extend(new_db.servers);
 
     Ok(())
 }
 
-
 pub fn unblind_aggregate(
     toplevel_agg: &AggregatedMessage,
-    signing_key: &SealedSigPrivKeyNoSGX,
-    shared_secrets: &SealedSharedSecretsDbClient,
-    //Question: UnblindedAggregateShareBlob don't need to change?
-) -> Result<(UnblindedAggregateShareBlob, SealedSharedSecretsDbClient)> {
-    pub fn unblind_aggregate_partial(
-        input: &(u32, SealedSharedSecretsDbClient, BTreeSet<EntityId>),
-    ) -> Result<RoundSecret> {
-        let round = input.0;
-        let shared_secrets = input.1.unseal_into()?;
-        let user_ids_in_batch = &input.2;
-    
-        if round != shared_secrets.round {
-            error!(
-                "wrong round. round {} != shared_secrets.round {}",
-                round, shared_secrets.round
-            );
-            return Err(DCError::Error_invalid_parameter);
-        }
-    
-        // check that user ids in this batch is a subset of all known user ids
-        let user_ids_in_secret_db = BTreeSet::from_iter(shared_secrets.db.keys().map(EntityId::from));
-        if !(user_ids_in_batch.is_subset(&user_ids_in_secret_db)) {
-            error!("user_ids_in_batch is not a subset of user_ids_in_secret_db. user_ids_in_batch = {:?}, user_ids_in_secret_db = {:?}",
-            user_ids_in_batch,
-            user_ids_in_secret_db);
-            return Err(DCError::Error_invalid_parameter);
-        }
-    
-        // decrypt key is derived from secret shares with users (identified by round_msg.user_ids)
-        derive_round_secret_server(round, &shared_secrets, Some(&user_ids_in_batch)).map_err(|_| {
-            error!("crypto error");
-            DCError::Error_invalid_parameter
-        })
-    }
+    signing_key: &SecretKey,
+    shared_secrets: &SharedSecretsDbServer,
+) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
+    unblind_aggregate_mt(
+        toplevel_agg,
+        signing_key,
+        shared_secrets,
+        interface::N_THREADS_DERIVE_ROUND_SECRET,
+    )
+}
 
-    pub fn unblind_aggregate_merge(
-        input: &(
-            RoundSubmissionBlobUpdate,
-            Vec<RoundSecret>,
-            SealedSigPrivKeyNoSGX,
-            SealedSharedSecretsDbClient,
-        ),
-    ) -> Result<(UnblindedAggregateShareBlob, SealedSharedSecretsDbClient)> {
-        let mut round_secret = RoundSecret::default();
-        for rs in input.1.iter() {
-            round_secret.xor_mut(rs);
-        }
-    
-        let mut unblined_agg = messages_types::UnblindedAggregateShare {
-            encrypted_msg: input.0.clone(),
-            key_share: round_secret,
-            sig: Default::default(),
-            pk: Default::default(),
-        };
-    
-        // sign the final output and rachet the shared secrets
-        let sig_key = input.2.unseal_into()?;
-        let shared_secrets = input.3.unseal_into()?;
-    
-        // sign
-        unblined_agg.sign_mut(&sig_key)?;
-    
-        Ok((
-            unblined_agg.marshal()?,
-            shared_secrets.ratchet().seal_into()?,
-        ))
-    }
-
-
-    let n_threads = interface::N_THREADS_DERIVE_ROUND_SECRET;
+pub fn unblind_aggregate_mt(
+    toplevel_agg: &AggregatedMessage,
+    signing_key: &SecretKey,
+    shared_secrets: &SharedSecretsDbServer,
+    n_threads: usize,
+) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
     let start = Instant::now();
     let chunk_size = (toplevel_agg.user_ids.len() + n_threads - 1) / n_threads;
     assert_ne!(chunk_size, 0);
+
     let round = shared_secrets.round;
 
     // make a mpsc channel
@@ -278,12 +198,9 @@ pub fn unblind_aggregate(
         thread::spawn(move || {
             info!("thread working on {} ids", uks_vec.len());
             let user_ids: BTreeSet<EntityId> = BTreeSet::from_iter(uks_vec.into_iter());
-            let rs =
+            let rs = 
                 unblind_aggregate_partial((round, &db_cloned, &user_ids))
-                    .unwrap();
-            ///
-            
-            /// 
+                .unwrap();
             tx_cloned.send(rs).unwrap();
         });
     }
@@ -292,7 +209,7 @@ pub fn unblind_aggregate(
 
     drop(tx);
 
-    let round_secrets: Vec<RoundSecret> = rx.iter().collect();
+    let round_secres: Vec<RoundSecret> = rx.iter().collect();
     info!("========= threads join after {:?}", start.elapsed());
 
     let result = unblind_aggregate_merge(
@@ -305,45 +222,105 @@ pub fn unblind_aggregate(
         start.elapsed()
     );
 
-    result   
+    result
 }
 
-/// Derives the final round output given all the shares of the unblinded aggregates
-pub fn derive_round_output(
-    sealed_sig_sk: &SealedSigPrivKeyNoSGX, 
-    //Question:目前没有NoSgx版本
-    server_aggs: &[UnblindedAggregateShareBlob],
-    //Question:Result需要定义枚举类嘛
-) -> Result<()> {
-    let signing_sk = sealed_sig_sk;
-    let shares = server_aggs;
-    if shares.is_empty() {
-        error!("empty shares array");
-        return Err(DCError::Error_invalid_parameter);
+
+pub fn unblind_aggregate_partial(
+    input: &(u32, SharedSecretsDbServer, BTreeSet<EntityId>),
+) -> Result<RoundSecret> {
+    let round = input.0;
+    let shared_secrets = input.1;
+    let user_ids_in_batch = &input.2;
+
+    if round != shared_secrets.round {
+        error!(
+            "wrong round. round {} != shared_secrets.round {}",
+            round, shared_secrets.round
+        );
+        return ServerError::UnexpectedError;
     }
 
-    // TODO: check all shares are for the same around & same message
+    // check that user ids in this batch is a subset of all known user ids
+    let user_ids_in_secret_db = BTreeSet::from_iter(shared_secrets.db.keys().map(EntityId::from));
+    if !(user_ids_in_batch.is_subset(&user_ids_in_secret_db)) {
+        error!("user_ids_in_batch is not a subset of user_ids in sercret_db. user_ids_in_batch = {:?}, user_ids_in_secret_db = {:?}", 
+        user_ids_in_batch,
+        user_ids_in_secret_db);
+        return ServerError::UnexpectedError;
+    }
+
+    // decrypt key is derived from secret shares with users (identified by round_msg.user_ids)
+    derive_round_secret_server(round, &shared_secrets, Some(&user_ids_in_batch)).map_err(|_| {
+        error!("crypto error");
+        ServerError::UnexpectedError
+    })
+}
+
+pub fn unblind_aggregate_merge(
+    input: &(
+        RoundSubmissionBlobNoSGX,
+        Vec<RoundSecret>,
+        SecretKey,
+        SharedSecretsDbServer,
+    )
+) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
+    let mut round_secret = RoundSecret::default();
+    for rs in input.1.iter() {
+        round_secret.xor_mut_nosgx(rs);
+    }
+
+    let mut unblind_agg = UnblindedAggregateSharedNoSGX {
+        encrypted_msg: input.0.clone(),
+        key_share: round_secret,
+        sig: Signature::new([0u8; 64]),
+        pk: PublicKey::default(),
+    };
+
+    // sign the final output and rachet the shared secrets
+    let sig_key = input.2;
+    let shared_secrets = input.3;
+
+    // sign
+    unblind_agg.sign_mut(&sig_key).map_err(|e| {
+        error!("sign the unblind aggregate message failed: {}", e);
+        return ServerError::UnexpectedError;
+    });
+
+    Ok((
+        unblind_agg.marshal_nosgx().map_err(ServerError::UnexpectedError),
+        shared_secrets.ratchet()
+    ))
+}
+
+pub fn derive_round_output(
+    sig_sk: SecretKey,
+    server_aggs: &[UnblindedAggregateShareBlobNoSGX],
+) -> Result<RoundOutputUpdated> {
+    if server_aggs.is_empty() {
+        error!("empty shares array");
+        return ServerError::UnexpectedError;
+    }
 
     // Xor of all server secrets
-    //origin: interface::user_request
     let mut final_msg = DcRoundMessage::default();
 
     // We require all s in shares should have the same aggregated_msg
-    let first_msg = shares[0].unmarshal()?;
+    let first_msg = server_aggs[0].unmarshal_nosgx().expect("failed to unmarshal the unblinded aggregated share");
     let final_aggregation = first_msg.encrypted_msg.aggregated_msg;
     let round = first_msg.encrypted_msg.round;
 
-    for s in shares.iter() {
-        let share = s.unmarshal()?;
+    for s in server_aggs.iter() {
+        let share = s.unmarshal_nosgx().expect("failed to unmarshal the unblinded aggregated share");
         if share.encrypted_msg.aggregated_msg != final_aggregation {
             error!("share {:?} has a different final agg", share);
-            return Err("invalid parameter");
+            return ServerError::UnexpectedError;
         }
-        final_msg.xor_mut(&share.key_share);
+        final_msg.xor_mut_nosgx(&share.key_share);
     }
 
     // Finally xor secrets with the message
-    final_msg.xor_mut(&final_aggregation);
+    final_msg.xor_mut_nosgx(&final_aggregation);
 
     let mut round_output = RoundOutputUpdated {
         round,
@@ -351,227 +328,10 @@ pub fn derive_round_output(
         server_sigs: vec![],
     };
 
-    let (sig, pk) = round_output.sign(&signing_sk.unseal_into()?)?;
-
-    round_output.server_sigs.push(SignatureNoSGX { pk, sig });
-
-    debug!(
-        "⏰ round {} concluded with output {:?}",
-        round, round_output
-    );
-
-    Ok(round_output)
+    // TODO: move MultiSignableUpdated trait out of enclave
+    let (sig, pk) = round_output.sign(&sig_sk).expect("failed to sign the round output");
     
-}
-
-/// Registers an aggregator with this server
-pub fn recv_aggregator_registration(
-    pubkeys: &mut SignedPubKeyDbNoSGX,
-    input_blob: &AggRegistrationBlobNoSGX,
-) -> Result<()> {
-
-    let pk_db = pubkeys;
-    let attested_pk = input_blob;
-
-    // add user key to pubkey db
-    pk_db
-        .aggregators
-        .insert(EntityId::from(&attested_pk.pk), attested_pk.to_owned())?;
-
-    pk_db.aggregators.clear();
-    pk_db.aggregators.extend(pk_db.aggregators)?;
-
-    Ok(())
-}
-
-pub fn recv_server_registration(
-    pubkeys: &mut SignedPubKeyDbNoSGX,
-    input_blob: &ServerPubKeyPackageNoSGX,
-) -> Result<()> {
-    // Input the registration and increment the size of the group
-    let pk_db = pubkeys;
-    let attested_pk = input_blob;
-
-    if !attested_pk.verify_attestation() {
-        return Err(DCError::Error_invalid_parameter);
-    }
-
-    // add server's key package to pubkey db
-    pk_db
-        .servers
-        .insert(EntityId::from(&attested_pk.kem), attested_pk.clone())?;
-
-    pubkeys.servers.clear();
-    pubkeys.servers.extend(pk_db.servers)?;
-
-    Ok(())
-}
-
-
-pub fn unblind_aggregate(
-    toplevel_agg: &AggregatedMessage,
-    signing_key: &SealedSigPrivKeyNoSGX,
-    shared_secrets: &SealedSharedSecretsDbClient,
-    //Question: UnblindedAggregateShareBlob don't need to change?
-) -> Result<(UnblindedAggregateShareBlob, SealedSharedSecretsDbClient)> {
-    pub fn unblind_aggregate_partial(
-        input: &(u32, SealedSharedSecretsDbClient, BTreeSet<EntityId>),
-    ) -> Result<RoundSecret> {
-        let round = input.0;
-        let shared_secrets = input.1.unseal_into()?;
-        let user_ids_in_batch = &input.2;
-    
-        if round != shared_secrets.round {
-            error!(
-                "wrong round. round {} != shared_secrets.round {}",
-                round, shared_secrets.round
-            );
-            return Err(DCError::Error_invalid_parameter);
-        }
-    
-        // check that user ids in this batch is a subset of all known user ids
-        let user_ids_in_secret_db = BTreeSet::from_iter(shared_secrets.db.keys().map(EntityId::from));
-        if !(user_ids_in_batch.is_subset(&user_ids_in_secret_db)) {
-            error!("user_ids_in_batch is not a subset of user_ids_in_secret_db. user_ids_in_batch = {:?}, user_ids_in_secret_db = {:?}",
-            user_ids_in_batch,
-            user_ids_in_secret_db);
-            return Err(DCError::Error_invalid_parameter);
-        }
-    
-        // decrypt key is derived from secret shares with users (identified by round_msg.user_ids)
-        derive_round_secret_server(round, &shared_secrets, Some(&user_ids_in_batch)).map_err(|_| {
-            error!("crypto error");
-            DCError::Error_invalid_parameter
-        })
-    }
-
-    pub fn unblind_aggregate_merge(
-        input: &(
-            RoundSubmissionBlobUpdate,
-            Vec<RoundSecret>,
-            SealedSigPrivKeyNoSGX,
-            SealedSharedSecretsDbClient,
-        ),
-    ) -> Result<(UnblindedAggregateShareBlob, SealedSharedSecretsDbClient)> {
-        let mut round_secret = RoundSecret::default();
-        for rs in input.1.iter() {
-            round_secret.xor_mut(rs);
-        }
-    
-        let mut unblined_agg = messages_types::UnblindedAggregateShare {
-            encrypted_msg: input.0.clone(),
-            key_share: round_secret,
-            sig: Default::default(),
-            pk: Default::default(),
-        };
-    
-        // sign the final output and rachet the shared secrets
-        let sig_key = input.2.unseal_into()?;
-        let shared_secrets = input.3.unseal_into()?;
-    
-        // sign
-        unblined_agg.sign_mut(&sig_key)?;
-    
-        Ok((
-            unblined_agg.marshal()?,
-            shared_secrets.ratchet().seal_into()?,
-        ))
-    }
-
-
-    let n_threads = interface::N_THREADS_DERIVE_ROUND_SECRET;
-    let start = Instant::now();
-    let chunk_size = (toplevel_agg.user_ids.len() + n_threads - 1) / n_threads;
-    assert_ne!(chunk_size, 0);
-    let round = shared_secrets.round;
-
-    // make a mpsc channel
-    let (tx, rx) = mpsc::channel();
-
-    // // partition the user ids into N batches
-    let user_keys: Vec<EntityId> = toplevel_agg.user_ids.iter().cloned().collect();
-    for uks in &user_keys.into_iter().chunks(chunk_size) {
-        let uks_vec = uks.collect_vec();
-
-        let db_cloned = shared_secrets.clone();
-        let tx_cloned = mpsc::Sender::clone(&tx);
-
-        thread::spawn(move || {
-            info!("thread working on {} ids", uks_vec.len());
-            let user_ids: BTreeSet<EntityId> = BTreeSet::from_iter(uks_vec.into_iter());
-            let rs =
-                unblind_aggregate_partial((round, &db_cloned, &user_ids))
-                    .unwrap();
-            tx_cloned.send(rs).unwrap();
-        });
-    }
-
-    info!("========= set up threads after {:?}", start.elapsed());
-
-    drop(tx);
-
-    let round_secrets: Vec<RoundSecret> = rx.iter().collect();
-    info!("========= threads join after {:?}", start.elapsed());
-
-    let result = unblind_aggregate_merge(
-        (toplevel_agg, &round_secrets, signing_key, shared_secrets),
-    );
-
-    info!(
-        "========= {} round secrets merged after {:?}.",
-        round_secrets.len(),
-        start.elapsed()
-    );
-
-    result   
-}
-
-/// Derives the final round output given all the shares of the unblinded aggregates
-pub fn derive_round_output(
-    sealed_sig_sk: &SealedSigPrivKeyNoSGX, 
-    //Question:目前没有NoSgx版本
-    server_aggs: &[UnblindedAggregateShareBlob],
-    //Question:Result需要定义枚举类嘛
-) -> Result<()> {
-    let signing_sk = sealed_sig_sk;
-    let shares = server_aggs;
-    if shares.is_empty() {
-        error!("empty shares array");
-        return Err(DCError::Error_invalid_parameter);
-    }
-
-    // TODO: check all shares are for the same around & same message
-
-    // Xor of all server secrets
-    //origin: interface::user_request
-    let mut final_msg = DcRoundMessage::default();
-
-    // We require all s in shares should have the same aggregated_msg
-    let first_msg = shares[0].unmarshal()?;
-    let final_aggregation = first_msg.encrypted_msg.aggregated_msg;
-    let round = first_msg.encrypted_msg.round;
-
-    for s in shares.iter() {
-        let share = s.unmarshal()?;
-        if share.encrypted_msg.aggregated_msg != final_aggregation {
-            error!("share {:?} has a different final agg", share);
-            return Err("invalid parameter");
-        }
-        final_msg.xor_mut(&share.key_share);
-    }
-
-    // Finally xor secrets with the message
-    final_msg.xor_mut(&final_aggregation);
-
-    let mut round_output = RoundOutputUpdated {
-        round,
-        dc_msg: final_msg,
-        server_sigs: vec![],
-    };
-
-    let (sig, pk) = round_output.sign(&signing_sk.unseal_into()?)?;
-
-    round_output.server_sigs.push(SignatureNoSGX { pk, sig });
+    round_output.server_sigs.push(SignatureNoSGX {pk, sig});
 
     debug!(
         "⏰ round {} concluded with output {:?}",
