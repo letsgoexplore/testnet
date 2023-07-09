@@ -310,6 +310,29 @@ impl SignMutableNoSGX for UnblindedAggregateSharedNoSGX {
     }
 }
 
+/// The unblinded aggregate output by a single anytrust node
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UnblindedAggregateShareBlobNoSGX(pub Vec<u8>);
+
+pub trait MarshallAsNoSGX<T> {
+    fn marshal_nosgx(&self) -> Result<T, serde_cbor::Error>;
+}
+
+pub trait UnmarshalledAsNoSGX<T> {
+    fn unmarshal_nosgx(&self) -> Result<T, serde_cbor::Error>;
+}
+
+impl MarshallAsNoSGX<UnblindedAggregateShareBlobNoSGX> for UnblindedAggregateSharedNoSGX {
+    fn marshal_nosgx(&self) -> Result<UnblindedAggregateShareBlobNoSGX, serde_cbor::Error> {
+        Ok(UnblindedAggregateShareBlobNoSGX(serialize_to_vec(&self)?))
+    }
+}
+
+impl UnmarshalledAsNoSGX<UnblindedAggregateSharedNoSGX> for UnblindedAggregateShareBlobNoSGX {
+    fn unmarshal_nosgx(&self) -> Result<UnblindedAggregateSharedNoSGX, serde_cbor::Error> {
+        deserialize_from_vec(&self.0)
+    }
+}
 
 #[cfg(test)]
 mod tests {
