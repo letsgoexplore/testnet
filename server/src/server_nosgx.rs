@@ -5,6 +5,7 @@ use interface::{
     EntityId,
     UserRegistrationBlobNew,
     ServerPubKeyPackageNoSGX,
+    RoundSecret,
 };
 
 use ed25519_dalek::{
@@ -14,20 +15,30 @@ use ed25519_dalek::{
 use rand::rngs::OsRng;
 use sha2::Sha512;
 
+use std::time::Instant;
+
 use common::types_nosgx::{
+    Sealed,
+    XorNoSGX,
+    MarshallAsNoSGX,
     SharedSecretsDbServer,
     SignedPubKeyDbNoSGX,
     AggRegistrationBlobNoSGX,
     ServerRegistrationBlobNoSGX,
-    Sealed,
+    AggregatedMessage,
+    UnblindedAggregateShareBlobNoSGX,
+    RoundSubmissionBlobNoSGX,
+    UnblindedAggregateSharedNoSGX,
 };
 
 use common::funcs_nosgx::{
     verify_user_attestation,
+    derive_round_secret_server,
 };
 
 use log::{
     debug,
+    info,
     error,
 };
 
@@ -135,4 +146,138 @@ pub fn recv_server_registration(
     pubkeys.servers.extend(new_db.servers);
 
     Ok(())
+}
+
+pub fn unblind_aggregate(
+    toplevel_agg: &AggregatedMessage,
+    signing_key: &SecretKey,
+    shared_secrets: &SharedSecretsDbServer,
+) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
+    unblind_aggregate_mt(
+        toplevel_agg,
+        signing_key,
+        shared_secrets,
+        interface::N_THREADS_DERIVE_ROUND_SECRET,
+    )
+}
+
+pub fn unblind_aggregate_mt(
+    toplevel_agg: &AggregatedMessage,
+    signing_key: &SecretKey,
+    shared_secrets: &SharedSecretsDbServer,
+    n_threads: usize,
+) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
+    let start = Instant::now();
+    let chunk_size = (toplevel_agg.user_ids.len() + n_threads - 1) / n_threads;
+    assert_ne!(chunk_size, 0);
+
+    let round = shared_secrets.round;
+
+    // make a mpsc channel
+    let (tx, rx) = mpsc::channel();
+
+    // // partition the user ids into N batches
+    let user_keys: Vec<EntityId> = toplevel_agg.user_ids.iter().cloned().collect();
+    for uks in &user_keys.into_iter().chunks(chunk_size) {
+        let uks_vec = uks.collect_vec();
+
+        let db_cloned = shared_secrets.clone();
+        let tx_cloned = mpsc::Sender::clone(&tx);
+
+        thread::spawn(move || {
+            info!("thread working on {} ids", uks_vec.len());
+            let user_ids: BTreeSet<EntityId> = BTreeSet::from_iter(uks_vec.into_iter());
+            let rs = 
+                unblind_aggregate_partial((round, &db_cloned, &user_ids))
+                .unwrap();
+            tx_cloned.send(rs).unwrap();
+        });
+    }
+
+    info!("========= set up threads after {:?}", start.elapsed());
+
+    drop(tx);
+
+    let round_secres: Vec<RoundSecret> = rx.iter().collect();
+    info!("========= threads join after {:?}", start.elapsed());
+
+    let result = unblind_aggregate_merge(
+        (toplevel_agg, &round_secrets, signing_key, shared_secrets),
+    );
+
+    info!(
+        "========= {} round secrets merged after {:?}.",
+        round_secrets.len(),
+        start.elapsed()
+    );
+
+    result
+}
+
+
+pub fn unblind_aggregate_partial(
+    input: &(u32, SharedSecretsDbServer, BTreeSet<EntityId>),
+) -> Result<RoundSecret> {
+    let round = input.0;
+    let shared_secrets = input.1;
+    let user_ids_in_batch = &input.2;
+
+    if round != shared_secrets.round {
+        error!(
+            "wrong round. round {} != shared_secrets.round {}",
+            round, shared_secrets.round
+        );
+        return ServerError::UnexpectedError;
+    }
+
+    // check that user ids in this batch is a subset of all known user ids
+    let user_ids_in_secret_db = BTreeSet::from_iter(shared_secrets.db.keys().map(EntityId::from));
+    if !(user_ids_in_batch.is_subset(&user_ids_in_secret_db)) {
+        error!("user_ids_in_batch is not a subset of user_ids in sercret_db. user_ids_in_batch = {:?}, user_ids_in_secret_db = {:?}", 
+        user_ids_in_batch,
+        user_ids_in_secret_db);
+        return ServerError::UnexpectedError;
+    }
+
+    // decrypt key is derived from secret shares with users (identified by round_msg.user_ids)
+    derive_round_secret_server(round, &shared_secrets, Some(&user_ids_in_batch)).map_err(|_| {
+        error!("crypto error");
+        ServerError::UnexpectedError
+    })
+}
+
+pub fn unblind_aggregate_merge(
+    input: &(
+        RoundSubmissionBlobNoSGX,
+        Vec<RoundSecret>,
+        SecretKey,
+        SharedSecretsDbServer,
+    )
+) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
+    let mut round_secret = RoundSecret::default();
+    for rs in input.1.iter() {
+        round_secret.xor_mut_nosgx(rs);
+    }
+
+    let mut unblind_agg = UnblindedAggregateSharedNoSGX {
+        encrypted_msg: input.0.clone(),
+        key_share: round_secret,
+        sig: Signature::new([0u8; 64]),
+        pk: PublicKey::default(),
+    };
+
+    // sign the final output and rachet the shared secrets
+    let sig_key = input.2;
+    let shared_secrets = input.3;
+
+    // sign
+    unblind_agg.sign_mut(&sig_key).map_err(|e| {
+        error!("sign the unblind aggregate message failed: {}", e);
+        return ServerError::UnexpectedError;
+    });
+
+    Ok((
+        unblind_agg.marshal_nosgx().map_err(ServerError::UnexpectedError),
+        shared_secrets.ratchet()
+    ))
 }

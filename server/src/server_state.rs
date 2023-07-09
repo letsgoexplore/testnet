@@ -17,6 +17,8 @@ use common::types_nosgx::{
     AggregatedMessage,
     SharedSecretsDbServer,
     SignedPubKeyDbNoSGX,
+    RoundSubmissionBlobNoSGX,
+    UnblindedAggregateShareBlobNoSGX,
 };
 
 use crate::server_nosgx::{
@@ -24,6 +26,7 @@ use crate::server_nosgx::{
     recv_user_registration_batch,
     recv_aggregator_registration,
     recv_server_registration,
+    unblind_aggregate,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -73,11 +76,10 @@ impl ServerState {
     /// unblinded aggregate as well as the ratcheted shared secrets
     pub fn unblind_aggregate(
         &mut self,
-        enclave: &DcNetEnclave,
-        toplevel_agg: &RoundSubmissionBlob,
-    ) -> Result<UnblindedAggregateShareBlob> {
+        toplevel_agg: &RoundSubmissionBlobNoSGX,
+    ) -> Result<UnblindedAggregateShareBlobNoSGX> {
         let (share, ratcheted_secrets) =
-            enclave.unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
+            unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
 
         // Ratchet the secrets forward
         self.shared_secrets = ratcheted_secrets;
