@@ -22,6 +22,8 @@ use common::types_nosgx::{
 use crate::server_nosgx::{
     new_server,
     recv_user_registration_batch,
+    recv_aggregator_registration,
+    recv_server_registration,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -115,7 +117,7 @@ impl ServerState {
         enclave: &DcNetEnclave,
         input_blob: &AggRegistrationBlob,
     ) -> Result<()> {
-        enclave.recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
+        recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
 
         Ok(())
     }
@@ -128,7 +130,7 @@ impl ServerState {
         input_blob: &ServerRegistrationBlob,
     ) -> Result<()> {
         // Input the registration and increment the size of the group
-        enclave.recv_server_registration(&mut self.pubkeys, input_blob)?;
+        recv_server_registration(&mut self.pubkeys, input_blob)?;
         self.anytrust_group_size += 1;
 
         info!(

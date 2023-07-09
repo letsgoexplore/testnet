@@ -17,7 +17,9 @@ use sha2::Sha512;
 use common::types_nosgx::{
     SharedSecretsDbServer,
     SignedPubKeyDbNoSGX,
-    Sealed
+    AggRegistrationBlobNoSGX,
+    ServerRegistrationBlobNoSGX,
+    Sealed,
 };
 
 use common::funcs_nosgx::{
@@ -97,4 +99,40 @@ fn recv_user_reg_batch(
     debug!("shared_secrets: {:?}", shared_secrets);
 
     Ok((pk_db, shared_secrets))
+}
+
+pub fn recv_aggregator_registration(
+    pubkeys: &mut SignedPubKeyDbNoSGX,
+    input_blob: &AggRegistrationBlobNoSGX
+) -> Result<()> {
+    let mut new_db = pubkeys.clone();
+    let agg_pk = input_blob;
+
+    // add agg key to pubkey db
+    new_db
+        .aggregators
+        .insert(EntityId::from(&agg_pk.pk), agg_pk.to_owned());
+
+    pubkeys.aggregators.clear();
+    pubkeys.aggregators.extend(new_db.aggregators);
+
+    Ok(())
+}
+
+pub fn recv_server_registration(
+    pubkeys: &mut SignedPubKeyDbNoSGX,
+    input_blob: &ServerRegistrationBlobNoSGX
+) -> Result<()> {
+    let mut new_db = pubkeys.clone();
+    let server_pk = input_blob;
+
+    // add server key to pubkey db
+    new_db
+        .servers
+        .insert(EntityId::From(&agg_pk.kem), server_pk.clone());
+
+    pubkeys.servers.clear();
+    pubkeys.servers.extend(new_db.servers);
+
+    Ok(())
 }

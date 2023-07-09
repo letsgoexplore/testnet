@@ -265,6 +265,12 @@ pub struct SignedPubKeyDbNoSGX {
     pub aggregators: BTreeMap<EntityId, AggPublicKey>,
 }
 
+/// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to anytrust nodes.
+pub type RoundSubmissionBlobNoSGX = AggregatedMessage;
+
+/// Describes anytrust server registration information. This contains sig key and kem key.
+pub type ServerRegistrationBlobNoSGX = ServerPubKeyPackageNoSGX;
+
 #[cfg(test)]
 mod tests {
     use super::*;
