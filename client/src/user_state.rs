@@ -4,11 +4,11 @@ use common::enclave::DcNetEnclave;
 use serde::{Deserialize, Serialize};
 
 use interface::{
-     , EntityId, KemPubKey, UserSubmissionBlob, SealedSharedSecretDb,
+    EntityId, KemPubKey, UserSubmissionBlob, SealedSharedSecretDb,
     SealedSigPrivKey, ServerPubKeyPackage, UserMsg, UserRegistrationBlob, UserSubmissionReq,
     SealedSigPrivKeyNoSGX, SealedSharedSecretsDbClient, ServerPubKeyPackageNoSGX,
     UserRegistrationBlobNew, NoSgxProtectedKeyPub, DC_NET_ROUNDS_PER_WINDOW, compute_anytrust_group_id_spk,
-    UserSubmissionReqUpdated,
+    UserSubmissionReqUpdated, UserSubmissionBlobUpdated,
 };
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -68,7 +68,7 @@ impl UserState {
         enclave: &DcNetEnclave,
         round: u32,
         msg: UserMsg,
-    ) -> Result<UserSubmissionBlob> {
+    ) -> Result<UserSubmissionBlobUpdated> {
         let msg_is_cover = msg.is_cover();
         let req = UserSubmissionReqUpdated {
             user_id: self.user_id,
