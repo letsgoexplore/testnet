@@ -6,6 +6,9 @@ use interface::{
     UserRegistrationBlobNew,
     ServerPubKeyPackageNoSGX,
     RoundSecret,
+    RoundOutputUpdated,
+    DcRoundMessage,
+    SignatureNoSGX,
 };
 
 use ed25519_dalek::{
@@ -21,6 +24,7 @@ use common::types_nosgx::{
     Sealed,
     XorNoSGX,
     MarshallAsNoSGX,
+    UnmarshalledAsNoSGX,
     SharedSecretsDbServer,
     SignedPubKeyDbNoSGX,
     AggRegistrationBlobNoSGX,
@@ -280,4 +284,52 @@ pub fn unblind_aggregate_merge(
         unblind_agg.marshal_nosgx().map_err(ServerError::UnexpectedError),
         shared_secrets.ratchet()
     ))
+}
+
+pub fn derive_round_output(
+    sig_sk: SecretKey,
+    server_aggs: &[UnblindedAggregateShareBlobNoSGX],
+) -> Result<RoundOutputUpdated> {
+    if server_aggs.is_empty() {
+        error!("empty shares array");
+        return ServerError::UnexpectedError;
+    }
+
+    // Xor of all server secrets
+    let mut final_msg = DcRoundMessage::default();
+
+    // We require all s in shares should have the same aggregated_msg
+    let first_msg = server_aggs[0].unmarshal_nosgx().expect("failed to unmarshal the unblinded aggregated share");
+    let final_aggregation = first_msg.encrypted_msg.aggregated_msg;
+    let round = first_msg.encrypted_msg.round;
+
+    for s in server_aggs.iter() {
+        let share = s.unmarshal_nosgx().expect("failed to unmarshal the unblinded aggregated share");
+        if share.encrypted_msg.aggregated_msg != final_aggregation {
+            error!("share {:?} has a different final agg", share);
+            return ServerError::UnexpectedError;
+        }
+        final_msg.xor_mut_nosgx(&share.key_share);
+    }
+
+    // Finally xor secrets with the message
+    final_msg.xor_mut_nosgx(&final_aggregation);
+
+    let mut round_output = RoundOutputUpdated {
+        round,
+        dc_msg: final_msg,
+        server_sigs: vec![],
+    };
+
+    // TODO: move MultiSignableUpdated trait out of enclave
+    let (sig, pk) = round_output.sign(&sig_sk).expect("failed to sign the round output");
+    
+    round_output.server_sigs.push(SignatureNoSGX {pk, sig});
+
+    debug!(
+        "⏰ round {} concluded with output {:?}",
+        round, round_output
+    );
+
+    Ok(round_output)
 }
