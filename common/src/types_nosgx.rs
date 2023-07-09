@@ -27,6 +27,7 @@ use interface::{
 
 use std::prelude::v1::*;
 use std::collections::{BTreeSet, BTreeMap};
+use std::convert::TryInto;
 
 use core::fmt::{Debug, Formatter};
 
@@ -234,6 +235,25 @@ impl SharedSecretsDbServer {
             db: server_secrets,
             ..Default::default()
         })
+    }
+
+    pub fn ratchet(&self) -> SharedSecretsDbServer {
+        let a = self
+            .db
+            .iter()
+            .map(|&sk, v| {
+                let new_key = Sha256::digest(&v.0);
+                let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32");
+                let new_sec = NewDiffieHellmanSharedSecret(secret_bytes);
+
+                (k, new_sec)
+            })
+            .collect();
+
+        SharedSecretsDbServer {
+            round: self.round + 1,
+            db: a,
+        }
     }
 }
 
