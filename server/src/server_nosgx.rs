@@ -228,7 +228,7 @@ pub fn unblind_aggregate_mt(
 
 pub fn unblind_aggregate_partial(
     input: &(u32, SharedSecretsDbServer, BTreeSet<EntityId>),
-) -> Result<RoundSecret> {
+) -> Result<> {
     let round = input.0;
     let shared_secrets = input.1;
     let user_ids_in_batch = &input.2;
@@ -339,4 +339,10 @@ pub fn derive_round_output(
     );
 
     Ok(round_output)
+}
+
+#[test]
+fn test_new_server_nosgx() {
+    let (a,b,c,d) = new_server();
+    dbg!(a,b,c,d);
 }

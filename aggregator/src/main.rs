@@ -15,7 +15,7 @@ use crate::{
 
 use common::cli_util;
 use common::types_nosgx::{AggregatedMessage, SubmissionMessage};
-use interface::{ServerPubKeyPackage, UserSubmissionMessage};
+use interface::{ServerPubKeyPackage, ServerPubKeyPackageNoSGX, UserSubmissionMessage, UserSubmissionMessageUpdated};
 use std::{fs::File, time::SystemTime};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -162,7 +162,7 @@ fn main() -> Result<(), AggregatorError> {
         // Load up the pubkeys
         let pubkeys_filename = matches.value_of("server-keys").unwrap();
         let keysfile = File::open(pubkeys_filename)?;
-        let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
+        let pubkeys: Vec<ServerPubKeyPackageNoSGX> = cli_util::load_multi(keysfile)?;
 
         let level = cli_util::parse_u32(matches.value_of("level").unwrap())?;
 
@@ -193,7 +193,7 @@ fn main() -> Result<(), AggregatorError> {
         let mut state = load_state(&state_path)?;
 
         // Pass the input to the state and save the result
-        let round_blob = SubmissionMessage::AggSubmission(round_blob);
+        let round_blob = UserSubmissionMessageUpdated::AggSubmission(round_blob);
         state.add_to_aggregate(&round_blob)?;
         save_state(&state_path, &state)?;
 
@@ -202,12 +202,12 @@ fn main() -> Result<(), AggregatorError> {
 
     if let Some(matches) = matches.subcommand_matches("input-user") {
         // Load the STDIN input and load the state
-        let round_blob: UserSubmissionMessage = load_from_stdin()?;
+        let round_blob: UserSubmissionMessageUpdated = load_from_stdin()?;
         let state_path = matches.value_of("agg-state").unwrap();
         let mut state = load_state(&state_path)?;
 
         // Pass the input to the state and save the result
-        let round_blob = SubmissionMessage::UserSubmission(round_blob);
+        let round_blob = UserSubmissionMessageUpdated::UserSubmission(round_blob);
         state.add_to_aggregate(&round_blob)?;
         save_state(&state_path, &state)?;
 

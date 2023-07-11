@@ -37,6 +37,7 @@ use x25519_dalek::{
     PublicKey as xPublicKey,
 };
 use rand_os::OsRng;
+use crate::funcs_nosgx::{serialize_to_vec, deserialize_from_vec};
 
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct AggRegistrationBlobNoSGX {
@@ -242,12 +243,12 @@ impl SharedSecretsDbServer {
         let a = self
             .db
             .iter()
-            .map(|&sk, v| {
+            .map(|(&sk, v)| {
                 let new_key = Sha256::digest(&v.0);
                 let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32");
                 let new_sec = NewDiffieHellmanSharedSecret(secret_bytes);
 
-                (k, new_sec)
+                (sk, new_sec)
             })
             .collect();
 

@@ -127,7 +127,7 @@ impl DcNetEnclave {
         sealed_usk: &SealedSigPrivKeyNoSGX,
     ) -> EnclaveResult<(UserSubmissionBlobUpdated, SealedSharedSecretsDbClient)> {
         Ok(ecall_allowed::user_submit_updated(
-            self.enclave.getid(),
+            self.enclave.geteid(),
             (submission_req, sealed_usk),
         )?)
     }
@@ -392,7 +392,7 @@ impl DcNetEnclave {
         SealedSigPrivKeyNoSGX,
         UserRegistrationBlobNew,
     )>> {
-        ecall_allowed::new_user_batch_updated(self.enclave.getid(), (server_pks, n_users))
+        ecall_allowed::new_user_batch_updated(self.enclave.geteid(), (server_pks, n_users))
     }
 
     /// Create a new TEE protected secret key for an aggregator.

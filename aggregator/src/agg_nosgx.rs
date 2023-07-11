@@ -19,9 +19,9 @@ use common::types_nosgx::{
     SubmissionMessage,
 };
 use common::funcs_nosgx::{
-    pk_to_entityid,
     verify_user_submission_msg,
 };
+
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
 
@@ -49,7 +49,7 @@ pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlobNoSGX
 
     Ok((
         sk,
-        pk_to_entityid(&pk),
+        EntityId::from(&pk),
         blob,
     ))
 }

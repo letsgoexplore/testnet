@@ -43,27 +43,27 @@ pub fn derive_round_secret_server(
 
     let mut round_secret = RoundSecret::default();
 
-    for (pk, shared_secret) in shared_secrets.db.iter() {
-        // skip entries not in entity_ids_to_use
-        if let Some(eids) = entity_ids_to_use {
-            if !eids.contains(&EntityId::from(pk)) {
-                continue;
-            }
-        }
+    // for (pk, shared_secret) in shared_secrets.db.iter() {
+    //     // skip entries not in entity_ids_to_use
+    //     if let Some(eids) = entity_ids_to_use {
+    //         if !eids.contains(&EntityId::from(pk)) {
+    //             continue;
+    //         }
+    //     }
 
-        let hk = Hkdf::<Sha256>::new(None, &shared_secret.as_ref());
-        // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
-        let mut seed = <MyRng as SeedableRng>::Seed::default();
+    //     let hk = Hkdf::<Sha256>::new(None, &shared_secret.as_ref());
+    //     // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
+    //     let mut seed = <MyRng as SeedableRng>::Seed::default();
 
-        // info contains round and window
-        let mut info = [0; 32];
-        let cursor = &mut info;
-        LittleEndian::write_u32(cursor, round);
-        hk.expand(&info, &mut seed)?;
+    //     // info contains round and window
+    //     let mut info = [0; 32];
+    //     let cursor = &mut info;
+    //     LittleEndian::write_u32(cursor, round);
+    //     hk.expand(&info, &mut seed)?;
 
-        let mut rng = MyRng::from_seed(seed);
-        round_secret.xor_mut_nosgx(&DcRoundMessage::rand_from_csprng(&mut rng));
-    }
+    //     let mut rng = MyRng::from_seed(seed);
+    //     round_secret.xor_mut_nosgx(&DcRoundMessage::rand_from_csprng(&mut rng));
+    // }
 
     Ok(round_secret)
 }
