@@ -9,6 +9,7 @@ use interface::{
     RoundOutputUpdated,
     DcRoundMessage,
     SignatureNoSGX,
+    MultiSignableUpdated,
 };
 
 use ed25519_dalek::{
@@ -321,7 +322,6 @@ pub fn derive_round_output(
         server_sigs: vec![],
     };
 
-    // TODO: move MultiSignableUpdated trait out of enclave
     let (sig, pk) = round_output.sign(&sig_sk).expect("failed to sign the round output");
     
     round_output.server_sigs.push(SignatureNoSGX {pk, sig});

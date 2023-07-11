@@ -22,6 +22,8 @@ use x25519_dalek::{
     PublicKey as xPublicKey,
 };
 
+use std::convert::TryInto;
+
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DiffieHellmanSharedSecret([u8; SGX_ECP256_KEY_SIZE]);
