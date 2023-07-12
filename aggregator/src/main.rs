@@ -15,7 +15,7 @@ use crate::{
 
 use common::cli_util;
 use common::types_nosgx::{AggregatedMessage, SubmissionMessage};
-use interface::{ServerPubKeyPackage, UserSubmissionMessage};
+use interface::{ServerPubKeyPackageNoSGX, UserSubmissionMessageUpdated};
 use std::{fs::File, time::SystemTime};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -162,7 +162,7 @@ fn main() -> Result<(), AggregatorError> {
         // Load up the pubkeys
         let pubkeys_filename = matches.value_of("server-keys").unwrap();
         let keysfile = File::open(pubkeys_filename)?;
-        let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
+        let pubkeys: Vec<ServerPubKeyPackageNoSGX> = cli_util::load_multi(keysfile)?;
 
         let level = cli_util::parse_u32(matches.value_of("level").unwrap())?;
 
@@ -202,7 +202,7 @@ fn main() -> Result<(), AggregatorError> {
 
     if let Some(matches) = matches.subcommand_matches("input-user") {
         // Load the STDIN input and load the state
-        let round_blob: UserSubmissionMessage = load_from_stdin()?;
+        let round_blob: UserSubmissionMessageUpdated = load_from_stdin()?;
         let state_path = matches.value_of("agg-state").unwrap();
         let mut state = load_state(&state_path)?;
 
