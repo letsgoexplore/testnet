@@ -7,13 +7,9 @@ use interface::{
     DcRoundMessage,
     UserSubmissionMessageUpdated,
 };
-use ed25519_dalek::{
-    PublicKey,
-    PUBLIC_KEY_LENGTH,
-};
 
 extern crate sha2;
-use sha2::{Digest, Sha256};
+use sha2::Sha256;
 use rand_core::SeedableRng;
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::{Hkdf, InvalidLength};

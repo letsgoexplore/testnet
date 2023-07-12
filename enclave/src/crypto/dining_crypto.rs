@@ -18,7 +18,6 @@ use std::fmt::{Debug, Formatter};
 use ed25519_dalek::PublicKey;
 use x25519_dalek::{
     StaticSecret,
-    SharedSecret,
     PublicKey as xPublicKey,
 };
 

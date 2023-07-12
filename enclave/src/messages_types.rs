@@ -7,7 +7,7 @@ use sha2::Digest;
 use sha2::Sha256;
 use std::vec::Vec;
 
-use ed25519_dalek::{Signature, PublicKey};
+use ed25519_dalek::PublicKey;
 
 // /// A (potentially aggregated) message that's produced by an enclave
 // #[derive(Serialize, Deserialize, Clone, Debug, Default)]

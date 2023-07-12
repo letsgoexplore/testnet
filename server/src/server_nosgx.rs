@@ -18,7 +18,6 @@ use ed25519_dalek::{
     Signature,
 };
 use rand::rngs::OsRng;
-use sha2::Sha512;
 
 use std::time::Instant;
 
@@ -55,13 +54,13 @@ use std::sync::mpsc;
 use std::thread;
 
 pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPackageNoSGX)> {
-    let mut csprng = OsRng::new()?;
+    let mut csprng = OsRng{};
     let sig_key = SecretKey::generate(&mut csprng);
     let kem_key = SecretKey::generate(&mut csprng);
 
     // The standard hash function used for most ed25519 libraries is SHA-512
-    let sig_key_pk = PublicKey::from_secret::<Sha512>(&sig_key);
-    let kem_key_pk = PublicKey::from_secret::<Sha512>(&kem_key);
+    let sig_key_pk: PublicKey = (&sig_key).into();
+    let kem_key_pk: PublicKey = (&kem_key).into();
 
     let reg = ServerPubKeyPackageNoSGX {
         sig: sig_key_pk,
@@ -230,7 +229,7 @@ pub fn unblind_aggregate_partial(
     input: &(u32, SharedSecretsDbServer, BTreeSet<EntityId>),
 ) -> Result<RoundSecret> {
     let round = input.0;
-    let shared_secrets = input.1;
+    let shared_secrets = input.1.clone();
     let user_ids_in_batch = &input.2;
 
     if round != shared_secrets.round {
@@ -271,7 +270,7 @@ pub fn unblind_aggregate_merge(
     let mut unblind_agg = UnblindedAggregateSharedNoSGX {
         encrypted_msg: toplevel_agg.clone(),
         key_share: round_secret,
-        sig: Signature::new([0u8; 64]),
+        sig: Signature::from_bytes(&[0u8; 64]).expect("failed to generate Signature from bytes"),
         pk: PublicKey::default(),
     };
 

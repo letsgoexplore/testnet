@@ -1,8 +1,8 @@
 use crate::util::{AggregatorError, Result};
 
 use ed25519_dalek::{SecretKey, PublicKey};
+extern crate rand;
 use rand::rngs::OsRng;
-use sha2::Sha512;
 
 use interface::{
     EntityId,
@@ -28,13 +28,7 @@ use log::{error, debug, warn};
 /// Returns secret key, entity id, and an AggRegistrationBlobNoSGX that contains the
 /// information to send to anytrust nodes.
 pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlobNoSGX)> {
-    let mut csprng = match OsRng::new() {
-        Ok(val) => val,
-        Err(e) => {
-            error!("Rand OsRng error:{:?}", e);
-            return Err(AggregatorError::InvalidParameter);
-        }
-    };
+    let mut csprng = OsRng{};
     let sk = SecretKey::generate(&mut csprng);
     // The standard hash function used for most ed25519 libraries is SHA-512
     let pk: PublicKey = (&sk).into();
@@ -71,25 +65,20 @@ pub fn add_to_aggregate(
     new_input: &SubmissionMessage,
     signing_key: &SecretKey,
 ) -> Result<()> {
-    let mut new_agg = agg.clone();
-    let mut new_observed_nonces = observed_nonces.clone();
-
     match new_input {
         SubmissionMessage::UserSubmission(new_input) => {
             let res = add_to_agg_user_submit((new_input, agg, observed_nonces, signing_key))?;
-            new_agg = res.0;
-            new_observed_nonces = res.1;
+            // Update the agg and nonces
+            *agg = res.0;
+            *observed_nonces = res.1;
         },
         SubmissionMessage::AggSubmission(new_input) => {
             let res = add_to_agg((new_input, agg, observed_nonces, signing_key))?;
-            new_agg = res.0;
-            new_observed_nonces = res.1;
+            // Update the agg and nonces
+            *agg = res.0;
+            *observed_nonces = res.1;
         }
     }
-
-    // Update the agg and nonces
-    *agg = new_agg;
-    *observed_nonces = new_observed_nonces;
 
     Ok(())
 }

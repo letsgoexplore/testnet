@@ -12,7 +12,7 @@ use crate::{
 };
 
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, RoundOutput, ServerPubKeyPackageNoSGX, UserMsg, DC_NET_MESSAGE_LENGTH, RoundOutputUpdated};
+use interface::{DcMessage, ServerPubKeyPackageNoSGX, UserMsg, DC_NET_MESSAGE_LENGTH, RoundOutputUpdated};
 use std::{ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};

@@ -611,15 +611,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "clear_on_drop"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38508a63f4979f0048febc9966fadbd48e5dab31fd0ec6a3f151bbf4a74f7423"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "cloudabi"
 version = "0.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -637,7 +628,7 @@ dependencies = [
  "byteorder",
  "cipher",
  "ctr",
- "ed25519-dalek 0.9.1",
+ "ed25519-dalek",
  "env_logger 0.8.4",
  "hex",
  "hexdump",
@@ -732,19 +723,6 @@ dependencies = [
 
 [[package]]
 name = "curve25519-dalek"
-version = "1.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57c0d59fed08e452f286b251f88b2fc64a01f50a7b263aa09557ad7285d9e7fa"
-dependencies = [
- "byteorder",
- "clear_on_drop",
- "digest 0.8.1",
- "rand_core 0.3.1",
- "subtle 2.5.0",
-]
-
-[[package]]
-name = "curve25519-dalek"
 version = "3.2.1"
 dependencies = [
  "byteorder",
@@ -763,7 +741,7 @@ version = "1.0.0"
 dependencies = [
  "aes-ctr",
  "byteorder",
- "ed25519-dalek 1.0.1",
+ "ed25519-dalek",
  "env_logger 0.7.1",
  "hex",
  "hkdf",
@@ -841,23 +819,10 @@ dependencies = [
 
 [[package]]
 name = "ed25519-dalek"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d07e8b8a8386c3b89a7a4b329fdfa4cb545de2545e9e2ebbc3dd3929253e426"
-dependencies = [
- "clear_on_drop",
- "curve25519-dalek 1.2.6",
- "failure",
- "rand 0.6.5",
- "serde 1.0.164",
-]
-
-[[package]]
-name = "ed25519-dalek"
 version = "1.0.1"
 dependencies = [
  "cfg-if 1.0.0",
- "curve25519-dalek 3.2.1",
+ "curve25519-dalek",
  "ed25519",
  "rand 0.7.3",
  "serde 1.0.118",
@@ -953,12 +918,6 @@ dependencies = [
  "cc",
  "libc",
 ]
-
-[[package]]
-name = "failure"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d32e9bd16cc02eae7db7ef620b392808b89f6a5e16bb3497d159c6b92a0f4f86"
 
 [[package]]
 name = "fake-simd"
@@ -1426,7 +1385,7 @@ dependencies = [
  "base64",
  "byteorder",
  "cfg-if 1.0.0",
- "ed25519-dalek 1.0.1",
+ "ed25519-dalek",
  "hex",
  "rand_core 0.6.4",
  "serde 1.0.118",
@@ -2521,14 +2480,14 @@ dependencies = [
  "clap",
  "common",
  "dotenv",
- "ed25519-dalek 1.0.1",
+ "ed25519-dalek",
  "env_logger 0.9.3",
  "futures",
  "interface",
  "log 0.4.19",
- "rand 0.6.5",
+ "rand 0.7.3",
  "serde 1.0.164",
- "sha2 0.8.2",
+ "sha2 0.9.9",
  "thiserror",
 ]
 
@@ -2556,14 +2515,14 @@ dependencies = [
  "clap",
  "common",
  "dotenv",
- "ed25519-dalek 0.9.1",
+ "ed25519-dalek",
  "env_logger 0.9.3",
  "interface",
  "itertools 0.10.5",
  "log 0.4.19",
- "rand 0.6.5",
+ "rand 0.7.3",
  "serde 1.0.164",
- "sha2 0.8.2",
+ "sha2 0.9.9",
  "thiserror",
 ]
 
@@ -3475,7 +3434,7 @@ name = "x25519-dalek"
 version = "1.2.0"
 dependencies = [
  "cfg-if 1.0.0",
- "curve25519-dalek 3.2.1",
+ "curve25519-dalek",
  "rand_core 0.5.1",
  "serde 1.0.118",
  "serde 1.0.164",
