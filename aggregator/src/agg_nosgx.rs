@@ -37,7 +37,7 @@ pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlobNoSGX
     };
     let sk = SecretKey::generate(&mut csprng);
     // The standard hash function used for most ed25519 libraries is SHA-512
-    let pk = PublicKey::from_secret::<Sha512>(&sk);
+    let pk: PublicKey = (&sk).into();
 
     let blob = AggRegistrationBlobNoSGX {
         pk,
