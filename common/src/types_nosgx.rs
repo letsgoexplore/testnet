@@ -25,6 +25,11 @@ use interface::{
     compute_anytrust_group_id_spk,
 };
 
+use crate::funcs_nosgx::{
+    serialize_to_vec,
+    deserialize_from_vec,
+};
+
 use std::prelude::v1::*;
 use std::collections::{BTreeSet, BTreeMap};
 use std::convert::TryInto;
@@ -241,7 +246,7 @@ impl SharedSecretsDbServer {
         let a = self
             .db
             .iter()
-            .map(|&sk, v| {
+            .map(|(&k, v)| {
                 let new_key = Sha256::digest(&v.0);
                 let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32");
                 let new_sec = NewDiffieHellmanSharedSecret(secret_bytes);
