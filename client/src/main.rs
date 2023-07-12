@@ -12,7 +12,7 @@ use crate::{
 };
 
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, RoundOutput, ServerPubKeyPackage, UserMsg, DC_NET_MESSAGE_LENGTH, RoundOutputUpdated};
+use interface::{DcMessage, RoundOutput, ServerPubKeyPackageNoSGX, UserMsg, DC_NET_MESSAGE_LENGTH, RoundOutputUpdated};
 use std::{ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -161,7 +161,7 @@ fn main() -> Result<(), UserError> {
         // Load up the KEM keys
         let pubkeys_filename = matches.value_of("server-keys").unwrap();
         let keysfile = File::open(pubkeys_filename)?;
-        let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
+        let pubkeys: Vec<ServerPubKeyPackageNoSGX> = cli_util::load_multi(keysfile)?;
         let num_regs = cli_util::parse_u32(matches.value_of("num-regs").unwrap())?;
         let state_path = Path::new(matches.value_of("user-state").unwrap());
 
@@ -258,7 +258,7 @@ fn main() -> Result<(), UserError> {
         let mut state = load_state(&state_path)?;
 
         // Make the message for this round
-        let msg = UserMsg::TalkAndReserve {
+        let msg = UserMsg::TalkAndReserveUpdated {
             msg: dc_msg,
             prev_round_output,
             times_participated: state.get_times_participated(),
