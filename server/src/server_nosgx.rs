@@ -262,6 +262,7 @@ pub fn unblind_aggregate_merge(
     sig_key: &SecretKey,
     shared_secrets: &SharedSecretsDbServer,
 ) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
+    debug!("[server] round_secrets size: {:?}", round_secrets);
     let mut round_secret = RoundSecret::default();
     for rs in round_secrets.iter() {
         round_secret.xor_mut_nosgx(rs);
@@ -298,6 +299,8 @@ pub fn derive_round_output(
         return Err(ServerError::UnexpectedError);
     }
 
+    debug!("[server] server_aggs size: {}", server_aggs.len());
+
     // Xor of all server secrets
     let mut final_msg = DcRoundMessage::default();
 
@@ -312,11 +315,18 @@ pub fn derive_round_output(
             error!("share {:?} has a different final agg", share);
             return Err(ServerError::UnexpectedError);
         }
+        debug!("[server] share: {:?}", share);
         final_msg.xor_mut_nosgx(&share.key_share);
     }
 
+    debug!("\n[server] msg before decryption: {:?}", final_aggregation);
+
+    debug!("\n[server] round key: {:?}", final_msg);
+
     // Finally xor secrets with the message
     final_msg.xor_mut_nosgx(&final_aggregation);
+
+    debug!("\n[server unblind] msg after decryption: {:?}", final_msg);
 
     let mut round_output = RoundOutputUpdated {
         round,

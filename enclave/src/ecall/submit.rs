@@ -549,6 +549,8 @@ pub fn user_submit_internal_updated(
         UserMsg::Cover => (),
     };
 
+    debug!("\n[user submit] msg before encrytion: {:?}", round_msg);
+
     // Now we encrypt the round message
 
     // Derive the round key from shared secrets
@@ -573,8 +575,12 @@ pub fn user_submit_internal_updated(
         }
     };
 
+    debug!("\n[user submit] round key: {:?}", round_key);
+    
     // Encrypt the message with round_key
     let encrypted_msg = round_key.xor(&round_msg);
+
+    debug!("\n[user submit] msg after encryption: {:?}", encrypted_msg);
 
     // Construct the output blob
     let mut agg_msg = UserSubmissionMessageUpdated {
@@ -582,7 +588,7 @@ pub fn user_submit_internal_updated(
         anytrust_group_id: *anytrust_group_id,
         round,
         rate_limit_nonce: Some(rate_limit_nonce),
-        tee_sig: Default::default(),
+            tee_sig: Default::default(),
         tee_pk: Default::default(),
         aggregated_msg: encrypted_msg,
     };
@@ -592,6 +598,7 @@ pub fn user_submit_internal_updated(
         error!("can't sign");
         return Err(SGX_ERROR_UNEXPECTED);
     }
+
 
     // If everything is fine, we are ready to ratchet
     Ok((agg_msg, shared_secrets.ratchet().seal_into()?))
