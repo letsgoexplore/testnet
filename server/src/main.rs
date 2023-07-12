@@ -12,10 +12,14 @@ use crate::{
     util::{load_from_stdin, load_multi_from_stdin, load_state, save_state, save_to_stdout},
 };
 
-use common::{cli_util, enclave::DcNetEnclave};
-use interface::{
-    AggRegistrationBlob, RoundSubmissionBlob, ServerRegistrationBlob, UnblindedAggregateShareBlob,
-    UserRegistrationBlob,
+use common::cli_util;
+use interface::UserRegistrationBlobNew;
+
+use common::types_nosgx::{
+    RoundSubmissionBlobNoSGX,
+    UnblindedAggregateShareBlobNoSGX,
+    ServerRegistrationBlobNoSGX,
+    AggRegistrationBlobNoSGX,
 };
 
 use std::{error::Error, fs::File};
@@ -26,7 +30,6 @@ use log::info;
 fn main() -> Result<(), Box<dyn Error>> {
     // Do setup
     env_logger::init();
-    let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
 
     let state_arg = Arg::with_name("server-state")
         .short("s")
@@ -140,7 +143,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("new") {
         // Make a new state and registration message
-        let (state, reg_blob) = ServerState::new(&enclave)?;
+        let (state, reg_blob) = ServerState::new()?;
         // Save the state and output the registration blob
         let state_path = matches.value_of("server-state").unwrap();
         save_state(&state_path, &state)?;
@@ -156,12 +159,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-user") {
         // Parse user registration blobs from stdin
-        let reg_blobs: Vec<UserRegistrationBlob> = load_multi_from_stdin()?;
+        let reg_blobs: Vec<UserRegistrationBlobNew> = load_multi_from_stdin()?;
 
         // Feed them to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
         let mut state = load_state(&state_path)?;
-        state.recv_user_registrations(&enclave, &reg_blobs)?;
+        state.recv_user_registrations(&reg_blobs)?;
 
         save_state(&state_path, &state)?;
 
@@ -170,12 +173,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-aggregator") {
         // Parse an aggregator registration blob from stdin
-        let reg_blob: AggRegistrationBlob = load_from_stdin()?;
+        let reg_blob: AggRegistrationBlobNoSGX = load_from_stdin()?;
 
         // Feed it to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
         let mut state = load_state(&state_path)?;
-        state.recv_aggregator_registration(&enclave, &reg_blob)?;
+        state.recv_aggregator_registration(&reg_blob)?;
         save_state(&state_path, &state)?;
 
         println!("OK");
@@ -183,12 +186,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-server") {
         // Parse an aggregator registration blob from stdin
-        let reg_blob: ServerRegistrationBlob = load_from_stdin()?;
+        let reg_blob: ServerRegistrationBlobNoSGX = load_from_stdin()?;
 
         // Feed it to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
         let mut state = load_state(&state_path)?;
-        state.recv_server_registration(&enclave, &reg_blob)?;
+        state.recv_server_registration(&reg_blob)?;
         save_state(&state_path, &state)?;
 
         println!("OK");
@@ -196,12 +199,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("unblind-aggregate") {
         // Load the aggregation blob
-        let agg_blob: RoundSubmissionBlob = load_from_stdin()?;
+        let agg_blob: RoundSubmissionBlobNoSGX = load_from_stdin()?;
 
         // Feed it to the state and print the result
         let state_path = matches.value_of("server-state").unwrap();
         let mut state = load_state(&state_path)?;
-        let agg = state.unblind_aggregate(&enclave, &agg_blob)?;
+        let agg = state.unblind_aggregate(&agg_blob)?;
         save_to_stdout(&agg)?;
 
         // The shared secrets were ratcheted, so we have to save the new state
@@ -212,12 +215,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Parse each server's unblinded inputs
         let shares_filename = matches.value_of("shares").unwrap();
         let sharefile = File::open(shares_filename)?;
-        let shares: Vec<UnblindedAggregateShareBlob> = cli_util::load_multi(sharefile)?;
+        let shares: Vec<UnblindedAggregateShareBlobNoSGX> = cli_util::load_multi(sharefile)?;
 
         // Feed it to the state and output the result
         let state_path = matches.value_of("server-state").unwrap();
         let state = load_state(&state_path)?;
-        let round_output = state.derive_round_output(&enclave, &shares)?;
+        let round_output = state.derive_round_output(shares.as_slice())?;
         save_to_stdout(&round_output)?;
 
         // Log the raw round result in base64
@@ -256,12 +259,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         let state = service::ServiceState::new(
             server_state,
             server_state_path,
-            enclave.clone(),
             leader_url,
         );
         start_service(bind_addr, state).unwrap();
     }
 
-    enclave.destroy();
     Ok(())
 }

@@ -2,11 +2,12 @@ use crate::{
     util::{save_state, save_output, ServerError},
     ServerState,
 };
-use common::{cli_util, enclave::DcNetEnclave};
-use interface::{RoundOutput, RoundSubmissionBlob, UnblindedAggregateShareBlob};
+use common::cli_util;
+use interface::RoundOutputUpdated;
 
 use common::types_nosgx::{
     RoundSubmissionBlobNoSGX,
+    UnblindedAggregateShareBlobNoSGX,
 };
 
 use core::ops::DerefMut;
@@ -37,15 +38,13 @@ enum ApiError {
 }
 impl ResponseError for ApiError {}
 
-#[derive(Clone)]
 pub(crate) struct ServiceState {
     pub(crate) server_state: ServerState,
-    pub(crate) round_shares: Vec<UnblindedAggregateShareBlob>,
-    pub(crate) enclave: DcNetEnclave,
+    pub(crate) round_shares: Vec<UnblindedAggregateShareBlobNoSGX>,
     /// Contains the URL of the anytrust leader. If `None`, it's you.
     pub(crate) leader_url: Option<String>,
     /// A map from round to the round's output
-    pub(crate) round_outputs: BTreeMap<u32, RoundOutput>,
+    pub(crate) round_outputs: BTreeMap<u32, RoundOutputUpdated>,
     /// The path to this server's state file. If `None`, state is not persisted to disk
     pub(crate) server_state_path: Option<String>,
 }
@@ -54,13 +53,11 @@ impl ServiceState {
     pub(crate) fn new(
         server_state: ServerState,
         server_state_path: Option<String>,
-        enclave: DcNetEnclave,
         leader_url: Option<String>,
     ) -> ServiceState {
         ServiceState {
             server_state,
             server_state_path,
-            enclave,
             leader_url,
             round_outputs: BTreeMap::new(),
             round_shares: Vec::new(),
@@ -77,7 +74,6 @@ fn leader_finish_round(state: &mut ServiceState) {
         ref server_state,
         ref mut round_outputs,
         ref mut round_shares,
-        ref enclave,
         ..
     } = state;
 
@@ -85,7 +81,7 @@ fn leader_finish_round(state: &mut ServiceState) {
     // function. If this fails, use the default value. The last thing we want to do is get stuck in
     // a state that cannot progress
     let output = server_state
-        .derive_round_output(enclave, &round_shares)
+        .derive_round_output(&round_shares)
         .unwrap();
     let round = output.round;
 
@@ -110,7 +106,7 @@ fn leader_finish_round(state: &mut ServiceState) {
 }
 
 /// Sends the given unblinded share to `base_url/submit-share`
-async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlob) {
+async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlobNoSGX) {
     // Serialize the share
     let mut body = Vec::new();
     cli_util::save(&mut body, &share).expect("could not serialize share");
@@ -159,7 +155,6 @@ async fn submit_agg(
         let ServiceState {
             ref leader_url,
             ref mut round_shares,
-            ref enclave,
             ref mut server_state,
             ..
         } = state_handle.deref_mut();
@@ -167,7 +162,7 @@ async fn submit_agg(
 
         let unblind_start = Instant::now();
         // Unblind the input
-        let share = server_state.unblind_aggregate(enclave, &agg_data)?;
+        let share = server_state.unblind_aggregate(&agg_data)?;
         let unblind_duration = unblind_start.elapsed();
         debug!("[server] unblind_aggregate: {:?}", unblind_duration);
 
@@ -238,7 +233,7 @@ async fn submit_share(
     }
 
     // Parse the share and add it to our shares
-    let share: UnblindedAggregateShareBlob = cli_util::load(&mut payload.as_bytes())?;
+    let share: UnblindedAggregateShareBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
     round_shares.push(share);
     info!("Got share. Number of shares is now {}", round_shares.len());
 
@@ -358,7 +353,7 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
 
     // Start the web server
     HttpServer::new(move || {
-        App::new().data(state.clone()).configure(|cfg| {
+        App::new().data(state).configure(|cfg| {
             cfg.service(submit_agg)
                 .service(submit_share)
                 .service(round_result)
