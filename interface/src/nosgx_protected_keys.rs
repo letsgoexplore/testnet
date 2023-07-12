@@ -2,18 +2,24 @@ use ed25519_dalek::{
     SecretKey,
     PublicKey,
     Signature,
+    Keypair,
+    Signer,
+    Verifier,
     SECRET_KEY_LENGTH,
     PUBLIC_KEY_LENGTH,
     SIGNATURE_LENGTH,
+    KEYPAIR_LENGTH,
 };
 
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use std::convert::TryFrom;
 use std::vec::Vec;
-use sha2::{Digest, Sha512};
+use std::vec;
+use sha2::{Digest, Sha256, Sha512};
 
 use crate::user_request::EntityId;
+use crate::ecall_interface_types::{RoundOutput, RoundOutputUpdated};
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
@@ -140,4 +146,90 @@ pub struct NoSgxSignature(pub Vec<u8>);
 pub struct SignatureNoSGX {
     pub pk: PublicKey,
     pub sig: NoSgxSignature,
+}
+
+pub trait Hashable {
+    fn sha256(&self) -> [u8; 32];
+}
+
+use std::convert::TryInto;
+
+impl Hashable for RoundOutput {
+    fn sha256(&self) -> [u8; 32] {
+        let mut h = Sha256::new();
+        h.input(&self.round.to_le_bytes());
+        h.input(&self.dc_msg.digest());
+
+        h.result().try_into().unwrap()
+    }
+}
+
+impl Hashable for RoundOutputUpdated {
+    fn sha256(&self) -> [u8; 32] {
+        let mut h = Sha256::new();
+        h.input(&self.round.to_le_bytes());
+        h.input(&self.dc_msg.digest());
+
+        h.result().try_into().unwrap()
+    }
+}
+
+pub trait MultiSignableUpdated {
+    fn digest(&self) -> Vec<u8>;
+    fn sign(&self, ssk: &SecretKey) -> Result<(NoSgxSignature, PublicKey), ()> {
+        let dig = self.digest();
+
+        let pk: PublicKey = ssk.into();
+        let sk_bytes: [u8; SECRET_KEY_LENGTH] = ssk.to_bytes();
+        let pk_bytes: [u8; PUBLIC_KEY_LENGTH] = pk.to_bytes();
+        let mut keypair_bytes: [u8; KEYPAIR_LENGTH] = [0; KEYPAIR_LENGTH];
+        keypair_bytes[..SECRET_KEY_LENGTH].copy_from_slice(&sk_bytes);
+        keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
+
+        let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
+        let sig = NoSgxSignature(keypair.sign(dig.as_slice()).to_bytes().to_vec());
+
+        Ok((sig, pk))
+    }
+    /// verify against a list of public keys
+    /// return indices of keys that verify
+    fn verify_multisig(&self, pks: &[PublicKey]) -> Result<Vec<usize>, ()>;
+}
+
+impl MultiSignableUpdated for RoundOutputUpdated {
+    fn digest(&self) -> Vec<u8> {
+        self.sha256().to_vec()
+    }
+
+    fn verify_multisig(&self, pks: &[PublicKey]) -> Result<Vec<usize>, ()> {
+        // log::debug!(
+        //     "verifying RoundOutput (with {} signatures) against a list of {} server PKs",
+        //     self.server_sigs.len(),
+        //     pks.len()
+        // );
+
+        // digest
+        let msg_hash = self.digest();
+
+        let mut verified = vec![];
+        for i in 0..self.server_sigs.len() {
+            let sig: Signature = Signature::new(self.server_sigs[i].sig.0.clone().try_into().unwrap());
+            let pk: PublicKey = self.server_sigs[i].pk;
+
+            // verify the signature
+            if pk.verify(msg_hash.as_slice(), &sig).is_ok() {
+                // debug!("signature verified against {:?}", pk);
+            }
+
+            // check if pk is in the server PK list
+            match pks.iter().position(|&k| k == pk) {
+                Some(i) => verified.push(i),
+                None => {
+                    // log::error!("PK {:?} is not in the server PK list", pk);
+                }
+            }
+        }
+
+        Ok(verified)
+    }
 }

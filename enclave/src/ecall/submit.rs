@@ -8,8 +8,8 @@ use attestation::Attested;
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use crypto;
-use crypto::{MultiSignable, MultiSignableUpdated, SgxPrivateKey, SignMutable, SignMutableUpdated};
-use interface::UserSubmissionReq;
+use crypto::{MultiSignable, SgxPrivateKey, SignMutable, SignMutableUpdated};
+use interface::{UserSubmissionReq, MultiSignableUpdated};
 use log::debug;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_UNEXPECTED};
 use sgx_types::sgx_status_t::SGX_ERROR_SERVICE_UNAVAILABLE;
@@ -74,7 +74,8 @@ fn check_reservation_updated(
     }
 
     // verify server's signatures on previous output
-    let verified_index = prev_round_output.verify_multisig(server_sig_pks)?;
+    let verified_index = prev_round_output.verify_multisig(server_sig_pks)
+        .expect("verify server's signature failed");
 
     if verified_index.is_empty() {
         error!("❌ sigs in prev_round_output can't be verified");

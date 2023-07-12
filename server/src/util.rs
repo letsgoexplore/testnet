@@ -1,5 +1,5 @@
 use crate::server_state::ServerState;
-use interface::RoundOutput;
+use interface::RoundOutputUpdated;
 
 use common::{cli_util, enclave::EnclaveError};
 
@@ -47,7 +47,7 @@ pub(crate) fn save_state(save_path: &str, state: &ServerState) -> Result<()> {
     Ok(cli_util::save(save_file, state)?)
 }
 
-pub(crate) fn save_output(save_path: &str, output: &RoundOutput) -> Result<()> {
+pub(crate) fn save_output(save_path: &str, output: &RoundOutputUpdated) -> Result<()> {
     let save_file = File::create(save_path)?;
     Ok(cli_util::save(save_file, output)?)
 }

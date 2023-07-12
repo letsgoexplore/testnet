@@ -15,7 +15,7 @@ use crate::{
 
 use common::cli_util;
 use common::types_nosgx::{AggregatedMessage, SubmissionMessage};
-use interface::{ServerPubKeyPackage, ServerPubKeyPackageNoSGX, UserSubmissionMessage, UserSubmissionMessageUpdated};
+use interface::{ServerPubKeyPackageNoSGX, UserSubmissionMessageUpdated};
 use std::{fs::File, time::SystemTime};
 
 use clap::{App, AppSettings, Arg, SubCommand};

@@ -18,10 +18,7 @@ use common::types_nosgx::{
     XorNoSGX,
     SubmissionMessage,
 };
-use common::funcs_nosgx::{
-    verify_user_submission_msg,
-};
-
+use common::funcs_nosgx::verify_user_submission_msg;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
 

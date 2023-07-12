@@ -49,7 +49,7 @@ impl AggregatorState {
         let (sk, agg_id, reg_data) = new_aggregator()?;
 
         let anytrust_ids: BTreeSet<EntityId> =
-            pubkeys.iter().map(|pk| EntityId::from(pk)).collect();
+            pubkeys.iter().map(|pk| EntityId::from(&pk.kem)).collect();
         let anytrust_group_id = compute_group_id(&anytrust_ids);
 
         // If this is a leaf aggregator, we collect nonces

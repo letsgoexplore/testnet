@@ -24,5 +24,4 @@ actix-web = "3.3"
 ed25519-dalek = { version = "0.9.1", features = ["serde"]  }
 rand = "0.6"
 sha2 = "0.8.2"
-
 itertools = "0.10.3"
