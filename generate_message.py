@@ -14,4 +14,4 @@ def generate_round_multiple_message(user, length):
             file.write(random_message_hex)
         print(f"already saved in {filename}")
 
-generate_round_multiple_message(2,10)
+# generate_round_multiple_message(2,10)

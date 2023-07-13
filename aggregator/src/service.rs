@@ -311,7 +311,7 @@ pub(crate) async fn start_service(
     // Start the web server
     HttpServer::new(move || {
         App::new().data(state.clone()).configure(|cfg| {
-            cfg.service(submit_agg).service(force_round_end);
+            cfg.service(submit_agg).service(submit_agg_from_agg).service(force_round_end);
         })
     })
     .workers(1)
