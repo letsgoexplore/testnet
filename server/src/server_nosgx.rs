@@ -35,12 +35,6 @@ use common::types_nosgx::{
     RoundSubmissionBlobNoSGX,
     UnblindedAggregateSharedNoSGX,
 };
-use common::user_request::{
-    RoundSecret,
-};
-use common::user_request::{
-    RoundSecret,
-};
 
 use common::funcs_nosgx::{
     verify_user_attestation,
@@ -58,8 +52,6 @@ use itertools::Itertools;
 use std::iter::FromIterator;
 use std::sync::mpsc;
 use std::thread;
-
-
 
 pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPackageNoSGX)> {
     let mut csprng = OsRng{};
@@ -82,7 +74,7 @@ pub fn recv_user_registration_batch(
     pubkeys: &mut SignedPubKeyDbNoSGX,
     shared_secrets: &mut SharedSecretsDbServer,
     decap_key: &SecretKey,
-    input_blob: &[UserRegistrationBlob],
+    input_blob: &[UserRegistrationBlobNew],
 ) -> Result<()> {
     let (new_pubkey_db, new_secrets_db) = recv_user_reg_batch(
         (pubkeys, decap_key, &input_blob.to_vec()),
@@ -95,8 +87,8 @@ pub fn recv_user_registration_batch(
 }
 
 fn recv_user_reg_batch(
-    input: (&SignedPubKeyDbNoSGX, &SecretKey, &Vec<UserRegistrationBlob>),
-) -> Result<(SignedPubKeyDb, SharedSecretsDbServer)> {
+    input: (&SignedPubKeyDbNoSGX, &SecretKey, &Vec<UserRegistrationBlobNew>),
+) -> Result<(SignedPubKeyDbNoSGX, SharedSecretsDbServer)> {
     let mut pk_db: SignedPubKeyDbNoSGX = input.0.clone();
     let my_kem_sk = input.1;
 
@@ -112,6 +104,7 @@ fn recv_user_reg_batch(
             }
         }
 
+        // add user key to pubkey db
         pk_db.users.insert(EntityId::from(&u.pk), u.clone());
     }
 
@@ -234,7 +227,7 @@ pub fn unblind_aggregate_mt(
 
 pub fn unblind_aggregate_partial(
     input: &(u32, SharedSecretsDbServer, BTreeSet<EntityId>),
-) -> Result<> {
+) -> Result<RoundSecret> {
     let round = input.0;
     let shared_secrets = input.1.clone();
     let user_ids_in_batch = &input.2;
@@ -351,10 +344,4 @@ pub fn derive_round_output(
     );
 
     Ok(round_output)
-}
-
-#[test]
-fn test_new_server_nosgx() {
-    let (a,b,c,d) = new_server();
-    dbg!(a,b,c,d);
 }
