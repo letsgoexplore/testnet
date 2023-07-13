@@ -7,15 +7,12 @@ use std::vec::Vec;
 pub type CryptoResult<T> = Result<T, CryptoError>;
 
 use sha2::Digest;
-use sha2::Sha256;
 
 use ed25519_dalek::{
     SecretKey,
     PublicKey,
-    Signature,
     Keypair,
     Signer,
-    Verifier,
     SECRET_KEY_LENGTH,
     PUBLIC_KEY_LENGTH,
     KEYPAIR_LENGTH,

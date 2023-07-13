@@ -6,7 +6,7 @@ use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected
 use sha2::{Digest, Sha256};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-use ed25519_dalek::{PublicKey, Signature};
+use ed25519_dalek::PublicKey;
 
 // a wrapper around RawMessage so that we can impl traits. This stores DC_NET_MESSAGE_LENGTH bytes
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]

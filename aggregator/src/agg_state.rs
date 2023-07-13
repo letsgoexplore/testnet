@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 
 use interface::{
     compute_group_id, EntityId, RateLimitNonce,
-    ServerPubKeyPackage, DC_NET_ROUNDS_PER_WINDOW, ServerPubKeyPackageNoSGX,
+    DC_NET_ROUNDS_PER_WINDOW, ServerPubKeyPackageNoSGX,
 };
 use serde::{Deserialize, Serialize};
 

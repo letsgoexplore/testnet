@@ -25,8 +25,8 @@ hkdf = "0.8.0"
 sha2 = "0.8.0"
 byteorder = "1.4.3"
 
-ed25519-dalek = { version = "0.9.1", features = ["serde"]  }
-x25519-dalek = {version = "1.2.0", features = ["serde"]}
+ed25519-dalek = { package = "ed25519-dalek", version = "1", default-features = false, features = ["u64_backend", "serde"] }
+x25519-dalek = { version = "1.2.0", default-features = false, features = ["serde"] }
 rand_os = "0.1"
 
 sgx_types = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }

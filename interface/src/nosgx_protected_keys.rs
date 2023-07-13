@@ -7,7 +7,6 @@ use ed25519_dalek::{
     Verifier,
     SECRET_KEY_LENGTH,
     PUBLIC_KEY_LENGTH,
-    SIGNATURE_LENGTH,
     KEYPAIR_LENGTH,
 };
 
@@ -16,7 +15,7 @@ use core::fmt::{Debug, Display, Formatter};
 use std::convert::TryFrom;
 use std::vec::Vec;
 use std::vec;
-use sha2::{Digest, Sha256, Sha512};
+use sha2::{Digest, Sha256};
 
 use crate::user_request::EntityId;
 use crate::ecall_interface_types::{RoundOutput, RoundOutputUpdated};
@@ -213,7 +212,8 @@ impl MultiSignableUpdated for RoundOutputUpdated {
 
         let mut verified = vec![];
         for i in 0..self.server_sigs.len() {
-            let sig: Signature = Signature::new(self.server_sigs[i].sig.0.clone().try_into().unwrap());
+            let sig: Signature = Signature::from_bytes(self.server_sigs[i].sig.0.clone().as_slice())
+                .expect("failed to generate Signature from bytes");
             let pk: PublicKey = self.server_sigs[i].pk;
 
             // verify the signature

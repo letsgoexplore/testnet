@@ -38,6 +38,7 @@ enum ApiError {
 }
 impl ResponseError for ApiError {}
 
+// #[derive(Clone)]
 pub(crate) struct ServiceState {
     pub(crate) server_state: ServerState,
     pub(crate) round_shares: Vec<UnblindedAggregateShareBlobNoSGX>,
@@ -353,7 +354,7 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
 
     // Start the web server
     HttpServer::new(move || {
-        App::new().data(state).configure(|cfg| {
+        App::new().data(state.clone()).configure(|cfg| {
             cfg.service(submit_agg)
                 .service(submit_share)
                 .service(round_result)

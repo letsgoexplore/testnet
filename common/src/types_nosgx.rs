@@ -3,20 +3,21 @@ use ed25519_dalek::{
     PublicKey,
     Signature,
     Keypair,
+    SignatureError,
+    Signer,
+    Verifier,
     SECRET_KEY_LENGTH,
     PUBLIC_KEY_LENGTH,
     KEYPAIR_LENGTH,
     SIGNATURE_LENGTH,
-    SignatureError
 };
 use serde::{Serialize, Deserialize};
-use sha2::{Digest, Sha256, Sha512};
+use sha2::{Digest, Sha256};
 use interface::{
     EntityId,
     RateLimitNonce,
     DcRoundMessage,
     NoSgxProtectedKeyPub,
-    AttestedPublicKey,
     AttestedPublicKeyNoSGX,
     ServerPubKeyPackageNoSGX,
     NewDiffieHellmanSharedSecret,
@@ -37,12 +38,9 @@ use std::convert::TryInto;
 use core::fmt::{Debug, Formatter};
 
 use x25519_dalek::{
-    SharedSecret,
     StaticSecret,
     PublicKey as xPublicKey,
 };
-use rand_os::OsRng;
-use crate::funcs_nosgx::{serialize_to_vec, deserialize_from_vec};
 
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct AggRegistrationBlobNoSGX {
@@ -70,7 +68,7 @@ impl Default for AggregatedMessage {
             user_ids: BTreeSet::new(),
             rate_limit_nonce: None,
             aggregated_msg: DcRoundMessage::default(),
-            sig: Signature::from_bytes(&[0u8;SIGNATURE_LENGTH]).unwrap(),
+            sig: Signature::from_bytes(&[0u8;SIGNATURE_LENGTH]).expect("failed to generate Signature from bytes"),
             pk: PublicKey::default(),
         }
     }
@@ -92,7 +90,7 @@ pub trait SignableNoSGX {
     fn sign(&self, sk: &SecretKey) -> Result<(Signature, PublicKey), SignatureError> {
         let dig: Vec<u8> = self.digest();
         // The standard hash function used for most ed25519 libraries is SHA-512
-        let pk = PublicKey::from_secret::<Sha512>(&sk);
+        let pk: PublicKey = sk.into();
         let sk_bytes: [u8; SECRET_KEY_LENGTH] = sk.to_bytes();
         let pk_bytes: [u8; PUBLIC_KEY_LENGTH] = pk.to_bytes();
 
@@ -101,7 +99,7 @@ pub trait SignableNoSGX {
         keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
 
         let keypair: Keypair = Keypair::from_bytes(&keypair_bytes)?;
-        let sig = keypair.sign::<Sha512>(dig.as_slice());
+        let sig = keypair.sign(dig.as_slice());
 
         Ok((sig, pk))
     }
@@ -109,7 +107,7 @@ pub trait SignableNoSGX {
     fn verify(&self) -> Result<(), SignatureError> {
         let msg_hash = self.digest();
         let pk = self.get_pk();
-        pk.verify::<Sha512>(msg_hash.as_slice(), &self.get_sig())
+        pk.verify(msg_hash.as_slice(), &self.get_sig())
     }
 }
 
@@ -234,7 +232,7 @@ impl SharedSecretsDbServer {
             // 3. Compute the DH secret for the server and xPublicKeys
             let shared_secret = my_secret.diffie_hellman(&pk);
             // 4. Save ephemeral SharedSecret into NewDiffieHellmanSharedSecret
-            let shared_secret_bytes: [u8; 32] = shared_secret.as_bytes().to_owned();
+            let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
             server_secrets.insert(client_pk.to_owned(), NewDiffieHellmanSharedSecret(shared_secret_bytes));
         }
 
