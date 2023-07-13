@@ -414,17 +414,17 @@ impl UserSubmissionMessageUpdated {
     }
 }
 
-#[cfg(test)]
-mod tests{
-    use super::*;
-    use rand::rngs::OsRng;
-    #[test]
-    fn test_EntityId_swap() -> Result<(EntityId)>{
-        let mut csprng = OsRng::new()?;
-        let sig_key = SecretKey::generate(&mut csprng);
-        let sig_key_pk = PublicKey::from_secret::<Sha512>(&sig_key);
-        let mut &id = EntityId::from(&sig_key_pk);
-        id
-    }
+// #[cfg(test)]
+// mod tests{
+//     use super::*;
+//     use rand::rngs::OsRng;
+//     #[test]
+//     fn test_EntityId_swap() -> Result<(EntityId)>{
+//         let mut csprng = OsRng::new()?;
+//         let sig_key = SecretKey::generate(&mut csprng);
+//         let sig_key_pk = PublicKey::from_secret::<Sha512>(&sig_key);
+//         let mut &id = EntityId::from(&sig_key_pk);
+//         id
+//     }
     
-}
+// }

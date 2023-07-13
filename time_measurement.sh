@@ -377,6 +377,11 @@ kill_clients() {
 
 if [[ $1 == "clean" ]]; then
     clean
+elif [[ $1 == "setup-server" ]]; then
+    setup_server
+elif [[ $1 == "setup-agg" ]]; then
+    setup_server
+    setup_aggregator
 elif [[ $1 == "setup-env" ]]; then
     setup_env
 elif [[ $1 == "start-leader" ]]; then

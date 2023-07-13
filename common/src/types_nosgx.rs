@@ -251,7 +251,7 @@ impl SharedSecretsDbServer {
                 let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32");
                 let new_sec = NewDiffieHellmanSharedSecret(secret_bytes);
 
-                (sk, new_sec)
+                (k, new_sec)
             })
             .collect();
 
