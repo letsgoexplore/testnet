@@ -20,15 +20,20 @@ CLIENT_SERVICE_PORT="8323"
 AGGREGATOR_PORT="18423"
 SERVER_LEADER_PORT="18523"
 
+CONTAINER_NAME_PREFIX="dcnet-user-"
+
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
+DOCKER_CREATE_PREFIX="docker run "
+DOCKER_SWITCH_PREFIX="docker exec -it"
+
 
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
-NUM_FOLLOWERS=0
+NUM_FOLLOWERS=3
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=1
+NUM_USERS=10
 NUM_AGGREGATORS=1
 
 ROUND=0
@@ -131,25 +136,41 @@ setup_aggregator() {
 }
 
 setup_client() {
-    cd client
+    for i in $(seq 1 $NUM_USERS); do
+        echo "client $i begins to setup msg"
 
-    # Make new clients and capture the registration data
-    USER_REG=$(
-        $CMD_PREFIX new \
-            --num-regs $NUM_USERS \
-            --user-state "../$USER_STATE" \
-            --server-keys "../$USER_SERVERKEYS"
-    )
+        CONTAINER_NAME="$CONTAINER_NAME_PREFIX$i"
+        if docker container inspect $CONTAINER_NAME > /dev/null 2>&1; then
+            docker start -ai $CONTAINER_NAME
+        else
+            docker run \
+                -v $PWD:/root/sgx \
+                -ti \
+                --hostname $CONTAINER_NAME \
+                --name $CONTAINER_NAME \
+                -e SGX_MODE=SW \
+                $DOCKER_IMAGE
+        fi
 
-    # Now do oteh registrations
-    cd ../server
-    for i in $(seq 1 $NUM_SERVERS); do
-        STATE="${SERVER_STATE%.txt}$i.txt"
-        echo "$USER_REG" | $CMD_PREFIX register-user --server-state "../$STATE"
-    done
+        
+        # Make new clients and capture the registration data
+        cd client
+        USER_REG=$(
+            $CMD_PREFIX new \
+                --num-regs $NUM_USERS \
+                --user-state "../$USER_STATE" \
+                --server-keys "../$USER_SERVERKEYS"
+        )
 
-    echo "Set up clients"
-    cd ..
+        # Now do oteh registrations
+        cd ../server
+        for i in $(seq 1 $NUM_SERVERS); do
+            STATE="${SERVER_STATE%.txt}$i.txt"
+            echo "$USER_REG" | $CMD_PREFIX register-user --server-state "../$STATE"
+        done
+
+        echo "Set up clients"
+        cd ..
 }
 
 setup_env() {

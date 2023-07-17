@@ -342,6 +342,51 @@ async fn round_msg(
     Ok(res)
 }
 
+#[get("/round/{round}")]
+async fn round_num(
+    (round, state): (web::Path<u32>, web::Data<Arc<Mutex<ServiceState>>>),
+) -> Result<HttpResponse, ApiError> {
+    // Unwrap the round and make it a struct
+    let web::Path(round) = round;
+
+    // Unpack state
+    let handle = state.get_ref().lock().unwrap();
+    let ServiceState {
+        ref round_outputs,
+        ref leader_url,
+        ..
+    } = *handle;
+
+    // I am not the leader. Don't ask me for round results
+    if leader_url.is_some() {
+        return Ok(HttpResponse::NotFound().body("Followers don't store round results"));
+    }
+
+    // Try to get the requested output
+    let res = match round_outputs.get(&round) {
+        // If the given round's output exists in memory, return it
+        Some(round_output) => {
+            // Give the raw payload
+            let blob = round_output.dc_msg.aggregated_msg.as_row_major();
+            debug!("round-msg: {:?}", blob);
+
+            let body = base64::encode(&blob);
+            // let body = match str::from_utf8(&blob) {
+            //     Ok(v) => v,
+            //     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+            // };
+            HttpResponse::Ok().body(body)
+        }
+        // If the given round's output doesn't exist in memory, error out
+        None => {
+            info!("received request for invalid round {}", round);
+            HttpResponse::NotFound().body("Invalid round")
+        }
+    };
+
+    Ok(res)
+}
+
 #[actix_rt::main]
 pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std::io::Result<()> {
     info!(

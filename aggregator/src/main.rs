@@ -193,7 +193,7 @@ fn main() -> Result<(), AggregatorError> {
         let mut state = load_state(&state_path)?;
 
         // Pass the input to the state and save the result
-        let round_blob = UserSubmissionMessageUpdated::AggSubmission(round_blob);
+        let round_blob = SubmissionMessage::AggSubmission(round_blob);
         state.add_to_aggregate(&round_blob)?;
         save_state(&state_path, &state)?;
 
@@ -207,7 +207,7 @@ fn main() -> Result<(), AggregatorError> {
         let mut state = load_state(&state_path)?;
 
         // Pass the input to the state and save the result
-        let round_blob = UserSubmissionMessageUpdated::UserSubmission(round_blob);
+        let round_blob = SubmissionMessage::UserSubmission(round_blob);
         state.add_to_aggregate(&round_blob)?;
         save_state(&state_path, &state)?;
 

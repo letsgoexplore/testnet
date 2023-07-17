@@ -147,6 +147,24 @@ async fn force_round_end(
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
+#[get("/round-num")]
+async fn round_num(
+    state: web::Data<Arc<Mutex<ServiceState>>>,
+) -> Result<HttpResponse, ApiError>  {
+    // Unwrap the round and make it a struct
+
+    // Unpack state
+    let handle = state.get_ref().lock().unwrap();
+    let ServiceState {
+        ref round,
+        ..
+    } = *handle;
+    info!("[agg] round: {:?}", &round);
+    let body = round.to_string();
+    Ok(HttpResponse::Ok().body(body))
+
+}
+
 /// Finalizes and serializes the current aggregator state. Returns the pyaload nad all the
 /// forwarding URLs
 fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
@@ -311,7 +329,7 @@ pub(crate) async fn start_service(
     // Start the web server
     HttpServer::new(move || {
         App::new().data(state.clone()).configure(|cfg| {
-            cfg.service(submit_agg).service(submit_agg_from_agg).service(force_round_end);
+            cfg.service(submit_agg).service(submit_agg_from_agg).service(force_round_end).service(round_num);
         })
     })
     .workers(1)

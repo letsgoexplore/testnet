@@ -16,9 +16,9 @@ AGG_SERVERKEYS="aggregator/server-keys.txt"
 
 SERVER_ROUNDOUTPUT="server/round_output.txt"
 
-CLIENT_SERVICE_PORT="8323"
-AGGREGATOR_PORT="18423"
-SERVER_LEADER_PORT="18523"
+CLIENT_SERVICE_PORT="28325"
+AGGREGATOR_PORT="38423"
+SERVER_LEADER_PORT="38525"
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
@@ -33,7 +33,53 @@ NUM_AGGREGATORS=1
 
 ROUND=0
 
-clean() {
+# clean_port() {
+#     # clean port
+#     echo "start hahah"
+#     for i in $(seq 1 $NUM_USERS); do
+#         PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
+#         PID=$(lsof -t -i:${PORT} 2>/dev/null)
+#         echo "1"
+#         if [ -z "$PID" ]; then
+#             PID=0
+#         fi
+
+#         if [ "$PID" -gt 0 ]; then
+#             echo "Terminating process $PID"
+#             kill $PID
+#         else
+#             echo "No process found listening on port $PORT"
+#         fi
+#     done
+#     echo "clean user port"
+
+#     for i in $(seq 1 $NUM_AGGREGATORS); do
+#         PORT="$(($AGGREGATOR_PORT + $(($i-1))))"
+#         PID=$(lsof -t -i:${PORT})
+#         if [ -n "$PID" ]; then
+#             echo "Terminating process $PID"
+#             kill $PID
+#         else
+#             echo "No process found listening on port $PORT"
+#         fi
+#     done
+#     echo "clean aggregator port"
+
+
+#     for i in $(seq 1 $NUM_SERVERS); do
+#         PORT="$(($SERVER_LEADER_PORT + $(($i-1))))"
+#         PID=$(lsof -t -i:${PORT})
+#         if [ -n "$PID" ]; then
+#             echo "Terminating process $PID"
+#             kill $PID
+#         else
+#             echo "No process found listening on port $PORT"
+#         fi
+#     done
+#     echo "clean server port"
+# }
+
+clean_file(){
     # The below pattern removes all files of the form "client/user-stateX.txt" for any X
     rm -f ${USER_STATE%.txt}*.txt || true
     rm -f $USER_SERVERKEYS || true
@@ -48,6 +94,10 @@ clean() {
     echo "Cleaned"
 }
 
+clean(){
+    clean_port
+    clean_file
+}
 # build() {
 #     make -C enclave
 #     for d in "client" "server" "aggregator"; do
@@ -153,7 +203,7 @@ setup_client() {
 }
 
 setup_env() {
-    clean
+    clean_file
     setup_server
     setup_aggregator
     setup_client
@@ -348,6 +398,12 @@ force_root_round_end() {
     curl "http://localhost:$AGGREGATOR_PORT/force-round-end"
 }
 
+# get round_num from aggregator
+get_agg_round_num(){
+    result=$(curl -s -X GET "http://localhost:$AGGREGATOR_PORT/round-num")
+    echo "result:$result"
+}
+
 # Returns the round result
 get_round_result() {
     curl -s "http://localhost:$SERVER_LEADER_PORT/round-result/$1"
@@ -374,9 +430,15 @@ kill_clients() {
 #     encrypt-msg <MSG> takes a plain string. E.g., `./server_ctrl.sh encrypt-msg hello`
 #     get-round-result <ROUND> takes an integer. E.g., `./server_ctrl.sh get-round-result 4`
 #     test-multi-clients <MSG> takes a plain string. E.g., `./server_ctrl.sh test-multi-clients hello`
-
-if [[ $1 == "clean" ]]; then
-    clean
+if [[ $1 == "run" ]]; then
+    setup_env
+    start_leader
+    start_followers
+    start_root_agg
+    start_client
+elif [[ $1 == "clean" ]]; then
+    clean_port
+    clean_file
 elif [[ $1 == "setup-env" ]]; then
     setup_env
 elif [[ $1 == "start-leader" ]]; then
@@ -389,6 +451,8 @@ elif [[ $1 == "start-client" ]]; then
     start_client
 # elif [[ $1 == "start-agg" ]]; then
 #     start_client
+elif [[ $1 == "get-agg-round-num" ]]; then
+    get_agg_round_num
 elif [[ $1 == "encrypt-msg" ]]; then
     encrypt_msg $2
 elif [[ $1 == "send-cover" ]]; then
