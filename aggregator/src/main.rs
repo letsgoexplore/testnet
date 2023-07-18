@@ -229,8 +229,8 @@ fn main() -> Result<(), AggregatorError> {
         let bind_addr = matches.value_of("bind").unwrap().to_string();
         let round = cli_util::parse_u32(matches.value_of("round").unwrap())?;
         let round_dur = {
-            let secs = cli_util::parse_u32(matches.value_of("round-duration").unwrap())?;
-            std::time::Duration::from_secs(secs as u64)
+            let secs = cli_util::parse_f64(matches.value_of("round-duration").unwrap())?;
+            std::time::Duration::from_secs_f64(secs)
         };
         // Compute the start time as an std::Instant. This is kinda roundabout because we're
         // converting a system time to a monotonic time. This doesn't handle clock changes.

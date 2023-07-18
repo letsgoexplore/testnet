@@ -13,6 +13,8 @@ pub enum SerializationError {
     Io(#[from] std::io::Error),
     #[error("integer parsing")]
     Int(#[from] core::num::ParseIntError),
+    #[error("float parsing")]
+    Float(#[from] std::num::ParseFloatError),
     #[error("cannot deserialize empty string")]
     Empty,
 }
@@ -25,6 +27,10 @@ pub fn parse_u32(s: &str) -> Result<u32> {
 
 pub fn parse_u64(s: &str) -> Result<u64> {
     Ok(u64::from_str_radix(s, 10)?)
+}
+
+pub fn parse_f64(s: &str) -> Result<f64> {
+    Ok(s.parse::<f64>()?)
 }
 
 /// file -> base64::decode -> cbor::decode
