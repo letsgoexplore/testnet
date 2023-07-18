@@ -40,5 +40,5 @@ trusted = [
     "sgx_rand_derive",
     "sgx_tcrypto",
     "byteorder",
-    "ed25519-dalek-trusted"
+    "ed25519-dalek-trusted",
 ]

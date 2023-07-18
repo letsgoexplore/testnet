@@ -21,6 +21,8 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_cbor;
 
+use log::debug;
+
 
 pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), ()> {
     Ok(())
@@ -35,6 +37,10 @@ pub fn derive_round_secret_server(
     shared_secrets: &SharedSecretsDbServer,
     entity_ids_to_use: Option<&BTreeSet<EntityId>>,
 ) -> Result<RoundSecret, InvalidLength> {
+    debug!("[derive_round_secret_server] round: {}", round);
+    debug!("[derive_round_secret_server] shared_secrets: {:?}", shared_secrets);
+    debug!("[derive_round_secret_server] entity_ids_to_use: {:?}", entity_ids_to_use);
+
     type MyRng = Aes128Rng;
 
     let mut round_secret = RoundSecret::default();
@@ -43,9 +49,11 @@ pub fn derive_round_secret_server(
         // skip entries not in entity_ids_to_use
         if let Some(eids) = entity_ids_to_use {
             if !eids.contains(&EntityId::from(pk)) {
+                debug!("entity id of client {} is not in entity_ids_to_use", pk);
                 continue;
             }
         }
+
 
         let hk = Hkdf::<Sha256>::new(None, &shared_secret.as_ref());
         // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].

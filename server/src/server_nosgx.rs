@@ -10,6 +10,7 @@ use interface::{
     DcRoundMessage,
     SignatureNoSGX,
     MultiSignableUpdated,
+    NoSgxProtectedKeyPub,
 };
 
 use ed25519_dalek::{
@@ -17,6 +18,12 @@ use ed25519_dalek::{
     PublicKey,
     Signature,
 };
+
+use x25519_dalek::{
+    PublicKey as xPublicKey,
+    StaticSecret,
+};
+
 use rand::rngs::OsRng;
 
 use std::time::Instant;
@@ -47,7 +54,7 @@ use log::{
     error,
 };
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, BTreeMap};
 use itertools::Itertools;
 use std::iter::FromIterator;
 use std::sync::mpsc;
@@ -58,14 +65,28 @@ pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPacka
     let sig_key = SecretKey::generate(&mut csprng);
     let kem_key = SecretKey::generate(&mut csprng);
 
+    let kem_secret = StaticSecret::from(kem_key.to_bytes());
+
     // The standard hash function used for most ed25519 libraries is SHA-512
     let sig_key_pk: PublicKey = (&sig_key).into();
     let kem_key_pk: PublicKey = (&kem_key).into();
+    let kem_key_xpk: xPublicKey = xPublicKey::from(&kem_secret);
 
     let reg = ServerPubKeyPackageNoSGX {
         sig: sig_key_pk,
         kem: kem_key_pk,
+        xkem: NoSgxProtectedKeyPub(kem_key_xpk.to_bytes()),
     };
+
+    info!("[server] sig pk: {:?}", NoSgxProtectedKeyPub(sig_key_pk.to_bytes()));
+    info!("[server] kem pk: {:?}", NoSgxProtectedKeyPub(kem_key_pk.to_bytes()));
+    info!("[server] kem xpk: {:?}", kem_key_xpk);
+    info!("[server] sig sk bytes: {:?}", sig_key.to_bytes());
+    info!("[server] kem sk bytes: {:?}", kem_key.to_bytes());
+    info!("[server] kem sk secret bytes: {:?}", kem_secret.to_bytes());
+    info!("[server] sig pk bytes: {:?}", sig_key_pk.to_bytes());
+    info!("[server] kem pk bytes: {:?}", kem_key_pk.to_bytes());
+    info!("[server] kem xpk bytes: {:?}", kem_key_xpk.to_bytes());
 
     Ok((sig_key, kem_key, EntityId::from(&reg), reg))
 }
@@ -82,6 +103,9 @@ pub fn recv_user_registration_batch(
 
     pubkeys.users = new_pubkey_db.users;
     shared_secrets.db = new_secrets_db.db;
+
+    info!("[server] pubkeys: {:?}", pubkeys);
+    info!("[server] shared_secrets: {:?}", shared_secrets);
 
     Ok(())
 }
@@ -109,12 +133,14 @@ fn recv_user_reg_batch(
     }
 
     // Derive secrets
-    let mut others_kem_pks = vec![];
+    // let mut others_kem_pks = vec![];
+    let mut others_kem_db: BTreeMap<NoSgxProtectedKeyPub, NoSgxProtectedKeyPub> = BTreeMap::new();
     for (_, k) in pk_db.users.iter() {
-        others_kem_pks.push(k.pk);
+        // others_kem_pks.push(k.pk);
+        others_kem_db.insert(k.xpk, k.pk);
     }
 
-    let shared_secrets = SharedSecretsDbServer::derive_shared_secrets(&my_kem_sk, &others_kem_pks)
+    let shared_secrets = SharedSecretsDbServer::derive_shared_secrets(&my_kem_sk, &others_kem_db)
         .expect("failed to derive shared secrets for server");
 
     debug!("shared_secrets: {:?}", shared_secrets);
@@ -200,6 +226,7 @@ pub fn unblind_aggregate_mt(
             let rs = 
                 unblind_aggregate_partial(&(round, db_cloned, user_ids))
                 .unwrap();
+            debug!("rs: {:?}", rs);
             tx_cloned.send(rs).unwrap();
         });
     }
@@ -262,7 +289,7 @@ pub fn unblind_aggregate_merge(
     sig_key: &SecretKey,
     shared_secrets: &SharedSecretsDbServer,
 ) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
-    debug!("[server] round_secrets size: {:?}", round_secrets);
+    debug!("[server] round_secrets: {:?}", round_secrets);
     let mut round_secret = RoundSecret::default();
     for rs in round_secrets.iter() {
         round_secret.xor_mut_nosgx(rs);
@@ -315,7 +342,7 @@ pub fn derive_round_output(
             error!("share {:?} has a different final agg", share);
             return Err(ServerError::UnexpectedError);
         }
-        debug!("[server] share: {:?}", share);
+        debug!("[server] key share: {:?}", share.key_share);
         final_msg.xor_mut_nosgx(&share.key_share);
     }
 

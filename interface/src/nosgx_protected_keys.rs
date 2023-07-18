@@ -55,6 +55,7 @@ impl NoSgxProtectedKeyPub {
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct AttestedPublicKeyNoSGX {
     pub pk: NoSgxProtectedKeyPub,
+    pub xpk: NoSgxProtectedKeyPub,
     pub role: std::string::String,
     /// role denotes the intended use of this key e.g., "aggregator" "client" "anytrust server"
     pub tee_linkable_attestation: std::vec::Vec<u8>, // binds this key to an enclave
@@ -64,6 +65,7 @@ impl Debug for AttestedPublicKeyNoSGX {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AttestedPublicKeyNoSGX")
             .field("pk", &self.pk)
+            .field("xpk", &self.xpk)
             .field("role", &self.role)
             .field(
                 "tee_linkable_attestation",
@@ -126,6 +128,7 @@ impl TryFrom<&NoSgxPrivateKey> for NoSgxProtectedKeyPub {
 pub struct ServerPubKeyPackageNoSGX {
     pub sig: PublicKey,
     pub kem: PublicKey,
+    pub xkem: NoSgxProtectedKeyPub,
 }
 
 /// Store the bytes of signatures

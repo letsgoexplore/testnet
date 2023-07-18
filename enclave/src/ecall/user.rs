@@ -10,7 +10,10 @@ use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 use sgx_types::SgxResult;
 use std::string::ToString;
 use std::vec::Vec;
+use std::collections::BTreeMap;
 use unseal::SealInto;
+
+use ed25519_dalek::PublicKey;
 
 /// Derives shared secrets with all the given KEM pubkeys, and derives a new signing pubkey.
 /// Returns sealed secrets, a sealed private key, and a registration message to send to an
@@ -60,10 +63,15 @@ pub fn new_user_batch(
 pub fn new_user_updated(
     anytrust_server_pks: &Vec<ServerPubKeyPackageNoSGX>,
 ) -> SgxResult<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)> {
+    debug!("[user] server_pks: {:?}", anytrust_server_pks);
+    debug!("[user] server sig: {:?}", NoSgxProtectedKeyPub(anytrust_server_pks[0].sig.to_bytes()));
+    debug!("[user] server kem: {:?}", NoSgxProtectedKeyPub(anytrust_server_pks[0].kem.to_bytes()));
     // 1. validate the input
-    let mut kem_pks = vec![];
+    let mut kem_db: BTreeMap<NoSgxProtectedKeyPub, PublicKey> = BTreeMap::new();
+    // let mut kem_pks = vec![];
     for k in anytrust_server_pks {
-        kem_pks.push(k.kem);
+        // kem_pks.push(k.kem);
+        kem_db.insert(k.xkem, k.kem);
     }
 
     let role = "user".to_string();
@@ -72,9 +80,11 @@ pub fn new_user_updated(
     let (sk, pk) = new_keypair_ext_internal(&role)?;
 
     // 3. derive server secrets
-    let server_secrets = SharedSecretsDbClient::derive_shared_secrets(&sk, &kem_pks)?;
+    let server_secrets = SharedSecretsDbClient::derive_shared_secrets(&sk, &kem_db)?;
 
-    debug!("DH secrets: {:?}", server_secrets);
+    debug!("[user] shared secrets: {:?}", server_secrets);
+    let (key, value) = server_secrets.db.first_key_value().unwrap();
+    debug!("[user] shared secrets bytes: {:?}", value.0.as_slice());
 
     Ok((server_secrets.seal_into()?, sk.seal_into()?, pk))
 }
