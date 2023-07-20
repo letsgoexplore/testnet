@@ -17,6 +17,7 @@ AGG_SERVERKEYS="aggregator/server-keys.txt"
 SERVER_ROUNDOUTPUT="server/round_output.txt"
 
 CLIENT_SERVICE_PORT="28325"
+CLIENT_SERVICE_PORT1="28326"
 AGGREGATOR_PORT="38423"
 SERVER_LEADER_PORT="38525"
 
@@ -25,14 +26,14 @@ CMD_PREFIX="cargo run -- "
 
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
-NUM_FOLLOWERS=0
+NUM_FOLLOWERS=4
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=1
+NUM_USERS=3
 NUM_AGGREGATORS=1
-
+MESSAGE_LENGTH=20
 ROUND=0
-
+AGG_TIMEOUT=100.3
 # clean_port() {
 #     # clean port
 #     echo "start hahah"
@@ -235,6 +236,16 @@ start_client() {
         --bind "localhost:$CLIENT_SERVICE_PORT" \
         --agg-url "http://localhost:$AGGREGATOR_PORT" &
         # --no-persist \
+    
+
+    # STATE="${USER_STATE%.txt}2.txt"
+
+    # RUST_LOG=debug $CMD_PREFIX start-service \
+    #     --user-state "../$STATE" \
+    #     --round $ROUND \
+    #     --bind "localhost:$CLIENT_SERVICE_PORT1" \
+    #     --agg-url "http://localhost:$AGGREGATOR_PORT" &
+    #     # --no-persist \
 
     cd ..
 }
@@ -312,7 +323,7 @@ start_root_agg() {
         --round $ROUND \
         --bind "localhost:$AGGREGATOR_PORT" \
         --start-time $START_TIME \
-        --round-duration 10000 \
+        --round-duration $AGG_TIMEOUT \
         --forward-to "http://localhost:$SERVER_LEADER_PORT" &
         # --no-persist \
 
@@ -350,37 +361,41 @@ start_followers() {
     cd ..
 }
 
+encrypt_msg_single() {
+    FILENAME="src/message/clientmessage_$(($1-1)).txt"
+    PAYLOAD=$(cat $FILENAME)
+    CURRENT_ROUND=$(curl -s -X GET "http://localhost:$AGGREGATOR_PORT/round-num")
+    USER_PORT="$(($CLIENT_SERVICE_PORT + $(($1-1))))"
+    echo "haha$i"
+
+    if [[ $CURRENT_ROUND -gt 0 ]]; then
+        PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($CURRENT_ROUND-1)).txt")
+        PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
+    fi
+    echo "$PAYLOAD" > "$FILENAME"
+    curl "http://localhost:$USER_PORT/encrypt-msg" \
+    -X POST \
+    -H "Content-Type: text/plain" \
+    --data-binary "@$FILENAME"
+}
+
 encrypt_msg() {
     # for i in $(seq 1 $NUM_USERS); do
         # Base64-encode the given message
-        PAYLOAD=$(base64 <<< "$1")
-
+        
+        python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
+        cd client
+        CURRENT_ROUND=$(curl -s -X GET "http://localhost:$AGGREGATOR_PORT/round-num")
         # If this isn't the first round, append the previous round output to the payload. Separate with
         # a comma.
-        if [[ $ROUND -gt 0 ]]; then
-            PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
-            PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
-        fi
-
-        # Do the operation
-        # curl "http://localhost:$CLIENT_SERVICE_PORT/encrypt-msg" \
-        #     -X POST \
-        #     -H "Content-Type: text/plain" \
-        #     --data-binary "$PAYLOAD"
-        
-        echo "$PAYLOAD" > payload.txt
-
-        # USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
-        # curl "http://localhost:$USER_PORT/encrypt-msg" \
-        # -X POST \
-        # -H "Content-Type: text/plain" \
-        # --data-binary "@payload.txt"
-    # done
-    
-    curl "http://localhost:$CLIENT_SERVICE_PORT/encrypt-msg" \
-    -X POST \
-    -H "Content-Type: text/plain" \
-    --data-binary "@payload.txt"
+        for i in $(seq 1 $NUM_USERS); do
+            encrypt_msg_single $i &
+        done
+        cd ..
+    # curl "http://localhost:$CLIENT_SERVICE_PORT1/encrypt-msg" \
+    # -X POST \
+    # -H "Content-Type: text/plain" \
+    # --data-binary "@payload.txt"
 }
 
 send_cover() {

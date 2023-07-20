@@ -15,10 +15,12 @@ USER_SERVERKEYS="client/server-keys.txt"
 AGG_SERVERKEYS="aggregator/server-keys.txt"
 
 SERVER_ROUNDOUTPUT="server/round_output.txt"
+CLIENT_MESSAGE="client/src/message/clientmessage.txt"
+TIME_LOG="time_recorder.txt"
 
-CLIENT_SERVICE_PORT="8323"
-AGGREGATOR_PORT="18423"
-SERVER_LEADER_PORT="18523"
+CLIENT_SERVICE_PORT="28323"
+AGGREGATOR_PORT="38423"
+SERVER_LEADER_PORT="38523"
 
 CONTAINER_NAME_PREFIX="dcnet-user-"
 
@@ -29,15 +31,72 @@ DOCKER_SWITCH_PREFIX="docker exec -it"
 
 
 # Assume wlog that the leading anytrust node is the first one
-LEADER=1
-NUM_FOLLOWERS=3
+# LEADER=1
+# NUM_FOLLOWERS=3
 
-NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=10
-NUM_AGGREGATORS=1
+# NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
+# NUM_USERS=1
+# NUM_AGGREGATORS=1
 
+# MESSAGE_LENGTH=20
 ROUND=0
+AGG_TIMEOUT=100.3
 
+evaluate_bit() {
+    num_user=10
+    num_leader=1
+    num_follower=0
+    num_server=$((num_leader + num_follower))
+    num_aggregator=1
+    # dc_net_n_slots=("10" "20" "30" "40" "50")
+    dc_net_n_slots=("5" "10")
+    dc_net_message_lengths=("20" "40" "60" "80" "100" "120" "140" "160")
+    for dc_net_n_slot in "${dc_net_n_slots[@]}"; do
+        for dc_net_message_length in "${dc_net_message_lengths[@]}"; do 
+            setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
+            start_leader
+            if [[ $num_follower -gt 0 ]]; then
+                start_followers $num_follower
+            fi
+            start_root_agg 
+            start_client $num_user
+            log_time
+            send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
+            force_root_round_end
+            sleep 1
+            stop-all
+        done
+    done
+}
+
+# test() {
+#     num_user=5
+#     num_leader=1
+#     num_follower=0
+#     num_server=$((num_leader + num_follower))
+#     num_aggregator=1
+#     # dc_net_n_slots=("10" "20" "30" "40" "50")
+#     dc_net_n_slot=5
+#     dc_net_message_length=20
+#     setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
+#     start_leader
+#     start_root_agg 
+#     echo "hahayeah"
+#     start_client $num_user
+#     log_time
+#     echo "hahayeah"
+#     send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
+#     force_root_round_end
+#     sleep 1
+#     stop-all
+        
+# }
+
+
+log_time() {
+    timestamp=$(date +%s%N)
+    echo "$timestamp" >> time_recorder.txt
+}
 clean() {
     # The below pattern removes all files of the form "client/user-stateX.txt" for any X
     rm -f ${USER_STATE%.txt}*.txt || true
@@ -50,6 +109,8 @@ clean() {
     rm -f $SERVER_SHARES || true
     rm -f $SERVER_SHARES_PARTIAL || true
     rm -f ${SERVER_ROUNDOUTPUT%.txt}*.txt || true
+    rm -f ${CLIENT_MESSAGE%.txt}*.txt || true
+    rm -f $TIME_LOG || true
     echo "Cleaned"
 }
 
@@ -67,7 +128,7 @@ setup_server() {
 
     # Accumulate the server registration data in this variable. The separator we use is ';'
     SERVER_REGS=""
-
+    NUM_SERVERS=$1
     # Make a bunch of servers and save their pubkeys in client/ and aggregator/
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
@@ -126,6 +187,7 @@ setup_aggregator() {
 
     # Now do the registration
     cd ../server
+    NUM_SERVERS=$1
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
         echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
@@ -136,76 +198,90 @@ setup_aggregator() {
 }
 
 setup_client() {
-    for i in $(seq 1 $NUM_USERS); do
-        echo "client $i begins to setup msg"
+    # for i in $(seq 1 $NUM_USERS); do
+    #     echo "client $i begins to setup msg"
 
-        CONTAINER_NAME="$CONTAINER_NAME_PREFIX$i"
-        if docker container inspect $CONTAINER_NAME > /dev/null 2>&1; then
-            docker start -ai $CONTAINER_NAME
-        else
-            docker run \
-                -v $PWD:/root/sgx \
-                -ti \
-                --hostname $CONTAINER_NAME \
-                --name $CONTAINER_NAME \
-                -e SGX_MODE=SW \
-                $DOCKER_IMAGE
-        fi
+    #     CONTAINER_NAME="$CONTAINER_NAME_PREFIX$i"
+    #     if docker container inspect $CONTAINER_NAME > /dev/null 2>&1; then
+    #         docker start -ai $CONTAINER_NAME
+    #     else
+    #         docker run \
+    #             -v $PWD:/root/sgx \
+    #             -ti \
+    #             --hostname $CONTAINER_NAME \
+    #             --name $CONTAINER_NAME \
+    #             -e SGX_MODE=SW \
+    #             $DOCKER_IMAGE
+    #     fi
 
-        
-        # Make new clients and capture the registration data
-        cd client
-        USER_REG=$(
-            $CMD_PREFIX new \
-                --num-regs $NUM_USERS \
-                --user-state "../$USER_STATE" \
-                --server-keys "../$USER_SERVERKEYS"
-        )
+    # Make new clients and capture the registration data
+    cd client
+    NUM_SERVERS=$1
+    NUM_USERS=$2
+    USER_REG=$(
+        $CMD_PREFIX new \
+            --num-regs $NUM_USERS \
+            --user-state "../$USER_STATE" \
+            --server-keys "../$USER_SERVERKEYS"
+    )
 
-        # Now do oteh registrations
-        cd ../server
-        for i in $(seq 1 $NUM_SERVERS); do
-            STATE="${SERVER_STATE%.txt}$i.txt"
-            echo "$USER_REG" | $CMD_PREFIX register-user --server-state "../$STATE"
-        done
+    # Now do oteh registrations
+    cd ../server
+    for i in $(seq 1 $NUM_SERVERS); do
+        STATE="${SERVER_STATE%.txt}$i.txt"
+        echo "$USER_REG" | $CMD_PREFIX register-user --server-state "../$STATE"
+    done
 
-        echo "Set up clients"
-        cd ..
+    echo "Set up clients"
+    cd ..
+}
+
+setup_parameter() {
+    footprint_n_slots=$(expr 4 \* $2)
+    echo "DC_NET_MESSAGE_LENGTH=$1\n"
+    echo "DC_NET_N_SLOTS=$2\n"
+    echo "FOOTPRINT_N_SLOTS=$footprint_n_slots\n"
+
+    export DC_NET_MESSAGE_LENGTH=$1
+    export DC_NET_N_SLOTS=$2
+    export FOOTPRINT_N_SLOTS=$footprint_n_slots
 }
 
 setup_env() {
     clean
-    setup_server
-    setup_aggregator
-    setup_client
+    setup_parameter $1 $2
+    setup_server $3
+    setup_aggregator $3
+    setup_client $3 $4
 }
 
 # Starts the first client
 start_client() {
     cd client
+    NUM_USERS=$1
+    for i in $(seq 1 $NUM_USERS); do
+        STATE="${USER_STATE%.txt}$i.txt"
+        echo "$STATE"
+        USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
 
-    # CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-client
-    # for i in $(seq 1 $NUM_USERS); do
-    #     STATE="${USER_STATE%.txt}$i.txt"
-    #     USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
+        echo $USER_PORT
 
-    #     echo $USER_PORT
+        RUST_LOG=debug $CMD_PREFIX start-service \
+            --user-state "../$STATE" \
+            --round $ROUND \
+            --bind "localhost:$USER_PORT" \
+            --agg-url "http://localhost:$AGGREGATOR_PORT" &
+    done
+    echo "finish client starting"
 
-    #     RUST_LOG=debug $CMD_PREFIX start-service \
-    #         --user-state "../$STATE" \
-    #         --round $ROUND \
-    #         --bind "localhost:$USER_PORT" \
-    #         --agg-url "http://localhost:$AGGREGATOR_PORT" &
-    # done
+    # STATE="${USER_STATE%.txt}1.txt"
 
-    STATE="${USER_STATE%.txt}1.txt"
-
-    RUST_LOG=debug $CMD_PREFIX start-service \
-        --user-state "../$STATE" \
-        --round $ROUND \
-        --bind "localhost:$CLIENT_SERVICE_PORT" \
-        --agg-url "http://localhost:$AGGREGATOR_PORT" &
-        # --no-persist \
+    # RUST_LOG=debug $CMD_PREFIX start-service \
+    #     --user-state "../$STATE" \
+    #     --round $ROUND \
+    #     --bind "localhost:$CLIENT_SERVICE_PORT" \
+    #     --agg-url "http://localhost:$AGGREGATOR_PORT" &
+    #     # --no-persist \
 
     cd ..
 }
@@ -264,7 +340,6 @@ test_multi_clients() {
     kill_servers 2> /dev/null || true
 }
 
-
 # Starts the root aggregator
 start_root_agg() {
     cd aggregator
@@ -294,7 +369,7 @@ start_root_agg() {
 start_leader() {
     cd server
 
-    STATE="${SERVER_STATE%.txt}$LEADER.txt"
+    STATE="${SERVER_STATE%.txt}1.txt"
 
     RUST_LOG=debug $CMD_PREFIX start-service \
         --server-state "../$STATE" \
@@ -307,7 +382,7 @@ start_leader() {
 # Starts the anytrust followers
 start_followers() {
     cd server
-
+    NUM_FOLLOWERS=$1
     for i in $(seq 1 $NUM_FOLLOWERS); do
         FOLLOWER_PORT=$(($SERVER_LEADER_PORT + $i))
         STATE="${SERVER_STATE%.txt}$(($i+1)).txt"
@@ -321,37 +396,43 @@ start_followers() {
     cd ..
 }
 
-encrypt_msg() {
-    # for i in $(seq 1 $NUM_USERS); do
-        # Base64-encode the given message
-        PAYLOAD=$(base64 <<< "$1")
+send_round_msg_single_client() {
+    FILENAME="src/message/clientmessage_$(($1-1)).txt"
+    PAYLOAD=$(cat $FILENAME)
+    CURRENT_ROUND=$(curl -s -X GET "http://localhost:$AGGREGATOR_PORT/round-num")
+    USER_PORT="$(($CLIENT_SERVICE_PORT + $(($1-1))))"
+    echo "haha$i"
 
+    if [[ $1 -gt $2 ]]; then # $1 refers to the sequence num of this user; $2 refers to the dc_net_slot_num
         # If this isn't the first round, append the previous round output to the payload. Separate with
         # a comma.
-        if [[ $ROUND -gt 0 ]]; then
-            PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
+        if [[ $CURRENT_ROUND -gt 0 ]]; then
+            PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($CURRENT_ROUND-1)).txt")
             PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
         fi
+        echo "$PAYLOAD" > "$FILENAME"
+        curl "http://localhost:$USER_PORT/encrypt-msg" \
+        -X POST \
+        -H "Content-Type: text/plain" \
+        --data-binary "@$FILENAME"
+    else
+        curl -X POST "http://localhost:$USER_PORT/send-cover"
+    fi
+}
 
-        # Do the operation
-        # curl "http://localhost:$CLIENT_SERVICE_PORT/encrypt-msg" \
-        #     -X POST \
-        #     -H "Content-Type: text/plain" \
-        #     --data-binary "$PAYLOAD"
-        
-        echo "$PAYLOAD" > payload.txt
-
-        # USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
-        # curl "http://localhost:$USER_PORT/encrypt-msg" \
-        # -X POST \
-        # -H "Content-Type: text/plain" \
-        # --data-binary "@payload.txt"
-    # done
-    
-    curl "http://localhost:$CLIENT_SERVICE_PORT/encrypt-msg" \
-    -X POST \
-    -H "Content-Type: text/plain" \
-    --data-binary "@payload.txt"
+send_round_msg() {
+    dc_net_n_slot=$1
+    NUM_USERS=$2
+    MESSAGE_LENGTH=$3
+    # randomly generate the new message of term
+    python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
+    cd client
+    for i in $(seq 1 $NUM_USERS); do
+        send_round_msg_single_client $i $dc_net_n_slot &
+    done
+    wait
+    echo end
+    cd ..
 }
 
 send_cover() {
@@ -367,6 +448,12 @@ reserve_slot() {
 force_root_round_end() {
     # Force the round to end
     curl "http://localhost:$AGGREGATOR_PORT/force-round-end"
+}
+
+# get round_num from aggregator
+get_agg_round_num(){
+    result=$(curl -s -X GET "http://localhost:$AGGREGATOR_PORT/round-num")
+    echo "result:$result"
 }
 
 # Returns the round result
@@ -395,14 +482,15 @@ kill_clients() {
 #     encrypt-msg <MSG> takes a plain string. E.g., `./server_ctrl.sh encrypt-msg hello`
 #     get-round-result <ROUND> takes an integer. E.g., `./server_ctrl.sh get-round-result 4`
 #     test-multi-clients <MSG> takes a plain string. E.g., `./server_ctrl.sh test-multi-clients hello`
-
-if [[ $1 == "clean" ]]; then
-    clean
-elif [[ $1 == "setup-server" ]]; then
-    setup_server
-elif [[ $1 == "setup-agg" ]]; then
-    setup_server
-    setup_aggregator
+if [[ $1 == "eval" ]]; then
+    evaluate_bit
+elif [[ $1 == "test" ]]; then
+    test
+elif [[ $1 == "send" ]]; then
+    send_round_msg 5 5 20
+elif [[ $1 == "clean" ]]; then
+    clean_port
+    clean_file
 elif [[ $1 == "setup-env" ]]; then
     setup_env
 elif [[ $1 == "start-leader" ]]; then
@@ -415,8 +503,10 @@ elif [[ $1 == "start-client" ]]; then
     start_client
 # elif [[ $1 == "start-agg" ]]; then
 #     start_client
+elif [[ $1 == "get-agg-round-num" ]]; then
+    get_agg_round_num
 elif [[ $1 == "encrypt-msg" ]]; then
-    encrypt_msg $2
+    encrypt_msg
 elif [[ $1 == "send-cover" ]]; then
     send_cover
 elif [[ $1 == "reserve-slot" ]]; then

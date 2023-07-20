@@ -4,7 +4,7 @@ extern crate interface;
 mod service;
 mod user_state;
 mod util;
-
+use std::env;
 use crate::{
     service::start_service,
     user_state::UserState,
@@ -12,7 +12,7 @@ use crate::{
 };
 
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, ServerPubKeyPackageNoSGX, UserMsg, DC_NET_MESSAGE_LENGTH, RoundOutputUpdated};
+use interface::{DcMessage, ServerPubKeyPackageNoSGX, UserMsg, DC_NET_MESSAGE_LENGTH, EVALUATE_FLAG, RoundOutputUpdated};
 use std::{ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -23,6 +23,12 @@ fn main() -> Result<(), UserError> {
     // Do setup
     env_logger::init();
     let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
+    let dc_net_message_length = if EVALUATE_FLAG {
+        env::var("DC_NET_MESSAGE_LENGTH")
+        .unwrap_or_else(|_| "160".to_string())
+        .parse::<usize>()
+        .expect("Invalid DC_NET_MESSAGE_LENGTH value")}
+    else{DC_NET_MESSAGE_LENGTH};
 
     let state_arg = Arg::with_name("user-state")
         .short("s")
@@ -109,7 +115,7 @@ fn main() -> Result<(), UserError> {
                 .about(format!(
                     "Encrypts a round message to the DC net. STDIN is a base64-encoded bytestring \
                     of length at most {}",
-                    DC_NET_MESSAGE_LENGTH
+                    dc_net_message_length
                 ).as_str())
                 .arg(state_arg.clone())
                 .arg(round_arg.clone())
@@ -231,9 +237,9 @@ fn main() -> Result<(), UserError> {
         // Load the message
         let msg = base64_from_stdin()?;
         assert!(
-            msg.len() <= DC_NET_MESSAGE_LENGTH,
+            msg.len() <= dc_net_message_length,
             "input message must be less than {} bytes long",
-            DC_NET_MESSAGE_LENGTH
+            dc_net_message_length
         );
 
         // Pad out the message and put it in the correct wrapper

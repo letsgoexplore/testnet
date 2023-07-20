@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, save_output, ServerError},
     ServerState,
 };
-use common::cli_util;
+use common::{cli_util, log_time};
 use interface::RoundOutputUpdated;
 
 use common::types_nosgx::{
@@ -185,6 +185,7 @@ async fn submit_agg(
                 if round_shares.len() == group_size {
                     info!("Finishing round");
                     leader_finish_round(state_handle.deref_mut());
+                    log_time::log_time()
                 }
             }
             // We're a follower. Send the unblinded aggregate to the leader
@@ -247,6 +248,24 @@ async fn submit_share(
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
+// #[get("/round-num")]
+// async fn round_num(
+//     state: web::Data<Arc<Mutex<ServiceState>>>,
+// ) -> Result<HttpResponse, ApiError>  {
+//     // Unwrap the round and make it a struct
+
+//     // Unpack state
+//     let handle = state.get_ref().lock().unwrap();
+//     let ServiceState {
+//         ref round,
+//         ..
+//     } = *handle;
+//     info!("[agg] round: {:?}", &round);
+//     let body = round.to_string();
+//     Ok(HttpResponse::Ok().body(body))
+
+// }
+
 /// Returns the output of the specified round
 #[get("/round-result/{round}")]
 async fn round_result(
@@ -299,51 +318,6 @@ async fn round_result(
 /// Returns just the base64-encoded message of the specified round
 #[get("/round-msg/{round}")]
 async fn round_msg(
-    (round, state): (web::Path<u32>, web::Data<Arc<Mutex<ServiceState>>>),
-) -> Result<HttpResponse, ApiError> {
-    // Unwrap the round and make it a struct
-    let web::Path(round) = round;
-
-    // Unpack state
-    let handle = state.get_ref().lock().unwrap();
-    let ServiceState {
-        ref round_outputs,
-        ref leader_url,
-        ..
-    } = *handle;
-
-    // I am not the leader. Don't ask me for round results
-    if leader_url.is_some() {
-        return Ok(HttpResponse::NotFound().body("Followers don't store round results"));
-    }
-
-    // Try to get the requested output
-    let res = match round_outputs.get(&round) {
-        // If the given round's output exists in memory, return it
-        Some(round_output) => {
-            // Give the raw payload
-            let blob = round_output.dc_msg.aggregated_msg.as_row_major();
-            debug!("round-msg: {:?}", blob);
-
-            let body = base64::encode(&blob);
-            // let body = match str::from_utf8(&blob) {
-            //     Ok(v) => v,
-            //     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-            // };
-            HttpResponse::Ok().body(body)
-        }
-        // If the given round's output doesn't exist in memory, error out
-        None => {
-            info!("received request for invalid round {}", round);
-            HttpResponse::NotFound().body("Invalid round")
-        }
-    };
-
-    Ok(res)
-}
-
-#[get("/round/{round}")]
-async fn round_num(
     (round, state): (web::Path<u32>, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
     // Unwrap the round and make it a struct

@@ -1,5 +1,6 @@
 use std::prelude::v1::*;
 use std::{collections::BTreeSet, vec};
+use std::env;
 
 use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected_keys::*, nosgx_protected_keys::*};
 
@@ -15,7 +16,13 @@ pub struct DcMessage(pub Vec<u8>);
 
 impl Default for DcMessage {
     fn default() -> DcMessage {
-        DcMessage(vec![0u8; DC_NET_MESSAGE_LENGTH])
+        let dc_net_message_length = if EVALUATE_FLAG {
+            env::var("DC_NET_MESSAGE_LENGTH")
+            .unwrap_or_else(|_| "160".to_string())
+            .parse::<usize>()
+            .expect("Invalid DC_NET_MESSAGE_LENGTH value")}
+        else{DC_NET_MESSAGE_LENGTH};
+        DcMessage(vec![0u8; dc_net_message_length])
     }
 }
 
@@ -70,9 +77,27 @@ pub struct DcRoundMessage {
 
 impl Default for DcRoundMessage {
     fn default() -> Self {
+        let dc_net_message_length = if EVALUATE_FLAG {
+            env::var("DC_NET_MESSAGE_LENGTH")
+            .unwrap_or_else(|_| "160".to_string())
+            .parse::<usize>()
+            .expect("Invalid DC_NET_MESSAGE_LENGTH value")}
+        else{DC_NET_MESSAGE_LENGTH};
+        let dc_net_n_slots = if EVALUATE_FLAG {
+            env::var("DC_NET_N_SLOTS")
+            .unwrap_or_else(|_| "100".to_string())
+            .parse::<usize>()
+            .expect("Invalid DC_NET_N_SLOTS value")}
+        else{DC_NET_N_SLOTS};
+        let footprint_n_slots = if EVALUATE_FLAG {
+            env::var("FOOTPRINT_N_SLOTS")
+            .unwrap_or_else(|_| "400".to_string())
+            .parse::<usize>()
+            .expect("Invalid FOOTPRINT_N_SLOTS value")}
+        else{FOOTPRINT_N_SLOTS};
         DcRoundMessage {
-            scheduling_msg: vec![0; FOOTPRINT_N_SLOTS],
-            aggregated_msg: Array2D::filled_with(0u8, DC_NET_N_SLOTS, DC_NET_MESSAGE_LENGTH),
+            scheduling_msg: vec![0; footprint_n_slots],
+            aggregated_msg: Array2D::filled_with(0u8, dc_net_n_slots, dc_net_message_length),
         }
     }
 }

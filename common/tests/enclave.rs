@@ -11,11 +11,11 @@ extern crate interface;
 extern crate sgx_types;
 
 use env_logger::{Builder, Env};
-use interface::{DcMessage, EntityId, UserSubmissionReq, DC_NET_MESSAGE_LENGTH};
+use interface::{DcMessage, EntityId, UserSubmissionReq, DC_NET_MESSAGE_LENGTH, EVALUATE_FLAG};
 use log::*;
 use std::time::Instant;
 use std::{collections::BTreeSet, vec};
-
+use std::env;
 fn init_logger() {
     let env = Env::default()
         .filter_or("RUST_LOG", "debug")
@@ -48,7 +48,13 @@ fn user_submit_round_msg() {
         enc.new_user(&spks).unwrap();
 
     let msg = UserMsg::TalkAndReserve {
-        msg: DcMessage(vec![1u8; DC_NET_MESSAGE_LENGTH]),
+        let dc_net_message_length = if EVALUATE_FLAG {
+            env::var("DC_NET_MESSAGE_LENGTH")
+            .unwrap_or_else(|_| "160".to_string())
+            .parse::<usize>()
+            .expect("Invalid DC_NET_MESSAGE_LENGTH value")}
+        else{DC_NET_MESSAGE_LENGTH};
+        msg: DcMessage(vec![1u8; dc_net_message_length]),
         prev_round_output: RoundOutput::default(),
         times_participated: 0,
     };

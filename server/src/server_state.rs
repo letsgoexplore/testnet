@@ -82,7 +82,8 @@ impl ServerState {
     ) -> Result<UnblindedAggregateShareBlobNoSGX> {
         let (share, ratcheted_secrets) =
             unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
-
+        info!("share haha:{:?}", share);
+        info!("ratcheted_secrets haha:{:?}", ratcheted_secrets);
         // Ratchet the secrets forward
         self.shared_secrets = ratcheted_secrets;
 

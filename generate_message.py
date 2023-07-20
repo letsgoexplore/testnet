@@ -1,5 +1,5 @@
 # generate_message.py 
-# 【Purpose】 randomly generating text
+# [Purpose] randomly generating text
 
 # not compilable for python 2
 # import secrets
@@ -36,4 +36,4 @@ def generate_round_multiple_message(user, length):
         with open(filename, "w") as file:
             file.write(random_message_hex)
         print("already saved in {}".format(filename))
-generate_round_multiple_message(2,10)
+# generate_round_multiple_message(2,10)

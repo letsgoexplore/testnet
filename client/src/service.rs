@@ -3,7 +3,7 @@ use crate::{
     UserState,
 };
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlobUpdated, UserMsg, DC_NET_MESSAGE_LENGTH};
+use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlobUpdated, UserMsg, DC_NET_MESSAGE_LENGTH, EVALUATE_FLAG};
 
 use core::ops::DerefMut;
 use std::{
@@ -18,7 +18,7 @@ use actix_web::{
 };
 use log::{debug, error, info};
 use thiserror::Error;
-
+use std::env;
 #[derive(Debug, Error)]
 enum ApiError {
     #[error("internal error")]
@@ -79,11 +79,17 @@ async fn encrypt_msg(
         )
         .map_err(cli_util::SerializationError::from)?;
 
+        let dc_net_message_length = if EVALUATE_FLAG {
+            env::var("DC_NET_MESSAGE_LENGTH")
+            .unwrap_or_else(|_| "160".to_string())
+            .parse::<usize>()
+            .expect("Invalid DC_NET_MESSAGE_LENGTH value")}
+        else{DC_NET_MESSAGE_LENGTH};
         // Check the length
-        if msg_bytes.len() > DC_NET_MESSAGE_LENGTH {
+        if msg_bytes.len() > dc_net_message_length {
             return Err(ApiError::Malformed(format!(
                 "input message must be less than {} bytes long",
-                DC_NET_MESSAGE_LENGTH
+                dc_net_message_length
             )));
         }
 

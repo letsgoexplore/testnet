@@ -128,6 +128,7 @@ async fn force_round_end(
     let (agg_payload, forward_urls) = get_agg_payload(&*state);
 
     debug!("agg_payload.len: {}", agg_payload.len());
+    debug!("agg_payload hahaha: {:?}", agg_payload);
     debug!("forward_urls: {:?}", forward_urls);
 
     spawn(
