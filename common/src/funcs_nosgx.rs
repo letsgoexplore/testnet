@@ -25,6 +25,7 @@ use log::debug;
 
 
 pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), ()> {
+    // TODO: Move SignableUpdated trait to interface, include it
     Ok(())
 }
 
@@ -37,10 +38,6 @@ pub fn derive_round_secret_server(
     shared_secrets: &SharedSecretsDbServer,
     entity_ids_to_use: Option<&BTreeSet<EntityId>>,
 ) -> Result<RoundSecret, InvalidLength> {
-    debug!("[derive_round_secret_server] round: {}", round);
-    debug!("[derive_round_secret_server] shared_secrets: {:?}", shared_secrets);
-    debug!("[derive_round_secret_server] entity_ids_to_use: {:?}", entity_ids_to_use);
-
     type MyRng = Aes128Rng;
 
     let mut round_secret = RoundSecret::default();

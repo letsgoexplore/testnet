@@ -549,8 +549,6 @@ pub fn user_submit_internal_updated(
         UserMsg::Cover => (),
     };
 
-    debug!("\n[user submit] msg before encrytion: {:?}", round_msg);
-
     // Now we encrypt the round message
 
     // Derive the round key from shared secrets
@@ -575,12 +573,8 @@ pub fn user_submit_internal_updated(
         }
     };
 
-    debug!("\n[user submit] round key: {:?}", round_key);
-    
     // Encrypt the message with round_key
     let encrypted_msg = round_key.xor(&round_msg);
-
-    debug!("\n[user submit] msg after encryption: {:?}", encrypted_msg);
 
     // Construct the output blob
     let mut agg_msg = UserSubmissionMessageUpdated {

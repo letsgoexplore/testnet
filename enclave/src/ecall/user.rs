@@ -63,9 +63,6 @@ pub fn new_user_batch(
 pub fn new_user_updated(
     anytrust_server_pks: &Vec<ServerPubKeyPackageNoSGX>,
 ) -> SgxResult<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)> {
-    debug!("[user] server_pks: {:?}", anytrust_server_pks);
-    debug!("[user] server sig: {:?}", NoSgxProtectedKeyPub(anytrust_server_pks[0].sig.to_bytes()));
-    debug!("[user] server kem: {:?}", NoSgxProtectedKeyPub(anytrust_server_pks[0].kem.to_bytes()));
     // 1. validate the input
     let mut kem_db: BTreeMap<NoSgxProtectedKeyPub, PublicKey> = BTreeMap::new();
     // let mut kem_pks = vec![];
@@ -82,9 +79,7 @@ pub fn new_user_updated(
     // 3. derive server secrets
     let server_secrets = SharedSecretsDbClient::derive_shared_secrets(&sk, &kem_db)?;
 
-    debug!("[user] shared secrets: {:?}", server_secrets);
     let (key, value) = server_secrets.db.first_key_value().unwrap();
-    debug!("[user] shared secrets bytes: {:?}", value.0.as_slice());
 
     Ok((server_secrets.seal_into()?, sk.seal_into()?, pk))
 }

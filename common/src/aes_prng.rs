@@ -1,10 +1,10 @@
 use aes::Aes128;
 use cipher::{BlockCipherKey, FromBlockCipher, NewBlockCipher, StreamCipher};
-use ctr::{Ctr, Ctr64LE};
+use ctr::{Ctr, Ctr128BE};
 use rand_core::{CryptoRng, Error as RandError, RngCore, SeedableRng};
 
 /// An RNG whose stream is an AES-CTR keystream
-pub struct Aes128Rng(Ctr64LE<Aes128>);
+pub struct Aes128Rng(Ctr128BE<Aes128>);
 
 impl RngCore for Aes128Rng {
     fn next_u32(&mut self) -> u32 {
@@ -31,7 +31,7 @@ impl SeedableRng for Aes128Rng {
     fn from_seed(seed: Self::Seed) -> Aes128Rng {
         let key = seed;
         let iv = BlockCipherKey::<Aes128>::default();
-
+        debug!("[aes_prng] key: {:?}, iv: {:?}", key, iv);
         let ciph = Aes128::new(&key);
         let stream = Ctr::from_block_cipher(ciph, &iv);
         Aes128Rng(stream)

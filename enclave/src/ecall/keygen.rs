@@ -46,12 +46,5 @@ pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(NoSgxPrivateKey, Attes
         tee_linkable_attestation: vec![0], // TODO: add attestation
     };
 
-    debug!("[user new_keypair_ext_internal] sk: {:?}", sk);
-    debug!("[user new_keypair_ext_internal] pk: {:?}", attested_key.pk);
-    debug!("[user new_keypair_ext_internal] xpk: {:?}", attested_key.xpk);
-    debug!("[user new_keypair_ext_internal] sk bytes: {:?}", sk.r.as_slice());
-    debug!("[user new_keypair_ext_internal] pk bytes: {:?}", attested_key.pk.0.as_slice());
-    debug!("[user new_keypair_ext_internal] xpk bytes: {:?}", attested_key.xpk.0);  
-
     Ok((sk, attested_key))
 }

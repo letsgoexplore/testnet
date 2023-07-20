@@ -220,24 +220,9 @@ impl SharedSecretsDbServer {
         my_sk: &SecretKey,
         other_pks: &BTreeMap<NoSgxProtectedKeyPub, NoSgxProtectedKeyPub>,
     ) -> Result<Self, SignatureError> {
-        info!("[SharedSecretsDbServer] derive_shared_secrets");
-        info!("my_sk: {:?}", my_sk.to_bytes());
         // 1. Generate StaticSecret from server's secret key
         let my_secret = StaticSecret::from(my_sk.to_bytes());
-        info!("my_secret: {:?}", my_secret.to_bytes());
         let mut server_secrets: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret> = BTreeMap::new();
-
-        //  for client_pk in other_pks.iter() {
-        //     // 2. Convert client pk (NoSgxProtectedKeyPub) to xPublicKey
-        //     let pk = xPublicKey::from(client_pk.0);
-        //     error!("client pk: {:?}", pk.to_bytes());
-        //     // 3. Compute the DH secret for the server and xPublicKeys
-        //     let shared_secret = my_secret.diffie_hellman(&pk);
-        //     // 4. Save ephemeral SharedSecret into NewDiffieHellmanSharedSecret
-        //     let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
-        //     error!("shared secret: {:?}", shared_secret_bytes);
-        //     server_secrets.insert(client_pk.to_owned(), NewDiffieHellmanSharedSecret(shared_secret_bytes));
-        // }
 
         for (client_xpk, client_pk) in other_pks {
             // 2. Derive the exchange pk from the client_xpk
@@ -246,7 +231,6 @@ impl SharedSecretsDbServer {
             let shared_secret = my_secret.diffie_hellman(&xpk);
             // 4. Save the ephemeral SharedSecret into NewDiffieHellmanSharedSecret
             let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
-            error!("shared secret: {:?}", shared_secret_bytes);
             server_secrets.insert(client_pk.to_owned(), NewDiffieHellmanSharedSecret(shared_secret_bytes));
         }
 
@@ -284,16 +268,6 @@ impl Default for SharedSecretsDbServer {
         }
     }
 }
-
-// impl Debug for SharedSecretsDbServer {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-//         let pks: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
-//         f.debug_struct("SharedSecretsDbServer")
-//             .field("round", &self.round)
-//             .field("pks", &pks)
-//             .finish()
-//     }
-// }
 
 pub type AggPublicKey = AggRegistrationBlobNoSGX;
 

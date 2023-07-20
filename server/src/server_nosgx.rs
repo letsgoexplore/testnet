@@ -78,16 +78,6 @@ pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPacka
         xkem: NoSgxProtectedKeyPub(kem_key_xpk.to_bytes()),
     };
 
-    info!("[server] sig pk: {:?}", NoSgxProtectedKeyPub(sig_key_pk.to_bytes()));
-    info!("[server] kem pk: {:?}", NoSgxProtectedKeyPub(kem_key_pk.to_bytes()));
-    info!("[server] kem xpk: {:?}", kem_key_xpk);
-    info!("[server] sig sk bytes: {:?}", sig_key.to_bytes());
-    info!("[server] kem sk bytes: {:?}", kem_key.to_bytes());
-    info!("[server] kem sk secret bytes: {:?}", kem_secret.to_bytes());
-    info!("[server] sig pk bytes: {:?}", sig_key_pk.to_bytes());
-    info!("[server] kem pk bytes: {:?}", kem_key_pk.to_bytes());
-    info!("[server] kem xpk bytes: {:?}", kem_key_xpk.to_bytes());
-
     Ok((sig_key, kem_key, EntityId::from(&reg), reg))
 }
 
@@ -103,9 +93,6 @@ pub fn recv_user_registration_batch(
 
     pubkeys.users = new_pubkey_db.users;
     shared_secrets.db = new_secrets_db.db;
-
-    info!("[server] pubkeys: {:?}", pubkeys);
-    info!("[server] shared_secrets: {:?}", shared_secrets);
 
     Ok(())
 }
@@ -142,8 +129,6 @@ fn recv_user_reg_batch(
 
     let shared_secrets = SharedSecretsDbServer::derive_shared_secrets(&my_kem_sk, &others_kem_db)
         .expect("failed to derive shared secrets for server");
-
-    debug!("shared_secrets: {:?}", shared_secrets);
 
     Ok((pk_db, shared_secrets))
 }
@@ -226,7 +211,6 @@ pub fn unblind_aggregate_mt(
             let rs = 
                 unblind_aggregate_partial(&(round, db_cloned, user_ids))
                 .unwrap();
-            debug!("rs: {:?}", rs);
             tx_cloned.send(rs).unwrap();
         });
     }
@@ -289,7 +273,6 @@ pub fn unblind_aggregate_merge(
     sig_key: &SecretKey,
     shared_secrets: &SharedSecretsDbServer,
 ) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
-    debug!("[server] round_secrets: {:?}", round_secrets);
     let mut round_secret = RoundSecret::default();
     for rs in round_secrets.iter() {
         round_secret.xor_mut_nosgx(rs);
@@ -326,8 +309,6 @@ pub fn derive_round_output(
         return Err(ServerError::UnexpectedError);
     }
 
-    debug!("[server] server_aggs size: {}", server_aggs.len());
-
     // Xor of all server secrets
     let mut final_msg = DcRoundMessage::default();
 
@@ -342,18 +323,11 @@ pub fn derive_round_output(
             error!("share {:?} has a different final agg", share);
             return Err(ServerError::UnexpectedError);
         }
-        debug!("[server] key share: {:?}", share.key_share);
         final_msg.xor_mut_nosgx(&share.key_share);
     }
 
-    debug!("\n[server] msg before decryption: {:?}", final_aggregation);
-
-    debug!("\n[server] round key: {:?}", final_msg);
-
     // Finally xor secrets with the message
     final_msg.xor_mut_nosgx(&final_aggregation);
-
-    debug!("\n[server unblind] msg after decryption: {:?}", final_msg);
 
     let mut round_output = RoundOutputUpdated {
         round,

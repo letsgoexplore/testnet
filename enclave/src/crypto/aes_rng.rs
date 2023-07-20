@@ -31,8 +31,10 @@ impl SeedableRng for Aes128Rng {
 
     /// The RNG is the keystream of AES-CTR(key=seed, iv=00...0), using 64-bit counters
     fn from_seed(seed: Self::Seed) -> Aes128Rng {
-        let iv = GenericArray::from_slice(b"very secret key.");
-        let stream = Aes128Ctr::new(&seed, iv);
+        // let iv = GenericArray::from_slice(b"very secret key.");
+        let iv = [0 as u8; 16];
+        let iv = GenericArray::from_slice(&iv);
+        let stream = Aes128Ctr::new(&seed, &iv);
         Aes128Rng(stream)
     }
 }
