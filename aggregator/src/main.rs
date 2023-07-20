@@ -4,6 +4,7 @@ extern crate interface;
 mod agg_state;
 mod service;
 mod util;
+mod agg_nosgx;
 
 pub use crate::util::AggregatorError;
 use crate::{
@@ -12,8 +13,9 @@ use crate::{
     util::{load_from_stdin, load_state, save_state, save_to_stdout},
 };
 
-use common::{cli_util, enclave::DcNetEnclave};
-use interface::{RoundSubmissionBlob, ServerPubKeyPackage};
+use common::cli_util;
+use common::types_nosgx::{AggregatedMessage, SubmissionMessage};
+use interface::{ServerPubKeyPackageNoSGX, UserSubmissionMessageUpdated};
 use std::{fs::File, time::SystemTime};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -23,8 +25,6 @@ fn main() -> Result<(), AggregatorError> {
     env_logger::init();
 
     // Do setup
-    let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
-
     let state_arg = Arg::with_name("agg-state")
         .short("s")
         .long("agg-state")
@@ -87,8 +87,13 @@ fn main() -> Result<(), AggregatorError> {
                 .arg(round_arg.clone()),
         )
         .subcommand(
-            SubCommand::with_name("input")
-                .about("Adds the given round submission blob from STDIN to the aggregate")
+            SubCommand::with_name("input-agg")
+                .about("Adds the given aggregator round submission blob from STDIN to the aggregate")
+                .arg(state_arg.clone()),
+        )
+        .subcommand(
+            SubCommand::with_name("input-user")
+                .about("Adds the given user round submission blob from STDIN to the aggregate")
                 .arg(state_arg.clone()),
         )
         .subcommand(
@@ -157,12 +162,12 @@ fn main() -> Result<(), AggregatorError> {
         // Load up the pubkeys
         let pubkeys_filename = matches.value_of("server-keys").unwrap();
         let keysfile = File::open(pubkeys_filename)?;
-        let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
+        let pubkeys: Vec<ServerPubKeyPackageNoSGX> = cli_util::load_multi(keysfile)?;
 
         let level = cli_util::parse_u32(matches.value_of("level").unwrap())?;
 
         // Make a new state and agg registration. Save the state and and print the registration
-        let (state, reg_blob) = AggregatorState::new(&enclave, pubkeys, level)?;
+        let (state, reg_blob) = AggregatorState::new(pubkeys, level)?;
         let state_path = matches.value_of("agg-state").unwrap();
         save_state(&state_path, &state)?;
         save_to_stdout(&reg_blob)?;
@@ -175,20 +180,35 @@ fn main() -> Result<(), AggregatorError> {
         // Now update the state and save it
         let state_path = matches.value_of("agg-state").unwrap();
         let mut state = load_state(&state_path)?;
-        state.clear(&enclave, round)?;
+        state.clear(round)?;
         save_state(&state_path, &state)?;
 
         println!("OK");
     }
 
-    if let Some(matches) = matches.subcommand_matches("input") {
+    if let Some(matches) = matches.subcommand_matches("input-agg") {
         // Load the STDIN input and load the state
-        let round_blob: RoundSubmissionBlob = load_from_stdin()?;
+        let round_blob: AggregatedMessage = load_from_stdin()?;
         let state_path = matches.value_of("agg-state").unwrap();
         let mut state = load_state(&state_path)?;
 
         // Pass the input to the state and save the result
-        state.add_to_aggregate(&enclave, &round_blob)?;
+        let round_blob = SubmissionMessage::AggSubmission(round_blob);
+        state.add_to_aggregate(&round_blob)?;
+        save_state(&state_path, &state)?;
+
+        println!("OK");
+    }
+
+    if let Some(matches) = matches.subcommand_matches("input-user") {
+        // Load the STDIN input and load the state
+        let round_blob: UserSubmissionMessageUpdated = load_from_stdin()?;
+        let state_path = matches.value_of("agg-state").unwrap();
+        let mut state = load_state(&state_path)?;
+
+        // Pass the input to the state and save the result
+        let round_blob = SubmissionMessage::UserSubmission(round_blob);
+        state.add_to_aggregate(&round_blob)?;
         save_state(&state_path, &state)?;
 
         println!("OK");
@@ -200,7 +220,7 @@ fn main() -> Result<(), AggregatorError> {
         let state = load_state(&state_path)?;
 
         // Pass the input to the state and print the result
-        let agg_blob = state.finalize_aggregate(&enclave)?;
+        let agg_blob = state.finalize_aggregate()?;
         save_to_stdout(&agg_blob)?;
     }
 
@@ -235,7 +255,7 @@ fn main() -> Result<(), AggregatorError> {
         // Load the aggregator state and clear it for this round
         let state_path = matches.value_of("agg-state").unwrap().to_string();
         let mut agg_state = load_state(&state_path)?;
-        agg_state.clear(&enclave, round)?;
+        agg_state.clear(round)?;
         info!("Initialized round {}", round);
 
         // If no-persist is set, then the state path is None
@@ -248,7 +268,6 @@ fn main() -> Result<(), AggregatorError> {
         let level = agg_state.level;
         let state = service::ServiceState {
             agg_state,
-            enclave,
             forward_urls,
             round,
             agg_state_path,

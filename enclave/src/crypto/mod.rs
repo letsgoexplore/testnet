@@ -1,4 +1,5 @@
 use crate::interface::{RoundOutput, SgxSignature, SgxSigningPubKey};
+use crate::interface::{RoundOutputUpdated, NoSgxPrivateKey, NoSgxSignature, Hashable};
 use crate::types::CryptoError;
 use sgx_types::{SgxError, SgxResult, SGX_ECP256_KEY_SIZE};
 use std::vec::Vec;
@@ -6,23 +7,16 @@ use std::vec::Vec;
 pub type CryptoResult<T> = Result<T, CryptoError>;
 
 use sha2::Digest;
-use sha2::Sha256;
 
-pub trait Hashable {
-    fn sha256(&self) -> [u8; 32];
-}
-
-use std::convert::TryInto;
-
-impl Hashable for RoundOutput {
-    fn sha256(&self) -> [u8; 32] {
-        let mut h = Sha256::new();
-        h.input(&self.round.to_le_bytes());
-        h.input(&self.dc_msg.digest());
-
-        h.result().try_into().unwrap()
-    }
-}
+use ed25519_dalek::{
+    SecretKey,
+    PublicKey,
+    Keypair,
+    Signer,
+    SECRET_KEY_LENGTH,
+    PUBLIC_KEY_LENGTH,
+    KEYPAIR_LENGTH,
+};
 
 pub trait Signable {
     fn digest(&self) -> Vec<u8>;
@@ -52,8 +46,33 @@ pub trait Signable {
     }
 }
 
+pub trait SignableUpdated {
+    fn digest(&self) -> Vec<u8>;
+    fn get_sig(&self) -> NoSgxSignature;
+    fn get_pk(&self) -> PublicKey;
+    fn sign(&self, ssk: &NoSgxPrivateKey) -> SgxResult<(NoSgxSignature, PublicKey)> {
+        let dig = self.digest();
+
+        let pk: PublicKey = (&SecretKey::from_bytes(&ssk.r).unwrap()).into();
+        let sk_bytes: [u8; SECRET_KEY_LENGTH] = ssk.r;
+        let pk_bytes: [u8; PUBLIC_KEY_LENGTH] = pk.to_bytes();
+        let mut keypair_bytes: [u8; KEYPAIR_LENGTH] = [0; KEYPAIR_LENGTH];
+        keypair_bytes[..SECRET_KEY_LENGTH].copy_from_slice(&sk_bytes);
+        keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
+
+        let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
+        let sig = NoSgxSignature(keypair.sign(dig.as_slice()).to_bytes().to_vec());
+
+        Ok((sig, pk))
+    }
+}
+
 pub trait SignMutable {
     fn sign_mut(&mut self, _: &SgxSigningKey) -> SgxError;
+}
+
+pub trait SignMutableUpdated {
+    fn sign_mut_updated(&mut self, _: &NoSgxPrivateKey) -> SgxError;
 }
 
 pub trait MultiSignable {
@@ -68,7 +87,7 @@ pub trait MultiSignable {
 
         let sig = ecdsa_handler
             .ecdsa_sign_slice(&dig, &ssk.into())
-            .map(SgxSignature::from)?;
+            .map(SgxSignature::from)?;                
 
         Ok((sig, pk))
     }

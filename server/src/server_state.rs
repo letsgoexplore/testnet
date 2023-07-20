@@ -1,39 +1,59 @@
 use crate::util::Result;
 
-use common::enclave::DcNetEnclave;
 use interface::{
-    AggRegistrationBlob, EntityId, RoundOutput, RoundSubmissionBlob, SealedKemPrivKey,
-    SealedSharedSecretDb, SealedSigPrivKey, ServerPubKeyPackage, ServerRegistrationBlob,
-    SignedPartialAggregate, SignedPubKeyDb, UnblindedAggregateShareBlob, UserRegistrationBlob,
+    EntityId,
+    RoundOutputUpdated,
+    UserRegistrationBlobNew,
+    ServerPubKeyPackageNoSGX,
 };
 
 use log::info;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+use ed25519_dalek::SecretKey;
+
+use common::types_nosgx::{
+    AggregatedMessage,
+    SharedSecretsDbServer,
+    SignedPubKeyDbNoSGX,
+    RoundSubmissionBlobNoSGX,
+    UnblindedAggregateShareBlobNoSGX,
+    AggRegistrationBlobNoSGX,
+    ServerRegistrationBlobNoSGX,
+};
+
+use crate::server_nosgx::{
+    new_server,
+    recv_user_registration_batch,
+    recv_aggregator_registration,
+    recv_server_registration,
+    unblind_aggregate,
+    derive_round_output,
+};
+
+#[derive(Serialize, Deserialize)]
 pub struct ServerState {
     /// A unique identifier for this aggregator. Computed as the hash of the server's KEM pubkey.
     pub server_id: EntityId,
-    /// This server's's signing key. Can only be accessed from within the enclave.
-    pub signing_key: SealedSigPrivKey,
-    /// This server's KEM decapsulation key. Can only be accessed from within the enclave.
-    pub decap_key: SealedKemPrivKey,
+    /// This server's's signing key.
+    pub signing_key: SecretKey,
+    /// This server's KEM decapsulation key.
+    pub decap_key: SecretKey,
     /// The KEM and signing public keys of this server
-    pub pubkey_pkg: ServerPubKeyPackage,
+    pub pubkey_pkg: ServerPubKeyPackageNoSGX,
     /// A partial aggregate of received user messages
-    pub partial_agg: Option<SignedPartialAggregate>,
-    /// A sealed database of secrets shared with users. Maps entity ID to shared secret. Can only
-    /// be accessed from within the enclave.
-    pub shared_secrets: SealedSharedSecretDb,
+    pub partial_agg: Option<AggregatedMessage>,
+    /// A sealed database of secrets shared with users. Maps entity ID to shared secret.
+    pub shared_secrets: SharedSecretsDbServer,
     /// A map of EntityIds to the corresponding public key
-    pub pubkeys: SignedPubKeyDb,
+    pub pubkeys: SignedPubKeyDbNoSGX,
     /// The size of this anytrust group, including this node
     pub anytrust_group_size: usize,
 }
 
 impl ServerState {
-    pub fn new(enclave: &DcNetEnclave) -> Result<(ServerState, ServerRegistrationBlob)> {
-        let (sealed_ssk, sealed_ksk, server_id, reg_blob) = enclave.new_server()?;
+    pub fn new() -> Result<(ServerState, ServerPubKeyPackageNoSGX)> {
+        let (ssk, ksk, server_id, reg_blob) = new_server()?;
         // Group size starts out as 1. This will increment every time an anytrust node is
         // registered with this node.
         let anytrust_group_size = 1;
@@ -42,12 +62,12 @@ impl ServerState {
 
         let state = ServerState {
             server_id,
-            signing_key: sealed_ssk,
-            decap_key: sealed_ksk,
+            signing_key: ssk,
+            decap_key: ksk,
             pubkey_pkg,
             partial_agg: None,
-            shared_secrets: SealedSharedSecretDb::default(),
-            pubkeys: SignedPubKeyDb::default(),
+            shared_secrets: SharedSecretsDbServer::default(),
+            pubkeys: SignedPubKeyDbNoSGX::default(),
             anytrust_group_size,
         };
 
@@ -58,11 +78,10 @@ impl ServerState {
     /// unblinded aggregate as well as the ratcheted shared secrets
     pub fn unblind_aggregate(
         &mut self,
-        enclave: &DcNetEnclave,
-        toplevel_agg: &RoundSubmissionBlob,
-    ) -> Result<UnblindedAggregateShareBlob> {
+        toplevel_agg: &RoundSubmissionBlobNoSGX,
+    ) -> Result<UnblindedAggregateShareBlobNoSGX> {
         let (share, ratcheted_secrets) =
-            enclave.unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
+            unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
 
         // Ratchet the secrets forward
         self.shared_secrets = ratcheted_secrets;
@@ -73,21 +92,17 @@ impl ServerState {
     /// Derives the final round output given all the shares of the unblinded aggregates
     pub fn derive_round_output(
         &self,
-        enclave: &DcNetEnclave,
-        server_aggs: &[UnblindedAggregateShareBlob],
-    ) -> Result<RoundOutput> {
-        enclave
-            .derive_round_output(&self.signing_key, server_aggs)
-            .map_err(Into::into)
+        server_aggs: &[UnblindedAggregateShareBlobNoSGX],
+    ) -> Result<RoundOutputUpdated> {
+        derive_round_output(&self.signing_key, server_aggs)
     }
 
     /// Registers a user with this server
     pub fn recv_user_registrations(
         &mut self,
-        enclave: &DcNetEnclave,
-        input_blobs: &[UserRegistrationBlob],
+        input_blobs: &[UserRegistrationBlobNew],
     ) -> Result<()> {
-        enclave.recv_user_registration_batch(
+        recv_user_registration_batch(
             &mut self.pubkeys,
             &mut self.shared_secrets,
             &self.decap_key,
@@ -100,10 +115,9 @@ impl ServerState {
     /// Registers an aggregator with this server
     pub fn recv_aggregator_registration(
         &mut self,
-        enclave: &DcNetEnclave,
-        input_blob: &AggRegistrationBlob,
+        input_blob: &AggRegistrationBlobNoSGX,
     ) -> Result<()> {
-        enclave.recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
+        recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
 
         Ok(())
     }
@@ -112,11 +126,10 @@ impl ServerState {
     /// anytrust group
     pub fn recv_server_registration(
         &mut self,
-        enclave: &DcNetEnclave,
-        input_blob: &ServerRegistrationBlob,
+        input_blob: &ServerRegistrationBlobNoSGX,
     ) -> Result<()> {
         // Input the registration and increment the size of the group
-        enclave.recv_server_registration(&mut self.pubkeys, input_blob)?;
+        recv_server_registration(&mut self.pubkeys, input_blob)?;
         self.anytrust_group_size += 1;
 
         info!(
@@ -131,7 +144,5 @@ impl ServerState {
 /// Tests that making a new server succeeds
 #[test]
 fn test_new_server() {
-    let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so").unwrap();
-    ServerState::new(&enclave).unwrap();
-    enclave.destroy();
+    ServerState::new().unwrap();
 }

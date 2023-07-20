@@ -1,15 +1,20 @@
 use crate::{
-    util::{save_state, ServerError},
+    util::{save_state, save_output, ServerError},
     ServerState,
 };
-use common::{cli_util, enclave::DcNetEnclave};
-use interface::{RoundOutput, RoundSubmissionBlob, UnblindedAggregateShareBlob};
+use common::cli_util;
+use interface::RoundOutputUpdated;
+
+use common::types_nosgx::{
+    RoundSubmissionBlobNoSGX,
+    UnblindedAggregateShareBlobNoSGX,
+};
 
 use core::ops::DerefMut;
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use actix_rt::Arbiter;
@@ -33,15 +38,14 @@ enum ApiError {
 }
 impl ResponseError for ApiError {}
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub(crate) struct ServiceState {
     pub(crate) server_state: ServerState,
-    pub(crate) round_shares: Vec<UnblindedAggregateShareBlob>,
-    pub(crate) enclave: DcNetEnclave,
+    pub(crate) round_shares: Vec<UnblindedAggregateShareBlobNoSGX>,
     /// Contains the URL of the anytrust leader. If `None`, it's you.
     pub(crate) leader_url: Option<String>,
     /// A map from round to the round's output
-    pub(crate) round_outputs: BTreeMap<u32, RoundOutput>,
+    pub(crate) round_outputs: BTreeMap<u32, RoundOutputUpdated>,
     /// The path to this server's state file. If `None`, state is not persisted to disk
     pub(crate) server_state_path: Option<String>,
 }
@@ -50,13 +54,11 @@ impl ServiceState {
     pub(crate) fn new(
         server_state: ServerState,
         server_state_path: Option<String>,
-        enclave: DcNetEnclave,
         leader_url: Option<String>,
     ) -> ServiceState {
         ServiceState {
             server_state,
             server_state_path,
-            enclave,
             leader_url,
             round_outputs: BTreeMap::new(),
             round_shares: Vec::new(),
@@ -67,11 +69,12 @@ impl ServiceState {
 /// Finish the round as the anytrust leader. This means computing the round output and clearing the
 /// caches.
 fn leader_finish_round(state: &mut ServiceState) {
+    let start = Instant::now();
+
     let ServiceState {
         ref server_state,
         ref mut round_outputs,
         ref mut round_shares,
-        ref enclave,
         ..
     } = state;
 
@@ -79,18 +82,32 @@ fn leader_finish_round(state: &mut ServiceState) {
     // function. If this fails, use the default value. The last thing we want to do is get stuck in
     // a state that cannot progress
     let output = server_state
-        .derive_round_output(enclave, &round_shares)
+        .derive_round_output(&round_shares)
         .unwrap();
     let round = output.round;
+
+    // debug!("output: {:?}", output);
+    
+    let mut output_path = "../server/round_output.txt".to_owned();
+    output_path.insert(22, std::char::from_digit(round, 10).unwrap());
+    debug!("output path: {:?}", output_path);
+    match save_output(&output_path[..], &output) {
+        Err(e) => error!("failed to save round output: {:?}", e),
+        _ => (),
+    };
+    
     round_outputs.insert(round, output);
     info!("Output of round {} now available", round);
 
     // Clear the state
     round_shares.clear();
+
+    let duration = start.elapsed();
+    debug!("[server] leader_finish_round: {:?}", duration);
 }
 
 /// Sends the given unblinded share to `base_url/submit-share`
-async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlob) {
+async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlobNoSGX) {
     // Serialize the share
     let mut body = Vec::new();
     cli_util::save(&mut body, &share).expect("could not serialize share");
@@ -125,10 +142,12 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
 async fn submit_agg(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
+    let start = Instant::now();
+
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
-    let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
+    let agg_data: RoundSubmissionBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
 
     // Do the processing step. Unblind the input, add the share, and if we're the leader we finish
     // the round by combining the shares
@@ -137,14 +156,19 @@ async fn submit_agg(
         let ServiceState {
             ref leader_url,
             ref mut round_shares,
-            ref enclave,
             ref mut server_state,
             ..
         } = state_handle.deref_mut();
         let group_size = server_state.anytrust_group_size;
 
+        let unblind_start = Instant::now();
         // Unblind the input
-        let share = server_state.unblind_aggregate(enclave, &agg_data)?;
+        let share = server_state.unblind_aggregate(&agg_data)?;
+        let unblind_duration = unblind_start.elapsed();
+        debug!("[server] unblind_aggregate: {:?}", unblind_duration);
+
+
+        // debug!("unblinded share: {:?}", share);
 
         match leader_url {
             // We're the leader
@@ -182,6 +206,9 @@ async fn submit_agg(
         }
     });
 
+    let duration = start.elapsed();
+    debug!("[server] submit_agg: {:?}", duration);
+
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
@@ -207,7 +234,7 @@ async fn submit_share(
     }
 
     // Parse the share and add it to our shares
-    let share: UnblindedAggregateShareBlob = cli_util::load(&mut payload.as_bytes())?;
+    let share: UnblindedAggregateShareBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
     round_shares.push(share);
     info!("Got share. Number of shares is now {}", round_shares.len());
 
@@ -296,8 +323,13 @@ async fn round_msg(
         Some(round_output) => {
             // Give the raw payload
             let blob = round_output.dc_msg.aggregated_msg.as_row_major();
+            debug!("round-msg: {:?}", blob);
 
             let body = base64::encode(&blob);
+            // let body = match str::from_utf8(&blob) {
+            //     Ok(v) => v,
+            //     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+            // };
             HttpResponse::Ok().body(body)
         }
         // If the given round's output doesn't exist in memory, error out

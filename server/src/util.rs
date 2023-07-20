@@ -1,4 +1,5 @@
 use crate::server_state::ServerState;
+use interface::RoundOutputUpdated;
 
 use common::{cli_util, enclave::EnclaveError};
 
@@ -6,6 +7,9 @@ use std::fs::File;
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use std::convert::From;
+use ed25519_dalek::SignatureError;
 
 pub(crate) type Result<T> = core::result::Result<T, ServerError>;
 
@@ -17,6 +21,20 @@ pub enum ServerError {
     Io(#[from] std::io::Error),
     #[error("error in serialization/deserialization")]
     Ser(#[from] cli_util::SerializationError),
+    #[error("Unexpected Error")]
+    UnexpectedError,
+}
+
+impl From<SignatureError> for ServerError {
+    fn from(error: SignatureError) -> Self {
+        ServerError::UnexpectedError
+    }
+}
+
+impl From<rand::Error> for ServerError {
+    fn from(error: rand::Error) -> Self {
+        ServerError::UnexpectedError
+    }
 }
 
 pub(crate) fn load_state(save_path: &str) -> Result<ServerState> {
@@ -27,6 +45,11 @@ pub(crate) fn load_state(save_path: &str) -> Result<ServerState> {
 pub(crate) fn save_state(save_path: &str, state: &ServerState) -> Result<()> {
     let save_file = File::create(save_path)?;
     Ok(cli_util::save(save_file, state)?)
+}
+
+pub(crate) fn save_output(save_path: &str, output: &RoundOutputUpdated) -> Result<()> {
+    let save_file = File::create(save_path)?;
+    Ok(cli_util::save(save_file, output)?)
 }
 
 pub(crate) fn load_from_stdin<D: for<'a> Deserialize<'a>>() -> Result<D> {

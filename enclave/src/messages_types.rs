@@ -1,14 +1,17 @@
 use crypto::SgxSigningKey;
 use crypto::{SignMutable, Signable};
-use interface::{RoundSecret, SgxSignature, SgxSigningPubKey};
+use crypto::{SignableUpdated, SignMutableUpdated};
+use interface::{RoundSecret, SgxSignature, SgxSigningPubKey, NoSgxPrivateKey, NoSgxSignature};
 use sgx_types::SgxError;
 use sha2::Digest;
 use sha2::Sha256;
 use std::vec::Vec;
 
+use ed25519_dalek::PublicKey;
+
 // /// A (potentially aggregated) message that's produced by an enclave
 // #[derive(Serialize, Deserialize, Clone, Debug, Default)]
-// pub struct AggregatedMessage {
+// pub struct AggregatedMessageObsolete {
 //     pub round: u32,
 //     pub anytrust_group_id: EntityId,
 //     pub user_ids: BTreeSet<EntityId>,
@@ -19,18 +22,18 @@ use std::vec::Vec;
 //     pub tee_pk: SgxSigningPubKey,
 // }
 
-use interface::AggregatedMessage;
+use interface::AggregatedMessageObsolete;
 
-impl Signable for AggregatedMessage {
+impl Signable for AggregatedMessageObsolete {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
-        hasher.input(b"Begin AggregatedMessage");
+        hasher.input(b"Begin AggregatedMessageObsolete");
         hasher.input(&self.anytrust_group_id);
         for id in self.user_ids.iter() {
             hasher.input(id);
         }
         hasher.input(&self.aggregated_msg.digest());
-        hasher.input(b"End AggregatedMessage");
+        hasher.input(b"End AggregatedMessageObsolete");
 
         hasher.result().to_vec()
     }
@@ -44,7 +47,7 @@ impl Signable for AggregatedMessage {
     }
 }
 
-impl SignMutable for AggregatedMessage {
+impl SignMutable for AggregatedMessageObsolete {
     fn sign_mut(&mut self, sk: &SgxSigningKey) -> SgxError {
         let (sig, pk) = self.sign(sk)?;
         self.tee_pk = pk;
@@ -56,7 +59,7 @@ impl SignMutable for AggregatedMessage {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UnblindedAggregateShare {
-    pub encrypted_msg: AggregatedMessage,
+    pub encrypted_msg: AggregatedMessageObsolete,
     pub key_share: RoundSecret,
     pub sig: SgxSignature,
     pub pk: SgxSigningPubKey,
@@ -87,6 +90,77 @@ impl SignMutable for UnblindedAggregateShare {
         let (sig, pk) = self.sign(ssk)?;
         self.sig = sig;
         self.pk = pk;
+
+        Ok(())
+    }
+}
+
+
+use interface::{UserSubmissionMessage, UserSubmissionMessageUpdated};
+
+impl Signable for UserSubmissionMessage {
+    fn digest(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.input(b"Begin UserSubmissionMessage");
+        hasher.input(&self.anytrust_group_id);
+        // for id in self.user_ids.iter() {
+        //     hasher.input(id);
+        // }
+        hasher.input(self.user_id);
+        hasher.input(&self.aggregated_msg.digest());
+        hasher.input(b"End UserSubmissionMessage");
+
+        hasher.result().to_vec()
+    }
+
+    fn get_sig(&self) -> SgxSignature {
+        self.tee_sig
+    }
+
+    fn get_pk(&self) -> SgxSigningPubKey {
+        self.tee_pk
+    }
+}
+
+impl SignableUpdated for UserSubmissionMessageUpdated {
+    fn digest(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.input(b"Begin UserSubmissionMessage");
+        hasher.input(&self.anytrust_group_id);
+        // for id in self.user_ids.iter() {
+        //     hasher.input(id);
+        // }
+        hasher.input(self.user_id);
+        hasher.input(&self.aggregated_msg.digest());
+        hasher.input(b"End UserSubmissionMessage");
+
+        hasher.result().to_vec()
+    }
+
+    fn get_sig(&self) -> NoSgxSignature {
+        self.tee_sig.clone()
+    }
+
+    fn get_pk(&self) -> PublicKey {
+        self.tee_pk
+    }
+}
+
+impl SignMutable for UserSubmissionMessage {
+    fn sign_mut(&mut self, sk: &SgxSigningKey) -> SgxError {
+        let (sig, pk) = self.sign(sk)?;
+        self.tee_pk = pk;
+        self.tee_sig = sig;
+
+        Ok(())
+    }
+}
+
+impl SignMutableUpdated for UserSubmissionMessageUpdated {
+    fn sign_mut_updated(&mut self, sk: &NoSgxPrivateKey) -> SgxError {
+        let (sig, pk) = self.sign(sk)?;
+        self.tee_pk = pk;
+        self.tee_sig = sig;
 
         Ok(())
     }

@@ -12,10 +12,12 @@ use crate::{
 };
 
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, RoundOutput, ServerPubKeyPackage, UserMsg, DC_NET_MESSAGE_LENGTH};
+use interface::{DcMessage, ServerPubKeyPackageNoSGX, UserMsg, DC_NET_MESSAGE_LENGTH, RoundOutputUpdated};
 use std::{ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};
+
+use log::debug;
 
 fn main() -> Result<(), UserError> {
     // Do setup
@@ -159,20 +161,28 @@ fn main() -> Result<(), UserError> {
         // Load up the KEM keys
         let pubkeys_filename = matches.value_of("server-keys").unwrap();
         let keysfile = File::open(pubkeys_filename)?;
-        let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
+        let pubkeys: Vec<ServerPubKeyPackageNoSGX> = cli_util::load_multi(keysfile)?;
         let num_regs = cli_util::parse_u32(matches.value_of("num-regs").unwrap())?;
         let state_path = Path::new(matches.value_of("user-state").unwrap());
 
+        let empty_str = OsString::default();
+        let ext = state_path.extension().unwrap_or(&empty_str);
+        let file_stem = state_path.file_stem().unwrap_or(&empty_str);
+    
         // Make a new state and user registration. Save the state and and print the registration
         if num_regs == 1 {
             let (state, reg_blob) = UserState::new_multi(&enclave, 1, pubkeys)?.pop().unwrap();
-            save_state(&state_path, &state)?;
+            let filename = format!("{}{}.{}",
+                file_stem.to_str().unwrap(),
+                1,
+                ext.to_str().unwrap()
+            );
+            let curr_state_path = state_path.with_file_name(filename);
+
+            save_state(&curr_state_path, &state)?;
             save_to_stdout(&reg_blob)?;
         } else {
             // Output n state files and print n newline-separated registration blobs
-            let empty_str = OsString::default();
-            let ext = state_path.extension().unwrap_or(&empty_str);
-            let file_stem = state_path.file_stem().unwrap_or(&empty_str);
 
             // Make `num_regs` new users
             let states_and_regs =
@@ -182,7 +192,7 @@ fn main() -> Result<(), UserError> {
                 let filename_i = format!(
                     "{}{}.{}",
                     file_stem.to_str().unwrap(),
-                    i,
+                    i + 1,
                     ext.to_str().unwrap()
                 );
                 let state_path_i = state_path.with_file_name(filename_i);
@@ -235,12 +245,12 @@ fn main() -> Result<(), UserError> {
 
         // Load the previous round output. Load a placeholder output if this is the first round of
         // the first window
-        let prev_round_output: RoundOutput = if round > 0 {
+        let prev_round_output: RoundOutputUpdated = if round > 0 {
             let round_output_filename = matches.value_of("prev-round-output").unwrap();
             let round_file = File::open(round_output_filename)?;
             cli_util::load(round_file)?
         } else {
-            RoundOutput::default()
+            RoundOutputUpdated::default()
         };
 
         // Get the state
@@ -248,7 +258,7 @@ fn main() -> Result<(), UserError> {
         let mut state = load_state(&state_path)?;
 
         // Make the message for this round
-        let msg = UserMsg::TalkAndReserve {
+        let msg = UserMsg::TalkAndReserveUpdated {
             msg: dc_msg,
             prev_round_output,
             times_participated: state.get_times_participated(),
@@ -302,6 +312,8 @@ fn main() -> Result<(), UserError> {
         } else {
             Some(state_path)
         };
+
+        // debug!("user_state_path: {:?}", user_state_path);
 
         let state = service::ServiceState {
             user_state,

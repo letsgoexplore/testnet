@@ -4,9 +4,17 @@ use common::enclave::DcNetEnclave;
 use serde::{Deserialize, Serialize};
 
 use interface::{
-    compute_anytrust_group_id, EntityId, KemPubKey, RoundSubmissionBlob, SealedSharedSecretDb,
-    SealedSigPrivKey, ServerPubKeyPackage, UserMsg, UserRegistrationBlob, UserSubmissionReq,
+    EntityId,
+    UserMsg,
+    SealedSigPrivKeyNoSGX,
+    SealedSharedSecretsDbClient,
+    ServerPubKeyPackageNoSGX,
+    UserRegistrationBlobNew, 
+    NoSgxProtectedKeyPub,
+    UserSubmissionReqUpdated,
+    UserSubmissionBlobUpdated,
     DC_NET_ROUNDS_PER_WINDOW,
+    compute_anytrust_group_id_spk,
 };
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -16,12 +24,12 @@ pub struct UserState {
     /// A unique for the set anytrust servers that this client is registered with
     anytrust_group_id: EntityId,
     /// This client's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedSigPrivKey,
+    signing_key: SealedSigPrivKeyNoSGX,
     /// The secrets that this client shares with the anytrust servers. Maps entity ID to shared
     /// secret. Can only be accessed from within the enclave.
-    shared_secrets: SealedSharedSecretDb,
+    shared_secrets: SealedSharedSecretsDbClient,
     /// The anytrust servers' KEM and signing pubkeys
-    anytrust_group_keys: Vec<ServerPubKeyPackage>,
+    anytrust_group_keys: Vec<ServerPubKeyPackageNoSGX>,
     /// Times talked or reserved so far in this window
     times_participated: u32,
 }
@@ -31,16 +39,16 @@ impl UserState {
     pub fn new_multi(
         enclave: &DcNetEnclave,
         n: usize,
-        pubkeys: Vec<ServerPubKeyPackage>,
-    ) -> Result<Vec<(UserState, UserRegistrationBlob)>> {
-        let vec = enclave.new_user_batch(&pubkeys, n)?;
+        pubkeys: Vec<ServerPubKeyPackageNoSGX>,
+    ) -> Result<Vec<(UserState, UserRegistrationBlobNew)>> {
+        let vec = enclave.new_user_batch_updated(&pubkeys, n)?;
 
         let users_and_reg_blobs = vec
             .into_iter()
             .map(|(sealed_shared_secrets, sealed_usk, reg_blob)| {
                 let user_id = EntityId::from(&reg_blob);
-                let kem_pubkeys: Vec<KemPubKey> = pubkeys.iter().map(|p| p.kem).collect();
-                let anytrust_group_id = compute_anytrust_group_id(&kem_pubkeys);
+                let kem_pubkeys: Vec<NoSgxProtectedKeyPub> = pubkeys.iter().map(|p| NoSgxProtectedKeyPub(p.kem.to_bytes())).collect();
+                let anytrust_group_id = compute_anytrust_group_id_spk(&kem_pubkeys);
 
                 let state = UserState {
                     user_id,
@@ -66,9 +74,9 @@ impl UserState {
         enclave: &DcNetEnclave,
         round: u32,
         msg: UserMsg,
-    ) -> Result<RoundSubmissionBlob> {
+    ) -> Result<UserSubmissionBlobUpdated> {
         let msg_is_cover = msg.is_cover();
-        let req = UserSubmissionReq {
+        let req = UserSubmissionReqUpdated {
             user_id: self.user_id,
             anytrust_group_id: self.anytrust_group_id,
             round,
@@ -83,7 +91,7 @@ impl UserState {
         }
 
         // Submit the message
-        let (blob, ratcheted_secrets) = enclave.user_submit_round_msg(&req, &self.signing_key)?;
+        let (blob, ratcheted_secrets) = enclave.user_submit_round_msg_updated(&req, &self.signing_key)?;
 
         // Ratchet the secrets forward
         self.shared_secrets = ratcheted_secrets;

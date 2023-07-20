@@ -1,7 +1,9 @@
 use crate::sgx_protected_keys::{AttestedPublicKey, ServerPubKeyPackage, SgxProtectedKeyPub};
+use crate::nosgx_protected_keys::{AttestedPublicKeyNoSGX, NoSgxProtectedKeyPub, SignatureNoSGX};
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
 use crate::DcRoundMessage;
+use crate::params::SHARED_SECRET_LENGTH;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::vec::Vec;
@@ -37,8 +39,11 @@ impl_enum! {
         EcallUnsealToPublicKey = 2,
         EcallNewUser = 3,
         EcallNewUserBatch = 16,
+        EcallNewUserUpdated = 17,
+        EcallNewUserBatchUpdated = 18,
         EcallNewServer = 4,
         EcallUserSubmit = 5,
+        EcallUserSubmitUpdated = 19,
         EcallAddToAggregate = 6,
         EcallRecvUserRegistration =7,
         EcallRecvUserRegistrationBatch = 8,
@@ -59,8 +64,11 @@ impl EcallId {
             EcallId::EcallUnsealToPublicKey => "EcallUnsealToPublicKey",
             EcallId::EcallNewUser => "EcallNewUser",
             EcallId::EcallNewUserBatch => "EcallNewUserBatch",
+            EcallId::EcallNewUserUpdated => "EcallNewUserUpdated",
+            EcallId::EcallNewUserBatchUpdated => "EcallNewUserBatchUpdated",
             EcallId::EcallNewServer => "EcallNewServer",
             EcallId::EcallUserSubmit => "EcallUserSubmit",
+            EcallId::EcallUserSubmitUpdated => "EcallUserSubmitUpdated",
             EcallId::EcallAddToAggregate => "EcallAddToAggregate",
             EcallId::EcallRecvUserRegistration => "EcallRecvUserRegistration",
             EcallId::EcallUnblindAggregate => "EcallUnblindAgg",
@@ -83,9 +91,15 @@ impl EcallId {
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct MarshalledSignedUserMessage(pub Vec<u8>);
 
+/// Contains the user's entity ID along with his submissions. This is passed to the base level
+/// aggregators only.
+pub type UserSubmissionBlob = crate::UserSubmissionMessage;
+
+pub type UserSubmissionBlobUpdated = crate::UserSubmissionMessageUpdated;
+
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to
 /// aggregators of all levels as well as anytrust nodes.
-pub type RoundSubmissionBlob = crate::AggregatedMessage;
+pub type RoundSubmissionBlob = crate::AggregatedMessageObsolete;
 
 /// The unblinded aggregate output by a single anytrust node
 /// This serialized to a UnblindedAggregateShare defined in enclave/message_types.rs
@@ -94,11 +108,15 @@ pub type RoundSubmissionBlob = crate::AggregatedMessage;
 pub struct UnblindedAggregateShareBlob(pub Vec<u8>);
 
 /// The state of an aggregator. This can only be opened from within the enclave.
-pub type SignedPartialAggregate = crate::AggregatedMessage;
+pub type SignedPartialAggregate = crate::AggregatedMessageObsolete;
 
 /// Describes user registration information. This contains key encapsulations as well as a linkably
 /// attested signature pubkey.
 pub type UserRegistrationBlob = AttestedPublicKey;
+
+/// Describes user registration information. This contains key encapsulations as well as a linkably
+/// attested signature pubkey.
+pub type UserRegistrationBlobNew = AttestedPublicKeyNoSGX;
 
 /// Describes aggregator registration information. This contains a linkably attested signature
 /// pubkey.
@@ -142,6 +160,54 @@ impl Debug for SealedSharedSecretDb {
     }
 }
 
+/// Enclave-protected secrets shared between anytrust servers and users.
+/// This data structure is use by users only
+/// The key is server's public key
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Default, Clone, Serialize, Deserialize)]
+pub struct SealedSharedSecretsDbClient {
+    pub round: u32,
+    pub db: BTreeMap<NoSgxProtectedKeyPub, Vec<u8>>,
+}
+
+impl SealedSharedSecretsDbClient {
+    pub fn anytrust_group_id(&self) -> EntityId {
+        let keys: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        crate::compute_anytrust_group_id_spk(&keys)
+    }
+}
+
+impl Debug for SealedSharedSecretsDbClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        let pks: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        f.debug_struct("SealedSharedSecretsDbClient")
+            .field("pks", &pks)
+            .finish()
+    }
+}
+
+/// A shared secret is the long-term secret shared between an anytrust server and this user
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct NewDiffieHellmanSharedSecret(pub [u8; SHARED_SECRET_LENGTH]);
+
+impl AsRef<[u8]> for NewDiffieHellmanSharedSecret {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl Debug for NewDiffieHellmanSharedSecret {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(&hex::encode(&self.0))
+    }
+}
+
+/// A signing keypair is an ECDSA keypair
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct SealedSigPrivKeyNoSGX(pub Vec<u8>);
+
 /// A signing keypair is an ECDSA keypair
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -174,4 +240,12 @@ pub struct RoundOutput {
     pub round: u32,
     pub dc_msg: DcRoundMessage,
     pub server_sigs: Vec<Signature>,
+}
+
+#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
+#[derive(Clone, Default, Serialize, Debug, Deserialize)]
+pub struct RoundOutputUpdated {
+    pub round: u32,
+    pub dc_msg: DcRoundMessage,
+    pub server_sigs: Vec<SignatureNoSGX>,
 }

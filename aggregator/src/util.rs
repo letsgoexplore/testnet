@@ -18,6 +18,8 @@ pub enum AggregatorError {
     Io(#[from] io::Error),
     #[error("error in serialization/deserialization")]
     Ser(#[from] cli_util::SerializationError),
+    #[error("invalid parameter")]
+    InvalidParameter,
 }
 
 pub(crate) fn load_state(save_path: &str) -> Result<AggregatorState> {

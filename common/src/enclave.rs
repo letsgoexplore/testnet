@@ -66,8 +66,8 @@ impl DcNetEnclave {
         )
         .map_err(EnclaveError::SgxError)?;
 
-        info!(
-            "============== enclave created. took {}us",
+        debug!(
+            "enclave initiated. took {}us",
             start_time.elapsed().as_micros()
         );
         Ok(Self { enclave })
@@ -75,6 +75,7 @@ impl DcNetEnclave {
 
     pub fn destroy(self) {
         self.enclave.destroy();
+        debug!("enclave destroyed.");
     }
 
     /// This method can be used for creating signing keys and KEM private keys.
@@ -113,8 +114,19 @@ impl DcNetEnclave {
         &self,
         submission_req: &UserSubmissionReq,
         sealed_usk: &SealedSigPrivKey,
-    ) -> EnclaveResult<(RoundSubmissionBlob, SealedSharedSecretDb)> {
+    ) -> EnclaveResult<(UserSubmissionBlob, SealedSharedSecretDb)> {
         Ok(ecall_allowed::user_submit(
+            self.enclave.geteid(),
+            (submission_req, sealed_usk),
+        )?)
+    }
+
+    pub fn user_submit_round_msg_updated(
+        &self,
+        submission_req: &UserSubmissionReqUpdated,
+        sealed_usk: &SealedSigPrivKeyNoSGX,
+    ) -> EnclaveResult<(UserSubmissionBlobUpdated, SealedSharedSecretsDbClient)> {
+        Ok(ecall_allowed::user_submit_updated(
             self.enclave.geteid(),
             (submission_req, sealed_usk),
         )?)
@@ -182,7 +194,7 @@ impl DcNetEnclave {
     /// The multi thread version
     pub fn unblind_aggregate_mt(
         &self,
-        toplevel_agg: &AggregatedMessage,
+        toplevel_agg: &AggregatedMessageObsolete,
         signing_key: &SealedSigPrivKey,
         shared_secrets: &SealedSharedSecretDb,
         n_threads: usize,
@@ -239,11 +251,11 @@ impl DcNetEnclave {
     /// The multi thread version, with parameters taken from config file
     pub fn unblind_aggregate(
         &self,
-        toplevel_agg: &AggregatedMessage,
+        toplevel_agg: &AggregatedMessageObsolete,
         signing_key: &SealedSigPrivKey,
         shared_secrets: &SealedSharedSecretDb,
     ) -> EnclaveResult<(UnblindedAggregateShareBlob, SealedSharedSecretDb)> {
-        self.unblind_aggregate_insecure(
+        self.unblind_aggregate_mt(
             toplevel_agg,
             signing_key,
             shared_secrets,
@@ -255,7 +267,7 @@ impl DcNetEnclave {
     /// the security of SGX
     pub fn unblind_aggregate_insecure(
         &self,
-        toplevel_agg: &AggregatedMessage,
+        toplevel_agg: &AggregatedMessageObsolete,
         signing_key: &SealedSigPrivKey,
         sealed_shared_secrets: &SealedSharedSecretDb,
         n_threads: usize,
@@ -356,6 +368,31 @@ impl DcNetEnclave {
         UserRegistrationBlob,
     )>> {
         ecall_allowed::new_user_batch(self.enclave.geteid(), (server_pks, n_users))
+    }
+
+    pub fn new_user_updated(
+        &self,
+        server_pks: &[ServerPubKeyPackageNoSGX],
+    ) -> EnclaveResult<(
+        SealedSharedSecretsDbClient,
+        SealedSigPrivKeyNoSGX,
+        EntityId,
+        UserRegistrationBlobNew,
+    )> {
+        let u = ecall_allowed::new_user_updated(self.enclave.geteid(), server_pks)?;
+        Ok((u.0, u.1, EntityId::from(&u.2), u.2))
+    }
+
+    pub fn new_user_batch_updated(
+        &self,
+        server_pks: &[ServerPubKeyPackageNoSGX],
+        n_users: usize,
+    ) -> EnclaveResult<Vec<(
+        SealedSharedSecretsDbClient,
+        SealedSigPrivKeyNoSGX,
+        UserRegistrationBlobNew,
+    )>> {
+        ecall_allowed::new_user_batch_updated(self.enclave.geteid(), (server_pks, n_users))
     }
 
     /// Create a new TEE protected secret key for an aggregator.

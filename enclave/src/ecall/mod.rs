@@ -91,6 +91,22 @@ pub extern "C" fn ecall_entrypoint(
             user::new_user_batch
         ),
         (
+            EcallNewUserUpdated,
+            // input
+            Vec < ServerPubKeyPackageNoSGX >,
+            // output
+            (SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew),
+            user::new_user_updated
+        ),
+        (
+            EcallNewUserBatchUpdated,
+            // input
+            (Vec < ServerPubKeyPackageNoSGX >, usize),
+            // output
+            Vec<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)>,
+            user::new_user_batch_updated
+        ),
+        (
             EcallNewServer,
             // input
             (),
@@ -101,8 +117,14 @@ pub extern "C" fn ecall_entrypoint(
         (
             EcallUserSubmit,
             (UserSubmissionReq, SealedSigPrivKey),
-            (RoundSubmissionBlob, SealedSharedSecretDb),
+            (UserSubmissionBlob, SealedSharedSecretDb),
             submit::user_submit_internal
+        ),
+        (
+            EcallUserSubmitUpdated,
+            (UserSubmissionReqUpdated, SealedSigPrivKeyNoSGX),
+            (UserSubmissionBlobUpdated, SealedSharedSecretsDbClient),
+            submit::user_submit_internal_updated
         ),
         (
             EcallAddToAggregate,
@@ -246,11 +268,11 @@ fn generic_ecall<I, O>(
 {
     let start_time = std::time::Instant::now();
 
-    debug!("starting {}", ecall_id.as_str());
+    debug!("serving {}", ecall_id.as_str());
 
     let input: I = unmarshal_or_abort!(I, inp, inp_len);
 
-    debug!("input unmarshalled {} bytes", inp_len);
+    debug!("input unmarshalled. {} bytes", inp_len);
 
     let result = match internal_fn(&input) {
         Ok(o) => o,
@@ -265,7 +287,7 @@ fn generic_ecall<I, O>(
         }
     };
     debug!(
-        "done ecall {}. took {} us",
+        "done serving {}. took {} us",
         ecall_id.as_str(),
         start_time.elapsed().as_micros()
     );

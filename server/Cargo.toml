@@ -20,3 +20,9 @@ log = "0.4"
 dotenv = "0.15"
 env_logger = "0.9"
 actix-web = "3.3"
+
+ed25519-dalek = { package = "ed25519-dalek", version = "1", features = ["serde"] }
+x25519-dalek = { version = "1.2.0", default-features = false, features = ["serde"] }
+rand = "0.7"
+sha2 = "0.9"
+itertools = "0.10.3"
