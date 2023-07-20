@@ -2524,6 +2524,7 @@ dependencies = [
  "serde 1.0.164",
  "sha2 0.9.9",
  "thiserror",
+ "x25519-dalek",
 ]
 
 [[package]]

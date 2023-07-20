@@ -127,10 +127,6 @@ async fn force_round_end(
     let send_timeout = Duration::from_secs(5);
     let (agg_payload, forward_urls) = get_agg_payload(&*state);
 
-    debug!("agg_payload.len: {}", agg_payload.len());
-    debug!("agg_payload hahaha: {:?}", agg_payload);
-    debug!("forward_urls: {:?}", forward_urls);
-
     spawn(
         actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(|r| {
             if r.is_err() {

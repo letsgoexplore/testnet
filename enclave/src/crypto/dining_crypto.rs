@@ -41,7 +41,7 @@ impl Debug for DiffieHellmanSharedSecret {
 
 /// A SharedSecretsDbClient is a map of entity public keys to DH secrets
 /// This is used by users only, the keys are server pks
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SharedSecretsDbClient {
     pub round: u32,
     /// a dictionary of keys
@@ -58,16 +58,6 @@ impl Default for SharedSecretsDbClient {
     }
 }
 
-impl Debug for SharedSecretsDbClient {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        let pks: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
-        f.debug_struct("SharedSecretsDbClient")
-            .field("round", &self.round)
-            .field("pks", &pks)
-            .finish()
-    }
-}
-
 impl SharedSecretsDbClient {
     pub fn anytrust_group_id(&self) -> EntityId {
         let keys: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
@@ -77,24 +67,22 @@ impl SharedSecretsDbClient {
     /// Derive shared secrets (using DH). Used at registration time
     pub fn derive_shared_secrets(
         my_sk: &NoSgxPrivateKey,
-        other_pks: &[PublicKey],
+        pk_db: &BTreeMap<NoSgxProtectedKeyPub, PublicKey>,
     ) -> SgxResult<Self> {
         // 1. Generate StaticSecret from client's secret key
         let my_secret = StaticSecret::from(my_sk.r);
-
         let mut client_secrets: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret> = BTreeMap::new();
 
-        for server_pk in other_pks.iter() {
-            // 2. Convert server pk (PublicKey) to xPublicKey
-            let pk = xPublicKey::from(server_pk.to_bytes());
-            // 3. Compute the DH secret for the client and xPublicKeys
-            let shared_secret = my_secret.diffie_hellman(&pk);
+        for (kem_xpk, kem_pk) in pk_db {
+            // 2. Derive the exchange pk from x_pk
+            let xpk = xPublicKey::from(kem_xpk.0);
+            // 3. Compute the DH shared secret from the exchange pk and static secret
+            let shared_secret = my_secret.diffie_hellman(&xpk);
             // 4. Save ephemeral SharedSecret into NewDiffieHellmanSharedSecret
-            let shared_secret_bytes: [u8; 32] = shared_secret.as_bytes().to_owned();
-
+        let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
             client_secrets.insert(
-                NoSgxProtectedKeyPub(server_pk.to_bytes()),
-                NewDiffieHellmanSharedSecret(shared_secret_bytes)
+                NoSgxProtectedKeyPub(kem_pk.to_bytes()),
+                NewDiffieHellmanSharedSecret(shared_secret_bytes),
             );
         }
 
@@ -310,6 +298,7 @@ pub fn derive_round_secret_client(
         // skip entries not in entity_ids_to_use
         if let Some(eids) = entity_ids_to_use {
             if !eids.contains(&EntityId::from(pk)) {
+                debug!("entity id of client {} is not in entity_ids_to_use", pk);
                 continue;
             }
         }
@@ -353,6 +342,7 @@ pub fn derive_round_secret(
         }
 
         let hk = Hkdf::<Sha256>::new(None, shard_secret.as_ref());
+
         // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
         let mut seed = <MyRng as SeedableRng>::Seed::default();
 

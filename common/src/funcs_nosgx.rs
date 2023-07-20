@@ -21,8 +21,11 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_cbor;
 
+use log::debug;
+
 
 pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), ()> {
+    // TODO: Move SignableUpdated trait to interface, include it
     Ok(())
 }
 
@@ -39,13 +42,15 @@ pub fn derive_round_secret_server(
 
     let mut round_secret = RoundSecret::default();
 
-    // for (pk, shared_secret) in shared_secrets.db.iter() {
-    //     // skip entries not in entity_ids_to_use
-    //     if let Some(eids) = entity_ids_to_use {
-    //         if !eids.contains(&EntityId::from(pk)) {
-    //             continue;
-    //         }
-    //     }
+    for (pk, shared_secret) in shared_secrets.db.iter() {
+        // skip entries not in entity_ids_to_use
+        if let Some(eids) = entity_ids_to_use {
+            if !eids.contains(&EntityId::from(pk)) {
+                debug!("entity id of client {} is not in entity_ids_to_use", pk);
+                continue;
+            }
+        }
+
 
     //     let hk = Hkdf::<Sha256>::new(None, &shared_secret.as_ref());
     //     // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].

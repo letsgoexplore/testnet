@@ -203,7 +203,7 @@ pub enum SubmissionMessage {
 /// Secrets shared between anytrust servers and users.
 /// This data structure is used only by servers.
 /// This is the server side, the key is user's signing key
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SharedSecretsDbServer {
     pub round: u32,
     /// a dictionary of keys
@@ -219,19 +219,18 @@ impl SharedSecretsDbServer {
 
     pub fn derive_shared_secrets(
         my_sk: &SecretKey,
-        other_pks: &[NoSgxProtectedKeyPub],
+        other_pks: &BTreeMap<NoSgxProtectedKeyPub, NoSgxProtectedKeyPub>,
     ) -> Result<Self, SignatureError> {
         // 1. Generate StaticSecret from server's secret key
         let my_secret = StaticSecret::from(my_sk.to_bytes());
-
         let mut server_secrets: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret> = BTreeMap::new();
 
-         for client_pk in other_pks.iter() {
-            // 2. Convert client pk (NoSgxProtectedKeyPub) to xPublicKey
-            let pk = xPublicKey::from(client_pk.0);
-            // 3. Compute the DH secret for the server and xPublicKeys
-            let shared_secret = my_secret.diffie_hellman(&pk);
-            // 4. Save ephemeral SharedSecret into NewDiffieHellmanSharedSecret
+        for (client_xpk, client_pk) in other_pks {
+            // 2. Derive the exchange pk from the client_xpk
+            let xpk = xPublicKey::from(client_xpk.0);
+            // 3. Compute the DH shared secret from client exchange pk and server secret
+            let shared_secret = my_secret.diffie_hellman(&xpk);
+            // 4. Save the ephemeral SharedSecret into NewDiffieHellmanSharedSecret
             let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
             server_secrets.insert(client_pk.to_owned(), NewDiffieHellmanSharedSecret(shared_secret_bytes));
         }
@@ -268,16 +267,6 @@ impl Default for SharedSecretsDbServer {
             round: 0,
             db: BTreeMap::new(),
         }
-    }
-}
-
-impl Debug for SharedSecretsDbServer {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        let pks: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
-        f.debug_struct("SharedSecretsDbServer")
-            .field("round", &self.round)
-            .field("pks", &pks)
-            .finish()
     }
 }
 

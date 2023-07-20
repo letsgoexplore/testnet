@@ -270,8 +270,6 @@ fn main() -> Result<(), UserError> {
             times_participated: state.get_times_participated(),
         };
 
-        debug!("msg before submit: {:?}", msg);
-
         // Now encrypt the message and output it
         let ciphertext = state.submit_round_msg(&enclave, round, msg)?;
         save_to_stdout(&ciphertext)?;

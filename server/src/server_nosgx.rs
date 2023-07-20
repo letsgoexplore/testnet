@@ -10,6 +10,7 @@ use interface::{
     DcRoundMessage,
     SignatureNoSGX,
     MultiSignableUpdated,
+    NoSgxProtectedKeyPub,
 };
 
 use ed25519_dalek::{
@@ -17,6 +18,12 @@ use ed25519_dalek::{
     PublicKey,
     Signature,
 };
+
+use x25519_dalek::{
+    PublicKey as xPublicKey,
+    StaticSecret,
+};
+
 use rand::rngs::OsRng;
 
 use std::time::Instant;
@@ -47,7 +54,7 @@ use log::{
     error,
 };
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, BTreeMap};
 use itertools::Itertools;
 use std::iter::FromIterator;
 use std::sync::mpsc;
@@ -58,13 +65,17 @@ pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPacka
     let sig_key = SecretKey::generate(&mut csprng);
     let kem_key = SecretKey::generate(&mut csprng);
 
+    let kem_secret = StaticSecret::from(kem_key.to_bytes());
+
     // The standard hash function used for most ed25519 libraries is SHA-512
     let sig_key_pk: PublicKey = (&sig_key).into();
     let kem_key_pk: PublicKey = (&kem_key).into();
+    let kem_key_xpk: xPublicKey = xPublicKey::from(&kem_secret);
 
     let reg = ServerPubKeyPackageNoSGX {
         sig: sig_key_pk,
         kem: kem_key_pk,
+        xkem: NoSgxProtectedKeyPub(kem_key_xpk.to_bytes()),
     };
 
     Ok((sig_key, kem_key, EntityId::from(&reg), reg))
@@ -109,15 +120,15 @@ fn recv_user_reg_batch(
     }
 
     // Derive secrets
-    let mut others_kem_pks = vec![];
+    // let mut others_kem_pks = vec![];
+    let mut others_kem_db: BTreeMap<NoSgxProtectedKeyPub, NoSgxProtectedKeyPub> = BTreeMap::new();
     for (_, k) in pk_db.users.iter() {
-        others_kem_pks.push(k.pk);
+        // others_kem_pks.push(k.pk);
+        others_kem_db.insert(k.xpk, k.pk);
     }
 
-    let shared_secrets = SharedSecretsDbServer::derive_shared_secrets(&my_kem_sk, &others_kem_pks)
+    let shared_secrets = SharedSecretsDbServer::derive_shared_secrets(&my_kem_sk, &others_kem_db)
         .expect("failed to derive shared secrets for server");
-
-    debug!("shared_secrets: {:?}", shared_secrets);
 
     Ok((pk_db, shared_secrets))
 }
@@ -262,7 +273,6 @@ pub fn unblind_aggregate_merge(
     sig_key: &SecretKey,
     shared_secrets: &SharedSecretsDbServer,
 ) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
-    debug!("[server] round_secrets size: {:?}", round_secrets);
     let mut round_secret = RoundSecret::default();
     for rs in round_secrets.iter() {
         round_secret.xor_mut_nosgx(rs);
@@ -299,8 +309,6 @@ pub fn derive_round_output(
         return Err(ServerError::UnexpectedError);
     }
 
-    debug!("[server] server_aggs size: {}", server_aggs.len());
-
     // Xor of all server secrets
     let mut final_msg = DcRoundMessage::default();
 
@@ -315,18 +323,11 @@ pub fn derive_round_output(
             error!("share {:?} has a different final agg", share);
             return Err(ServerError::UnexpectedError);
         }
-        debug!("[server] share: {:?}", share);
         final_msg.xor_mut_nosgx(&share.key_share);
     }
 
-    debug!("\n[server] msg before decryption: {:?}", final_aggregation);
-
-    debug!("\n[server] round key: {:?}", final_msg);
-
     // Finally xor secrets with the message
     final_msg.xor_mut_nosgx(&final_aggregation);
-
-    debug!("\n[server unblind] msg after decryption: {:?}", final_msg);
 
     let mut round_output = RoundOutputUpdated {
         round,

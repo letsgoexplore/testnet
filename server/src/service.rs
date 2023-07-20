@@ -86,7 +86,7 @@ fn leader_finish_round(state: &mut ServiceState) {
         .unwrap();
     let round = output.round;
 
-    debug!("output: {:?}", output);
+    // debug!("output: {:?}", output);
     
     let mut output_path = "../server/round_output.txt".to_owned();
     output_path.insert(22, std::char::from_digit(round, 10).unwrap());
