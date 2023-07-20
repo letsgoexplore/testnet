@@ -16,7 +16,7 @@ AGG_SERVERKEYS="aggregator/server-keys.txt"
 
 SERVER_ROUNDOUTPUT="server/round_output.txt"
 CLIENT_MESSAGE="client/src/message/clientmessage.txt"
-TIME_LOG="time_recorder.txt"
+TIME_LOG="server/time_recorder.txt"
 
 CLIENT_SERVICE_PORT="28323"
 AGGREGATOR_PORT="38423"
@@ -63,6 +63,7 @@ evaluate_bit() {
             sleep 1
             log_time
             send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
+            sleep 1
             force_root_round_end
             sleep 1
             stop-all
@@ -83,19 +84,17 @@ test() {
     start_leader
     start_root_agg 
     start_client $num_user
-    # log_time
-    # echo "hahayeah"
-    # send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
-    # force_root_round_end
-    # sleep 1
-    # stop-all
+    log_time
+    send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
+    force_root_round_end
+    stop_all
         
 }
 
 
 log_time() {
     timestamp=$(date +%s%N)
-    echo "$timestamp" >> time_recorder.txt
+    echo "$timestamp" >> $TIME_LOG
 }
 clean() {
     # The below pattern removes all files of the form "client/user-stateX.txt" for any X
@@ -272,17 +271,10 @@ start_client() {
             --bind "localhost:$USER_PORT" \
             --agg-url "http://localhost:$AGGREGATOR_PORT" &
     done
-
-    # STATE="${USER_STATE%.txt}1.txt"
-
-    # RUST_LOG=debug $CMD_PREFIX start-service \
-    #     --user-state "../$STATE" \
-    #     --round $ROUND \
-    #     --bind "localhost:$CLIENT_SERVICE_PORT" \
-    #     --agg-url "http://localhost:$AGGREGATOR_PORT" &
-    #     # --no-persist \
-
+    sleep 10
+    echo "hihi"
     cd ..
+
 }
 
 test_multi_clients() {
@@ -410,12 +402,12 @@ send_round_msg_single_client() {
             PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
         fi
         echo "$PAYLOAD" > "$FILENAME"
-        curl "http://localhost:$USER_PORT/encrypt-msg" \
+        result=$(curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
-        --data-binary "@$FILENAME"
-    # else
-    #     curl -X POST "http://localhost:$USER_PORT/send-cover"
+        --data-binary "@$FILENAME")
+    else
+        result=$(curl -X POST "http://localhost:$USER_PORT/send-cover")
     fi
 }
 
@@ -429,6 +421,7 @@ send_round_msg() {
     for i in $(seq 1 $NUM_USERS); do
         send_round_msg_single_client $i $dc_net_n_slot &
     done
+    echo "hihi"
     cd ..
 }
 
@@ -473,6 +466,11 @@ kill_aggregators() {
 
 kill_clients() {
     ps aux | grep sgxdcnet-client | grep -v grep | awk '{print $2}' | xargs kill
+}
+stop_all() {
+    kill_clients 2> /dev/null || true
+    kill_aggregators 2> /dev/null || true
+    kill_servers 2> /dev/null || true
 }
 
 # Commands with parameters:

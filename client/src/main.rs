@@ -328,7 +328,9 @@ fn main() -> Result<(), UserError> {
             round,
             user_state_path,
         };
+        debug!("1");
         start_service(bind_addr, state).unwrap();
+        debug!("2");
     }
 
     enclave.destroy();

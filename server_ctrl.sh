@@ -26,7 +26,7 @@ CONTAINER_PREFIX="dcnet-"
 DOCKER_IMAGE="bl4ck5un/sgx-rust-fork:2004-1.1.6"
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
-NUM_FOLLOWERS=4
+NUM_FOLLOWERS=0
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
 NUM_USERS=3
@@ -391,8 +391,10 @@ encrypt_msg_single() {
     echo "haha$i"
 
     if [[ $CURRENT_ROUND -gt 0 ]]; then
+        cd ..
         PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($CURRENT_ROUND-1)).txt")
         PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
+        cd client
     fi
     echo "$PAYLOAD" > "$FILENAME"
     curl "http://localhost:$USER_PORT/encrypt-msg" \
@@ -473,6 +475,7 @@ if [[ $1 == "run" ]]; then
     start_followers
     start_root_agg
     start_client
+    encrypt-msg
 elif [[ $1 == "clean" ]]; then
     clean_port
     clean_file

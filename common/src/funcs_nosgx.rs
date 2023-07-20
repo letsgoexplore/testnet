@@ -50,6 +50,7 @@ pub fn derive_round_secret_server(
                 continue;
             }
         }
+    }
 
 
     //     let hk = Hkdf::<Sha256>::new(None, &shared_secret.as_ref());

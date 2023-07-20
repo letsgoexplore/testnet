@@ -138,7 +138,7 @@ fn derive_msg_slot(cur_slot: usize, prev_round_output: &RoundOutput) -> SgxResul
 }
 
 fn derive_msg_slot_updated(cur_slot: usize, prev_round_output: &RoundOutputUpdated) -> SgxResult<usize> {
-    debug!("prev_round_output:{:?}", prev_round_output);
+    debug!("prev_round_output:{:?}, cur_slot:{}", prev_round_output, cur_slot);
     let num_zeros = prev_round_output.dc_msg.scheduling_msg[..cur_slot]
         .into_iter()
         .filter(|b| **b == 0)
@@ -305,11 +305,17 @@ fn derive_reservation_updated(
         .parse::<usize>()
         .expect("Invalid DC_NET_N_SLOTS value")}
     else{DC_NET_N_SLOTS};
+    let footprint_n_slots = if EVALUATE_FLAG {
+        env::var("FOOTPRINT_N_SLOTS")
+        .unwrap_or_else(|_| "100".to_string())
+        .parse::<usize>()
+        .expect("Invalid FOOTPRINT_N_SLOTS value")}
+    else{FOOTPRINT_N_SLOTS};
     
     (
-        prev_slot_idx % FOOTPRINT_N_SLOTS,
+        prev_slot_idx % footprint_n_slots,
         prev_slot_val % (dc_net_n_slots as u32),
-        next_slot_idx % FOOTPRINT_N_SLOTS,
+        next_slot_idx % footprint_n_slots,
         next_slot_val % (dc_net_n_slots as u32),
     )
 }
