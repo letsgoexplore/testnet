@@ -225,33 +225,41 @@ start_client() {
     #         --bind "localhost:$USER_PORT" \
     #         --agg-url "http://localhost:$AGGREGATOR_PORT" &
     # done
+    cd client
     for i in $(seq 1 $NUM_USERS); do
         # 创建并启动docker容器，使其在后台运行
         # 这里假设你的Docker镜像名为"my_image"
-        CONTAINER_NAME_NEW="$CONTAINER_PREFIX$i"
+        # CONTAINER_NAME_NEW="$CONTAINER_PREFIX$i"
 
 
-        if docker container inspect $CONTAINER_NAME_NEW > /dev/null 2>&1; then
-            docker start $CONTAINER_NAME_NEW
-        else
-            docker run \
-                -d \
-                -v $PWD:/root/sgx \
-                --hostname $CONTAINER_NAME_NEW \
-                --name $CONTAINER_NAME_NEW \
-                -e SGX_MODE=SW \
-                $DOCKER_IMAGE
-        fi
+        # if docker container inspect $CONTAINER_NAME_NEW > /dev/null 2>&1; then
+        #     docker start $CONTAINER_NAME_NEW
+        # else
+        #     docker run \
+        #         -d \
+        #         -v $PWD:/root/sgx \
+        #         --hostname $CONTAINER_NAME_NEW \
+        #         --name $CONTAINER_NAME_NEW \
+        #         -e SGX_MODE=SW \
+        #         $DOCKER_IMAGE
+        # fi
+        # STATE="${USER_STATE%.txt}$i.txt"
+        # docker exec $CONTAINER_NAME_NEW sh -c "cd /root/sgx/client"
+        # RUST_LOG=docker exec $CONTAINER_NAME_NEW sh -c "debug $CMD_PREFIX start-service \
+        #     --user-state ../$STATE \
+        #     --round $ROUND \
+        #     --bind localhost:$CLIENT_SERVICE_PORT \
+        #     --agg-url http://localhost:$AGGREGATOR_PORT"
+        #     # --no-persist \
+        # docker exec $CONTAINER_NAME_NEW sh -c "cd .."
         STATE="${USER_STATE%.txt}$i.txt"
-        docker exec $CONTAINER_NAME_NEW sh -c "cd /root/sgx/client"
-        RUST_LOG=docker exec $CONTAINER_NAME_NEW sh -c "debug $CMD_PREFIX start-service \
+        USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
+        RUST_LOG=debug $CMD_PREFIX start-service \
             --user-state ../$STATE \
             --round $ROUND \
-            --bind localhost:$CLIENT_SERVICE_PORT \
-            --agg-url http://localhost:$AGGREGATOR_PORT"
+            --bind localhost:$USER_PORT \
+            --agg-url http://localhost:$AGGREGATOR_PORT &
             # --no-persist \
-        docker exec $CONTAINER_NAME_NEW sh -c "cd .."
-
     # STATE="${USER_STATE%.txt}2.txt"
 
     # RUST_LOG=debug $CMD_PREFIX start-service \
@@ -261,6 +269,7 @@ start_client() {
     #     --agg-url "http://localhost:$AGGREGATOR_PORT" &
     #     # --no-persist \
     done
+    cd ..
 }
 
 test_multi_clients() {

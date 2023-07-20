@@ -186,8 +186,7 @@ setup_client() {
         # 创建并启动docker容器，使其在后台运行
         # 这里假设你的Docker镜像名为"my_image"
         CONTAINER_NAME_NEW="$CONTAINER_PREFIX$i"
-
-
+        
         if docker container inspect $CONTAINER_NAME_NEW > /dev/null 2>&1; then
             docker start $CONTAINER_NAME_NEW
         else
@@ -227,6 +226,7 @@ setup_client_single() {
         docker start -ai $CONTAINER_NAME_NEW
     else
         docker run \
+            -d \
             -v $PWD:/root/sgx \
             -ti \
             --hostname $CONTAINER_NAME_NEW \
@@ -260,8 +260,23 @@ client_register() {
 
 setup_env() {
     clean_file
-    setup_server
-    setup_aggregator
+    CONTAINER_NAME_NEW=dcnet-zzy
+    DOCKER_IMAGE=bl4ck5un/sgx-rust-fork:2004-1.1.6 
+
+    if docker container inspect $CONTAINER_NAME_NEW > /dev/null 2>&1; then
+        docker start $CONTAINER_NAME_NEW
+    else
+        docker run \
+            -d \
+            -v $PWD:/root/sgx \
+            --hostname $CONTAINER_NAME_NEW \
+            --name $CONTAINER_NAME_NEW \
+            -e SGX_MODE=SW \
+            $DOCKER_IMAGE
+    fi
+    docker exec $CONTAINER_NAME_NEW sh -c 'cd /root/sgx;echo $PWD'
+    docker exec $CONTAINER_NAME_NEW sh -c 'cd /root/sgx;echo $PWD; ./server_ctrl_side.sh setup-server'
+    docker exec $CONTAINER_NAME_NEW sh -c './server_ctrl_side.sh setup-agg'
     setup_client
 }
 
@@ -513,7 +528,12 @@ elif [[ $1 == "setup-" ]]; then
     setup_env
 elif [[ $1 == "setup-env" ]]; then
     setup_env
+elif [[ $1 == "setup-server" ]]; then
+    setup_server
+elif [[ $1 == "setup-agg" ]]; then
+    setup_aggregator
 elif [[ $1 == "setup-cli" ]]; then
+    clean
     setup_client
 elif [[ $1 == "start-leader" ]]; then
     start_leader

@@ -60,6 +60,7 @@ evaluate_bit() {
             fi
             start_root_agg 
             start_client $num_user
+            sleep 1
             log_time
             send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
             force_root_round_end
@@ -69,28 +70,27 @@ evaluate_bit() {
     done
 }
 
-# test() {
-#     num_user=5
-#     num_leader=1
-#     num_follower=0
-#     num_server=$((num_leader + num_follower))
-#     num_aggregator=1
-#     # dc_net_n_slots=("10" "20" "30" "40" "50")
-#     dc_net_n_slot=5
-#     dc_net_message_length=20
-#     setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
-#     start_leader
-#     start_root_agg 
-#     echo "hahayeah"
-#     start_client $num_user
-#     log_time
-#     echo "hahayeah"
-#     send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
-#     force_root_round_end
-#     sleep 1
-#     stop-all
+test() {
+    num_user=5
+    num_leader=1
+    num_follower=0
+    num_server=$((num_leader + num_follower))
+    num_aggregator=1
+    # dc_net_n_slots=("10" "20" "30" "40" "50")
+    dc_net_n_slot=5
+    dc_net_message_length=20
+    setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
+    start_leader
+    start_root_agg 
+    start_client $num_user
+    # log_time
+    # echo "hahayeah"
+    # send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
+    # force_root_round_end
+    # sleep 1
+    # stop-all
         
-# }
+}
 
 
 log_time() {
@@ -272,7 +272,6 @@ start_client() {
             --bind "localhost:$USER_PORT" \
             --agg-url "http://localhost:$AGGREGATOR_PORT" &
     done
-    echo "finish client starting"
 
     # STATE="${USER_STATE%.txt}1.txt"
 
@@ -401,9 +400,9 @@ send_round_msg_single_client() {
     PAYLOAD=$(cat $FILENAME)
     CURRENT_ROUND=$(curl -s -X GET "http://localhost:$AGGREGATOR_PORT/round-num")
     USER_PORT="$(($CLIENT_SERVICE_PORT + $(($1-1))))"
-    echo "haha$i"
+    echo "haha$1"
 
-    if [[ $1 -gt $2 ]]; then # $1 refers to the sequence num of this user; $2 refers to the dc_net_slot_num
+    if [[ $1 -lt $2 ]]; then # $1 refers to the sequence num of this user; $2 refers to the dc_net_slot_num
         # If this isn't the first round, append the previous round output to the payload. Separate with
         # a comma.
         if [[ $CURRENT_ROUND -gt 0 ]]; then
@@ -415,8 +414,8 @@ send_round_msg_single_client() {
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME"
-    else
-        curl -X POST "http://localhost:$USER_PORT/send-cover"
+    # else
+    #     curl -X POST "http://localhost:$USER_PORT/send-cover"
     fi
 }
 
@@ -430,8 +429,6 @@ send_round_msg() {
     for i in $(seq 1 $NUM_USERS); do
         send_round_msg_single_client $i $dc_net_n_slot &
     done
-    wait
-    echo end
     cd ..
 }
 
