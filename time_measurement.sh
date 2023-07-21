@@ -17,10 +17,11 @@ AGG_SERVERKEYS="aggregator/server-keys.txt"
 SERVER_ROUNDOUTPUT="server/round_output.txt"
 CLIENT_MESSAGE="client/src/message/clientmessage.txt"
 TIME_LOG="server/time_recorder.txt"
+TIME_LOG_ALL="server/time_recorder_all.txt"
 
-CLIENT_SERVICE_PORT="28323"
-AGGREGATOR_PORT="38423"
-SERVER_LEADER_PORT="38523"
+CLIENT_SERVICE_PORT="28333"
+AGGREGATOR_PORT="38424"
+SERVER_LEADER_PORT="38524"
 
 CONTAINER_NAME_PREFIX="dcnet-user-"
 
@@ -43,6 +44,7 @@ ROUND=0
 AGG_TIMEOUT=100.3
 
 evaluate_bit() {
+    rm -f $TIME_LOG_ALL || true
     num_user=10
     num_leader=1
     num_follower=0
@@ -52,21 +54,20 @@ evaluate_bit() {
     dc_net_n_slots=("5" "10")
     dc_net_message_lengths=("20" "40" "60" "80" "100" "120" "140" "160")
     for dc_net_n_slot in "${dc_net_n_slots[@]}"; do
-        for dc_net_message_length in "${dc_net_message_lengths[@]}"; do 
+        for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
             setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
+            echo "$dc_net_n_slot $dc_net_message_length" >> $TIME_LOG_ALL 
             start_leader
             if [[ $num_follower -gt 0 ]]; then
                 start_followers $num_follower
             fi
             start_root_agg 
             start_client $num_user
-            sleep 1
             log_time
             send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
-            sleep 1
             force_root_round_end
-            sleep 1
-            stop-all
+            stop_all
+            python -c "from time_cal import time_cal; time_cal()"
         done
     done
 }
@@ -88,7 +89,7 @@ test() {
     send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
     force_root_round_end
     stop_all
-        
+    sleep 5
 }
 
 
@@ -394,7 +395,7 @@ send_round_msg_single_client() {
     USER_PORT="$(($CLIENT_SERVICE_PORT + $(($1-1))))"
     echo "haha$1"
 
-    if [[ $1 -lt $2 ]]; then # $1 refers to the sequence num of this user; $2 refers to the dc_net_slot_num
+    if [[ $1 -le $2 ]]; then # $1 refers to the sequence num of this user; $2 refers to the dc_net_slot_num
         # If this isn't the first round, append the previous round output to the payload. Separate with
         # a comma.
         if [[ $CURRENT_ROUND -gt 0 ]]; then
@@ -405,9 +406,10 @@ send_round_msg_single_client() {
         result=$(curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
-        --data-binary "@$FILENAME")
+        --data-binary "@$FILENAME" \
+        2>/dev/null)
     else
-        result=$(curl -X POST "http://localhost:$USER_PORT/send-cover")
+        result=$(curl -X POST "http://localhost:$USER_PORT/send-cover" 2>/dev/null)
     fi
 }
 
@@ -419,7 +421,11 @@ send_round_msg() {
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
     cd client
     for i in $(seq 1 $NUM_USERS); do
-        send_round_msg_single_client $i $dc_net_n_slot &
+        if [[ $i -eq $NUM_USERS ]]; then
+            send_round_msg_single_client $i $dc_net_n_slot
+        else
+            send_round_msg_single_client $i $dc_net_n_slot &
+        fi
     done
     echo "hihi"
     cd ..
@@ -437,7 +443,7 @@ reserve_slot() {
 
 force_root_round_end() {
     # Force the round to end
-    curl "http://localhost:$AGGREGATOR_PORT/force-round-end"
+    result=$(curl "http://localhost:$AGGREGATOR_PORT/force-round-end" 2>/dev/null)
 }
 
 # get round_num from aggregator
@@ -498,7 +504,7 @@ elif [[ $1 == "start-client" ]]; then
     start_client
 # elif [[ $1 == "start-agg" ]]; then
 #     start_client
-elif [[ $1 == "get-agg-round-num" ]]; then
+elif [[ $1 == "getnum" ]]; then
     get_agg_round_num
 elif [[ $1 == "encrypt-msg" ]]; then
     encrypt_msg
@@ -508,9 +514,9 @@ elif [[ $1 == "reserve-slot" ]]; then
     reserve_slot
 elif [[ $1 == "force-root-round-end" ]]; then
     force_root_round_end
-elif [[ $1 == "round-result" ]]; then
+elif [[ $1 == "roundresult" ]]; then
     get_round_result $2
-elif [[ $1 == "round-msg" ]]; then
+elif [[ $1 == "roundmsg" ]]; then
     get_round_msg $2
 elif [[ $1 == "stop-servers" ]]; then
     kill_servers

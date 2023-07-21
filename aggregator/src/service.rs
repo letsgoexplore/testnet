@@ -159,7 +159,6 @@ async fn round_num(
     info!("[agg] round: {:?}", &round);
     let body = round.to_string();
     Ok(HttpResponse::Ok().body(body))
-
 }
 
 /// Finalizes and serializes the current aggregator state. Returns the pyaload nad all the
