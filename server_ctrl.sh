@@ -28,7 +28,7 @@ LEADER=1
 NUM_FOLLOWERS=0
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=50
+NUM_USERS=5
 NUM_AGGREGATORS=1
 MESSAGE_LENGTH=40
 ROUND=0
@@ -63,11 +63,18 @@ evaluate_bit() {
 }
 
 test() {
-    setup_env
+    num_user=10
+    num_leader=1
+    num_follower=0
+    num_server=$((num_leader + num_follower))
+    num_aggregator=1
+    dc_net_n_slot=5
+    dc_net_message_length=20
+    setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
     start_leader
     start_root_agg
-    start_client
-    encrypt_msg $2
+    start_client $num_user
+    encrypt_msg $dc_net_n_slot $num_user $dc_net_message_length
     force_root_round_end
 }
 
@@ -100,6 +107,7 @@ setup_server() {
 
     # Accumulate the server registration data in this variable. The separator we use is ';'
     SERVER_REGS=""
+    NUM_SERVERS=$1
 
     # Make a bunch of servers and save their pubkeys in client/ and aggregator/
     for i in $(seq 1 $NUM_SERVERS); do
@@ -151,7 +159,7 @@ setup_server() {
 setup_aggregator() {
     # We only have one aggregator right now
     cd aggregator
-
+    NUM_SERVERS=$1
     # Make a new root aggregator and capture the registration data
     AGG_REG=$(
         $CMD_PREFIX new --level 0 --agg-state "../$AGG_ROOTSTATE" --server-keys "../$AGG_SERVERKEYS"
@@ -170,7 +178,8 @@ setup_aggregator() {
 
 setup_client() {
     cd client
-
+    NUM_SERVERS=$1
+    NUM_USERS=$2
     # Make new clients and capture the registration data
     USER_REG=$(
         $CMD_PREFIX new \
@@ -190,16 +199,29 @@ setup_client() {
     cd ..
 }
 
+setup_parameter() {
+    footprint_n_slots=$(expr 4 \* $2)
+    echo "DC_NET_MESSAGE_LENGTH=$1\n"
+    echo "DC_NET_N_SLOTS=$2\n"
+    echo "FOOTPRINT_N_SLOTS=$footprint_n_slots\n"
+
+    export DC_NET_MESSAGE_LENGTH=$1
+    export DC_NET_N_SLOTS=$2
+    export FOOTPRINT_N_SLOTS=$footprint_n_slots
+}
+
 setup_env() {
     clean
-    setup_server
-    setup_aggregator
-    setup_client
+    setup_parameter $1 $2
+    setup_server $3
+    setup_aggregator $3
+    setup_client $3 $4
 }
 
 # Starts the first client
 start_client() {
     cd client
+    NUM_USERS=$1
     for i in $(seq 1 $NUM_USERS); do
         STATE="${USER_STATE%.txt}$i.txt"
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
@@ -210,7 +232,7 @@ start_client() {
             --agg-url http://localhost:$AGGREGATOR_PORT &
             # --no-persist \
     done
-    sleep 120
+    sleep 6
     cd ..
 }
 
@@ -327,6 +349,9 @@ start_followers() {
 }
 
 encrypt_msg() {
+    dc_net_n_slot=$1
+    NUM_USERS=$2
+    MESSAGE_LENGTH=$3
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
     for i in $(seq 1 $NUM_USERS); do
         # Base64-encode the given message
