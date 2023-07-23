@@ -389,7 +389,7 @@ start_followers() {
 }
 
 send_round_msg_single_client() {
-    FILENAME="src/message/clientmessage_$(($1-1)).txt"
+    FILENAME="message/clientmessage_$(($1-1)).txt"
     PAYLOAD=$(cat $FILENAME)
     CURRENT_ROUND=$(curl -s -X GET "http://localhost:$AGGREGATOR_PORT/round-num")
     USER_PORT="$(($CLIENT_SERVICE_PORT + $(($1-1))))"

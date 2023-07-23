@@ -16,10 +16,10 @@ pub fn log_time() {
         .expect("[log_time] time error")
         .as_nanos();
 
-    if let Err(err) = writeln!(file, "{}", timestamp) {
+    if let Err(err) = writeln!(file, "[server output]:{}", timestamp) {
         eprintln!("[log_time] fail to write: {}", err);
     } else {
         println!("[log_time] ✅already log!");
     }
-        
+
 }

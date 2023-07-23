@@ -159,6 +159,7 @@ async fn round_num(
     info!("[agg] round: {:?}", &round);
     let body = round.to_string();
     Ok(HttpResponse::Ok().body(body))
+
 }
 
 /// Finalizes and serializes the current aggregator state. Returns the pyaload nad all the
@@ -325,7 +326,7 @@ pub(crate) async fn start_service(
     // Start the web server
     HttpServer::new(move || {
         App::new().data(state.clone()).configure(|cfg| {
-            cfg.service(submit_agg).service(submit_agg_from_agg).service(force_round_end).service(round_num);
+            cfg.service(submit_agg).service(force_round_end).service(round_num);
         })
     })
     .workers(1)

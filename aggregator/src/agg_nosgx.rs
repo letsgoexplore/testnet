@@ -274,7 +274,6 @@ fn add_to_agg_user_submit(
         let mut current_aggregation = current_aggregation.clone();
         if current_aggregation.round != incoming_msg.round {
             error!("current_aggregation.round_info != incoming_msg.round_info");
-            error!("current_round_info:{:?}, incoming_msg.round:{:?}", current_aggregation.round, incoming_msg.round);
             return Err(AggregatorError::InvalidParameter);
         }
 

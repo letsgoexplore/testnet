@@ -95,6 +95,7 @@ impl Default for DcRoundMessage {
             .parse::<usize>()
             .expect("Invalid FOOTPRINT_N_SLOTS value")}
         else{FOOTPRINT_N_SLOTS};
+
         DcRoundMessage {
             scheduling_msg: vec![0; footprint_n_slots],
             aggregated_msg: Array2D::filled_with(0u8, dc_net_n_slots, dc_net_message_length),
@@ -438,18 +439,3 @@ impl UserSubmissionMessageUpdated {
         false
     }
 }
-
-// #[cfg(test)]
-// mod tests{
-//     use super::*;
-//     use rand::rngs::OsRng;
-//     #[test]
-//     fn test_EntityId_swap() -> Result<(EntityId)>{
-//         let mut csprng = OsRng::new()?;
-//         let sig_key = SecretKey::generate(&mut csprng);
-//         let sig_key_pk = PublicKey::from_secret::<Sha512>(&sig_key);
-//         let mut &id = EntityId::from(&sig_key_pk);
-//         id
-//     }
-    
-// }

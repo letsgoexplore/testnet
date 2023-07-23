@@ -7,8 +7,6 @@ use crate::params::SHARED_SECRET_LENGTH;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::vec::Vec;
-use std::fs::File;
-use std::io::{Read, Write};
 
 macro_rules! impl_enum {
     (
@@ -102,7 +100,6 @@ pub type UserSubmissionBlobUpdated = crate::UserSubmissionMessageUpdated;
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to
 /// aggregators of all levels as well as anytrust nodes.
 pub type RoundSubmissionBlob = crate::AggregatedMessageObsolete;
-// pub type RoundSubmissionBlobUpdate = AggregatedMessage;
 
 /// The unblinded aggregate output by a single anytrust node
 /// This serialized to a UnblindedAggregateShare defined in enclave/message_types.rs
@@ -236,14 +233,6 @@ pub struct SignedPubKeyDb {
     pub aggregators: BTreeMap<EntityId, AttestedPublicKey>,
 }
 
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Default, Serialize, Debug, Deserialize)]
-pub struct SignedPubKeyDbNoSGX {
-    pub users: BTreeMap<EntityId, AttestedPublicKey>,
-    pub servers: BTreeMap<EntityId, ServerPubKeyPackage>,
-    pub aggregators: BTreeMap<EntityId, AttestedPublicKey>,
-}
-
 // TODO: Figure out what this should contain. Probably just a long bitstring.
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
@@ -259,40 +248,4 @@ pub struct RoundOutputUpdated {
     pub round: u32,
     pub dc_msg: DcRoundMessage,
     pub server_sigs: Vec<SignatureNoSGX>,
-}
-
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct UserSubmissionMessagePackageUpdated {
-    pub ciphertext: UserSubmissionBlobUpdated,
-    pub agg_url: std::string::String,
-}
-impl UserSubmissionMessagePackageUpdated{
-    pub fn save_data_to_file(data: &UserSubmissionMessagePackageUpdated, filename: &str) -> std::io::Result<()> {
-        let file = File::create(filename)?;
-        serde_json::to_writer(file, data)?;
-        Ok(())
-    }
-    
-    // 从文件中读取data_to_save
-    pub fn load_data_from_file(filename: &str) -> std::io::Result<UserSubmissionMessagePackageUpdated> {
-        let file = File::open(filename)?;
-        let reader = std::io::BufReader::new(file);
-        let data: UserSubmissionMessagePackageUpdated = serde_json::from_reader(reader)?;
-        Ok(data)
-    }
-}
-
-#[cfg(test)]
-mod tests{
-    #[test]
-    fn test_haha() -> Result<(EntityId)>{
-        let a = UserSubmissionBlobUpdated.default();
-        let b = "https://example.com";
-        let c = UserSubmissionMessagePackageUpdated{a,b};
-        save_data_to_file(&c, "data.json").expect("Failed to save data to file.");
-        let loaded_data = load_data_from_file("data.json").expect("Failed to load data from file.");
-        println!("Loaded data: {:?}", loaded_data);
-    }
-    
 }

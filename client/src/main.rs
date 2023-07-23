@@ -4,7 +4,7 @@ extern crate interface;
 mod service;
 mod user_state;
 mod util;
-use std::env;
+
 use crate::{
     service::start_service,
     user_state::UserState,
@@ -13,7 +13,7 @@ use crate::{
 
 use common::{cli_util, enclave::DcNetEnclave};
 use interface::{DcMessage, ServerPubKeyPackageNoSGX, UserMsg, DC_NET_MESSAGE_LENGTH, EVALUATE_FLAG, RoundOutputUpdated};
-use std::{ffi::OsString, fs::File, path::Path};
+use std::{ffi::OsString, fs::File, path::Path,env};
 
 use clap::{App, AppSettings, Arg, SubCommand};
 
@@ -23,6 +23,7 @@ fn main() -> Result<(), UserError> {
     // Do setup
     env_logger::init();
     let enclave = DcNetEnclave::init("/sgxdcnet/lib/enclave.signed.so")?;
+
     let dc_net_message_length = if EVALUATE_FLAG {
         env::var("DC_NET_MESSAGE_LENGTH")
         .unwrap_or_else(|_| "160".to_string())
@@ -328,9 +329,7 @@ fn main() -> Result<(), UserError> {
             round,
             user_state_path,
         };
-        debug!("1");
         start_service(bind_addr, state).unwrap();
-        debug!("2");
     }
 
     enclave.destroy();

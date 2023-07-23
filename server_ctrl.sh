@@ -16,71 +16,24 @@ AGG_SERVERKEYS="aggregator/server-keys.txt"
 
 SERVER_ROUNDOUTPUT="server/round_output.txt"
 
-CLIENT_SERVICE_PORT="28333"
-AGGREGATOR_PORT="38424"
-SERVER_LEADER_PORT="38526"
+CLIENT_SERVICE_PORT="8323"
+AGGREGATOR_PORT="18424"
+SERVER_LEADER_PORT="18523"
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
-CONTAINER_PREFIX="dcnet-"
-DOCKER_IMAGE="bl4ck5un/sgx-rust-fork:2004-1.1.6"
+
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
 NUM_FOLLOWERS=0
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=1
+NUM_USERS=10
 NUM_AGGREGATORS=1
-MESSAGE_LENGTH=20
+
 ROUND=0
-AGG_TIMEOUT=100.3
-# clean_port() {
-#     # clean port
-#     echo "start hahah"
-#     for i in $(seq 1 $NUM_USERS); do
-#         PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
-#         PID=$(lsof -t -i:${PORT} 2>/dev/null)
-#         echo "1"
-#         if [ -z "$PID" ]; then
-#             PID=0
-#         fi
 
-#         if [ "$PID" -gt 0 ]; then
-#             echo "Terminating process $PID"
-#             kill $PID
-#         else
-#             echo "No process found listening on port $PORT"
-#         fi
-#     done
-#     echo "clean user port"
-
-#     for i in $(seq 1 $NUM_AGGREGATORS); do
-#         PORT="$(($AGGREGATOR_PORT + $(($i-1))))"
-#         PID=$(lsof -t -i:${PORT})
-#         if [ -n "$PID" ]; then
-#             echo "Terminating process $PID"
-#             kill $PID
-#         else
-#             echo "No process found listening on port $PORT"
-#         fi
-#     done
-#     echo "clean aggregator port"
-
-
-#     for i in $(seq 1 $NUM_SERVERS); do
-#         PORT="$(($SERVER_LEADER_PORT + $(($i-1))))"
-#         PID=$(lsof -t -i:${PORT})
-#         if [ -n "$PID" ]; then
-#             echo "Terminating process $PID"
-#             kill $PID
-#         else
-#             echo "No process found listening on port $PORT"
-#         fi
-#     done
-#     echo "clean server port"
-# }
-
-clean_file(){
+clean() {
     # The below pattern removes all files of the form "client/user-stateX.txt" for any X
     rm -f ${USER_STATE%.txt}*.txt || true
     rm -f $USER_SERVERKEYS || true
@@ -95,10 +48,6 @@ clean_file(){
     echo "Cleaned"
 }
 
-clean(){
-    clean_port
-    clean_file
-}
 # build() {
 #     make -C enclave
 #     for d in "client" "server" "aggregator"; do
@@ -204,7 +153,7 @@ setup_client() {
 }
 
 setup_env() {
-    clean_file
+    clean
     setup_server
     setup_aggregator
     setup_client
@@ -212,6 +161,8 @@ setup_env() {
 
 # Starts the first client
 start_client() {
+    cd client
+
     # CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-client
     # for i in $(seq 1 $NUM_USERS); do
     #     STATE="${USER_STATE%.txt}$i.txt"
@@ -225,50 +176,16 @@ start_client() {
     #         --bind "localhost:$USER_PORT" \
     #         --agg-url "http://localhost:$AGGREGATOR_PORT" &
     # done
-    cd client
-    for i in $(seq 1 $NUM_USERS); do
-        # 创建并启动docker容器，使其在后台运行
-        # 这里假设你的Docker镜像名为"my_image"
-        # CONTAINER_NAME_NEW="$CONTAINER_PREFIX$i"
 
+    STATE="${USER_STATE%.txt}1.txt"
 
-        # if docker container inspect $CONTAINER_NAME_NEW > /dev/null 2>&1; then
-        #     docker start $CONTAINER_NAME_NEW
-        # else
-        #     docker run \
-        #         -d \
-        #         -v $PWD:/root/sgx \
-        #         --hostname $CONTAINER_NAME_NEW \
-        #         --name $CONTAINER_NAME_NEW \
-        #         -e SGX_MODE=SW \
-        #         $DOCKER_IMAGE
-        # fi
-        # STATE="${USER_STATE%.txt}$i.txt"
-        # docker exec $CONTAINER_NAME_NEW sh -c "cd /root/sgx/client"
-        # RUST_LOG=docker exec $CONTAINER_NAME_NEW sh -c "debug $CMD_PREFIX start-service \
-        #     --user-state ../$STATE \
-        #     --round $ROUND \
-        #     --bind localhost:$CLIENT_SERVICE_PORT \
-        #     --agg-url http://localhost:$AGGREGATOR_PORT"
-        #     # --no-persist \
-        # docker exec $CONTAINER_NAME_NEW sh -c "cd .."
-        STATE="${USER_STATE%.txt}$i.txt"
-        USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
-        RUST_LOG=debug $CMD_PREFIX start-service \
-            --user-state ../$STATE \
-            --round $ROUND \
-            --bind localhost:$USER_PORT \
-            --agg-url http://localhost:$AGGREGATOR_PORT &
-            # --no-persist \
-    # STATE="${USER_STATE%.txt}2.txt"
+    RUST_LOG=debug $CMD_PREFIX start-service \
+        --user-state "../$STATE" \
+        --round $ROUND \
+        --bind "localhost:$CLIENT_SERVICE_PORT" \
+        --agg-url "http://localhost:$AGGREGATOR_PORT" &
+        # --no-persist \
 
-    # RUST_LOG=debug $CMD_PREFIX start-service \
-    #     --user-state "../$STATE" \
-    #     --round $ROUND \
-    #     --bind "localhost:$CLIENT_SERVICE_PORT1" \
-    #     --agg-url "http://localhost:$AGGREGATOR_PORT" &
-    #     # --no-persist \
-    done
     cd ..
 }
 
@@ -318,12 +235,7 @@ test_multi_clients() {
 
     # all ciphertexts have been submitted to the aggregator
     # start server
-    start_leader
     sleep 3 && force_root_round_end
-    sleep 2
-    kill_clients 2> /dev/null || true
-    kill_aggregators 2> /dev/null || true
-    kill_servers 2> /dev/null || true
 }
 
 
@@ -345,7 +257,7 @@ start_root_agg() {
         --round $ROUND \
         --bind "localhost:$AGGREGATOR_PORT" \
         --start-time $START_TIME \
-        --round-duration $AGG_TIMEOUT \
+        --round-duration 10000 \
         --forward-to "http://localhost:$SERVER_LEADER_PORT" &
         # --no-persist \
 
@@ -383,43 +295,37 @@ start_followers() {
     cd ..
 }
 
-encrypt_msg_single() {
-    FILENAME="src/message/clientmessage_$(($1-1)).txt"
-    PAYLOAD=$(cat $FILENAME)
-    CURRENT_ROUND=$(curl -s -X GET "http://localhost:$AGGREGATOR_PORT/round-num")
-    USER_PORT="$(($CLIENT_SERVICE_PORT + $(($1-1))))"
-    echo "haha$i"
-
-    if [[ $CURRENT_ROUND -gt 0 ]]; then
-        cd ..
-        PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($CURRENT_ROUND-1)).txt")
-        PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
-        cd client
-    fi
-    echo "$PAYLOAD" > "$FILENAME"
-    curl "http://localhost:$USER_PORT/encrypt-msg" \
-    -X POST \
-    -H "Content-Type: text/plain" \
-    --data-binary "@$FILENAME"
-}
-
 encrypt_msg() {
     # for i in $(seq 1 $NUM_USERS); do
         # Base64-encode the given message
-        
-        python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
-        cd client
-        CURRENT_ROUND=$(curl -s -X GET "http://localhost:$AGGREGATOR_PORT/round-num")
+        PAYLOAD=$(base64 <<< "$1")
+
         # If this isn't the first round, append the previous round output to the payload. Separate with
         # a comma.
-        for i in $(seq 1 $NUM_USERS); do
-            encrypt_msg_single $i &
-        done
-        cd ..
-    # curl "http://localhost:$CLIENT_SERVICE_PORT1/encrypt-msg" \
-    # -X POST \
-    # -H "Content-Type: text/plain" \
-    # --data-binary "@payload.txt"
+        if [[ $ROUND -gt 0 ]]; then
+            PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
+            PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
+        fi
+
+        # Do the operation
+        # curl "http://localhost:$CLIENT_SERVICE_PORT/encrypt-msg" \
+        #     -X POST \
+        #     -H "Content-Type: text/plain" \
+        #     --data-binary "$PAYLOAD"
+        
+        echo "$PAYLOAD" > payload.txt
+
+        # USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
+        # curl "http://localhost:$USER_PORT/encrypt-msg" \
+        # -X POST \
+        # -H "Content-Type: text/plain" \
+        # --data-binary "@payload.txt"
+    # done
+    
+    curl "http://localhost:$CLIENT_SERVICE_PORT/encrypt-msg" \
+    -X POST \
+    -H "Content-Type: text/plain" \
+    --data-binary "@payload.txt"
 }
 
 send_cover() {
@@ -435,12 +341,6 @@ reserve_slot() {
 force_root_round_end() {
     # Force the round to end
     curl "http://localhost:$AGGREGATOR_PORT/force-round-end"
-}
-
-# get round_num from aggregator
-get_agg_round_num(){
-    result=$(curl -s -X GET "http://localhost:$AGGREGATOR_PORT/round-num")
-    echo "result:$result"
 }
 
 # Returns the round result
@@ -469,16 +369,14 @@ kill_clients() {
 #     encrypt-msg <MSG> takes a plain string. E.g., `./server_ctrl.sh encrypt-msg hello`
 #     get-round-result <ROUND> takes an integer. E.g., `./server_ctrl.sh get-round-result 4`
 #     test-multi-clients <MSG> takes a plain string. E.g., `./server_ctrl.sh test-multi-clients hello`
-if [[ $1 == "run" ]]; then
+
+if [[ $1 == "clean" ]]; then
+    clean
+elif [[ $1 == "run" ]]; then
     setup_env
     start_leader
-    start_followers
     start_root_agg
-    start_client
-    encrypt-msg
-elif [[ $1 == "clean" ]]; then
-    clean_port
-    clean_file
+    test_multi_clients $2
 elif [[ $1 == "setup-env" ]]; then
     setup_env
 elif [[ $1 == "start-leader" ]]; then
@@ -491,8 +389,6 @@ elif [[ $1 == "start-client" ]]; then
     start_client
 # elif [[ $1 == "start-agg" ]]; then
 #     start_client
-elif [[ $1 == "get-agg-round-num" ]]; then
-    get_agg_round_num
 elif [[ $1 == "encrypt-msg" ]]; then
     encrypt_msg $2
 elif [[ $1 == "send-cover" ]]; then
@@ -515,7 +411,7 @@ elif [[ $1 == "stop-all" ]]; then
     kill_clients 2> /dev/null || true
     kill_aggregators 2> /dev/null || true
     kill_servers 2> /dev/null || true
-elif [[ $1 == "test-multi-clients" ]]; then
+elif [[ $1 == "multi" ]]; then
     test_multi_clients $2
 else
     echo "Did not recognize command"

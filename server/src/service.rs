@@ -185,7 +185,7 @@ async fn submit_agg(
                 if round_shares.len() == group_size {
                     info!("Finishing round");
                     leader_finish_round(state_handle.deref_mut());
-                    log_time::log_time()
+                    log_time::log_time();
                 }
             }
             // We're a follower. Send the unblinded aggregate to the leader
@@ -247,24 +247,6 @@ async fn submit_share(
 
     Ok(HttpResponse::Ok().body("OK\n"))
 }
-
-// #[get("/round-num")]
-// async fn round_num(
-//     state: web::Data<Arc<Mutex<ServiceState>>>,
-// ) -> Result<HttpResponse, ApiError>  {
-//     // Unwrap the round and make it a struct
-
-//     // Unpack state
-//     let handle = state.get_ref().lock().unwrap();
-//     let ServiceState {
-//         ref round,
-//         ..
-//     } = *handle;
-//     info!("[agg] round: {:?}", &round);
-//     let body = round.to_string();
-//     Ok(HttpResponse::Ok().body(body))
-
-// }
 
 /// Returns the output of the specified round
 #[get("/round-result/{round}")]

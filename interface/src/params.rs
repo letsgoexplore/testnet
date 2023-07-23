@@ -1,3 +1,6 @@
+///whether or not DC_NET_N_SLOTS,DC_NET_MESSAGE_LENGTH, FOOTPRINT_N_SLOTS are read from env
+pub const EVALUATE_FLAG: bool = false;
+
 /// User id is sha-256 hash of some public key
 pub const USER_ID_LENGTH: usize = 32;
 pub const USER_ID_MAX_LEN: usize = 32;
@@ -11,8 +14,7 @@ pub const FOOTPRINT_N_SLOTS: usize = DC_NET_N_SLOTS * 4;
 /// The number of slots in a DC net message
 pub const DC_NET_N_SLOTS: usize = 100;
 /// The number of bytes in each DC net slot
-pub const DC_NET_MESSAGE_LENGTH: usize = 140;
-pub const EVALUATE_FLAG: bool = true;
+pub const DC_NET_MESSAGE_LENGTH: usize = 160;
 
 /// There are these many rounds per window
 pub const DC_NET_ROUNDS_PER_WINDOW: u32 = 100;

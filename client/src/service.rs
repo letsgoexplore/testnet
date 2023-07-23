@@ -9,6 +9,7 @@ use core::ops::DerefMut;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
+    env,
 };
 
 use actix_web::{
@@ -18,7 +19,7 @@ use actix_web::{
 };
 use log::{debug, error, info};
 use thiserror::Error;
-use std::env;
+
 #[derive(Debug, Error)]
 enum ApiError {
     #[error("internal error")]
@@ -85,6 +86,7 @@ async fn encrypt_msg(
             .parse::<usize>()
             .expect("Invalid DC_NET_MESSAGE_LENGTH value")}
         else{DC_NET_MESSAGE_LENGTH};
+
         // Check the length
         if msg_bytes.len() > dc_net_message_length {
             return Err(ApiError::Malformed(format!(
