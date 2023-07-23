@@ -33,44 +33,6 @@ NUM_AGGREGATORS=1
 MESSAGE_LENGTH=40
 ROUND=0
 
-evaluate_bit() {
-    rm -f $TIME_LOG_ALL || true
-    num_user=10
-    num_leader=1
-    num_follower=0
-    num_server=$((num_leader + num_follower))
-    num_aggregator=1
-    # dc_net_n_slots=("10" "20" "30" "40" "50")
-    dc_net_n_slots=("5" "10")
-    dc_net_message_lengths=("20" "40" "60" "80" "100" "120" "140" "160")
-    for dc_net_n_slot in "${dc_net_n_slots[@]}"; do
-        for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
-            setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
-            echo "$dc_net_n_slot $dc_net_message_length" >> $TIME_LOG_ALL 
-            start_leader
-            if [[ $num_follower -gt 0 ]]; then
-                start_followers $num_follower
-            fi
-            start_root_agg 
-            start_client $num_user
-            log_time
-            send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
-            force_root_round_end
-            stop_all
-            python -c "from time_cal import time_cal; time_cal()"
-        done
-    done
-}
-
-test() {
-    setup_env
-    start_leader
-    start_root_agg
-    start_client
-    encrypt_msg $2
-    force_root_round_end
-}
-
 clean() {
     # The below pattern removes all files of the form "client/user-stateX.txt" for any X
     rm -f ${USER_STATE%.txt}*.txt || true
@@ -327,20 +289,17 @@ start_followers() {
 }
 
 encrypt_msg() {
-    python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
+    PAYLOAD=$(base64 <<< "$1")
     for i in $(seq 1 $NUM_USERS); do
         # Base64-encode the given message
-        cd client
-        FILENAME="message/clientmessage_$(($i-1)).txt"
-        PAYLOAD=$(cat $FILENAME)
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
-        cd ..
+
         # If this isn't the first round, append the previous round output to the payload. Separate with
         # a comma.
         if [[ $ROUND -gt 0 ]]; then
             PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
             PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
-            echo "$PAYLOAD" > $FILENAME
+            echo "$PAYLOAD" > payload.txt
         fi
 
         # Do the operation
@@ -357,13 +316,12 @@ encrypt_msg() {
         # -H "Content-Type: text/plain" \
         # --data-binary "@payload.txt"
     # done
-        cd client
+    
         (curl "http://localhost:$USER_PORT/encrypt-msg" \
             -X POST \
             -H "Content-Type: text/plain" \
-            --data-binary "@$FILENAME" \
+            --data-binary "@payload.txt" \
             2>/dev/null) &
-        cd ..
     done
     sleep 2
 }
@@ -418,7 +376,12 @@ elif [[ $1 == "run" ]]; then
     start_root_agg
     test_multi_clients $2
 elif [[ $1 == "test" ]]; then
-    test
+    setup_env
+    start_leader
+    start_root_agg
+    start_client
+    encrypt_msg $2
+    force_root_round_end
 elif [[ $1 == "setup-env" ]]; then
     setup_env
 elif [[ $1 == "start-leader" ]]; then
