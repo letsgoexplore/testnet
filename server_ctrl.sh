@@ -19,9 +19,11 @@ TIME_LOG="server/time_recorder.txt"
 TIME_LOG_ALL="server/time_recorder_all.txt"
 CLIENT_MESSAGE="client/src/message/clientmessage.txt"
 CLINET_TIME_LOG="client/client_time_recorder.txt"
+CLINET_ENCRYPT_TIME_LOG="client/client_encrypt_time_recorder.txt"
+AGG_ENCRYPT_TIME_LOG="aggregator/agg_encrypt_time_recorder.txt"
 CLIENT_SERVICE_PORT="8323"
 AGGREGATOR_PORT="18423"
-SERVER_LEADER_PORT="18523"
+SERVER_LEADER_PORT="18623"
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
@@ -38,52 +40,84 @@ ROUND=0
 
 evaluate_bit() {
     rm -f $TIME_LOG_ALL || true
-    num_user=20
+    num_users=("30" "60" "90" "120" "150" "180" "210")
     num_leader=1
-    num_follower=2
+    # num_follower=("0" "3" "5" "7")
+    num_follower=3
     num_server=$((num_leader + num_follower))
     num_aggregator=1
-    dc_net_n_slots=("10" "20" "30" "40" "50")
+    dc_net_message_length=160
+    # dc_net_n_slots=("10" "20" "30")
+    # dc_net_n_slots=("20" "30" "40" "50")
     # dc_net_n_slots=("5" "10")
-    dc_net_message_lengths=("20" "40" "60" "80" "100" "120" "140" "160")
-    echo "[settings]: clients: $num_user, aggregator: $num_aggregator, servers: $num_server" >> $TIME_LOG_ALL
-    echo "[dc_net_n_slot] [dc_net_message_length]" >> $TIME_LOG_ALL
-    for dc_net_n_slot in "${dc_net_n_slots[@]}"; do
-        for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
-            setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
-            echo "$dc_net_n_slot $dc_net_message_length" >> $TIME_LOG_ALL 
-            start_leader
-            if [[ $num_follower -gt 0 ]]; then
-                start_followers $num_follower
-            fi
-            start_root_agg $num_server
-            start_client $num_user
-            log_time
-            encrypt_msg $dc_net_n_slot $num_user $dc_net_message_length
-            log_time
-            force_root_round_end
-            sleep 4
-            stop_all
-            python -c "from time_cal import time_cal; time_cal()"
-            sleep 1
-        done
+    # dc_net_message_lengths=("20" "40" "60" "80" "100" "120" "140" "160")
+    echo "[settings]: aggregator: $num_aggregator, servers: $num_server" >> $TIME_LOG_ALL
+    echo "[num_user]" >> $TIME_LOG_ALL
+    echo "[entire time]" >> $TIME_LOG_ALL
+    
+    for num_user in "${num_users[@]}"; do
+        echo "$num_user" >> $TIME_LOG_ALL
+        dc_net_n_slot=$num_user
+        setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
+        start_leader
+        if [[ $num_follower -gt 0 ]]; then
+            start_followers $num_follower
+        fi
+        start_root_agg $num_server
+        test_multi_clients $num_user $dc_net_message_length
+        python -c "from time_cal import time_cal; time_cal()"
     done
 }
 
-test() {
-    num_user=20
+evaluate_bit_server() {
+    rm -f $TIME_LOG_ALL || true
+    num_user=120
     num_leader=1
-    num_follower=0
+    # num_follower=("0" "3" "5" "7")
+    num_followers=( "2" "3" "4" "5" "6" "7" )
+    
+    num_aggregator=1
+    dc_net_message_length=160
+    # dc_net_n_slots=("10" "20" "30")
+    # dc_net_n_slots=("20" "30" "40" "50")
+    # dc_net_n_slots=("5" "10")
+    # dc_net_message_lengths=("20" "40" "60" "80" "100" "120" "140" "160")
+    echo "[settings]: aggregator: $num_aggregator, clients: $num_user" >> $TIME_LOG_ALL
+    echo "[num_server]" >> $TIME_LOG_ALL
+    echo "[entire time]" >> $TIME_LOG_ALL
+    
+    for num_follower in "${num_followers[@]}"; do
+        num_server=$((num_leader + num_follower))
+        dc_net_n_slot=$num_user
+        echo "$num_server" >> $TIME_LOG_ALL
+        setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
+        start_leader
+        if [[ $num_follower -gt 0 ]]; then
+            start_followers $num_follower
+        fi
+        start_root_agg $num_server
+        test_multi_clients $num_user $dc_net_message_length
+        python -c "from time_cal import time_cal; time_cal()"
+    done
+}
+
+
+test() {
+    rm -f $TIME_LOG_ALL || true
+    num_users=("50" "100" "200" "300" "500" "700" "1000")
+    num_leader=1
+    num_follower=3
     num_server=$((num_leader + num_follower))
     num_aggregator=1
     dc_net_n_slot=10
     dc_net_message_length=20
     setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
     start_leader
-    start_root_agg
-    start_client $num_user
-    encrypt_msg $dc_net_n_slot $num_user $dc_net_message_length
-    force_root_round_end
+    if [[ $num_follower -gt 0 ]]; then
+        start_followers $num_follower
+    fi
+    start_root_agg $num_server
+    test_multi_clients $num_user $dc_net_message_length
 }
 
 log_time() {
@@ -106,6 +140,9 @@ clean() {
     rm -f ${CLIENT_MESSAGE%.txt}*.txt || true
     rm -f $TIME_LOG || true
     rm -f $CLINET_TIME_LOG || true
+    rm -f $CLINET_ENCRYPT_TIME_LOG || true
+    rm -f $AGG_ENCRYPT_TIME_LOG || true
+    
     echo "Cleaned"
 }
 
@@ -253,6 +290,8 @@ start_client() {
 }
 
 test_multi_clients() {
+    NUM_USERS=$1
+    MESSAGE_LENGTH=$2
     # start the aggregator
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
     # start clients and send the ciphertexts
@@ -296,10 +335,9 @@ test_multi_clients() {
         sleep 1 && kill_clients
     done
 
-    rm payload.txt
-
     # all ciphertexts have been submitted to the aggregator
     # start server
+    log_time
     sleep 3 && force_root_round_end
     sleep 5
     kill_clients 2> /dev/null || true
@@ -476,6 +514,8 @@ elif [[ $1 == "test" ]]; then
     test
 elif [[ $1 == "eval" ]]; then
     evaluate_bit
+elif [[ $1 == "eval-ser" ]]; then
+    evaluate_bit_server
 elif [[ $1 == "setup-env" ]]; then
     setup_env
 elif [[ $1 == "start-leader" ]]; then

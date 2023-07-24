@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, UserError},
     UserState,
 };
-use common::{cli_util, enclave::DcNetEnclave, log_time::log_client_time};
+use common::{cli_util, enclave::DcNetEnclave, log_time::{log_client_encrypt_time,log_client_time}};
 use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlobUpdated, UserMsg, DC_NET_MESSAGE_LENGTH, EVALUATE_FLAG};
 
 use core::ops::DerefMut;
@@ -127,7 +127,7 @@ async fn encrypt_msg(
     let ciphertext = user_state.submit_round_msg(&enclave, *round, msg)?;
     let duration_submit = start_submit.elapsed();
     debug!("[client] submit_round_msg: {:?}", duration_submit);
-
+    log_client_encrypt_time(duration_submit.as_nanos());
 
     debug!("round: {}", ciphertext.round);
     debug!("scheduling_msg.len(): {}", ciphertext.aggregated_msg.scheduling_msg.len());

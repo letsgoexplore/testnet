@@ -3,7 +3,7 @@ use crate::{
     AggregatorState,
 };
 use common::cli_util;
-
+use common::log_time::log_agg_encrypt_time;
 use common::types_nosgx::{
     AggregatedMessage,
     SubmissionMessage,
@@ -80,7 +80,7 @@ async fn submit_agg(
     // debug!("[agg] submit-agg success");
     let duration = start.elapsed();
     debug!("[agg] submit_agg: {:?}", duration);
-
+    log_agg_encrypt_time(duration.as_nanos());
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
@@ -109,7 +109,6 @@ async fn submit_agg_from_agg(
     // debug!("[agg] submit-agg-from-agg success");
     let duration = start.elapsed();
     debug!("[agg] submit_agg_from_agg: {:?}", duration);
-
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 

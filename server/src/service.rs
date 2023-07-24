@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, save_output, ServerError},
     ServerState,
 };
-use common::{cli_util, log_time};
+use common::{cli_util, log_time::log_server_finish_time};
 use interface::RoundOutputUpdated;
 
 use common::types_nosgx::{
@@ -185,7 +185,7 @@ async fn submit_agg(
                 if round_shares.len() == group_size {
                     info!("Finishing round");
                     leader_finish_round(state_handle.deref_mut());
-                    log_time::log_time();
+                    log_server_finish_time();
                 }
             }
             // We're a follower. Send the unblinded aggregate to the leader
@@ -243,7 +243,7 @@ async fn submit_share(
     if round_shares.len() == group_size {
         info!("Finishing round");
         leader_finish_round(handle.deref_mut());
-        log_time::log_time();
+        log_server_finish_time();
     }
 
     Ok(HttpResponse::Ok().body("OK\n"))
