@@ -1,5 +1,5 @@
 ///whether or not DC_NET_N_SLOTS,DC_NET_MESSAGE_LENGTH, FOOTPRINT_N_SLOTS are read from env
-pub const EVALUATE_FLAG: bool = false;
+pub const EVALUATE_FLAG: bool = true;
 
 /// User id is sha-256 hash of some public key
 pub const USER_ID_LENGTH: usize = 32;

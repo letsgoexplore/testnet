@@ -248,6 +248,7 @@ fn main() -> Result<(), AggregatorError> {
             .collect();
         // Check that the forward-to URLs are well-formed
         for url in forward_urls.iter() {
+            info!("url:{}",url);
             let _: actix_web::http::Uri =
                 url.parse().expect(&format!("{} is not a valid URL", url));
         }

@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, UserError},
     UserState,
 };
-use common::{cli_util, enclave::DcNetEnclave};
+use common::{cli_util, enclave::DcNetEnclave, log_time::log_client_time};
 use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlobUpdated, UserMsg, DC_NET_MESSAGE_LENGTH, EVALUATE_FLAG};
 
 use core::ops::DerefMut;
@@ -134,7 +134,7 @@ async fn encrypt_msg(
     debug!("aggregated_msg.len(): {} * {}", ciphertext.aggregated_msg.aggregated_msg.num_rows(), ciphertext.aggregated_msg.aggregated_msg.num_columns());
 
     send_ciphertext(&ciphertext, agg_url).await;
-
+    log_client_time();
     // Increment the round and save the user state
     *round += 1;
     user_state_path.as_ref().map(|path| {
@@ -204,7 +204,8 @@ async fn send_cover(state: web::Data<Arc<Mutex<ServiceState>>>) -> Result<HttpRe
     // Encrypt an empty message and send it
     let ciphertext = user_state.submit_round_msg(&enclave, *round, UserMsg::Cover)?;
     send_ciphertext(&ciphertext, agg_url).await;
-    debug!("send success!");
+    // log_client_time();
+    debug!("send cover success!");
     // Increment the round and save the user state
     *round += 1;
     user_state_path.as_ref().map(|path| {

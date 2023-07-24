@@ -243,6 +243,7 @@ async fn submit_share(
     if round_shares.len() == group_size {
         info!("Finishing round");
         leader_finish_round(handle.deref_mut());
+        log_time::log_time();
     }
 
     Ok(HttpResponse::Ok().body("OK\n"))

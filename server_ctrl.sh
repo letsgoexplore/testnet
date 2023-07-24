@@ -15,7 +15,10 @@ USER_SERVERKEYS="client/server-keys.txt"
 AGG_SERVERKEYS="aggregator/server-keys.txt"
 
 SERVER_ROUNDOUTPUT="server/round_output.txt"
-
+TIME_LOG="server/time_recorder.txt"
+TIME_LOG_ALL="server/time_recorder_all.txt"
+CLIENT_MESSAGE="client/src/message/clientmessage.txt"
+CLINET_TIME_LOG="client/client_time_recorder.txt"
 CLIENT_SERVICE_PORT="8323"
 AGGREGATOR_PORT="18423"
 SERVER_LEADER_PORT="18523"
@@ -35,14 +38,16 @@ ROUND=0
 
 evaluate_bit() {
     rm -f $TIME_LOG_ALL || true
-    num_user=10
+    num_user=20
     num_leader=1
-    num_follower=0
+    num_follower=2
     num_server=$((num_leader + num_follower))
     num_aggregator=1
-    # dc_net_n_slots=("10" "20" "30" "40" "50")
-    dc_net_n_slots=("5" "10")
+    dc_net_n_slots=("10" "20" "30" "40" "50")
+    # dc_net_n_slots=("5" "10")
     dc_net_message_lengths=("20" "40" "60" "80" "100" "120" "140" "160")
+    echo "[settings]: clients: $num_user, aggregator: $num_aggregator, servers: $num_server" >> $TIME_LOG_ALL
+    echo "[dc_net_n_slot] [dc_net_message_length]" >> $TIME_LOG_ALL
     for dc_net_n_slot in "${dc_net_n_slots[@]}"; do
         for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
             setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
@@ -51,24 +56,27 @@ evaluate_bit() {
             if [[ $num_follower -gt 0 ]]; then
                 start_followers $num_follower
             fi
-            start_root_agg 
+            start_root_agg $num_server
             start_client $num_user
             log_time
-            send_round_msg $dc_net_n_slot $num_user $dc_net_message_length
+            encrypt_msg $dc_net_n_slot $num_user $dc_net_message_length
+            log_time
             force_root_round_end
+            sleep 4
             stop_all
             python -c "from time_cal import time_cal; time_cal()"
+            sleep 1
         done
     done
 }
 
 test() {
-    num_user=10
+    num_user=20
     num_leader=1
     num_follower=0
     num_server=$((num_leader + num_follower))
     num_aggregator=1
-    dc_net_n_slot=5
+    dc_net_n_slot=10
     dc_net_message_length=20
     setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
     start_leader
@@ -76,6 +84,11 @@ test() {
     start_client $num_user
     encrypt_msg $dc_net_n_slot $num_user $dc_net_message_length
     force_root_round_end
+}
+
+log_time() {
+    timestamp=$(date +%s%N)
+    echo "$timestamp" >> $TIME_LOG
 }
 
 clean() {
@@ -90,6 +103,9 @@ clean() {
     rm -f $SERVER_SHARES || true
     rm -f $SERVER_SHARES_PARTIAL || true
     rm -f ${SERVER_ROUNDOUTPUT%.txt}*.txt || true
+    rm -f ${CLIENT_MESSAGE%.txt}*.txt || true
+    rm -f $TIME_LOG || true
+    rm -f $CLINET_TIME_LOG || true
     echo "Cleaned"
 }
 
@@ -232,7 +248,7 @@ start_client() {
             --agg-url http://localhost:$AGGREGATOR_PORT &
             # --no-persist \
     done
-    sleep 6
+    sleep 10
     cd ..
 }
 
@@ -294,6 +310,7 @@ test_multi_clients() {
 
 # Starts the root aggregator
 start_root_agg() {
+    NUM_SERVERS=$1
     cd aggregator
 
     # Build first so that build time doesn't get included in the start time
@@ -302,16 +319,23 @@ start_root_agg() {
     # Start the aggregator in 5 sec from now
     NOW=$(date +%s)
     START_TIME=$(($NOW + 5))
-
     STATE="${USER_STATE%.txt}1.txt"
-
+    for i in $(seq 1 $NUM_SERVERS); do
+        FOLLOWER_PORT="http://localhost:$(($SERVER_LEADER_PORT + $(($i-1))))"
+        if [[ $i -eq 1 ]]; then
+            FORWARD_TO="$FOLLOWER_PORT"
+        else
+            FORWARD_TO="$FORWARD_TO,$FOLLOWER_PORT"
+        fi
+    done
+    echo $FORWARD_TO
     RUST_LOG=debug $CMD_PREFIX start-service \
         --agg-state "../$AGG_ROOTSTATE" \
         --round $ROUND \
         --bind "localhost:$AGGREGATOR_PORT" \
         --start-time $START_TIME \
         --round-duration 10000 \
-        --forward-to "http://localhost:$SERVER_LEADER_PORT" &
+        --forward-to $FORWARD_TO &
         # --no-persist \
     sleep 1
     cd ..
@@ -334,7 +358,7 @@ start_leader() {
 # Starts the anytrust followers
 start_followers() {
     cd server
-
+    NUM_FOLLOWERS=$1
     for i in $(seq 1 $NUM_FOLLOWERS); do
         FOLLOWER_PORT=$(($SERVER_LEADER_PORT + $i))
         STATE="${SERVER_STATE%.txt}$(($i+1)).txt"
@@ -353,7 +377,7 @@ encrypt_msg() {
     NUM_USERS=$2
     MESSAGE_LENGTH=$3
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
-    for i in $(seq 1 $NUM_USERS); do
+    for i in $(seq 1 $dc_net_n_slot); do
         # Base64-encode the given message
         cd client
         FILENAME="message/clientmessage_$(($i-1)).txt"
@@ -430,6 +454,12 @@ kill_clients() {
     ps aux | grep sgxdcnet-client | grep -v grep | awk '{print $2}' | xargs kill
 }
 
+stop_all() {
+    kill_clients 2> /dev/null || true
+    kill_aggregators 2> /dev/null || true
+    kill_servers 2> /dev/null || true
+}
+
 # Commands with parameters:
 #     encrypt-msg <MSG> takes a plain string. E.g., `./server_ctrl.sh encrypt-msg hello`
 #     get-round-result <ROUND> takes an integer. E.g., `./server_ctrl.sh get-round-result 4`
@@ -444,6 +474,8 @@ elif [[ $1 == "run" ]]; then
     test_multi_clients $2
 elif [[ $1 == "test" ]]; then
     test
+elif [[ $1 == "eval" ]]; then
+    evaluate_bit
 elif [[ $1 == "setup-env" ]]; then
     setup_env
 elif [[ $1 == "start-leader" ]]; then
