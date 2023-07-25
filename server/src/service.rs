@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, save_output, ServerError},
     ServerState,
 };
-use common::{cli_util, log_time::log_server_finish_time};
+use common::{cli_util, log_time::log_server_time};
 use interface::RoundOutputUpdated;
 
 use common::types_nosgx::{
@@ -22,8 +22,11 @@ use actix_web::{
     client::Client,
     get,
     http::{StatusCode, Uri},
-    post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError,
+    post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError, Result, dev, error, FromRequest,
+    middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers},
 };
+
+// use futures_util::future::ok;
 use log::{debug, error, info};
 use thiserror::Error;
 
@@ -64,6 +67,61 @@ impl ServiceState {
             round_shares: Vec::new(),
         }
     }
+}
+
+// struct AppConfig {
+//     max_payload_size: usize,
+// }
+
+// impl fmt::Display for PayloadTooLarge {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         write!(f, "Payload Too Large")
+//     }
+// }
+
+// #[derive(Debug, Error)]
+// struct PayloadTooLarge;
+// impl From<PayloadError> for PayloadTooLarge {
+//     fn from(_: PayloadError) -> Self {
+//         PayloadTooLarge
+//     }
+// }
+
+// async fn check_payload_size(
+//     req: ServiceRequest,
+//     pl: Payload,
+// ) -> Result<ServiceRequest, PayloadTooLarge> {
+//     // Get the max payload size from the AppConfig data
+//     let max_payload_size = req.app_data::<web::Data<AppConfig>>().unwrap().max_payload_size;
+
+//     // Manually read and calculate the payload size
+//     let mut size: usize = 0;
+//     let mut payload = pl;
+//     while let Some(chunk) = payload.next().await {
+//         let chunk = chunk.map_err(|_| PayloadTooLarge)?;
+//         size += chunk.len();
+//         if size > max_payload_size {
+//             return Err(PayloadTooLarge);
+//         }
+//     }
+
+//     Ok(req)
+// }
+
+fn render_500<B>(mut res: actix_web::dev::ServiceResponse<B>) -> actix_web::Result<actix_web::middleware::errhandlers::ErrorHandlerResponse<B>> {
+    res.response_mut()
+       .headers_mut()
+       .insert(actix_web::http::header::CONTENT_TYPE, actix_web::http::HeaderValue::from_static("Error"));
+    Ok(actix_web::middleware::errhandlers::ErrorHandlerResponse::Response(res))
+}
+
+fn render_413<B>(mut res: actix_web::dev::ServiceResponse<B>) -> actix_web::Result<actix_web::middleware::errhandlers::ErrorHandlerResponse<B>> {
+    res.response_mut()
+       .headers_mut()
+       .insert(actix_web::http::header::CONTENT_TYPE, actix_web::http::HeaderValue::from_static("413 Error"));
+    let req = res.request();
+    let res = res.map_body(|_, _| actix_web::body::ResponseBody::Body(actix_web::dev::Body::from("{\"code\":413,\"error\":\"413 Payload Too Large\",\"message\":\"You've sent more data than expected\"}")).into_body());//alter the the response body see "https://users.rust-lang.org/t/actix-web-using-a-custom-error-handler-to-alter-the-response-body/41068"
+    Ok(actix_web::middleware::errhandlers::ErrorHandlerResponse::Response(res))
 }
 
 /// Finish the round as the anytrust leader. This means computing the round output and clearing the
@@ -125,15 +183,15 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
         .concat()
         .parse()
         .expect("Couldn't not append '/submit-share' to forward URL");
-    match client.post(post_path).send_body(body).await {
+    match client.post(post_path).send_body(body.clone()).await {
         Ok(res) => {
             if res.status() == StatusCode::OK {
                 debug!("Share sent successfully");
             } else {
-                error!("Could not send share: {:?}", res);
+                error!("Could not send share N0.1: {:?}", res);
             }
         }
-        Err(e) => error!("Could not send share: {:?}", e),
+        Err(e) => error!("Could not send share No.2: {:?}", e),
     }
 }
 
@@ -143,7 +201,7 @@ async fn submit_agg(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
     let start = Instant::now();
-
+    log_server_time();
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
@@ -185,7 +243,7 @@ async fn submit_agg(
                 if round_shares.len() == group_size {
                     info!("Finishing round");
                     leader_finish_round(state_handle.deref_mut());
-                    log_server_finish_time();
+                    log_server_time();
                 }
             }
             // We're a follower. Send the unblinded aggregate to the leader
@@ -243,7 +301,7 @@ async fn submit_share(
     if round_shares.len() == group_size {
         info!("Finishing round");
         leader_finish_round(handle.deref_mut());
-        log_server_finish_time();
+        log_server_time();
     }
 
     Ok(HttpResponse::Ok().body("OK\n"))
@@ -352,11 +410,27 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
     );
     let state = Arc::new(Mutex::new(state));
 
-    info!("Making new server on {}", bind_addr);
+    // Create the AppConfig with the desired max_payload_size (e.g., 10 MB)
+    // let config = AppConfig {
+    //     max_payload_size: 1024 * 1024 * 10,
+    // };
 
+    info!("Making new server on {}", bind_addr);
+    let json_cfg = Arc::new(web::JsonConfig::default()
+    // limit request payload size
+    .limit(1024 * 1024 * 10)
+    // only accept text/plain content type
+    // .content_type(|mime| mime == mime::TEXT_PLAIN)
+    // use custom error handler
+    .error_handler(|err, req| {
+        error::InternalError::from_response(err, HttpResponse::Conflict().into()).into()
+    }));
+    
     // Start the web server
     HttpServer::new(move || {
-        App::new().data(state.clone()).configure(|cfg| {
+        App::new().data(state.clone())
+        .data(web::PayloadConfig::new(10 << 20))
+        .configure(|cfg| {
             cfg.service(submit_agg)
                 .service(submit_share)
                 .service(round_result)

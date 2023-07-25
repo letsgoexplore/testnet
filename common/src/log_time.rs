@@ -4,7 +4,7 @@ use std::time::{Instant, Duration};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 
-pub fn log_server_finish_time() {
+pub fn log_server_time() {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)

@@ -7,7 +7,7 @@ def time_cal():
         timestamps = [int(line.strip()) for line in lines]
 
     dt1 = timestamps[0]
-    dt2 = timestamps[1]
+    dt2 = timestamps[-1]
 
 
     time_difference = dt2 - dt1

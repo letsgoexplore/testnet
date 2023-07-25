@@ -40,7 +40,8 @@ ROUND=0
 
 evaluate_bit() {
     rm -f $TIME_LOG_ALL || true
-    num_users=("30" "60" "90" "120" "150" "180" "210")
+    # num_users=("30" "60" "90" "120" "150" "180" "210")
+    num_users=("150" "180" "210")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
     num_follower=3
@@ -337,8 +338,8 @@ test_multi_clients() {
 
     # all ciphertexts have been submitted to the aggregator
     # start server
-    log_time
-    sleep 3 && force_root_round_end
+    # log_time
+    force_root_round_end
     sleep 5
     kill_clients 2> /dev/null || true
     kill_aggregators 2> /dev/null || true
