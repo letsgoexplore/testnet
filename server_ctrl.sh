@@ -360,7 +360,7 @@ start_root_agg() {
     # Start the aggregator in 5 sec from now
     NOW=$(date +%s)
     START_TIME=$(($NOW + 5))
-    for i in $(seq 1 $NUM_SERVER); do
+    for i in $(seq 1 $NUM_SERVERS); do
         ip=${SERVER_IP[$i]}
         if [[ $i -eq 1 ]]; then
             FORWARD_TO="$ip:$SERVER_PORT"
@@ -388,7 +388,7 @@ start_leader() {
     STATE="${SERVER_STATE%.txt}$LEADER.txt"
     leader_ip=${SERVER_IP[0]}
     leader_addr="$leader_ip:$SERVER_PORT"
-    RUST_LOG=debug $CMD_PREFIX start-service \
+    RUST_LOG=debug $SERVER_CMD_PREFIX start-service \
         --server-state "../$STATE" \
         --bind leader_addr &
         # --no-persist \
@@ -404,7 +404,7 @@ start_follower() {
     leader_addr="$leader_ip:$SERVER_PORT"
     follower_ip=${SERVER_IP[$1]}
     follower_addr="$follower_ip:$SERVER_PORT"
-    RUST_LOG=debug $CMD_PREFIX start-service \
+    RUST_LOG=debug $SERVER_CMD_PREFIX start-service \
         --server-state "../$STATE" \
         --bind leader_addr
         --leader-url follower_addr &
