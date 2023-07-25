@@ -23,7 +23,9 @@ CLINET_ENCRYPT_TIME_LOG="client/client_encrypt_time_recorder.txt"
 AGG_ENCRYPT_TIME_LOG="aggregator/agg_encrypt_time_recorder.txt"
 CLIENT_SERVICE_PORT="8323"
 AGGREGATOR_PORT="18423"
-SERVER_LEADER_PORT="18623"
+SERVER_PORT="18832"
+
+SERVER_IP=("3.15.148.53")
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
@@ -359,12 +361,11 @@ start_root_agg() {
     NOW=$(date +%s)
     START_TIME=$(($NOW + 5))
     STATE="${USER_STATE%.txt}1.txt"
-    for i in $(seq 1 $NUM_SERVERS); do
-        FOLLOWER_PORT="http://localhost:$(($SERVER_LEADER_PORT + $(($i-1))))"
+    for ip in "${SERVER_IP[@]}"; do
         if [[ $i -eq 1 ]]; then
-            FORWARD_TO="$FOLLOWER_PORT"
+            FORWARD_TO="$ip:$SERVER_PORT"
         else
-            FORWARD_TO="$FORWARD_TO,$FOLLOWER_PORT"
+            FORWARD_TO="$FORWARD_TO,$ip:$SERVER_PORT"
         fi
     done
     echo $FORWARD_TO
@@ -385,28 +386,28 @@ start_leader() {
     cd server
 
     STATE="${SERVER_STATE%.txt}$LEADER.txt"
-
+    leader_ip=${SERVER_IP[0]}
+    leader_addr="$leader_ip:$SERVER_PORT"
     RUST_LOG=debug $CMD_PREFIX start-service \
         --server-state "../$STATE" \
-        --bind "localhost:$SERVER_LEADER_PORT" &
+        --bind leader_addr &
         # --no-persist \
-
+    sleep 1
     cd ..
 }
 
 # Starts the anytrust followers
-start_followers() {
+start_follower() {
     cd server
-    NUM_FOLLOWERS=$1
-    for i in $(seq 1 $NUM_FOLLOWERS); do
-        FOLLOWER_PORT=$(($SERVER_LEADER_PORT + $i))
-        STATE="${SERVER_STATE%.txt}$(($i+1)).txt"
-
-        $CMD_PREFIX start-service \
-            --server-state "../$STATE" \
-            --bind "localhost:$FOLLOWER_PORT" \
-            --leader-url "http://localhost:$SERVER_LEADER_PORT" &
-    done
+    STATE="${SERVER_STATE%.txt}$1.txt"
+    leader_ip=${SERVER_IP[0]}
+    leader_addr="$leader_ip:$SERVER_PORT"
+    follower_ip=${SERVER_IP[$1]}
+    follower_addr="$follower_ip:$SERVER_PORT"
+    RUST_LOG=debug $CMD_PREFIX start-service \
+        --server-state "../$STATE" \
+        --bind leader_addr
+        --leader-url follower_addr &
 
     cd ..
 }
@@ -518,11 +519,13 @@ elif [[ $1 == "eval" ]]; then
 elif [[ $1 == "eval-ser" ]]; then
     evaluate_bit_server
 elif [[ $1 == "setup-env" ]]; then
-    setup_env
+    setup_env $2 $3 $4 $5
+elif [[ $1 == "setup-param" ]]; then
+    setup_parameter $2 $3
 elif [[ $1 == "start-leader" ]]; then
     start_leader
-elif [[ $1 == "start-followers" ]]; then
-    start_followers
+elif [[ $1 == "start-follower" ]]; then
+    start_follower $2
 elif [[ $1 == "start-agg" ]]; then
     start_root_agg
 elif [[ $1 == "start-client" ]]; then
@@ -531,6 +534,8 @@ elif [[ $1 == "start-client" ]]; then
 #     start_client
 elif [[ $1 == "encrypt-msg" ]]; then
     encrypt_msg $2
+elif [[ $1 == "multi-encrypt" ]]; then
+    test_multi_clients $2 $3
 elif [[ $1 == "send-cover" ]]; then
     send_cover
 elif [[ $1 == "reserve-slot" ]]; then
