@@ -28,8 +28,8 @@ SERVER_PORT="18832"
 SERVER_IP=("3.15.148.53")
 
 # -q to reduce clutter
-CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
-
+CMD_PREFIX="cargo run -- "
+SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
 NUM_FOLLOWERS=0
@@ -360,8 +360,8 @@ start_root_agg() {
     # Start the aggregator in 5 sec from now
     NOW=$(date +%s)
     START_TIME=$(($NOW + 5))
-    STATE="${USER_STATE%.txt}1.txt"
-    for ip in "${SERVER_IP[@]}"; do
+    for i in $(seq 1 $NUM_SERVER); do
+        ip=${SERVER_IP[$i]}
         if [[ $i -eq 1 ]]; then
             FORWARD_TO="$ip:$SERVER_PORT"
         else
