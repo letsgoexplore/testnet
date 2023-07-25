@@ -28,7 +28,7 @@ SERVER_PORT="18832"
 SERVER_IP=("3.15.148.53")
 
 # -q to reduce clutter
-CMD_PREFIX="cargo run -- "
+CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
@@ -527,7 +527,7 @@ elif [[ $1 == "start-leader" ]]; then
 elif [[ $1 == "start-follower" ]]; then
     start_follower $2
 elif [[ $1 == "start-agg" ]]; then
-    start_root_agg
+    start_root_agg $2
 elif [[ $1 == "start-client" ]]; then
     start_client
 # elif [[ $1 == "start-agg" ]]; then

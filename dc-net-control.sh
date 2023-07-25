@@ -26,13 +26,19 @@ eval(){
         echo "$num_user" >> $TIME_LOG_ALL
         dc_net_n_slot=$num_user
         update_clean_and_set_param_for_all $num_server $dc_net_message_length $dc_net_n_slot
-        ./server_ctrl.sh setup_env $dc_net_message_length $dc_net_n_slot $num_server $num_user
+        echo "finish 1"
+        ./server_ctrl.sh setup-env $dc_net_message_length $dc_net_n_slot $num_server $num_user
+        echo "finish 2"
         mitigate_server_state
+        echo "finish 3"
         start_leader
+        echo "finish 4"
         if [[ $num_follower -gt 0 ]]; then
             start_followers $num_follower
+            echo "finish 5"
         fi
-        ./server_ctrl.sh start_root_agg $num_server
+        ./server_ctrl.sh start-agg $num_server
+        echo "finish 6"
         ./server_ctrl.sh test_multi_clients $num_user $dc_net_message_length
         cal_time
         stop-all
@@ -49,7 +55,7 @@ update_clean_and_set_param_for_all(){
     # update and clean server 
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
-        $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND '
+        $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd dc-net/testnet
             git add origin $GIT_REPO
             git pull origin master
@@ -58,7 +64,7 @@ update_clean_and_set_param_for_all(){
             ./dc-net/testnet/server_ctrl.sh clean
             ./dc-net/testnet/server_ctrl.sh setup-param $dc_net_message_length $dc_net_n_slot
             exit
-        '
+        "
     done
 }
 
@@ -66,10 +72,10 @@ mitigate_server_state(){
     NUM_SERVERS=$1
 
     for i in $(seq 1 $NUM_SERVERS); do 
-        LOCAL_ADDR="./server/server-state$2.txt"
+        LOCAL_ADDR="./server/server-state$i.txt"
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         TARGET_ADDR="$SERVER_AWS_COMMAND:./dc-net/testnet/server/server-state$2.txt"
-        scp -i KEY_ADDRESS "$LOCAL_ADDR" "$TARGET_ADDR"
+        scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$TARGET_ADDR"
     done
 }
 
@@ -87,12 +93,12 @@ start_follower(){
     num_follower=$1
     for i in $(seq 1 $num_follower); do
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$i]}
-        $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND '
+        $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd dc-net/testnet/
             ./server_ctrl.sh start-follower $((i+1))
             cd
             exit
-        '
+        "
     done
 }
 
