@@ -56,6 +56,7 @@ update_clean_and_set_param_for_all(){
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
+            export PATH="$PATH:/home/ubuntu/.cargo/bin/cargo"
             cd dc-net/testnet
             git add origin $GIT_REPO
             git pull origin master
