@@ -89,8 +89,7 @@ start_leader(){
         export PATH="$HOME/.cargo/bin:$PATH"
         source ~/.bashrc
         cd dc-net/testnet/
-        nohup ./server_ctrl.sh start-leader &
-        disown
+        docker exec dcnet-3 "cd sgx; nohup ./server_ctrl.sh start-leader &; disown"
         sleep 3
         cd
         exit
