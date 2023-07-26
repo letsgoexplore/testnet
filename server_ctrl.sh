@@ -527,7 +527,7 @@ elif [[ $1 == "start-leader" ]]; then
 elif [[ $1 == "start-follower" ]]; then
     start_follower $2
 elif [[ $1 == "start-agg" ]]; then
-    start_root_agg $2
+    start_root_agg $2 "${SERVER_IP[@]}"
 elif [[ $1 == "start-client" ]]; then
     start_client
 # elif [[ $1 == "start-agg" ]]; then
