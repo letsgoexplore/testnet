@@ -502,6 +502,9 @@ stop_all() {
     kill_servers 2> /dev/null || true
 }
 
+cal_time() {
+    python3 -c "from time_cal import time_cal; time_cal()"
+}
 # Commands with parameters:
 #     encrypt-msg <MSG> takes a plain string. E.g., `./server_ctrl.sh encrypt-msg hello`
 #     get-round-result <ROUND> takes an integer. E.g., `./server_ctrl.sh get-round-result 4`
@@ -560,6 +563,8 @@ elif [[ $1 == "stop-all" ]]; then
     kill_servers 2> /dev/null || true
 elif [[ $1 == "multi" ]]; then
     test_multi_clients $2 $3
+elif [[ $1 == "cal-time" ]]; then
+    cal_time
 else
     echo "Did not recognize command"
 fi
