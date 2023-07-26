@@ -33,6 +33,7 @@ eval(){
         echo "finish 3"
         start_leader
         echo "finish 4"
+        sleep 100
         if [[ $num_follower -gt 0 ]]; then
             start_followers $num_follower
             echo "finish 5"

@@ -385,10 +385,11 @@ start_root_agg() {
 # Starts the anytrust leader
 start_leader() {
     cd server
-
+    echo "starting leader..."
     STATE="${SERVER_STATE%.txt}$LEADER.txt"
     leader_ip=${SERVER_IP[0]}
     leader_addr="$leader_ip:$SERVER_PORT"
+    echo "leader addr: $leader_addr"
     RUST_LOG=debug $CMD_PREFIX start-service \
         --server-state "../$STATE" \
         --bind leader_addr &
