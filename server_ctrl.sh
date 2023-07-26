@@ -23,7 +23,7 @@ CLINET_ENCRYPT_TIME_LOG="client/client_encrypt_time_recorder.txt"
 AGG_ENCRYPT_TIME_LOG="aggregator/agg_encrypt_time_recorder.txt"
 CLIENT_SERVICE_PORT="9323"
 AGGREGATOR_PORT="18300"
-SERVER_PORT="18832"
+SERVER_PORT="28942"
 
 SERVER_IP=("3.15.148.53")
 
@@ -392,10 +392,16 @@ start_leader() {
     echo "leader addr: $leader_addr"
     RUST_LOG=debug $CMD_PREFIX start-service \
         --server-state "../$STATE" \
-        --bind leader_addr &
+        --bind $leader_addr &
         # --no-persist \
     sleep 1
     cd ..
+}
+
+activate_leader_AWS() {
+    clean
+    sleep 10
+
 }
 
 # Starts the anytrust followers

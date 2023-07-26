@@ -1,6 +1,6 @@
 #!/bin/bash
-SERVER_IP=("3.15.148.53")
-SERVER_AWS_COMMANDS=("ubuntu@ec2-3-15-148-53.us-east-2.compute.amazonaws.com")
+SERVER_IP=("18.218.191.108")
+SERVER_AWS_COMMANDS=("ubuntu@ec2-18-218-191-108.us-east-2.compute.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
@@ -8,7 +8,7 @@ GIT_REPO="https://github.com/letsgoexplore/testnet"
 eval(){
     rm -f $TIME_LOG_ALL || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_users=("5" "150" "180" "210")
+    num_users=("2" "150" "180" "210")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
     num_follower=0
@@ -27,24 +27,26 @@ eval(){
         echo "$num_user" >> $TIME_LOG_ALL
         dc_net_n_slot=$num_user
         update_clean_and_set_param_for_all $num_server $dc_net_message_length $dc_net_n_slot
+        sleep 15
         echo "finish 1"
         ./server_ctrl.sh setup-env $dc_net_message_length $dc_net_n_slot $num_server $num_user
         echo "finish 2"
-        mitigate_server_state
+        mitigate_server_state $num_server 
         echo "finish 3"
-        start_leader
-        echo "finish 4"
-        # sleep 100
-        if [[ $num_follower -gt 0 ]]; then
-            start_followers $num_follower
-            echo "finish 5"
-        fi
+        sleep 15
+        # start_leader
+        # echo "finish 4"
+        # # sleep 100
+        # if [[ $num_follower -gt 0 ]]; then
+        #     start_followers $num_follower
+        #     echo "finish 5"
+        # fi
         ./server_ctrl.sh start-agg $num_server
         sleep 3
-        echo "finish 6"
+        # echo "finish 6"
         ./server_ctrl.sh multi $num_user $dc_net_message_length
-        cal_time
-        stop-all
+        # cal_time
+        # stop-all
     done
 }
 
@@ -54,19 +56,14 @@ update_clean_and_set_param_for_all(){
     dc_net_n_slot=$3
     # clean local
     ./server_ctrl.sh clean
-    
     # update and clean server 
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            export PATH="$HOME/.cargo/bin:$PATH"
-            source ~/.bashrc
-            cd dc-net/testnet
-            git add origin $GIT_REPO
-            git pull origin master
-            chmod +x ./server_ctrl.sh
-            cd  
+            chmod +x ./dc-net/testnet/server_ctrl.sh
+            echo "before clean"
             ./dc-net/testnet/server_ctrl.sh clean
+            echo "clean server"
             ./dc-net/testnet/server_ctrl.sh setup-param $dc_net_message_length $dc_net_n_slot
             exit
         "
@@ -79,8 +76,9 @@ mitigate_server_state(){
     for i in $(seq 1 $NUM_SERVERS); do 
         LOCAL_ADDR="./server/server-state$i.txt"
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
-        TARGET_ADDR="$SERVER_AWS_COMMAND:./dc-net/testnet/server/server-state$2.txt"
+        TARGET_ADDR="$SERVER_AWS_COMMAND:./dc-net/testnet/server/server-state$i.txt"
         scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$TARGET_ADDR"
+        echo "success! address:$TARGET_ADDR"
     done
 }
 
