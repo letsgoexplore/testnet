@@ -1,3 +1,4 @@
+#!/bin/bash
 SERVER_IP=("3.15.148.53")
 SERVER_AWS_COMMANDS=("ubuntu@ec2-3-15-148-53.us-east-2.compute.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
@@ -58,8 +59,8 @@ update_clean_and_set_param_for_all(){
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            export PATH="$HOME/.cargo/bin:$PATH"
-            source ~/.bashrc
+            # export PATH="$HOME/.cargo/bin:$PATH"
+            # source ~/.bashrc
             cd dc-net/testnet
             git add origin $GIT_REPO
             git pull origin master
@@ -89,7 +90,8 @@ start_leader(){
         export PATH="$HOME/.cargo/bin:$PATH"
         source ~/.bashrc
         cd dc-net/testnet/
-        docker exec dcnet-3 "cd sgx; nohup ./server_ctrl.sh start-leader &; disown"
+        docker start dcnet-3
+        docker exec -d dcnet-3 "./sgx/script/run_leader.sh"
         sleep 3
         cd
         exit

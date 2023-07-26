@@ -22,7 +22,7 @@ CLINET_TIME_LOG="client/client_time_recorder.txt"
 CLINET_ENCRYPT_TIME_LOG="client/client_encrypt_time_recorder.txt"
 AGG_ENCRYPT_TIME_LOG="aggregator/agg_encrypt_time_recorder.txt"
 CLIENT_SERVICE_PORT="9323"
-AGGREGATOR_PORT="18323"
+AGGREGATOR_PORT="18324"
 SERVER_PORT="18832"
 
 SERVER_IP=("3.15.148.53")
