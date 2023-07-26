@@ -90,6 +90,7 @@ start_leader(){
         export PATH="$HOME/.cargo/bin:$PATH"
         source ~/.bashrc
         cd dc-net/testnet/
+        chmod +x ./script/run_leader.sh
         docker start dcnet-3
         docker exec -d dcnet-3 "./sgx/script/run_leader.sh"
         sleep 3

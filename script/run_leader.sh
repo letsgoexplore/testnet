@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# -e => Exits immediately on error
-# -u => Error when using undefined vars
 set -eu
 export PATH="$HOME/.cargo/bin:$PATH"
 source ~/.bashrc
