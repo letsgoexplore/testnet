@@ -407,6 +407,7 @@ activate_leader_AWS() {
 # Starts the anytrust followers
 start_follower() {
     cd server
+    SERVER_IP=("$@")
     STATE="${SERVER_STATE%.txt}$1.txt"
     leader_ip=${SERVER_IP[0]}
     leader_addr="http://$leader_ip:$SERVER_PORT"
@@ -536,7 +537,7 @@ elif [[ $1 == "setup-param" ]]; then
 elif [[ $1 == "start-leader" ]]; then
     start_leader
 elif [[ $1 == "start-follower" ]]; then
-    start_follower $2
+    start_follower $2 "${SERVER_IP[@]}"
 elif [[ $1 == "start-agg" ]]; then
     start_root_agg $2 "${SERVER_IP[@]}"
 elif [[ $1 == "start-client" ]]; then

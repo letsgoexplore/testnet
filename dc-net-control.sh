@@ -1,6 +1,6 @@
 #!/bin/bash
-SERVER_IP=("18.218.191.108")
-SERVER_AWS_COMMANDS=("ubuntu@ec2-18-218-191-108.us-east-2.compute.amazonaws.com")
+SERVER_IP=("18.218.191.108" "3.21.237.153" "3.141.8.20" "3.144.184.236" "3.142.145.109")
+SERVER_AWS_COMMANDS=("ubuntu@ec2-18-218-191-108.us-east-2.compute.amazonaws.com" "ubuntu@ec2-3-21-237-153.us-east-2.compute.amazonaws.com" "ubuntu@ec2-3-141-8-20.us-east-2.compute.amazonaws.com" "ubuntu@ec2-3-144-184-236.us-east-2.compute.amazonaws.com" "ubuntu@ec2-3-142-145-109.us-east-2.compute.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
@@ -8,7 +8,7 @@ GIT_REPO="https://github.com/letsgoexplore/testnet"
 eval(){
     rm -f $TIME_LOG_ALL || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_users=("2" "150" "180" "210")
+    num_users=("150" "180" "210")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
     num_follower=0
@@ -27,7 +27,7 @@ eval(){
         echo "$num_user" >> $TIME_LOG_ALL
         dc_net_n_slot=$num_user
         update_clean_and_set_param_for_all $num_server $dc_net_message_length $dc_net_n_slot
-        sleep 15
+        sleep 40
         echo "finish 1"
         ./server_ctrl.sh setup-env $dc_net_message_length $dc_net_n_slot $num_server $num_user
         echo "finish 2"
@@ -62,9 +62,10 @@ update_clean_and_set_param_for_all(){
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             chmod +x ./dc-net/testnet/server_ctrl.sh
             echo "before clean"
-            ./dc-net/testnet/server_ctrl.sh clean
+            cd ./dc-net/testnet
+            ./server_ctrl.sh clean
             echo "clean server"
-            ./dc-net/testnet/server_ctrl.sh setup-param $dc_net_message_length $dc_net_n_slot
+            ./server_ctrl.sh setup-param $dc_net_message_length $dc_net_n_slot
             exit
         "
     done
@@ -129,7 +130,9 @@ stop-all(){
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND '
-            ./dc-net/testnet/server_ctrl.sh stop-all
+            cd ./dc-net/testnet
+            ./server_ctrl.sh stop-all
+            cd
             exit
         '
     done
@@ -137,4 +140,7 @@ stop-all(){
 
 if [[ $1 == "eval" ]]; then
     eval
+elif [[ $1 == "clean" ]]; then
+    update_clean_and_set_param_for_all
+elif [[ $1 == "stop-all" ]]; then
 fi
