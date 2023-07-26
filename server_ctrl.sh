@@ -352,7 +352,7 @@ test_multi_clients() {
 # Starts the root aggregator
 start_root_agg() {
     NUM_SERVERS=$1
-    SERVER_IP=$2
+    SERVER_IP=("$@")
     cd aggregator
 
     # Build first so that build time doesn't get included in the start time
