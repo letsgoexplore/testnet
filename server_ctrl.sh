@@ -25,7 +25,7 @@ CLIENT_SERVICE_PORT="9323"
 AGGREGATOR_PORT="18300"
 SERVER_PORT="28942"
 
-SERVER_IP=("18.218.191.108")
+SERVER_IP=("18.218.191.108" "3.21.237.153" "3.141.8.20" "3.144.184.236" "3.142.145.109")
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
@@ -411,7 +411,7 @@ start_follower() {
     leader_ip=${SERVER_IP[0]}
     leader_addr="http://$leader_ip:$SERVER_PORT"
     follower_ip=${SERVER_IP[$1]}
-    follower_addr="$follower_ip:$SERVER_PORT"
+    follower_addr="0.0.0.0::$SERVER_PORT"
     RUST_LOG=debug $CMD_PREFIX start-service \
         --server-state "../$STATE" \
         --bind follower_addr
