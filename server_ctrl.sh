@@ -21,8 +21,8 @@ CLIENT_MESSAGE="client/src/message/clientmessage.txt"
 CLINET_TIME_LOG="client/client_time_recorder.txt"
 CLINET_ENCRYPT_TIME_LOG="client/client_encrypt_time_recorder.txt"
 AGG_ENCRYPT_TIME_LOG="aggregator/agg_encrypt_time_recorder.txt"
-CLIENT_SERVICE_PORT="8323"
-AGGREGATOR_PORT="18423"
+CLIENT_SERVICE_PORT="9323"
+AGGREGATOR_PORT="18323"
 SERVER_PORT="18832"
 
 SERVER_IP=("3.15.148.53")
@@ -364,9 +364,9 @@ start_root_agg() {
     for i in $(seq 1 $NUM_SERVERS); do
         ip=${SERVER_IP[$i]}
         if [[ $i -eq 1 ]]; then
-            FORWARD_TO="$ip:$SERVER_PORT"
+            FORWARD_TO="http://$ip:$SERVER_PORT"
         else
-            FORWARD_TO="$FORWARD_TO,$ip:$SERVER_PORT"
+            FORWARD_TO="$FORWARD_TO,http://$ip:$SERVER_PORT"
         fi
     done
     echo $FORWARD_TO
@@ -402,13 +402,13 @@ start_follower() {
     cd server
     STATE="${SERVER_STATE%.txt}$1.txt"
     leader_ip=${SERVER_IP[0]}
-    leader_addr="$leader_ip:$SERVER_PORT"
+    leader_addr="http://$leader_ip:$SERVER_PORT"
     follower_ip=${SERVER_IP[$1]}
     follower_addr="$follower_ip:$SERVER_PORT"
     RUST_LOG=debug $CMD_PREFIX start-service \
         --server-state "../$STATE" \
-        --bind leader_addr
-        --leader-url follower_addr &
+        --bind follower_addr
+        --leader-url leader_addr &
 
     cd ..
 }
@@ -558,7 +558,7 @@ elif [[ $1 == "stop-all" ]]; then
     kill_aggregators 2> /dev/null || true
     kill_servers 2> /dev/null || true
 elif [[ $1 == "multi" ]]; then
-    test_multi_clients $2
+    test_multi_clients $2 $3
 else
     echo "Did not recognize command"
 fi

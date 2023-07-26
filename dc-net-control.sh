@@ -7,7 +7,7 @@ GIT_REPO="https://github.com/letsgoexplore/testnet"
 eval(){
     rm -f $TIME_LOG_ALL || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_users=("150" "180" "210")
+    num_users=("20" "150" "180" "210")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
     num_follower=0
@@ -39,7 +39,7 @@ eval(){
         fi
         ./server_ctrl.sh start-agg $num_server
         echo "finish 6"
-        ./server_ctrl.sh test_multi_clients $num_user $dc_net_message_length
+        ./server_ctrl.sh multi $num_user $dc_net_message_length
         cal_time
         stop-all
     done
@@ -56,7 +56,8 @@ update_clean_and_set_param_for_all(){
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            export PATH="$PATH:/home/ubuntu/.cargo/bin/cargo"
+            export PATH="$HOME/.cargo/bin:$PATH"
+            source ~/.bashrc
             cd dc-net/testnet
             git add origin $GIT_REPO
             git pull origin master
@@ -83,6 +84,8 @@ mitigate_server_state(){
 start_leader(){
     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[0]}
     $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND '
+        export PATH="$HOME/.cargo/bin:$PATH"
+        source ~/.bashrc
         cd dc-net/testnet/
         ./server_ctrl.sh start-leader
         cd
@@ -95,6 +98,8 @@ start_follower(){
     for i in $(seq 1 $num_follower); do
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$i]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
+            export PATH="$HOME/.cargo/bin:$PATH"
+            source ~/.bashrc
             cd dc-net/testnet/
             ./server_ctrl.sh start-follower $((i+1))
             cd
@@ -115,7 +120,8 @@ cal_time(){
 
 stop-all(){
     NUM_SERVERS=$1
-    # clean server
+    ./server_ctrl.sh stop-all
+    # stop server
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND '
