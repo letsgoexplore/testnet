@@ -415,8 +415,8 @@ start_follower() {
     follower_addr="0.0.0.0::$SERVER_PORT"
     RUST_LOG=debug $CMD_PREFIX start-service \
         --server-state "../$STATE" \
-        --bind follower_addr
-        --leader-url leader_addr &
+        --bind $follower_addr
+        --leader-url $leader_addr &
 
     cd ..
 }
