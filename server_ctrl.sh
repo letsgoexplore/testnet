@@ -25,7 +25,7 @@ CLIENT_SERVICE_PORT="9323"
 AGGREGATOR_PORT="18300"
 SERVER_PORT="28942"
 
-SERVER_IP=("3.15.148.53")
+SERVER_IP=("18.218.191.108")
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run -- "
@@ -388,7 +388,7 @@ start_leader() {
     echo "starting leader..."
     STATE="${SERVER_STATE%.txt}$LEADER.txt"
     leader_ip=${SERVER_IP[0]}
-    leader_addr="$leader_ip:$SERVER_PORT"
+    leader_addr="0.0.0.0:$SERVER_PORT"
     echo "leader addr: $leader_addr"
     RUST_LOG=debug $CMD_PREFIX start-service \
         --server-state "../$STATE" \
