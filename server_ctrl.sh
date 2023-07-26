@@ -354,7 +354,7 @@ start_root_agg() {
     NUM_SERVERS=$1
     SERVER_IP=("$@")
     cd aggregator
-
+    echo "starting aggregator..."
     # Build first so that build time doesn't get included in the start time
     cargo build
 
@@ -369,7 +369,7 @@ start_root_agg() {
             FORWARD_TO="$FORWARD_TO,http://$ip:$SERVER_PORT"
         fi
     done
-    echo $FORWARD_TO
+    echo "Aggregator Forward-to:$FORWARD_TO"
     RUST_LOG=debug $CMD_PREFIX start-service \
         --agg-state "../$AGG_ROOTSTATE" \
         --round $ROUND \

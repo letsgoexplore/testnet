@@ -203,10 +203,10 @@ async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
                 if res.status() == StatusCode::OK {
                     info!("Successfully sent finalize aggregate")
                 } else {
-                    error!("Could not send finalized aggregate: {:?}", res)
+                    error!("Could not send finalized aggregate-msg error: {:?}", res)
                 }
             }
-            Err(e) => error!("Could not send finalized aggregate: {:?}", e),
+            Err(e) => error!("Could not send finalized aggregate-network error: {:?}", e),
         }
     }
 

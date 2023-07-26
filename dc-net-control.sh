@@ -7,7 +7,7 @@ GIT_REPO="https://github.com/letsgoexplore/testnet"
 eval(){
     rm -f $TIME_LOG_ALL || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_users=("20" "150" "180" "210")
+    num_users=("5" "150" "180" "210")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
     num_follower=0
@@ -33,12 +33,13 @@ eval(){
         echo "finish 3"
         start_leader
         echo "finish 4"
-        sleep 100
+        # sleep 100
         if [[ $num_follower -gt 0 ]]; then
             start_followers $num_follower
             echo "finish 5"
         fi
         ./server_ctrl.sh start-agg $num_server
+        sleep 3
         echo "finish 6"
         ./server_ctrl.sh multi $num_user $dc_net_message_length
         cal_time
@@ -88,7 +89,9 @@ start_leader(){
         export PATH="$HOME/.cargo/bin:$PATH"
         source ~/.bashrc
         cd dc-net/testnet/
-        ./server_ctrl.sh start-leader
+        nohup ./server_ctrl.sh start-leader &
+        disown
+        sleep 3
         cd
         exit
     '
