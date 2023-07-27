@@ -23,7 +23,7 @@ SERVER_PORT="28942"
 SERVER_IP=("18.117.84.139" "3.15.190.87" "3.136.97.239")
 
 # -q to reduce clutter
-CMD_PREFIX="cargo run --release -- "
+CMD_PREFIX="cargo run -- "
 SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
@@ -337,10 +337,10 @@ test_multi_clients() {
     # start server
     # log_time
     force_root_round_end
-    sleep 5
-    kill_clients 2> /dev/null || true
-    kill_aggregators 2> /dev/null || true
-    kill_servers 2> /dev/null || true
+    # sleep 5
+    # kill_clients 2> /dev/null || true
+    # kill_aggregators 2> /dev/null || true
+    # kill_servers 2> /dev/null || true
 }
 
 

@@ -135,6 +135,7 @@ async fn force_round_end(
     );
 
     // Start the next round immediately
+    // as we will only do evaluation, we will not actually start nextround, but only save it
     start_next_round(state.clone());
 
     let duration = start.elapsed();
@@ -237,10 +238,10 @@ fn start_next_round(state: Arc<Mutex<ServiceState>>) {
     });
 
     // Increment the round and clear the state
-    *round += 1;
-    agg_state
-        .clear(*round)
-        .expect("could not start new round");
+    // *round += 1;
+    // agg_state
+    //     .clear(*round)
+    //     .expect("could not start new round");
 
     let duration = start.elapsed();
     debug!("[agg] start_next_round: {:?}", duration);
