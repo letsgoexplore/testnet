@@ -20,8 +20,7 @@ AGG_ENCRYPT_TIME_LOG="aggregator/agg_encrypt_time_recorder.txt"
 CLIENT_SERVICE_PORT="9323"
 AGGREGATOR_PORT="18300"
 SERVER_PORT="28942"
-
-SERVER_IP=("18.117.84.139" "18.117.127.206" "3.145.160.228" "18.221.166.254" "18.224.16.42")
+SERVER_IP=("18.117.84.139" "3.15.190.87" "3.136.97.239")
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run --release -- "
