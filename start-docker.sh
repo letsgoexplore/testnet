@@ -9,7 +9,7 @@ if docker container inspect $CONTAINER_NAME > /dev/null 2>&1; then
   docker start -ai $CONTAINER_NAME
 else
   docker run \
-    -v $PWD:/home/ubuntu \
+    -v $PWD:/root/sgx \
     -ti \
     -p 18300:18300 \
     -p 28942:28942 \
