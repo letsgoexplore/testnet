@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# -e => Exits immediately on error
-# -u => Error when using undefined vars
-set -eu
-
 USER_STATE="client/user-state.txt"
 AGG_FINALAGG="aggregator/final-agg.txt"
 AGG_ROOTSTATE="aggregator/agg-root-state.txt"
@@ -407,7 +403,6 @@ activate_leader_AWS() {
 # Starts the anytrust followers
 start_follower() {
     cd server
-    SERVER_IP=("$@")
     STATE="${SERVER_STATE%.txt}$1.txt"
     leader_ip=${SERVER_IP[0]}
     leader_addr="http://$leader_ip:$SERVER_PORT"
