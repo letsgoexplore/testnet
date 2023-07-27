@@ -265,7 +265,7 @@ async fn submit_agg(
             _ => (),
         }
     });
-    log_server_time("AFTER save")
+    log_server_time("AFTER save");
     let duration = start.elapsed();
     debug!("[server] submit_agg: {:?}", duration);
 
@@ -278,7 +278,7 @@ async fn submit_share(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
     // Unpack state
-    log_server_time("start unpacking")
+    log_server_time("start unpacking");
     let mut handle = state.get_ref().lock().unwrap();
     let group_size = handle.server_state.anytrust_group_size;
     let ServiceState {
