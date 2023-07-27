@@ -1,18 +1,26 @@
 #!/bin/bash
-SERVER_IP=("18.224.141.26" "18.217.49.251" "3.23.105.56" "3.15.30.3" "3.14.67.236")
-SERVER_AWS_COMMANDS=("ec2-18-224-141-26.us-east-2.compute.amazonaws.com" "ec2-18-217-49-251.us-east-2.compute.amazonaws.com" "ec2-3-23-105-56.us-east-2.compute.amazonaws.com" "ec2-3-15-30-3.us-east-2.compute.amazonaws.com" "ec2-3-14-67-236.us-east-2.compute.amazonaws.com")
+SERVER_IP=("3.17.55.194" "3.145.120.225" "3.138.198.149" "3.23.131.7" "3.128.184.0")
+SERVER_AWS_COMMANDS=("ec2-3-17-55-194.us-east-2.compute.amazonaws.com" "ec2-3-145-120-225.us-east-2.compute.amazonaws.com" "ec2-3-138-198-149.us-east-2.compute.amazonaws.com" "ec2-3-23-131-7.us-east-2.compute.amazonaws.com" "ec2-3-128-184-0.us-east-2.compute.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
 GIT_REPO="https://github.com/letsgoexplore/testnet"
 WORKING_ADDR="./dc-net/testnet"
 TIME_LOG_ALL="server/time_recorder_all.txt"
+num_user=1000
+num_leader=1
+# num_follower=("0" "3" "5" "7")
+num_follower=4
+num_server=$((num_leader + num_follower))
+num_aggregator=1
+dc_net_message_length=160
+
 eval(){
     # remove the log_time_all file
     rm_time_log_all_at_leader
     rm -f $TIME_LOG_ALL || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_users=("5")
+    num_users=("1000")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
     num_follower=4
@@ -50,6 +58,39 @@ eval(){
         send_back
         stop_all
     done
+}
+
+step_1(){
+    # remove the log_time_all file
+    rm_time_log_all_at_leader
+    rm -f $TIME_LOG_ALL || true
+    dc_net_n_slot=$num_user
+    update_code $num_server
+    clean_all $num_server
+    set_param $num_server $dc_net_message_length $dc_net_n_slot
+    echo "finish 1"
+}
+
+step_2(){
+    echo $num_user
+    ./server_ctrl.sh setup-env $dc_net_message_length $dc_net_n_slot $num_server $num_user
+    echo "finish 2"
+}
+
+step_3(){
+    mitigate_server_state $num_server
+}
+
+step_4(){
+    ./server_ctrl.sh start-agg $num_server
+    # echo "finish 6"
+    ./server_ctrl.sh multi $num_user $dc_net_message_length
+}
+
+step_5(){
+    cal_time $num_server $num_aggregator $num_user $dc_net_message_length
+    send_back
+    stop_all
 }
 
 clean_all(){
@@ -211,6 +252,16 @@ stop_all(){
 
 if [[ $1 == "eval" ]]; then
     eval
+elif [[ $1 == "1" ]]; then
+    step_1
+elif [[ $1 == "2" ]]; then
+    step_2
+elif [[ $1 == "3" ]]; then
+    step_3
+elif [[ $1 == "4" ]]; then
+    step_4
+elif [[ $1 == "5" ]]; then
+    step_5
 elif [[ $1 == "clean" ]]; then
     clean_all ${#SERVER_IP[@]}
 elif [[ $1 == "update" ]]; then
