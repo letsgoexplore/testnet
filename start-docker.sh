@@ -2,14 +2,14 @@
 
 set -euo pipefail
 
-CONTAINER_NAME=dcnet-4
-DOCKER_IMAGE=bl4ck5un/sgx-rust-fork:2004-1.1.6
+CONTAINER_NAME=dcnet-5
+DOCKER_IMAGE=sgx-rust-fork:2004-1.1.6
 
 if docker container inspect $CONTAINER_NAME > /dev/null 2>&1; then
   docker start -ai $CONTAINER_NAME
 else
   docker run \
-    -v $PWD:/root/sgx \
+    -v $PWD:/home/ubuntu \
     -ti \
     -p 18300:18300 \
     -p 28942:28942 \
