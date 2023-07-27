@@ -1,6 +1,6 @@
 #!/bin/bash
-SERVER_IP=("3.17.55.194" "3.145.120.225" "3.138.198.149" "3.23.131.7" "3.128.184.0")
-SERVER_AWS_COMMANDS=("ec2-3-17-55-194.us-east-2.compute.amazonaws.com" "ec2-3-145-120-225.us-east-2.compute.amazonaws.com" "ec2-3-138-198-149.us-east-2.compute.amazonaws.com" "ec2-3-23-131-7.us-east-2.compute.amazonaws.com" "ec2-3-128-184-0.us-east-2.compute.amazonaws.com")
+SERVER_IP=("3.135.230.3")
+SERVER_AWS_COMMANDS=("ec2-3-135-230-3.us-east-2.compute.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
@@ -10,7 +10,7 @@ TIME_LOG_ALL="server/time_recorder_all.txt"
 num_user=10
 num_leader=1
 # num_follower=("0" "3" "5" "7")
-num_follower=4
+num_follower=0
 num_server=$((num_leader + num_follower))
 num_aggregator=1
 dc_net_message_length=160
@@ -23,7 +23,7 @@ eval(){
     num_users=("1000")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
-    num_follower=4
+    num_follower=0
     num_server=$((num_leader + num_follower))
     num_aggregator=1
     dc_net_message_length=160
