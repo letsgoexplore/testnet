@@ -411,7 +411,8 @@ start_follower() {
     STATE="${SERVER_STATE%.txt}$1.txt"
     leader_ip=${SERVER_IP[0]}
     leader_addr="http://$leader_ip:$SERVER_PORT"
-    follower_ip=${SERVER_IP[${{$1-1}}]}
+    index=${{$1-1}}
+    follower_ip=${SERVER_IP[$index]}
     follower_addr="0.0.0.0:$SERVER_PORT"
     RUST_LOG=debug $CMD_PREFIX start-service \
         --server-state "../$STATE" \
