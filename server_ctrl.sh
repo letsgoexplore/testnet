@@ -24,7 +24,7 @@ SERVER_PORT="28942"
 SERVER_IP=("18.117.84.139" "18.117.127.206" "3.145.160.228" "18.221.166.254" "18.224.16.42")
 
 # -q to reduce clutter
-CMD_PREFIX="cargo run -- "
+CMD_PREFIX="cargo run --release -- "
 SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
@@ -326,12 +326,12 @@ test_multi_clients() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 1.5 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 1 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME")
         cd ..
-        sleep 1 && kill_clients
+        sleep 0.2 && kill_clients
     done
 
     # all ciphertexts have been submitted to the aggregator
