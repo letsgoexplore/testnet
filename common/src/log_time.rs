@@ -4,7 +4,7 @@ use std::time::{Instant, Duration};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 
-pub fn log_server_time() {
+pub fn log_server_time(event:&str) {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
@@ -16,7 +16,7 @@ pub fn log_server_time() {
         .expect("[log_time] time error")
         .as_nanos();
 
-    if let Err(err) = writeln!(file, "{}", timestamp) {
+    if let Err(err) = writeln!(file, "f{}:{}", timestamp, event) {
         eprintln!("[log_time] fail to write: {}", err);
     } else {
         println!("[log_time] ✅already log!");
