@@ -12,7 +12,7 @@ eval(){
     rm_time_log_all_at_leader
     rm -f $TIME_LOG_ALL || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_users=("10" "200" "500" "1000" "1500" "2000")
+    num_users=("5")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
     num_follower=4
@@ -45,10 +45,10 @@ eval(){
         ./server_ctrl.sh start-agg $num_server
         # echo "finish 6"
         ./server_ctrl.sh multi $num_user $dc_net_message_length
-        sleep 3
+        sleep 10
         cal_time $num_server $num_aggregator $num_user $dc_net_message_length
         send_back
-        stop-all
+        stop_all
     done
 }
 
