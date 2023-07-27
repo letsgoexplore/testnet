@@ -326,7 +326,7 @@ test_multi_clients() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 1 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 0.9 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME")
