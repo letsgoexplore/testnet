@@ -10,7 +10,7 @@ pub fn log_server_detailed_duration(event:&str, duration: u128) {
         .open("time_recorder_all.txt")
         .expect("[log_time] cannot open the file");
 
-    if let Err(err) = writeln!(file, "f{}:{:?}", event, duration) {
+    if let Err(err) = writeln!(file, "{}:{:?}", event, duration) {
         eprintln!("[log_time] fail to write: {}", err);
     } else {
         println!("[log_time] ✅already log!");
@@ -30,7 +30,7 @@ pub fn log_leader_time() {
         .expect("[log_time] time error")
         .as_nanos();
 
-    if let Err(err) = writeln!(file, "f{}", timestamp) {
+    if let Err(err) = writeln!(file, "{}", timestamp) {
         eprintln!("[log_time] fail to write: {}", err);
     } else {
         println!("[log_time] ✅already log!");
