@@ -31,10 +31,10 @@ LEADER=1
 NUM_FOLLOWERS=4
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=4000
+NUM_USERS=2000
 NUM_AGGREGATOR=1
 MESSAGE_LENGTH=160
-NUM_SLOT=4000
+NUM_SLOT=2000
 ROUND=0
 
 
@@ -248,7 +248,7 @@ setup_client() {
         STATE="${SERVER_STATE%.txt}$i.txt"
         echo "$USER_REG" | $CMD_PREFIX register-user --server-state "../$STATE"
     done
-
+    sleep 5
     echo "Set up clients"
     cd ..
 }
