@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, save_output, ServerError},
     ServerState,
 };
-use common::{cli_util, log_time::log_server_time};
+use common::{cli_util, log_time::{log_server_time,log_leader_time}};
 use interface::RoundOutputUpdated;
 
 use common::types_nosgx::{
@@ -201,7 +201,7 @@ async fn submit_agg(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
     let start = Instant::now();
-    log_server_time("msg in");
+    log_leader_time();
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
@@ -224,7 +224,7 @@ async fn submit_agg(
         let share = server_state.unblind_aggregate(&agg_data)?;
         let unblind_duration = unblind_start.elapsed();
         debug!("[server] unblind_aggregate: {:?}", unblind_duration);
-        log_server_time("finish unblind");
+        // log_server_time("finish unblind");
 
         // debug!("unblinded share: {:?}", share);
 
@@ -243,7 +243,8 @@ async fn submit_agg(
                 if round_shares.len() == group_size {
                     info!("Finishing round");
                     leader_finish_round(state_handle.deref_mut());
-                    log_server_time("");
+                    log_leader_time();
+                    // log_server_time("finish round");
                 }
             }
             // We're a follower. Send the unblinded aggregate to the leader
@@ -257,7 +258,7 @@ async fn submit_agg(
     // Save the state if a path is specified
     let server_state = &state_handle.server_state;
     let server_state_path = &state_handle.server_state_path;
-    log_server_time("begin to save");
+    // log_server_time("begin to save");
     server_state_path.as_ref().map(|path| {
         info!("Saving state");
         match save_state(path, server_state) {
@@ -265,7 +266,7 @@ async fn submit_agg(
             _ => (),
         }
     });
-    log_server_time("AFTER save");
+    // log_server_time("AFTER save");
     let duration = start.elapsed();
     debug!("[server] submit_agg: {:?}", duration);
 
@@ -278,7 +279,7 @@ async fn submit_share(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
     // Unpack state
-    log_server_time("start unpacking");
+    // log_server_time("start unpacking");
     let mut handle = state.get_ref().lock().unwrap();
     let group_size = handle.server_state.anytrust_group_size;
     let ServiceState {
@@ -295,16 +296,17 @@ async fn submit_share(
     }
 
     // Parse the share and add it to our shares
-    log_server_time("before merging");
+    // log_server_time("before merging");
     let share: UnblindedAggregateShareBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
     round_shares.push(share);
     info!("Got share. Number of shares is now {}", round_shares.len());
-    log_server_time("after merging");
+    // log_server_time("after merging");
     // If all the shares are in, that's the end of the round
     if round_shares.len() == group_size {
         info!("Finishing round");
         leader_finish_round(handle.deref_mut());
-        log_server_time("finish round");
+        log_leader_time();
+        // log_server_time("finish round");
     }
 
     Ok(HttpResponse::Ok().body("OK\n"))

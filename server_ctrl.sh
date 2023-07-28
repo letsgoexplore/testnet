@@ -23,7 +23,7 @@ SERVER_PORT="28942"
 SERVER_IP=("18.117.139.165" "18.117.196.197" "18.217.9.71" "18.221.129.24" "18.217.189.71")
 
 # -q to reduce clutter
-CMD_PREFIX="cargo run -- "
+CMD_PREFIX="cargo build run -- "
 SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
@@ -294,7 +294,7 @@ start_client() {
 test_multi_clients() {
     NUM_USERS=$1
     MESSAGE_LENGTH=$2
-    NUM_GROUP=4
+    NUM_GROUP=2
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
     for i in $(seq 1 $NUM_GROUP); do
         test_multi_client $(( NUM_USERS/NUM_GROUP )) $i &
@@ -337,7 +337,7 @@ test_multi_client() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 1.4 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME")
