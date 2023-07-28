@@ -7,7 +7,7 @@ pub fn log_server_detailed_duration(event:&str, duration: u128) {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open("time_recorder.txt")
+        .open("time_recorder_all.txt")
         .expect("[log_time] cannot open the file");
 
     if let Err(err) = writeln!(file, "f{}:{:?}", event, duration) {
