@@ -363,7 +363,6 @@ aggregate_evaluation(){
     curl -s POST "http://localhost:$AGGREGATOR_PORT/aggregate-eval"
 }
 
-
 # Starts the root aggregator
 start_root_agg() {
     NUM_SERVERS=$1
