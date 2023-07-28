@@ -1,16 +1,18 @@
 #!/bin/bash
-SERVER_IP=("18.117.84.139" "3.15.190.87" "3.136.97.239")
-SERVER_AWS_COMMANDS=("ec2-18-117-84-139.us-east-2.compute.amazonaws.com" "ec2-3-15-190-87.us-east-2.compute.amazonaws.com" "ec2-3-136-97-239.us-east-2.compute.amazonaws.com")
+SERVER_IP=("18.117.139.165" "18.117.196.197" "18.217.9.71" "18.221.129.24" "18.217.189.71")
+SERVER_AWS_COMMANDS=("ec2-18-117-139-165.us-east-2.compute.amazonaws.com" "ec2-18-117-196-197.us-east-2.compute.amazonaws.com" "ec2-18-217-9-71.us-east-2.compute.amazonaws.com" "ec2-18-221-129-24.us-east-2.compute.amazonaws.com" "ec2-18-217-189-71.us-east-2.compute.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
 GIT_REPO="https://github.com/letsgoexplore/testnet"
 WORKING_ADDR="./testnet"
+TIME_LOG="server/time_recorder.txt"
 TIME_LOG_ALL="server/time_recorder_all.txt"
+AGG_DATA="aggregator/data_collection.txt"
 num_user=10
 num_leader=1
 # num_follower=("0" "3" "5" "7")
-num_follower=2
+num_follower=4
 num_server=$((num_leader + num_follower))
 num_aggregator=1
 dc_net_message_length=160
@@ -19,11 +21,12 @@ eval(){
     # remove the log_time_all file
     su ubuntu ./dc-net-control.sh rm-leader-time-log
     rm -f $TIME_LOG_ALL || true
+    rm -f $AGG_DATA || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_users=("20")
+    num_users=("2000")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
-    num_follower=2
+    num_follower=4
     num_server=$((num_leader + num_follower))
     num_aggregator=1
     dc_net_message_length=160
@@ -41,10 +44,11 @@ eval(){
         export FOOTPRINT_N_SLOTS=$footprint_n_slots
         su ubuntu ./dc-net-control.sh update
         su ubuntu ./dc-net-control.sh clean
-        su ubuntu ./dc-net-control.sh set-param $dc_net_message_length $dc_net_n_slot $num_user
+        su ubuntu ./dc-net-control.sh set-param $num_server $dc_net_message_length $dc_net_n_slot $num_user
         echo "finish 1"
         ./server_ctrl.sh setup-env $dc_net_message_length $dc_net_n_slot $num_server $num_user
         echo "finish 2"
+        sleep 20
         su ubuntu ./dc-net-control.sh mitigate
         echo "finish 3"
         sleep 3
@@ -212,6 +216,23 @@ start_follower(){
     done
 }
 
+cal_leader(){
+    rm -f $TIME_LOG_ALL || true
+    rm -f 
+    su ubuntu ./dc-net-control.sh rm-leader-time-log
+    num_server=$1
+    num_aggregator=$2
+    num_user=$3
+    dc_net_message_length=$4
+    cal_time $1 $2 $3 $4
+    send_back
+}
+
+# force_root_round_end() {
+
+
+# }
+
 cal_time(){
     num_server=$1
     num_aggregator=$2
@@ -228,7 +249,7 @@ cal_time(){
 }
 
 rm_time_log_all_at_leader(){
-    echo haha
+    echo "deleting leader's time_log_all"
     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[0]}
     $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
         cd $WORKING_ADDR
@@ -286,7 +307,7 @@ elif [[ $1 == "clean-rem" ]]; then
 elif [[ $1 == "update" ]]; then
     update_code ${#SERVER_IP[@]}
 elif [[ $1 == "set-param" ]]; then
-    set_param $2 $3 $4 
+    set_param $2 $3 $4 $5
 elif [[ $1 == "mitigate" ]]; then
     mitigate_server_state ${#SERVER_IP[@]}
 elif [[ $1 == "start-leader" ]]; then
@@ -295,6 +316,8 @@ elif [[ $1 == "start-follower" ]]; then
     start_follower $2
 elif [[ $1 == "cal-time" ]]; then
     cal_time $2 $3 $4 $5
+elif [[ $1 == "cal-leader" ]]; then
+    cal_leader $2 $3 $4 $5
 elif [[ $1 == "send-back" ]]; then
     send_back
 elif [[ $1 == "stop-all" ]]; then

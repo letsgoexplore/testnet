@@ -14,6 +14,7 @@ use core::ops::DerefMut;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, SystemTime},
+    fs::File, io, env,
 };
 
 use actix_rt::{
@@ -44,6 +45,11 @@ enum ApiError {
     Ser(#[from] cli_util::SerializationError),
 }
 impl ResponseError for ApiError {}
+impl From<std::io::Error> for ApiError {
+    fn from(error: std::io::Error) -> Self {
+        ApiError::Internal(AggregatorError::Io(error))
+    }
+}
 
 // #[derive(Clone)]
 pub(crate) struct ServiceState {
@@ -56,9 +62,38 @@ pub(crate) struct ServiceState {
 }
 
 /// Receives a partial aggregate from user
+// #[post("/submit-agg")]
+// async fn submit_agg(
+//     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
+// ) -> Result<HttpResponse, ApiError> {
+//     let start = std::time::Instant::now();
+//     // Strip whitespace from the payload
+//     let payload = payload.split_whitespace().next().unwrap_or("");
+//     // Parse aggregation
+//     let data: UserSubmissionMessageUpdated = cli_util::load(&mut payload.as_bytes())?;
+
+//     // Unpack state
+//     let mut handle = state.get_ref().lock().unwrap();
+//     let ServiceState {
+//         ref mut agg_state,
+//         ..
+//     } = handle.deref_mut();
+
+//     // Add to aggregate
+//     let agg_data = SubmissionMessage::UserSubmission(data);
+//     agg_state.add_to_aggregate(&agg_data)?;
+
+//     // debug!("[agg] submit-agg success");
+//     let duration = start.elapsed();
+//     debug!("[agg] submit_agg: {:?}", duration);
+//     log_agg_encrypt_time(duration.as_nanos());
+//     Ok(HttpResponse::Ok().body("OK\n"))
+// }
+
+/// Receives a partial aggregate from user, for evaluation purpose
 #[post("/submit-agg")]
 async fn submit_agg(
-    (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
+    (payload, data_collection): (String, web::Data<Arc<Mutex<Vec<UserSubmissionMessageUpdated>>>>),
 ) -> Result<HttpResponse, ApiError> {
     let start = std::time::Instant::now();
     // Strip whitespace from the payload
@@ -66,20 +101,50 @@ async fn submit_agg(
     // Parse aggregation
     let data: UserSubmissionMessageUpdated = cli_util::load(&mut payload.as_bytes())?;
 
+    let mut data_collection_handle = data_collection.lock().unwrap();
+    data_collection_handle.push(data);
+
+    let num_user = 
+        env::var("DC_NUM_USER")
+        .unwrap_or_else(|_| "100".to_string())
+        .parse::<usize>()
+        .expect("Invalid DC_NUM_USER value");
+    info!("now we have {}/{}", data_collection_handle.len(), num_user);
+    if data_collection_handle.len() == num_user {
+        info!("User finish sending all msg!");
+        // Save data_collection to a file
+        let save_path = "data_collection.txt";
+        let file = std::fs::File::create(save_path)?;
+        let data_vec = data_collection_handle.clone();
+        cli_util::save(file, &data_vec)?;
+        info!("Data saved to {}", save_path);
+    }
+
+    Ok(HttpResponse::Ok().body("OK\n"))
+}
+
+#[get("/aggregate-eval")]
+async fn aggregate_eval(
+    state: web::Data<Arc<Mutex<ServiceState>>>,
+) -> Result<HttpResponse, ApiError> {
+    // Load data_collection from the file (if needed)
+    let save_path = "data_collection.txt";
+    let file = File::open(save_path)?;
+    let data_collection_loaded: Vec<UserSubmissionMessageUpdated> = cli_util::load(file)?;
+    info!("Data loaded from {}", save_path);
     // Unpack state
+    let start = std::time::Instant::now();
     let mut handle = state.get_ref().lock().unwrap();
     let ServiceState {
         ref mut agg_state,
         ..
     } = handle.deref_mut();
-
-    // Add to aggregate
-    let agg_data = SubmissionMessage::UserSubmission(data);
-    agg_state.add_to_aggregate(&agg_data)?;
-
-    // debug!("[agg] submit-agg success");
+    for data in data_collection_loaded{
+        let agg_data = SubmissionMessage::UserSubmission(data);
+        agg_state.add_to_aggregate(&agg_data)?;
+    }
     let duration = start.elapsed();
-    debug!("[agg] submit_agg: {:?}", duration);
+    debug!("[agg] aggregating time: {:?}", duration);
     log_agg_encrypt_time(duration.as_nanos());
     Ok(HttpResponse::Ok().body("OK\n"))
 }
@@ -123,7 +188,7 @@ async fn force_round_end(
 
     // End the round. Serialize the aggregate and forward it in the background. Time out
     // after 1 second
-    let send_timeout = Duration::from_secs(5);
+    let send_timeout = Duration::from_secs(20);
     let (agg_payload, forward_urls) = get_agg_payload(&*state);
 
     spawn(
@@ -191,8 +256,10 @@ fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
 async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
     let start = std::time::Instant::now();
 
-    info!("Forwarding aggregate to {:?}", forward_urls);
-    for base_url in forward_urls {
+    let mut forward_urls_reverse = forward_urls.clone();
+    forward_urls_reverse.reverse();
+    info!("Forwarding aggregate to {:?}", forward_urls_reverse);
+    for base_url in forward_urls_reverse {
         // Send the serialized contents
         let client = Client::builder().finish();
         let post_path: Uri = [&base_url, "/submit-agg"].concat().parse().expect(&format!(
@@ -318,6 +385,7 @@ pub(crate) async fn start_service(
 ) -> std::io::Result<()> {
     let state = Arc::new(Mutex::new(state));
     let state_copy = state.clone();
+    let data_collection = Arc::new(Mutex::new(Vec::<UserSubmissionMessageUpdated>::new()));
 
     Arbiter::spawn(round_finalization_loop(
         state_copy, round_dur, start_time, level,
@@ -325,8 +393,9 @@ pub(crate) async fn start_service(
 
     // Start the web server
     HttpServer::new(move || {
-        App::new().data(state.clone()).configure(|cfg| {
-            cfg.service(submit_agg).service(force_round_end).service(round_num);
+        App::new().data(state.clone()).data(data_collection.clone()).data(web::PayloadConfig::new(10 << 21))
+        .configure(|cfg| {
+            cfg.service(submit_agg).service(force_round_end).service(round_num).service(aggregate_eval);
         })
     })
     .workers(1)
