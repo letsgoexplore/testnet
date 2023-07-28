@@ -23,7 +23,7 @@ SERVER_PORT="28942"
 SERVER_IP=("18.117.139.165" "18.117.196.197" "18.217.9.71" "18.221.129.24" "18.217.189.71")
 
 # -q to reduce clutter
-CMD_PREFIX="cargo --release run -- "
+CMD_PREFIX="cargo run --release -- "
 SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
