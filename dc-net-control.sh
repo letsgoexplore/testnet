@@ -1,29 +1,29 @@
 #!/bin/bash
-SERVER_IP=("18.218.90.235")
-SERVER_AWS_COMMANDS=("ec2-18-218-90-235.us-east-2.compute.amazonaws.com")
+SERVER_IP=("18.117.84.139" "3.15.190.87" "3.136.97.239")
+SERVER_AWS_COMMANDS=("ec2-18-117-84-139.us-east-2.compute.amazonaws.com" "ec2-3-15-190-87.us-east-2.compute.amazonaws.com" "ec2-3-136-97-239.us-east-2.compute.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
 GIT_REPO="https://github.com/letsgoexplore/testnet"
-WORKING_ADDR="./dc-net/testnet"
+WORKING_ADDR="./testnet"
 TIME_LOG_ALL="server/time_recorder_all.txt"
 num_user=10
 num_leader=1
 # num_follower=("0" "3" "5" "7")
-num_follower=0
+num_follower=2
 num_server=$((num_leader + num_follower))
 num_aggregator=1
 dc_net_message_length=160
 
 eval(){
     # remove the log_time_all file
-    su - ubuntu ./dc-net-control.sh rm-leader-time-log
+    su ubuntu ./dc-net-control.sh rm-leader-time-log
     rm -f $TIME_LOG_ALL || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_users=("1" "1000")
+    num_users=("20")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
-    num_follower=0
+    num_follower=2
     num_server=$((num_leader + num_follower))
     num_aggregator=1
     dc_net_message_length=160
@@ -34,15 +34,20 @@ eval(){
     
     for num_user in "${num_users[@]}"; do
         dc_net_n_slot=$num_user
-        su - ubuntu ./dc-net-control.sh update
-        su - ubuntu ./dc-net-control.sh clean
-        su - ubuntu ./dc-net-control.sh set-param $num_server $dc_net_message_length $dc_net_n_slot
+        footprint_n_slots=$(expr 4 \* $dc_net_n_slot)
+        export DC_NUM_USER=$num_user
+        export DC_NET_MESSAGE_LENGTH=$dc_net_message_length
+        export DC_NET_N_SLOTS=$dc_net_n_slot
+        export FOOTPRINT_N_SLOTS=$footprint_n_slots
+        su ubuntu ./dc-net-control.sh update
+        su ubuntu ./dc-net-control.sh clean
+        su ubuntu ./dc-net-control.sh set-param $dc_net_message_length $dc_net_n_slot $num_user
         echo "finish 1"
         ./server_ctrl.sh setup-env $dc_net_message_length $dc_net_n_slot $num_server $num_user
         echo "finish 2"
-        su - ubuntu ./dc-net-control.sh mitigate
+        su ubuntu ./dc-net-control.sh mitigate
         echo "finish 3"
-        sleep 10
+        sleep 3
         # su - ubuntu -c ./dc-net-control.sh start-leader
         # echo "finish 4"
         # sleep 100
@@ -51,12 +56,12 @@ eval(){
         #     echo "finish 5"
         # fi
         ./server_ctrl.sh start-agg $num_server
-        # echo "finish 6"
+        echo "finish 6"
         ./server_ctrl.sh multi $num_user $dc_net_message_length
-        sleep 10
-        su - ubuntu ./dc-net-control.sh cal-time $num_server $num_aggregator $num_user $dc_net_message_length
-        su - ubuntu ./dc-net-control.sh send-back
-        su - ubuntu ./dc-net-control.sh stop-all
+        sleep 3
+        # su - ubuntu ./dc-net-control.sh cal-time $num_server $num_aggregator $num_user $dc_net_message_length
+        # su - ubuntu ./dc-net-control.sh send-back
+        # su - ubuntu ./dc-net-control.sh stop-all
     done
 }
 
@@ -97,11 +102,15 @@ clean_all(){
     NUM_SERVERS=$1
     ./server_ctrl.sh clean
     # update and clean server 
+    clean_remote $NUM_SERVERS
+}
+
+clean_remote(){
+    NUM_SERVERS=$1
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            chmod +x "$WORKING_ADDR/server_ctrl.sh"
-            echo "before clean"
+            chmod +x '$WORKING_ADDR/server_ctrl.sh'
             cd $WORKING_ADDR
             ./server_ctrl.sh clean
             cd
@@ -114,12 +123,13 @@ set_param(){
     NUM_SERVERS=$1
     dc_net_message_length=$2
     dc_net_n_slot=$3
+    num_user=$4
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            chmod +x "$WORKING_ADDR/server_ctrl.sh"
+            chmod +x '$WORKING_ADDR/server_ctrl.sh'
             cd $WORKING_ADDR
-            ./server_ctrl.sh setup-param $dc_net_message_length $dc_net_n_slot
+            ./server_ctrl.sh setup-param $dc_net_message_length $dc_net_n_slot $num_user
             cd
             exit
         "
@@ -150,10 +160,10 @@ update_clean_and_set_param_for_all(){
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             chmod +x ./dc-net/testnet/server_ctrl.sh
-            echo "before clean"
+            echo 'before clean'
             cd ./dc-net/testnet
             ./server_ctrl.sh clean
-            echo "clean server"
+            echo 'clean server'
             ./server_ctrl.sh setup-param $dc_net_message_length $dc_net_n_slot
             exit
         "
@@ -166,7 +176,7 @@ mitigate_server_state(){
     for i in $(seq 1 $NUM_SERVERS); do 
         LOCAL_ADDR="./server/server-state$i.txt"
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
-        TARGET_ADDR="$SERVER_AWS_COMMAND:./dc-net/testnet/server/server-state$i.txt"
+        TARGET_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/server-state$i.txt"
         scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$TARGET_ADDR"
         echo "success! address:$TARGET_ADDR"
     done
@@ -180,7 +190,7 @@ start_leader(){
         cd dc-net/testnet/
         chmod +x ./script/run_leader.sh
         docker start dcnet-4
-        docker exec -d dcnet-4 "./sgx/script/run_leader.sh"
+        docker exec -d dcnet-4 './sgx/script/run_leader.sh'
         sleep 3
         cd
         exit
@@ -240,11 +250,16 @@ send_back(){
 stop_all(){
     NUM_SERVERS=$1
     ./server_ctrl.sh stop-all
-    # stop server
+    stop_remote $NUM_SERVERS
+}
+
+stop_remote(){
+    NUM_SERVERS=$1
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            cd ./dc-net/testnet
+            chmod +x "$WORKING_ADDR/server_ctrl.sh"
+            cd $WORKING_ADDR
             ./server_ctrl.sh stop-all
             cd
             exit
@@ -266,6 +281,8 @@ elif [[ $1 == "5" ]]; then
     step_5
 elif [[ $1 == "clean" ]]; then
     clean_all ${#SERVER_IP[@]}
+elif [[ $1 == "clean-rem" ]]; then
+    clean_remote ${#SERVER_IP[@]}    
 elif [[ $1 == "update" ]]; then
     update_code ${#SERVER_IP[@]}
 elif [[ $1 == "set-param" ]]; then
@@ -281,8 +298,9 @@ elif [[ $1 == "cal-time" ]]; then
 elif [[ $1 == "send-back" ]]; then
     send_back
 elif [[ $1 == "stop-all" ]]; then
-    # [caution] here we assume there are 5 servers
     stop_all ${#SERVER_IP[@]}
+elif [[ $1 == "stop-rem" ]]; then
+    stop_remote ${#SERVER_IP[@]}
 elif [[ $1 == "rm-leader-time-log" ]]; then
     rm_time_log_all_at_leader
 else

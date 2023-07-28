@@ -252,18 +252,22 @@ setup_client() {
 
 setup_parameter() {
     footprint_n_slots=$(expr 4 \* $2)
-    echo "DC_NET_MESSAGE_LENGTH=$1\n"
-    echo "DC_NET_N_SLOTS=$2\n"
-    echo "FOOTPRINT_N_SLOTS=$footprint_n_slots\n"
+    echo "DC_NET_MESSAGE_LENGTH=$1"
+    echo "DC_NET_N_SLOTS=$2"
+    echo "FOOTPRINT_N_SLOTS=$footprint_n_slots"
+    echo "DC_NUM_USER=$3"
 
     export DC_NET_MESSAGE_LENGTH=$1
     export DC_NET_N_SLOTS=$2
     export FOOTPRINT_N_SLOTS=$footprint_n_slots
+    export DC_NUM_USER=$3
+
+    source ./server_ctrl.sh
 }
 
 setup_env() {
     clean
-    setup_parameter $1 $2
+    setup_parameter $1 $2 $4
     setup_server $3
     setup_aggregator $3
     setup_client $3 $4
@@ -290,18 +294,26 @@ start_client() {
 test_multi_clients() {
     NUM_USERS=$1
     MESSAGE_LENGTH=$2
-    # start the aggregator
+    NUM_GROUP=4
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
-    # start clients and send the ciphertexts
-    # CMD_PREFIX=/tmp/sgxdcnet/target/debug/sgxdcnet-client
-    for i in $(seq 1 $NUM_USERS); do
-        echo "client $i begins to send msg"
+    for i in $(seq 1 $NUM_GROUP); do
+        test_multi_client $(( NUM_USERS/NUM_GROUP )) $i &
+    done
+    sleep 3
+}
+
+test_multi_client() {
+    GROUP_NUM_USERS=$1
+    GROUP_SEQ=$2
+    for i in $(seq 1 $GROUP_NUM_USERS); do
+        USER_SEQ=$(( (GROUP_SEQ-1) * GROUP_NUM_USERS + i))
+        echo "client $USER_SEQ begins to send msg"
         # start one client at a time
         cd client
-        FILENAME="message/clientmessage_$(($i-1)).txt"
-        STATE="${USER_STATE%.txt}$i.txt"
+        FILENAME="message/clientmessage_$(($USER_SEQ-1)).txt"
+        STATE="${USER_STATE%.txt}$USER_SEQ.txt"
         PAYLOAD=$(cat $FILENAME)
-        USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
+        USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
 
         RUST_LOG=debug $CMD_PREFIX start-service \
             --user-state "../$STATE" \
@@ -325,7 +337,7 @@ test_multi_clients() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 0.9 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME")
@@ -333,14 +345,20 @@ test_multi_clients() {
         sleep 0.2 && kill_clients
     done
 
+    # aggregate_evaluation
     # all ciphertexts have been submitted to the aggregator
     # start server
     # log_time
-    force_root_round_end
+    # force_root_round_end
     # sleep 5
     # kill_clients 2> /dev/null || true
     # kill_aggregators 2> /dev/null || true
     # kill_servers 2> /dev/null || true
+}
+
+# aggregate-evaluation
+aggregate_evaluation(){
+    curl -s POST "http://localhost:$AGGREGATOR_PORT/aggregate-eval"
 }
 
 
@@ -391,12 +409,6 @@ start_leader() {
         # --no-persist \
     sleep 1
     cd ..
-}
-
-activate_leader_AWS() {
-    clean
-    sleep 10
-
 }
 
 # Starts the anytrust followers
@@ -528,7 +540,7 @@ elif [[ $1 == "eval-ser" ]]; then
 elif [[ $1 == "setup-env" ]]; then
     setup_env $2 $3 $4 $5
 elif [[ $1 == "setup-param" ]]; then
-    setup_parameter $2 $3
+    setup_parameter $2 $3 $4
 elif [[ $1 == "start-leader" ]]; then
     start_leader
 elif [[ $1 == "start-follower" ]]; then
@@ -565,6 +577,8 @@ elif [[ $1 == "stop-all" ]]; then
     kill_servers 2> /dev/null || true
 elif [[ $1 == "multi" ]]; then
     test_multi_clients $2 $3
+elif [[ $1 == "agg-eval" ]]; then
+    aggregate_evaluation
 elif [[ $1 == "cal-time" ]]; then
     cal_time
 else
