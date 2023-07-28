@@ -17,6 +17,7 @@ CLIENT_MESSAGE="client/src/message/clientmessage.txt"
 CLINET_TIME_LOG="client/client_time_recorder.txt"
 CLINET_ENCRYPT_TIME_LOG="client/client_encrypt_time_recorder.txt"
 AGG_ENCRYPT_TIME_LOG="aggregator/agg_encrypt_time_recorder.txt"
+AGG_DATA="aggregator/data_collection.txt"
 CLIENT_SERVICE_PORT="9323"
 AGGREGATOR_PORT="18300"
 SERVER_PORT="28942"
@@ -30,10 +31,10 @@ LEADER=1
 NUM_FOLLOWERS=4
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=1000
+NUM_USERS=2000
 NUM_AGGREGATOR=1
 MESSAGE_LENGTH=160
-NUM_SLOT=1000
+NUM_SLOT=2000
 ROUND=0
 
 
