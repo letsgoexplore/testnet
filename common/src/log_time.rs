@@ -3,6 +3,21 @@ use std::io::Write;
 use std::time::{Instant, Duration};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+pub fn log_server_detailed_duration(event:&str, duration: u128) {
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("time_recorder.txt")
+        .expect("[log_time] cannot open the file");
+
+    if let Err(err) = writeln!(file, "f{}:{:?}", event, duration) {
+        eprintln!("[log_time] fail to write: {}", err);
+    } else {
+        println!("[log_time] ✅already log!");
+    }
+
+}
+
 pub fn log_leader_time() {
     let mut file = OpenOptions::new()
         .create(true)
