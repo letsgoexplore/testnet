@@ -27,13 +27,15 @@ CMD_PREFIX="cargo run --release -- "
 SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
-NUM_FOLLOWERS=0
+NUM_FOLLOWERS=4
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=5
-NUM_AGGREGATORS=1
-MESSAGE_LENGTH=40
+NUM_USERS=500
+NUM_AGGREGATOR=1
+MESSAGE_LENGTH=160
+NUM_SLOT=500
 ROUND=0
+
 
 evaluate_bit() {
     rm -f $TIME_LOG_ALL || true
@@ -397,6 +399,7 @@ start_root_agg() {
 
 # Starts the anytrust leader
 start_leader() {
+    setup_parameter $MESSAGE_LENGTH $NUM_SLOT $NUM_USERS
     cd server
     echo "starting leader..."
     STATE="${SERVER_STATE%.txt}$LEADER.txt"
@@ -413,6 +416,7 @@ start_leader() {
 
 # Starts the anytrust followers
 start_follower() {
+    setup_parameter $MESSAGE_LENGTH $NUM_SLOT $NUM_USERS
     cd server
     STATE="${SERVER_STATE%.txt}$1.txt"
     leader_ip=${SERVER_IP[0]}
