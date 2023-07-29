@@ -333,7 +333,7 @@ elif [[ $1 == "stop-rem" ]]; then
     stop_remote ${#SERVER_IP[@]}
 elif [[ $1 == "rm-leader-time-log" ]]; then
     rm_time_log_all_at_leader
-elif [[ $1 == "stop-rem" ]]; then
+elif [[ $1 == "resend" ]]; then
     ./server_ctrl.sh setup-param
     ./server_ctrl.sh resend
 else
