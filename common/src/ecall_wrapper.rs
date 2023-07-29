@@ -17,7 +17,7 @@ extern "C" {
     ) -> sgx_status_t;
 }
 
-const ENCLAVE_OUTPUT_BUF_SIZE: usize = 30 * 1024000; // 5MB buffer should be enough?
+const ENCLAVE_OUTPUT_BUF_SIZE: usize = 80 * 1024000; // 5MB buffer should be enough?
 
 macro_rules! gen_ecall_stub {
     ( $name:expr, $type_i:ty, $type_o: ty, $fn_name: ident) => {
