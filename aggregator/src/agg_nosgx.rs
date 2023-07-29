@@ -309,8 +309,6 @@ fn add_to_agg_user_submit(
             }
         };
 
-        debug!("✅ new agg with users {:?}", current_aggregation.user_ids);
-
         Ok((current_aggregation, new_observed_nonces))
     }   
 }

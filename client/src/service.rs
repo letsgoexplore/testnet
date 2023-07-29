@@ -65,7 +65,7 @@ async fn encrypt_msg(
     // debug!("payload: {:?}", payload);
     // The payload is msg COMMA prev_rount_output
     let mut payload_it = payload.split(',');
-
+    *round=0;
     // debug!("payload_it: {:?}", payload_it);
 
     // Load the message first. It's just a base64 string of length <= DC_NET_MESSAGE_LENGTH

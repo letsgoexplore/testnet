@@ -89,7 +89,7 @@ impl UserState {
         if round % DC_NET_ROUNDS_PER_WINDOW == 0 {
             self.times_participated = 0;
         }
-
+        
         // Submit the message
         let (blob, ratcheted_secrets) = enclave.user_submit_round_msg_updated(&req, &self.signing_key)?;
 
