@@ -31,10 +31,10 @@ LEADER=1
 NUM_FOLLOWERS=4
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=2000
+NUM_USERS=4000
 NUM_AGGREGATOR=1
 MESSAGE_LENGTH=160
-NUM_SLOT=2000
+NUM_SLOT=4000
 ROUND=0
 
 
@@ -340,7 +340,7 @@ test_multi_client() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 1.4 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 1.6 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME")
