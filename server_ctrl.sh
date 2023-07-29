@@ -18,6 +18,7 @@ CLINET_TIME_LOG="client/client_time_recorder.txt"
 CLINET_ENCRYPT_TIME_LOG="client/client_encrypt_time_recorder.txt"
 AGG_ENCRYPT_TIME_LOG="aggregator/agg_encrypt_time_recorder.txt"
 AGG_DATA="aggregator/data_collection.txt"
+ERROR_LOG="aggregator/error.txt"
 CLIENT_SERVICE_PORT="9323"
 AGGREGATOR_PORT="18300"
 SERVER_PORT="28942"
@@ -31,10 +32,10 @@ LEADER=1
 NUM_FOLLOWERS=4
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=4000
+NUM_USERS=1000
 NUM_AGGREGATOR=1
 MESSAGE_LENGTH=160
-NUM_SLOT=4000
+NUM_SLOT=1000
 ROUND=0
 
 
@@ -143,7 +144,7 @@ clean() {
     rm -f $CLINET_TIME_LOG || true
     rm -f $CLINET_ENCRYPT_TIME_LOG || true
     rm -f $AGG_ENCRYPT_TIME_LOG || true
-    
+    rm -f $ERROR_LOG || true
     echo "Cleaned"
 }
 
@@ -340,10 +341,14 @@ test_multi_client() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 1.6 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
-        --data-binary "@$FILENAME")
+        --data-binary "@$FILENAME"
+        if [[ $? -ne 0 ]]; then
+            # 如果curl执行失败，将GROUP_SEQ写入到错误日志中
+            echo $USER_SEQ >> "../$ERROR_LOG"
+        fi)
         cd ..
         sleep 0.2 && kill_clients
     done
@@ -357,6 +362,10 @@ test_multi_client() {
     # kill_clients 2> /dev/null || true
     # kill_aggregators 2> /dev/null || true
     # kill_servers 2> /dev/null || true
+}
+
+resend_error_msg(){
+    echo haha
 }
 
 # aggregate-evaluation
