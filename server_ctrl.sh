@@ -298,7 +298,7 @@ start_client() {
 test_multi_clients() {
     NUM_USERS=$1
     MESSAGE_LENGTH=$2
-    NUM_GROUP=4
+    NUM_GROUP=2
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
     for i in $(seq 1 $NUM_GROUP); do
         test_multi_client $(( NUM_USERS/NUM_GROUP )) $i &
@@ -360,7 +360,7 @@ single_client_send() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 2.4 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 1.6 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME"
@@ -604,6 +604,8 @@ elif [[ $1 == "stop-all" ]]; then
     kill_servers 2> /dev/null || true
 elif [[ $1 == "multi" ]]; then
     test_multi_clients $2 $3
+elif [[ $1 == "resend" ]]; then
+    retry_failed_clients
 elif [[ $1 == "agg-eval" ]]; then
     aggregate_evaluation
 elif [[ $1 == "cal-time" ]]; then

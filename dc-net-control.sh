@@ -268,6 +268,13 @@ send_back(){
     echo "success! address:$TARGET_ADDR"
 }
 
+send_back_from_remote_aggregator(){
+    SEQ=$1
+    SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$SEQ]}
+    TARGET_ADDR="
+    SOURCE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/$TIME_LOG_ALL"
+}
+
 stop_all(){
     NUM_SERVERS=$1
     ./server_ctrl.sh stop-all
@@ -326,6 +333,9 @@ elif [[ $1 == "stop-rem" ]]; then
     stop_remote ${#SERVER_IP[@]}
 elif [[ $1 == "rm-leader-time-log" ]]; then
     rm_time_log_all_at_leader
+elif [[ $1 == "stop-rem" ]]; then
+    ./server_ctrl.sh setup-param
+    ./server_ctrl.sh resend
 else
     echo "no commad match"
 fi
