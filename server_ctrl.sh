@@ -32,10 +32,10 @@ LEADER=1
 NUM_FOLLOWERS=4
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=1000
+NUM_USERS=4000
 NUM_AGGREGATOR=1
 MESSAGE_LENGTH=160
-NUM_SLOT=1000
+NUM_SLOT=4000
 ROUND=0
 
 
@@ -298,11 +298,14 @@ start_client() {
 test_multi_clients() {
     NUM_USERS=$1
     MESSAGE_LENGTH=$2
-    NUM_GROUP=2
+    NUM_GROUP=4
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
     for i in $(seq 1 $NUM_GROUP); do
         test_multi_client $(( NUM_USERS/NUM_GROUP )) $i &
     done
+    echo "start sending error msg"
+    sleep 10
+    retry_failed_clients
     sleep 3
 }
 
@@ -311,7 +314,23 @@ test_multi_client() {
     GROUP_SEQ=$2
     for i in $(seq 1 $GROUP_NUM_USERS); do
         USER_SEQ=$(( (GROUP_SEQ-1) * GROUP_NUM_USERS + i))
-        echo "client $USER_SEQ begins to send msg"
+        single_client_send $USER_SEQ
+    done
+
+    # aggregate_evaluation
+    # all ciphertexts have been submitted to the aggregator
+    # start server
+    # log_time
+    # force_root_round_end
+    # sleep 5
+    # kill_clients 2> /dev/null || true
+    # kill_aggregators 2> /dev/null || true
+    # kill_servers 2> /dev/null || true
+}
+
+single_client_send() {
+    USER_SEQ=$1
+    echo "client $USER_SEQ begins to send msg"
         # start one client at a time
         cd client
         FILENAME="message/clientmessage_$(($USER_SEQ-1)).txt"
@@ -341,31 +360,26 @@ test_multi_client() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 2.4 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME"
         if [[ $? -ne 0 ]]; then
-            # 如果curl执行失败，将GROUP_SEQ写入到错误日志中
+            # log error
             echo $USER_SEQ >> "../$ERROR_LOG"
         fi)
         cd ..
         sleep 0.2 && kill_clients
-    done
-
-    # aggregate_evaluation
-    # all ciphertexts have been submitted to the aggregator
-    # start server
-    # log_time
-    # force_root_round_end
-    # sleep 5
-    # kill_clients 2> /dev/null || true
-    # kill_aggregators 2> /dev/null || true
-    # kill_servers 2> /dev/null || true
 }
 
-resend_error_msg(){
-    echo haha
+retry_failed_clients() {
+    while IFS= read -r line
+    do
+        USER_SEQ=$line
+        echo "we 're resending msg-$USER_SEQ"
+        sleep 1
+        single_client_send $USER_SEQ
+    done < "$ERROR_LOG"
 }
 
 # aggregate-evaluation
