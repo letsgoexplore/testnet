@@ -26,6 +26,7 @@ use actix_web::{
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError, Result, dev, error, FromRequest,
     middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers},
 };
+use actix::sync::Mutex
 
 // use futures_util::future::ok;
 use log::{debug, error, info};
@@ -52,6 +53,7 @@ pub(crate) struct ServiceState {
     pub(crate) round_outputs: BTreeMap<u32, RoundOutputUpdated>,
     /// The path to this server's state file. If `None`, state is not persisted to disk
     pub(crate) server_state_path: Option<String>,
+    pub(crate) mutex: Mutex<()>,
 }
 
 impl ServiceState {
@@ -66,6 +68,7 @@ impl ServiceState {
             leader_url,
             round_outputs: BTreeMap::new(),
             round_shares: Vec::new(),
+            mutex: Mutex::new(()),
         }
     }
 }
@@ -108,22 +111,6 @@ impl ServiceState {
 
 //     Ok(req)
 // }
-
-fn render_500<B>(mut res: actix_web::dev::ServiceResponse<B>) -> actix_web::Result<actix_web::middleware::errhandlers::ErrorHandlerResponse<B>> {
-    res.response_mut()
-       .headers_mut()
-       .insert(actix_web::http::header::CONTENT_TYPE, actix_web::http::HeaderValue::from_static("Error"));
-    Ok(actix_web::middleware::errhandlers::ErrorHandlerResponse::Response(res))
-}
-
-fn render_413<B>(mut res: actix_web::dev::ServiceResponse<B>) -> actix_web::Result<actix_web::middleware::errhandlers::ErrorHandlerResponse<B>> {
-    res.response_mut()
-       .headers_mut()
-       .insert(actix_web::http::header::CONTENT_TYPE, actix_web::http::HeaderValue::from_static("413 Error"));
-    let req = res.request();
-    let res = res.map_body(|_, _| actix_web::body::ResponseBody::Body(actix_web::dev::Body::from("{\"code\":413,\"error\":\"413 Payload Too Large\",\"message\":\"You've sent more data than expected\"}")).into_body());//alter the the response body see "https://users.rust-lang.org/t/actix-web-using-a-custom-error-handler-to-alter-the-response-body/41068"
-    Ok(actix_web::middleware::errhandlers::ErrorHandlerResponse::Response(res))
-}
 
 /// Finish the round as the anytrust leader. This means computing the round output and clearing the
 /// caches.
@@ -168,6 +155,7 @@ fn leader_finish_round(state: &mut ServiceState) {
 /// Sends the given unblinded share to `base_url/submit-share`
 async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlobNoSGX) {
     // Serialize the share
+    let _state = state.lock().await;
     let mut body = Vec::new();
     cli_util::save(&mut body, &share).expect("could not serialize share");
 
@@ -201,6 +189,7 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
 async fn submit_agg(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
+    let _state = state.lock().await;
     let start = Instant::now();
     let input_start = Instant::now();
     log_leader_time();
