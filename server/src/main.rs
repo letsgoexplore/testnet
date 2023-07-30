@@ -5,7 +5,7 @@ mod server_state;
 mod service;
 mod util;
 mod server_nosgx;
-mod server_concurrency
+mod server_concurrency;
 
 use crate::{
     server_state::ServerState,
