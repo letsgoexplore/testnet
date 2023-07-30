@@ -18,7 +18,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use actix_rt::Arbiter;
+use ::actix_rt::Arbiter;
 use actix_web::{
     client::Client,
     get,
