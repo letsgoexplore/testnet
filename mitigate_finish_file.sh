@@ -1,6 +1,6 @@
 FOLDER_PREFIX="./data_saving"
 WORKING_ADDR="./testnet"
-KEY_ADDRESS="./dc-net-test.pem"
+KEY_ADDRESS="./.ssh/dc-net-test.pem"
 
 
 mitigate_to_database(){
