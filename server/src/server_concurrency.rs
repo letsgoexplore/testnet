@@ -1,5 +1,5 @@
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
-use actix_web::{Error,Body};
+use actix_web::{Error,body};
 use actix_http::body::MessageBody;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
