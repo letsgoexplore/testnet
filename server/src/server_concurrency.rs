@@ -16,7 +16,7 @@ struct ConcurrencyLimiterMiddleware<S> {
 
 impl<S> Transform<S> for ConcurrencyLimiter
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<Body>, Error = Error>,
+    S: Service<Request = ServiceRequest, Response = ServiceResponse<Body>, Error = Error> + 'static,
 {
     type Request = ServiceRequest;
     type Response = ServiceResponse<Body>;
@@ -36,7 +36,7 @@ where
 
 impl<S> Service for ConcurrencyLimiterMiddleware<S>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<Body>, Error = Error>,
+    S: Service<Request = ServiceRequest, Response = ServiceResponse<Body>, Error = Error> + 'static,
 {
     type Request = ServiceRequest;
     type Response = ServiceResponse<Body>;
