@@ -10,7 +10,7 @@ use std::future::Future;
 /// This middleware wraps the entire application and allows only one request to be processed at a time.
 pub struct ConcurrencyLimiter;
 
-struct ConcurrencyLimiterMiddleware<S> {
+pub struct ConcurrencyLimiterMiddleware<S> {
     service: Arc<Mutex<S>>,
 }
 
