@@ -4,18 +4,18 @@ use actix_http::body::MessageBody;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll};
+use std::future::Future;
 
 /// Middleware to control concurrent request processing.
 /// This middleware wraps the entire application and allows only one request to be processed at a time.
 pub struct ConcurrencyLimiter;
 
-impl<S, B> Transform<S> for ConcurrencyLimiter
+impl<S> Transform<S> for ConcurrencyLimiter
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
-    B: MessageBody,
+    S: Service<Request = ServiceRequest, Response = ServiceResponse<Body>, Error = Error>,
 {
     type Request = ServiceRequest;
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<Body>;
     type Error = Error;
     type InitError = ();
     type Transform = ConcurrencyLimiterMiddleware<S>;
@@ -30,17 +30,12 @@ where
     }
 }
 
-struct ConcurrencyLimiterMiddleware<S> {
-    service: Arc<Mutex<S>>,
-}
-
-impl<S, B> Service for ConcurrencyLimiterMiddleware<S>
+impl<S> Service for ConcurrencyLimiterMiddleware<S>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
-    B: MessageBody,
+    S: Service<Request = ServiceRequest, Response = ServiceResponse<Body>, Error = Error>,
 {
     type Request = ServiceRequest;
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<Body>;
     type Error = Error;
     type Future = Pin<Box<dyn std::future::Future<Output = Result<Self::Response, Self::Error>>>>;
 
