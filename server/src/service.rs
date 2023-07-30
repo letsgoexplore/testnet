@@ -171,7 +171,7 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
     cli_util::save(&mut body, &share).expect("could not serialize share");
 
     // Send the serialized contents as an HTTP POST to leader/submit-share
-    let timeout_sec = 20;
+    let timeout_sec = 100;
     debug!(
         "Sending share to {} with timeout {}s",
         base_url, timeout_sec
