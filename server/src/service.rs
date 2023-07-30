@@ -17,7 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use actix_rt::{Arbiter,clock::sleep};
+use actix_rt::Arbiter;
 use actix_web::{
     client::Client,
     get,
@@ -25,7 +25,7 @@ use actix_web::{
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError, Result, dev, error, FromRequest,
     middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers},
 };
-
+use actix::clock::sleep;
 // use futures_util::future::ok;
 use log::{debug, error, info};
 use thiserror::Error;
