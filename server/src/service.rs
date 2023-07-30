@@ -1,7 +1,6 @@
 use crate::{
     util::{save_state, save_output, ServerError},
     ServerState,
-    server_concurrency::ConcurrencyLimiter,
 };
 use common::{cli_util, log_time::{log_server_time, log_server_detailed_duration, log_leader_time}};
 use interface::RoundOutputUpdated;
@@ -26,7 +25,6 @@ use actix_web::{
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError, Result, dev, error, FromRequest,
     middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers},
 };
-use actix::sync::Mutex
 
 // use futures_util::future::ok;
 use log::{debug, error, info};
@@ -246,7 +244,7 @@ async fn submit_agg(
             // We're a follower. Send the unblinded aggregate to the leader
             Some(url) => {
                 // This might take a while so do it in a separate thread
-                Arbiter::spawn(send_share_to_leader(url.clone(), share));
+                Arbiter::spawn(send_share_to_leader(url.clone(), share, state_handle));
             }
         }
     }
