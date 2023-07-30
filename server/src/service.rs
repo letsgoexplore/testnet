@@ -435,7 +435,6 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
     // Start the web server
     HttpServer::new(move || {
         App::new().data(state.clone())
-        .wrap(ConcurrencyLimiter)
         .data(web::PayloadConfig::new(10 << 21))
         .configure(|cfg| {
             cfg.service(submit_agg)
