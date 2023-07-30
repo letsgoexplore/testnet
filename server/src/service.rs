@@ -17,7 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use actix_rt::Arbiter;
+use actix_rt::spawn;
 use actix_web::{
     client::Client,
     get,
@@ -260,7 +260,7 @@ async fn submit_agg(
             Some(url) => {
                 // This might take a while so do it in a separate thread
                 let state_for_spawn = state.clone();
-                Arbiter::spawn(send_share_to_leader(url.clone(), share, state_for_spawn));
+                actix_rt::spawn(send_share_to_leader(url.clone(), share, state_for_spawn));
             }
         }
     }
