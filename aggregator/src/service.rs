@@ -128,10 +128,13 @@ async fn aggregate_eval(
     state: web::Data<Arc<Mutex<ServiceState>>>,
 ) -> Result<HttpResponse, ApiError> {
     // Load data_collection from the file (if needed)
+    let load_start = std::time::Instant::now();
     let save_path = "data_collection.txt";
     let file = File::open(save_path)?;
     let data_collection_loaded: Vec<UserSubmissionMessageUpdated> = cli_util::load(file)?;
     info!("Data loaded from {}", save_path);
+    let load_duration = load_start.elapsed();
+    
     // Unpack state
     let start = std::time::Instant::now();
     let mut handle = state.get_ref().lock().unwrap();
@@ -144,6 +147,7 @@ async fn aggregate_eval(
         agg_state.add_to_aggregate(&agg_data)?;
     }
     let duration = start.elapsed();
+    debug!("[agg] aggregating log time: {:?}", load_duration);
     debug!("[agg] aggregating time: {:?}", duration);
     log_agg_encrypt_time(duration.as_nanos());
     Ok(HttpResponse::Ok().body("OK\n"))
@@ -188,7 +192,7 @@ async fn force_round_end(
 
     // End the round. Serialize the aggregate and forward it in the background. Time out
     // after 1 second
-    let send_timeout = Duration::from_secs(20);
+    let send_timeout = Duration::from_secs(100);
     let (agg_payload, forward_urls) = get_agg_payload(&*state);
 
     spawn(
@@ -261,7 +265,10 @@ async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
     info!("Forwarding aggregate to {:?}", forward_urls_reverse);
     for base_url in forward_urls_reverse {
         // Send the serialized contents
-        let client = Client::builder().finish();
+        let timeout_sec = 2;
+        let client = Client::builder()
+        .timeout(Duration::from_secs(timeout_sec))
+        .finish();
         let post_path: Uri = [&base_url, "/submit-agg"].concat().parse().expect(&format!(
             "Couldn't not append '/submit-agg' to forward URL {}",
             base_url
@@ -333,7 +340,7 @@ async fn round_finalization_loop(
     mut start_time: SystemTime,
     level: u32,
 ) {
-    let one_sec = Duration::from_secs(1);
+    let one_sec = Duration::from_secs(100);
     let send_timeout = one_sec;
     let propagation_dur = Duration::from_secs(PROPAGATION_SECS);
 
