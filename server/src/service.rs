@@ -1,6 +1,7 @@
 use crate::{
     util::{save_state, save_output, ServerError},
     ServerState,
+    server_concurrency::ConcurrencyLimiter,
 };
 use common::{cli_util, log_time::{log_server_time, log_server_detailed_duration, log_leader_time}};
 use interface::RoundOutputUpdated;
@@ -447,6 +448,7 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
     // Start the web server
     HttpServer::new(move || {
         App::new().data(state.clone())
+        .wrap(ConcurrencyLimiter)
         .data(web::PayloadConfig::new(10 << 21))
         .configure(|cfg| {
             cfg.service(submit_agg)
