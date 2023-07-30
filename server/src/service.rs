@@ -244,7 +244,8 @@ async fn submit_agg(
             // We're a follower. Send the unblinded aggregate to the leader
             Some(url) => {
                 // This might take a while so do it in a separate thread
-                Arbiter::spawn(send_share_to_leader(url.clone(), share, state_handle));
+                let state_for_spawn = state.clone();
+                Arbiter::spawn(send_share_to_leader(url.clone(), share, state_for_spawn));
             }
         }
     }
