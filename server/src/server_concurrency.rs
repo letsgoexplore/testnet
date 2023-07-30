@@ -1,5 +1,5 @@
 use actix_web::dev::{Service, ServiceRequest, ServiceResponse, Transform};
-use actix_web::Error;
+use actix_web::{Error,Body};
 use actix_http::body::MessageBody;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
@@ -9,6 +9,10 @@ use std::future::Future;
 /// Middleware to control concurrent request processing.
 /// This middleware wraps the entire application and allows only one request to be processed at a time.
 pub struct ConcurrencyLimiter;
+
+struct ConcurrencyLimiterMiddleware<S> {
+    service: Arc<Mutex<S>>,
+}
 
 impl<S> Transform<S> for ConcurrencyLimiter
 where
