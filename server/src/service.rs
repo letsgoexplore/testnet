@@ -17,7 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use actix_rt::{Arbiter,time};
+use actix_rt::{Arbiter,clock::sleep};
 use actix_web::{
     client::Client,
     get,
@@ -193,7 +193,7 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
             break;
         }
         // Wait for 50ms before retrying
-        actix_rt::time::sleep(Duration::from_millis(50)).await;
+        actix::clock::sleep(Duration::from_millis(50)).await;
     }
 }
 
