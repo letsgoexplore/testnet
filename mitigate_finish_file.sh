@@ -99,7 +99,7 @@ mitigate_to_test(){
 if [[ $1 == "database" ]]; then
     # source AWS Command, Foler-name
     mitigate_to_database $2 $3 5
-if [[ $1 == "fromdatabase" ]]; then
+elif [[ $1 == "fromdatabase" ]]; then
     # source AWS Command, Foler-name
     database_to_test $2 $3 5
 elif [[ $1 == "test" ]]; then
