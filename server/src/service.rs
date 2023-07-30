@@ -17,7 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use actix_rt::Arbiter;
+use actix_rt::{Arbiter,time};
 use actix_web::{
     client::Client,
     get,
@@ -170,15 +170,30 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
         .concat()
         .parse()
         .expect("Couldn't not append '/submit-share' to forward URL");
-    match client.post(post_path).send_body(body.clone()).await {
-        Ok(res) => {
-            if res.status() == StatusCode::OK {
-                debug!("Share sent successfully");
-            } else {
-                error!("Could not send share N0.1: {:?}", res);
+
+    let mut retries = 10;
+    loop {
+        match client.post(post_path.clone()).send_body(body.clone()).await {
+            Ok(res) => {
+                if res.status() == StatusCode::OK {
+                    debug!("Share sent successfully");
+                    break;
+                } else {
+                    error!("Could not send share No.1: {:?}", res);
+                }
             }
+            Err(e) => {
+                error!("Could not send share No.2: {:?}", e);
+            },
         }
-        Err(e) => error!("Could not send share No.2: {:?}", e),
+
+        retries -= 1;
+        if retries <= 0 {
+            error!("Failed to send share after multiple attempts");
+            break;
+        }
+        // Wait for 50ms before retrying
+        actix_rt::time::sleep(Duration::from_millis(50)).await;
     }
 }
 
