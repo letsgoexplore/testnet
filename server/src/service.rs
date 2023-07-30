@@ -245,7 +245,7 @@ async fn submit_agg(
             Some(url) => {
                 // This might take a while so do it in a separate thread
                 let state_for_spawn = state.clone();
-                send_share_to_leader(url.clone(), share, state_for_spawn);
+                Arbiter::spawn(send_share_to_leader(url.clone(), share, state_for_spawn)).await;
             }
         }
     }
