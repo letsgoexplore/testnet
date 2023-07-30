@@ -171,7 +171,7 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
         .parse()
         .expect("Couldn't not append '/submit-share' to forward URL");
 
-    let mut retries = 10;
+    let mut retries = 50;
     loop {
         match client.post(post_path.clone()).send_body(body.clone()).await {
             Ok(res) => {
@@ -193,7 +193,7 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
             break;
         }
         // Wait for 50ms before retrying
-        actix::clock::sleep(Duration::from_millis(50)).await;
+        // actix::clock::sleep(Duration::from_millis(50)).await;
     }
 }
 
