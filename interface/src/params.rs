@@ -39,7 +39,7 @@ pub fn round_window(round: u32) -> u32 {
         .unwrap()
 }
 
-pub const ENCLAVE_LOG_LEVEL: &str = "debug"; // "debug" or "info"
+pub const ENCLAVE_LOG_LEVEL: &str = "off"; // "debug" or "info"
 
 /// Number of threads for deriving round secrets
 pub const N_THREADS_DERIVE_ROUND_SECRET: usize = 10;
