@@ -108,7 +108,7 @@ fn add_to_agg(
     // now we are sure incoming_msg is not empty we treat it as untrusted input and verify signature
     match incoming_msg.verify() {
         Ok(()) => {
-            debug!("signature verification succeeded");
+            // debug!("signature verification succeeded");
         },
         Err(e) => {
             error!("can't verify sig on incoming_msg: {:?}", e);
@@ -172,7 +172,7 @@ fn add_to_agg(
             return Err(AggregatorError::InvalidParameter);
         }
 
-        debug!("✅ various checks passed now we can aggregate");
+        // debug!("✅ various checks passed now we can aggregate");
         // debug!("incoming msg: {:?}", incoming_msg);
         // debug!("current agg: {:?}", current_aggregation);
 
