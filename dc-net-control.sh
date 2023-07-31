@@ -46,6 +46,7 @@ eval(){
         # su ubuntu ./dc-net-control.sh clean
         # su ubuntu ./dc-net-control.sh set-param $num_server $dc_net_message_length $dc_net_n_slot $num_user
         echo "finish 1"
+        ./server_ctrl.sh clean
         ./server_ctrl.sh setup-env $dc_net_message_length $dc_net_n_slot $num_server $num_user
         echo "finish 2"
         sleep 1
