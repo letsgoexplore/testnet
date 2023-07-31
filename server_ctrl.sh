@@ -360,7 +360,7 @@ single_client_send() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 1.6 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME"
