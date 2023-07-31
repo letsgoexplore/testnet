@@ -1,6 +1,6 @@
 #!/bin/bash
-SERVER_IP=("18.222.211.227" "18.221.40.173" "18.222.229.26" "18.190.28.16" "18.221.164.241")
-SERVER_AWS_COMMANDS=("ec2-18-222-211-227.us-east-2.compute.amazonaws.com" "ec2-3-19-241-198.us-east-2.compute.amazonaws.com" "ec2-18-222-229-26.us-east-2.compute.amazonaws.com" "ec2-18-190-28-16.us-east-2.compute.amazonaws.com" "ec2-18-221-164-241.us-east-2.compute.amazonaws.com")
+SERVER_IP=("18.222.211.227" "18.221.40.173" "3.17.128.210" "18.218.82.174" "18.225.36.2")
+SERVER_AWS_COMMANDS=("ec2-18-222-211-227.us-east-2.compute.amazonaws.com" "ec2-18-221-40-173.us-east-2.compute.amazonaws.com" "ec2-3-17-128-210.us-east-2.compute.amazonaws.com" "ec2-18-218-82-174.us-east-2.compute.amazonaws.com" "ec2-18-225-36-2.us-east-2.compute.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
