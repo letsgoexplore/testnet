@@ -272,6 +272,7 @@ extern crate fiat_crypto;
 // Used for traits related to constant-time code.
 extern crate subtle;
 
+#[allow(unused_imports)]
 cfg_if::cfg_if! {
     if #[cfg(feature = "serde_sgx")] {
         #[macro_use]

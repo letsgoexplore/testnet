@@ -21,8 +21,6 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_cbor;
 
-use log::debug;
-
 
 pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), ()> {
     // TODO: Move SignableUpdated trait to interface, include it
