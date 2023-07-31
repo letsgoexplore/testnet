@@ -32,10 +32,10 @@ LEADER=1
 NUM_FOLLOWERS=4
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=500
+NUM_USERS=2000
 NUM_AGGREGATOR=1
 MESSAGE_LENGTH=160
-NUM_SLOT=500
+NUM_SLOT=2000
 ROUND=0
 
 
@@ -182,6 +182,10 @@ setup_server() {
         # Save the server pubkeys
         $CMD_PREFIX get-pubkeys --server-state "../$STATE" >> "../$USER_SERVERKEYS"
     done
+git config --global pull.rebase false
+git config --global pull.ff only
+git config --global pull.rebase false
+git config --global pull.ff only
 
     # Copy the pubkeys file to the aggregators
     cp "../$USER_SERVERKEYS" "../$AGG_SERVERKEYS"
@@ -360,7 +364,7 @@ single_client_send() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 2.4 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME"
