@@ -29,7 +29,7 @@ CMD_PREFIX="cargo run --release -- "
 SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
-NUM_FOLLOWERS=4
+NUM_FOLLOWERS=9
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
 NUM_USERS=2000
