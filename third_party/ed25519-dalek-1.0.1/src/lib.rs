@@ -252,6 +252,7 @@ extern crate merlin;
 #[cfg(any(feature = "batch", feature = "std", feature = "alloc", test))]
 extern crate rand;
 
+#![allow(unused_imports)]
 cfg_if::cfg_if! {
     if #[cfg(feature = "serde_sgx")] {
         #[macro_use]
