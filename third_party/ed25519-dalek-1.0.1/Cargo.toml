@@ -21,9 +21,6 @@ travis-ci = { repository = "dalek-cryptography/ed25519-dalek", branch = "master"
 # rustdoc-args = ["--html-in-header", ".cargo/registry/src/github.com-1ecc6299db9ec823/curve25519-dalek-0.13.2/rustdoc-include-katex-header.html"]
 features = ["nightly", "batch"]
 
-[profile.release]
-rustflags = ["-Awarnings"]
-
 [dependencies]
 curve25519-dalek = { version = "3", default-features = false }
 ed25519 = { version = "1", default-features = false }
