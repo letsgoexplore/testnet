@@ -32,6 +32,18 @@ mitigate_to_database(){
     REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/aggregator/data_collection.txt"
     scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
     echo "success! data_collection moved"
+
+    # mitigate server_ctrl.sh
+    LOCAL_ADDR="$FOLDER/server_ctrl.sh"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server_ctrl.sh"
+    scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+    echo "success! server_ctrl.sh moved"
+
+    # mitigate dc-net-control.sh
+    LOCAL_ADDR="$FOLDER/dc-net-control.sh"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/dc-net-control.sh"
+    scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+    echo "success! data_collection moved"
 }
 
 database_to_test(){
@@ -61,6 +73,18 @@ database_to_test(){
     # mitigate data_collection
     LOCAL_ADDR="$FOLDER/data_collection.txt"
     REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/aggregator/data_collection.txt"
+    scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
+    echo "success! data_collection moved"
+
+    # mitigate server_ctrl.sh
+    LOCAL_ADDR="$FOLDER/server_ctrl.sh"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server_ctrl.sh"
+    scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
+    echo "success! server_ctrl.sh moved"
+
+    # mitigate dc-net-control.sh
+    LOCAL_ADDR="$FOLDER/dc-net-control.sh"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/dc-net-control.sh"
     scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
     echo "success! data_collection moved"
 }
@@ -98,13 +122,14 @@ mitigate_to_test(){
 
 if [[ $1 == "database" ]]; then
     # source AWS Command, Foler-name
-    mitigate_to_database $2 $3 5
+    mitigate_to_database $2 $3 $4
 elif [[ $1 == "fromdatabase" ]]; then
     # source AWS Command, Foler-name
-    database_to_test $2 $3 5
+    database_to_test $2 $3 $4
 elif [[ $1 == "test" ]]; then
     # source AWS Command, target AWS Command
-    mitigate_to_test $2 $3 5
+    mitigate_to_test $2 $3 $4
 else
     echo "command incorrect"
 fi
+
