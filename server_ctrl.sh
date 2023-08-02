@@ -19,6 +19,7 @@ CLINET_ENCRYPT_TIME_LOG="client/client_encrypt_time_recorder.txt"
 AGG_ENCRYPT_TIME_LOG="aggregator/agg_encrypt_time_recorder.txt"
 AGG_DATA="aggregator/data_collection.txt"
 ERROR_LOG="aggregator/error.txt"
+SUCCESS_LOG="aggregator/success.txt"
 CLIENT_SERVICE_PORT="9323"
 AGGREGATOR_PORT="18300"
 SERVER_PORT="28942"
@@ -32,10 +33,10 @@ LEADER=1
 NUM_FOLLOWERS=9
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=2000
+NUM_USERS=40
 NUM_AGGREGATOR=1
 MESSAGE_LENGTH=160
-NUM_SLOT=2000
+NUM_SLOT=10
 ROUND=0
 
 
@@ -145,6 +146,7 @@ clean() {
     rm -f $CLINET_ENCRYPT_TIME_LOG || true
     rm -f $AGG_ENCRYPT_TIME_LOG || true
     rm -f $ERROR_LOG || true
+    rm -f $SUCCESS_LOG || true
     echo "Cleaned"
 }
 
@@ -308,12 +310,13 @@ test_multi_clients() {
     for i in $(seq 1 $NUM_GROUP); do
         test_multi_client $(( NUM_SLOT/NUM_GROUP )) $i &
     done
-    sleep 5
+    wait
     COVER_NUM=$NUM_USERS-$NUM_SLOT
     COVER_NUM_GROUP=2
     for i in $(seq 1 $NUM_GROUP); do
         multi_client_send_cover $(( COVER_NUM/COVER_NUM_GROUP )) $i $NUM_SLOT &
     done
+    wait
     echo "start sending error msg"
     sleep 10
     retry_failed_clients $NUM_SLOT
@@ -355,17 +358,19 @@ single_client_send() {
         # Do the operation
         cd client
         echo "$PAYLOAD" > $FILENAME
-                
-        sleep 2.4 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+              
+        sleep 1 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME"
         if [[ $? -ne 0 ]]; then
             # log error
             echo $USER_SEQ >> "../$ERROR_LOG"
+        else
+            echo $USER_SEQ >> "../$SUCCESS_LOG"
         fi)
         cd ..
-        sleep 0.2 && kill_clients
+        kill_clients
 }
 
 multi_client_send_cover() {
@@ -383,7 +388,6 @@ single_client_send_cover() {
     echo "client $USER_SEQ begins to send msg"
         # start one client at a time
         cd client
-        FILENAME="message/clientmessage_$(($USER_SEQ-1)).txt"
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
 
         RUST_LOG=debug $CMD_PREFIX start-service \
@@ -396,15 +400,15 @@ single_client_send_cover() {
 
         # Do the operation
         cd client
-        echo "$PAYLOAD" > $FILENAME
-                
-        sleep 2 && (curl -X POST "http://localhost:$USER_PORT/send-cover"
+        sleep 1 && (curl -X POST "http://localhost:$USER_PORT/send-cover"
         if [[ $? -ne 0 ]]; then
             # log error
             echo $USER_SEQ >> "../$ERROR_LOG"
+        else
+            echo $USER_SEQ >> "../$SUCCESS_LOG"
         fi)
         cd ..
-        sleep 0.2 && kill_clients
+        kill_clients
 }
 
 retry_failed_clients() {
@@ -586,6 +590,12 @@ stop_all() {
 cal_time() {
     python3 -c "from time_cal import time_cal; time_cal()"
 }
+
+save_data() {
+    echo "start saving"
+    curl "http://localhost:$AGGREGATOR_PORT/save-data"
+
+}
 # Commands with parameters:
 #     encrypt-msg <MSG> takes a plain string. E.g., `./server_ctrl.sh encrypt-msg hello`
 #     get-round-result <ROUND> takes an integer. E.g., `./server_ctrl.sh get-round-result 4`
@@ -650,6 +660,8 @@ elif [[ $1 == "agg-eval" ]]; then
     aggregate_evaluation
 elif [[ $1 == "cal-time" ]]; then
     cal_time
+elif [[ $1 == "save-data" ]]; then
+    save_data
 else
     echo "Did not recognize command"
 fi

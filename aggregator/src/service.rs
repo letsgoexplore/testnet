@@ -123,6 +123,19 @@ async fn submit_agg(
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
+#[get("/save-data")]
+async fn save_data_collection(
+    data_collection : web::Data<Arc<Mutex<Vec<UserSubmissionMessageUpdated>>>>
+)-> Result<HttpResponse, ApiError> {
+    let save_path = "data_collection.txt";
+    let mut data_collection_handle = data_collection.lock().unwrap();
+    let file = std::fs::File::create(save_path)?;
+    let data_vec = data_collection_handle.clone();
+    cli_util::save(file, &data_vec)?;
+    info!("Data saved to {}", save_path);
+    Ok(HttpResponse::Ok().body("OK\n"))
+}
+
 #[get("/aggregate-eval")]
 async fn aggregate_eval(
     state: web::Data<Arc<Mutex<ServiceState>>>,
@@ -402,7 +415,7 @@ pub(crate) async fn start_service(
     HttpServer::new(move || {
         App::new().data(state.clone()).data(data_collection.clone()).data(web::PayloadConfig::new(10 << 21))
         .configure(|cfg| {
-            cfg.service(submit_agg).service(force_round_end).service(round_num).service(aggregate_eval);
+            cfg.service(submit_agg).service(force_round_end).service(round_num).service(aggregate_eval).service(save_data_collection);
         })
     })
     .workers(1)
