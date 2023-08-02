@@ -316,7 +316,7 @@ test_multi_clients() {
     done
     echo "start sending error msg"
     sleep 10
-    retry_failed_clients
+    retry_failed_clients $NUM_SLOT
     sleep 3
 }
 
@@ -408,12 +408,17 @@ single_client_send_cover() {
 }
 
 retry_failed_clients() {
+    NUM_SLOT=$1
     while IFS= read -r line
     do
         USER_SEQ=$line
         echo "we 're resending msg-$USER_SEQ"
         sleep 1
-        single_client_send $USER_SEQ
+        if [[ $USER_SEQ -gt $NUM_SLOT ]]; then
+            single_client_send_cover $USER_SEQ
+        else
+            single_client_send $USER_SEQ
+        fi
     done < "$ERROR_LOG"
 }
 
