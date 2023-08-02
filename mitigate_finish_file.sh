@@ -34,16 +34,16 @@ mitigate_to_database(){
     echo "success! data_collection moved"
 
     # mitigate server_ctrl.sh
-    LOCAL_ADDR="$FOLDER/server_ctrl.sh"
-    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server_ctrl.sh"
-    scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
-    echo "success! server_ctrl.sh moved"
+    # LOCAL_ADDR="$FOLDER/server_ctrl.sh"
+    # REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server_ctrl.sh"
+    # scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+    # echo "success! server_ctrl.sh moved"
 
     # mitigate dc-net-control.sh
-    LOCAL_ADDR="$FOLDER/dc-net-control.sh"
-    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/dc-net-control.sh"
-    scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
-    echo "success! data_collection moved"
+    # LOCAL_ADDR="$FOLDER/dc-net-control.sh"
+    # REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/dc-net-control.sh"
+    # scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+    # echo "success! data_collection moved"
 }
 
 database_to_test(){
@@ -76,17 +76,17 @@ database_to_test(){
     scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
     echo "success! data_collection moved"
 
-    # mitigate server_ctrl.sh
-    LOCAL_ADDR="$FOLDER/server_ctrl.sh"
-    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server_ctrl.sh"
-    scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
-    echo "success! server_ctrl.sh moved"
+    # # mitigate server_ctrl.sh
+    # LOCAL_ADDR="$FOLDER/server_ctrl.sh"
+    # REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server_ctrl.sh"
+    # scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
+    # echo "success! server_ctrl.sh moved"
 
-    # mitigate dc-net-control.sh
-    LOCAL_ADDR="$FOLDER/dc-net-control.sh"
-    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/dc-net-control.sh"
-    scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
-    echo "success! data_collection moved"
+    # # mitigate dc-net-control.sh
+    # LOCAL_ADDR="$FOLDER/dc-net-control.sh"
+    # REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/dc-net-control.sh"
+    # scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
+    # echo "success! data_collection moved"
 }
 
 mitigate_to_test(){
@@ -132,4 +132,3 @@ elif [[ $1 == "test" ]]; then
 else
     echo "command incorrect"
 fi
-

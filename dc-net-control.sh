@@ -30,13 +30,13 @@ eval(){
     num_server=$((num_leader + num_follower))
     num_aggregator=1
     dc_net_message_length=160
+    dc_net_n_slot=1024
     # dc_net_n_slots=("10" "20" "30")
     # dc_net_n_slots=("20" "30" "40" "50")
     # dc_net_n_slots=("5" "10")
     # dc_net_message_lengths=("20" "40" "60" "80" "100" "120" "140" "160")
     
     for num_user in "${num_users[@]}"; do
-        dc_net_n_slot=$num_user
         footprint_n_slots=$(expr 4 \* $dc_net_n_slot)
         export DC_NUM_USER=$num_user
         export DC_NET_MESSAGE_LENGTH=$dc_net_message_length
@@ -62,7 +62,7 @@ eval(){
         # fi
         ./server_ctrl.sh start-agg $num_server
         echo "finish 6"
-        ./server_ctrl.sh multi $num_user $dc_net_message_length
+        ./server_ctrl.sh multi $num_user $dc_net_message_length $dc_net_n_slot
         sleep 3
         # su - ubuntu ./dc-net-control.sh cal-time $num_server $num_aggregator $num_user $dc_net_message_length
         # su - ubuntu ./dc-net-control.sh send-back

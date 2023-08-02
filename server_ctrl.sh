@@ -302,10 +302,17 @@ start_client() {
 test_multi_clients() {
     NUM_USERS=$1
     MESSAGE_LENGTH=$2
+    NUM_SLOT=$3
     NUM_GROUP=2
-    python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
+    python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_SLOT,$MESSAGE_LENGTH)"
     for i in $(seq 1 $NUM_GROUP); do
-        test_multi_client $(( NUM_USERS/NUM_GROUP )) $i &
+        test_multi_client $(( NUM_SLOT/NUM_GROUP )) $i &
+    done
+    
+    COVER_NUM=$NUM_USERS-$NUM_SLOT
+    COVER_NUM_GROUP=4
+    for i in $(seq 1 $NUM_GROUP); do
+        multi_client_send_cover $(( COVER_NUM/COVER_NUM_GROUP )) $i $NUM_SLOT &
     done
     echo "start sending error msg"
     sleep 10
@@ -320,16 +327,6 @@ test_multi_client() {
         USER_SEQ=$(( (GROUP_SEQ-1) * GROUP_NUM_USERS + i))
         single_client_send $USER_SEQ
     done
-
-    # aggregate_evaluation
-    # all ciphertexts have been submitted to the aggregator
-    # start server
-    # log_time
-    # force_root_round_end
-    # sleep 5
-    # kill_clients 2> /dev/null || true
-    # kill_aggregators 2> /dev/null || true
-    # kill_servers 2> /dev/null || true
 }
 
 single_client_send() {
@@ -349,12 +346,7 @@ single_client_send() {
             --agg-url "http://localhost:$AGGREGATOR_PORT" &
 
         cd ..
-        # encrypt-msg
-        # Base64-encode the given message
-        # PAYLOAD1=$(base64 <<< "$1")
-
-        # If this isn't the first round, append the previous round output to the payload. Separate with
-        # a comma.
+        
         if [[ $ROUND -gt 0 ]]; then
             PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
             PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
@@ -368,6 +360,45 @@ single_client_send() {
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME"
+        if [[ $? -ne 0 ]]; then
+            # log error
+            echo $USER_SEQ >> "../$ERROR_LOG"
+        fi)
+        cd ..
+        sleep 0.2 && kill_clients
+}
+
+multi_client_send_cover() {
+    GROUP_NUM_USERS=$1
+    GROUP_SEQ=$2
+    NUM_SLOT=$3
+    for i in $(seq 1 $GROUP_NUM_USERS); do
+        USER_SEQ=$(( (GROUP_SEQ-1) * GROUP_NUM_USERS + NUM_SLOT + i))
+        single_client_send $USER_SEQ
+    done
+}
+
+single_client_send_cover() {
+    USER_SEQ=$1
+    echo "client $USER_SEQ begins to send msg"
+        # start one client at a time
+        cd client
+        FILENAME="message/clientmessage_$(($USER_SEQ-1)).txt"
+        USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
+
+        RUST_LOG=debug $CMD_PREFIX start-service \
+            --user-state "../$STATE" \
+            --round $ROUND \
+            --bind "localhost:$USER_PORT" \
+            --agg-url "http://localhost:$AGGREGATOR_PORT" &
+
+        cd ..
+
+        # Do the operation
+        cd client
+        echo "$PAYLOAD" > $FILENAME
+                
+        sleep 1 && (curl -X POST "http://localhost:$USER_PORT/send-cover"
         if [[ $? -ne 0 ]]; then
             # log error
             echo $USER_SEQ >> "../$ERROR_LOG"
@@ -607,7 +638,7 @@ elif [[ $1 == "stop-all" ]]; then
     kill_aggregators 2> /dev/null || true
     kill_servers 2> /dev/null || true
 elif [[ $1 == "multi" ]]; then
-    test_multi_clients $2 $3
+    test_multi_clients $2 $3 $4
 elif [[ $1 == "resend" ]]; then
     retry_failed_clients
 elif [[ $1 == "agg-eval" ]]; then
