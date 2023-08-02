@@ -308,9 +308,9 @@ test_multi_clients() {
     for i in $(seq 1 $NUM_GROUP); do
         test_multi_client $(( NUM_SLOT/NUM_GROUP )) $i &
     done
-    
+    sleep 5
     COVER_NUM=$NUM_USERS-$NUM_SLOT
-    COVER_NUM_GROUP=4
+    COVER_NUM_GROUP=2
     for i in $(seq 1 $NUM_GROUP); do
         multi_client_send_cover $(( COVER_NUM/COVER_NUM_GROUP )) $i $NUM_SLOT &
     done
@@ -398,7 +398,7 @@ single_client_send_cover() {
         cd client
         echo "$PAYLOAD" > $FILENAME
                 
-        sleep 1 && (curl -X POST "http://localhost:$USER_PORT/send-cover"
+        sleep 2 && (curl -X POST "http://localhost:$USER_PORT/send-cover"
         if [[ $? -ne 0 ]]; then
             # log error
             echo $USER_SEQ >> "../$ERROR_LOG"
