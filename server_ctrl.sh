@@ -33,7 +33,7 @@ LEADER=1
 NUM_FOLLOWERS=9
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=2048
+NUM_USERS=8000
 NUM_AGGREGATOR=1
 MESSAGE_LENGTH=160
 NUM_SLOT=1024
@@ -389,7 +389,7 @@ single_client_send_cover() {
         # start one client at a time
         cd client
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
-
+        STATE="${USER_STATE%.txt}$USER_SEQ.txt"
         RUST_LOG=debug $CMD_PREFIX start-service \
             --user-state "../$STATE" \
             --round $ROUND \
