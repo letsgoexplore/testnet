@@ -359,7 +359,7 @@ single_client_send() {
         cd client
         echo "$PAYLOAD" > $FILENAME
               
-        sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 2.6 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME"
@@ -370,7 +370,7 @@ single_client_send() {
             echo $USER_SEQ >> "../$SUCCESS_LOG"
         fi)
         cd ..
-        sleep 0.3 && kill_clients
+        sleep 1.4 && kill_clients
 }
 
 multi_client_send_cover() {
@@ -408,7 +408,7 @@ single_client_send_cover() {
             echo $USER_SEQ >> "../$SUCCESS_LOG"
         fi)
         cd ..
-        sleep 0.3 && kill_clients
+        sleep 1.4 && kill_clients
 }
 
 retry_failed_clients() {
