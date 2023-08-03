@@ -46,7 +46,7 @@ pub fn derive_round_secret_server(
         // skip entries not in entity_ids_to_use
         if let Some(eids) = entity_ids_to_use {
             if !eids.contains(&EntityId::from(pk)) {
-                debug!("entity id of client {} is not in entity_ids_to_use", pk);
+                // debug!("entity id of client {} is not in entity_ids_to_use", pk);
                 continue;
             }
         }

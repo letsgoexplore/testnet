@@ -31,7 +31,6 @@ impl SeedableRng for Aes128Rng {
     fn from_seed(seed: Self::Seed) -> Aes128Rng {
         let key = seed;
         let iv = BlockCipherKey::<Aes128>::default();
-        debug!("[aes_prng] key: {:?}, iv: {:?}", key, iv);
         let ciph = Aes128::new(&key);
         let stream = Ctr::from_block_cipher(ciph, &iv);
         Aes128Rng(stream)

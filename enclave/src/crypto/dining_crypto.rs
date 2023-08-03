@@ -1,5 +1,6 @@
 use interface::*;
 use sgx_types::sgx_status_t;
+use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;
 
 use std::prelude::v1::*;
 
@@ -22,6 +23,8 @@ use x25519_dalek::{
 };
 
 use std::convert::TryInto;
+
+use sgx_rand::Rng;
 
 /// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -217,7 +220,11 @@ pub fn derive_round_nonce(
         } => *times_participated,
         UserMsg::Reserve { times_participated } => *times_participated,
         UserMsg::Cover => {
-            return Ok(sgx_rand::random());
+            let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
+                error!("cant create rand {}", e);
+                SGX_ERROR_UNEXPECTED
+            })?;
+            return Ok(rand.gen::<RateLimitNonce>());
         }
     };
 
@@ -259,7 +266,11 @@ pub fn derive_round_nonce_updated(
         } => *times_participated,
         UserMsg::Reserve { times_participated } => *times_participated,
         UserMsg::Cover => {
-            return Ok(sgx_rand::random());
+            let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
+                error!("cant create rand {}", e);
+                SGX_ERROR_UNEXPECTED
+            })?;
+            return Ok(rand.gen::<RateLimitNonce>());
         }
     };
 
@@ -298,7 +309,7 @@ pub fn derive_round_secret_client(
         // skip entries not in entity_ids_to_use
         if let Some(eids) = entity_ids_to_use {
             if !eids.contains(&EntityId::from(pk)) {
-                debug!("entity id of client {} is not in entity_ids_to_use", pk);
+                // debug!("entity id of client {} is not in entity_ids_to_use", pk);
                 continue;
             }
         }
