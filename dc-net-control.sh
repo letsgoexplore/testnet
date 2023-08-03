@@ -1,6 +1,6 @@
 #!/bin/bash
-SERVER_IP=("18.222.211.227" "18.221.40.173" "3.17.128.210" "18.218.82.174" "18.225.36.2")
-SERVER_AWS_COMMANDS=("ec2-18-222-211-227.us-east-2.compute.amazonaws.com" "ec2-18-221-40-173.us-east-2.compute.amazonaws.com" "ec2-3-17-128-210.us-east-2.compute.amazonaws.com" "ec2-18-218-82-174.us-east-2.compute.amazonaws.com" "ec2-18-225-36-2.us-east-2.compute.amazonaws.com")
+SERVER_IP=("18.116.70.88" "35.180.204.216" "54.177.151.14" "52.196.213.17" "34.219.28.135")
+SERVER_AWS_COMMANDS=("ec2-18-116-70-88.us-east-2.compute.amazonaws.com" "ec2-35-180-204-216.eu-west-3.compute.amazonaws.com" "ec2-54-177-151-14.us-west-1.compute.amazonaws.com" "ec2-52-196-213-17.ap-northeast-1.compute.amazonaws.com" "ec2-34-219-28-135.us-west-2.compute.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
@@ -25,14 +25,14 @@ eval(){
     rm -f $TIME_LOG_ALL || true
     rm -f $AGG_DATA || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_users=("40")
+    num_users=("2048")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
     num_follower=4
     num_server=$((num_leader + num_follower))
     num_aggregator=1
     dc_net_message_length=160
-    dc_net_n_slot=10
+    dc_net_n_slot=1024
     # dc_net_n_slots=("10" "20" "30")
     # dc_net_n_slots=("20" "30" "40" "50")
     # dc_net_n_slots=("5" "10")

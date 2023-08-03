@@ -23,7 +23,7 @@ SUCCESS_LOG="aggregator/success.txt"
 CLIENT_SERVICE_PORT="9323"
 AGGREGATOR_PORT="18300"
 SERVER_PORT="28942"
-SERVER_IP=("18.222.211.227" "18.221.40.173" "3.17.128.210" "18.218.82.174" "18.225.36.2")
+SERVER_IP=("18.116.70.88" "35.180.204.216" "54.177.151.14" "52.196.213.17" "34.219.28.135")
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run --release -- "
@@ -33,10 +33,10 @@ LEADER=1
 NUM_FOLLOWERS=9
 
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=40
+NUM_USERS=2048
 NUM_AGGREGATOR=1
 MESSAGE_LENGTH=160
-NUM_SLOT=10
+NUM_SLOT=1024
 ROUND=0
 
 
@@ -359,7 +359,7 @@ single_client_send() {
         cd client
         echo "$PAYLOAD" > $FILENAME
               
-        sleep 1 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME"
@@ -370,7 +370,7 @@ single_client_send() {
             echo $USER_SEQ >> "../$SUCCESS_LOG"
         fi)
         cd ..
-        kill_clients
+        sleep 0.3 && kill_clients
 }
 
 multi_client_send_cover() {
@@ -379,13 +379,13 @@ multi_client_send_cover() {
     NUM_SLOT=$3
     for i in $(seq 1 $GROUP_NUM_USERS); do
         USER_SEQ=$(( (GROUP_SEQ-1) * GROUP_NUM_USERS + NUM_SLOT + i))
-        single_client_send $USER_SEQ
+        single_client_send_cover $USER_SEQ
     done
 }
 
 single_client_send_cover() {
     USER_SEQ=$1
-    echo "client $USER_SEQ begins to send msg"
+    echo "client $USER_SEQ begins to send cover"
         # start one client at a time
         cd client
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
@@ -400,7 +400,7 @@ single_client_send_cover() {
 
         # Do the operation
         cd client
-        sleep 1 && (curl -X POST "http://localhost:$USER_PORT/send-cover"
+        sleep 2 && (curl -X POST "http://localhost:$USER_PORT/send-cover"
         if [[ $? -ne 0 ]]; then
             # log error
             echo $USER_SEQ >> "../$ERROR_LOG"
@@ -408,7 +408,7 @@ single_client_send_cover() {
             echo $USER_SEQ >> "../$SUCCESS_LOG"
         fi)
         cd ..
-        kill_clients
+        sleep 0.3 && kill_clients
 }
 
 retry_failed_clients() {
@@ -419,8 +419,10 @@ retry_failed_clients() {
         echo "we 're resending msg-$USER_SEQ"
         sleep 1
         if [[ $USER_SEQ -gt $NUM_SLOT ]]; then
+            echo "$USER_SEQ is sending msg from retry"
             single_client_send_cover $USER_SEQ
         else
+            echo "$USER_SEQ is sending covering from retry"
             single_client_send $USER_SEQ
         fi
     done < "$ERROR_LOG"
