@@ -75,22 +75,6 @@ pub extern "C" fn ecall_entrypoint(
             }
         ),
         (
-            EcallNewUser,
-            // input
-            Vec < ServerPubKeyPackage >,
-            // output
-            (SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob),
-            user::new_user
-        ),
-        (
-            EcallNewUserBatch,
-            // input
-            (Vec < ServerPubKeyPackage >, usize),
-            // output
-            Vec<(SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob)>,
-            user::new_user_batch
-        ),
-        (
             EcallNewUserUpdated,
             // input
             Vec < ServerPubKeyPackageNoSGX >,

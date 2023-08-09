@@ -345,31 +345,6 @@ impl DcNetEnclave {
     /// 1. Verify the enclave attestations on the packages
     /// 2. Use the KEM pubkeys to derive the shared secrets.
     /// TODO: what should it do with the signing keys?
-    pub fn new_user(
-        &self,
-        server_pks: &[ServerPubKeyPackage],
-    ) -> EnclaveResult<(
-        SealedSharedSecretDb,
-        SealedSigPrivKey,
-        EntityId,
-        UserRegistrationBlob,
-    )> {
-        let u = ecall_allowed::new_user(self.enclave.geteid(), server_pks)?;
-        Ok((u.0, u.1, EntityId::from(&u.2), u.2))
-    }
-
-    pub fn new_user_batch(
-        &self,
-        server_pks: &[ServerPubKeyPackage],
-        n_users: usize,
-    ) -> EnclaveResult<Vec<(
-        SealedSharedSecretDb,
-        SealedSigPrivKey,
-        UserRegistrationBlob,
-    )>> {
-        ecall_allowed::new_user_batch(self.enclave.geteid(), (server_pks, n_users))
-    }
-
     pub fn new_user_updated(
         &self,
         server_pks: &[ServerPubKeyPackageNoSGX],

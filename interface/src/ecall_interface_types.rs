@@ -37,8 +37,6 @@ impl_enum! {
     pub enum EcallId {
         EcallNewSgxKeypair = 1,
         EcallUnsealToPublicKey = 2,
-        EcallNewUser = 3,
-        EcallNewUserBatch = 16,
         EcallNewUserUpdated = 17,
         EcallNewUserBatchUpdated = 18,
         EcallNewServer = 4,
@@ -62,8 +60,6 @@ impl EcallId {
         match *self {
             EcallId::EcallNewSgxKeypair => "EcallNewSgxKeypair",
             EcallId::EcallUnsealToPublicKey => "EcallUnsealToPublicKey",
-            EcallId::EcallNewUser => "EcallNewUser",
-            EcallId::EcallNewUserBatch => "EcallNewUserBatch",
             EcallId::EcallNewUserUpdated => "EcallNewUserUpdated",
             EcallId::EcallNewUserBatchUpdated => "EcallNewUserBatchUpdated",
             EcallId::EcallNewServer => "EcallNewServer",
