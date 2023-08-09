@@ -91,7 +91,7 @@ impl UserState {
         }
 
         // Submit the message
-        let (blob, ratcheted_secrets) = enclave.user_submit_round_msg_updated(&req, &self.signing_key)?;
+        let (blob, ratcheted_secrets) = enclave.user_submit_round_msg(&req, &self.signing_key)?;
 
         // Ratchet the secrets forward
         self.shared_secrets = ratcheted_secrets;
