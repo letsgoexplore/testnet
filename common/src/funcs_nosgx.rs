@@ -23,9 +23,6 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_cbor;
 
-use log::debug;
-
-
 pub fn verify_user_submission_msg(incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), SignatureError> {
     let binding= incoming_msg.digest();
     let msg = binding.as_slice();
@@ -52,7 +49,7 @@ pub fn derive_round_secret_server(
         // skip entries not in entity_ids_to_use
         if let Some(eids) = entity_ids_to_use {
             if !eids.contains(&EntityId::from(pk)) {
-                debug!("entity id of client {} is not in entity_ids_to_use", pk);
+                trace!("entity id of client {} is not in entity_ids_to_use", pk);
                 continue;
             }
         }
