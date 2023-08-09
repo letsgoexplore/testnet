@@ -15,7 +15,7 @@ use crate::{
 
 use common::cli_util;
 use common::types_nosgx::{AggregatedMessage, SubmissionMessage};
-use interface::{ServerPubKeyPackageNoSGX, UserSubmissionMessageUpdated};
+use interface::{ServerPubKeyPackageNoSGX, UserSubmissionMessage};
 use std::{fs::File, time::SystemTime};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -236,7 +236,7 @@ fn main() -> Result<(), AggregatorError> {
 
     if let Some(matches) = matches.subcommand_matches("input-user") {
         // Load the STDIN input and load the state
-        let round_blob: UserSubmissionMessageUpdated = load_from_stdin()?;
+        let round_blob: UserSubmissionMessage = load_from_stdin()?;
         let state_path = matches.value_of("agg-state").unwrap();
         let mut state = load_state(&state_path)?;
 
