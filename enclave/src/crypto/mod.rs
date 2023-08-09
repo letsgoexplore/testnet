@@ -1,5 +1,5 @@
 use crate::interface::{RoundOutput, SgxSignature, SgxSigningPubKey};
-use crate::interface::{RoundOutputUpdated, NoSgxPrivateKey, NoSgxSignature, Hashable};
+use crate::interface::{NoSgxPrivateKey, Hashable};
 use crate::types::CryptoError;
 use sgx_types::{SgxError, SgxResult, SGX_ECP256_KEY_SIZE};
 use std::vec::Vec;
@@ -7,16 +7,6 @@ use std::vec::Vec;
 pub type CryptoResult<T> = Result<T, CryptoError>;
 
 use sha2::Digest;
-
-use ed25519_dalek::{
-    SecretKey,
-    PublicKey,
-    Keypair,
-    Signer,
-    SECRET_KEY_LENGTH,
-    PUBLIC_KEY_LENGTH,
-    KEYPAIR_LENGTH,
-};
 
 pub trait Signable {
     fn digest(&self) -> Vec<u8>;

@@ -1,13 +1,11 @@
 use crypto::SgxSigningKey;
 use crypto::{SignMutable, Signable};
 use crypto::SignMutableUpdated;
-use interface::{RoundSecret, SgxSignature, SgxSigningPubKey, NoSgxPrivateKey, NoSgxSignature};
+use interface::{RoundSecret, SgxSignature, SgxSigningPubKey, NoSgxPrivateKey};
 use sgx_types::SgxError;
 use sha2::Digest;
 use sha2::Sha256;
 use std::vec::Vec;
-
-use ed25519_dalek::PublicKey;
 
 // /// A (potentially aggregated) message that's produced by an enclave
 // #[derive(Serialize, Deserialize, Clone, Debug, Default)]
@@ -97,7 +95,6 @@ impl SignMutable for UnblindedAggregateShare {
 
 
 use interface::{UserSubmissionMessage, UserSubmissionMessageUpdated, SignableUpdated};
-use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;
 
 impl Signable for UserSubmissionMessage {
     fn digest(&self) -> Vec<u8> {
