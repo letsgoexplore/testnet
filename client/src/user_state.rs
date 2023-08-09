@@ -12,7 +12,7 @@ use interface::{
     UserRegistrationBlobNew, 
     NoSgxProtectedKeyPub,
     UserSubmissionReqUpdated,
-    UserSubmissionBlobUpdated,
+    UserSubmissionBlob,
     DC_NET_ROUNDS_PER_WINDOW,
     compute_anytrust_group_id_spk,
 };
@@ -74,7 +74,7 @@ impl UserState {
         enclave: &DcNetEnclave,
         round: u32,
         msg: UserMsg,
-    ) -> Result<UserSubmissionBlobUpdated> {
+    ) -> Result<UserSubmissionBlob> {
         let msg_is_cover = msg.is_cover();
         let req = UserSubmissionReqUpdated {
             user_id: self.user_id,

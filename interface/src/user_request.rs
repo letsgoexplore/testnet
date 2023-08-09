@@ -402,28 +402,8 @@ impl AggregatedMessageObsolete {
 
 /// A user submitted message that's produced by an enclave
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct UserSubmissionMessage {
-    pub round: u32,
-    pub anytrust_group_id: EntityId,
-    pub user_id: EntityId,
-    /// This is only Some for user-submitted messages
-    pub rate_limit_nonce: Option<RateLimitNonce>,
-    pub aggregated_msg: DcRoundMessage,
-    pub tee_sig: SgxSignature,
-    pub tee_pk: SgxSigningPubKey,
-}
-
-impl UserSubmissionMessage {
-    pub fn is_empty(&self) -> bool {
-        false
-    }
-}
-
-/// A user submitted message that's produced by an enclave
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Serialize, Deserialize, Clone, Default)]
-pub struct UserSubmissionMessageUpdated {
+pub struct UserSubmissionMessage {
     pub round: u32,
     pub anytrust_group_id: EntityId,
     pub user_id: EntityId,
@@ -434,7 +414,7 @@ pub struct UserSubmissionMessageUpdated {
     pub tee_pk: PublicKey,
 }
 
-impl UserSubmissionMessageUpdated {
+impl UserSubmissionMessage {
     pub fn is_empty(&self) -> bool {
         false
     }

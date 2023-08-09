@@ -114,7 +114,7 @@ impl DcNetEnclave {
         &self,
         submission_req: &UserSubmissionReqUpdated,
         sealed_usk: &SealedSigPrivKeyNoSGX,
-    ) -> EnclaveResult<(UserSubmissionBlobUpdated, SealedSharedSecretsDbClient)> {
+    ) -> EnclaveResult<(UserSubmissionBlob, SealedSharedSecretsDbClient)> {
         Ok(ecall_allowed::user_submit(
             self.enclave.geteid(),
             (submission_req, sealed_usk),

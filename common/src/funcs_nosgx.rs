@@ -5,7 +5,7 @@ use interface::{
     UserRegistrationBlobNew,
     RoundSecret,
     DcRoundMessage,
-    UserSubmissionMessageUpdated,
+    UserSubmissionMessage,
     SignableUpdated,
 };
 
@@ -23,7 +23,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_cbor;
 
-pub fn verify_user_submission_msg(incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), SignatureError> {
+pub fn verify_user_submission_msg(incoming_msg: &UserSubmissionMessage) -> Result<(), SignatureError> {
     let binding= incoming_msg.digest();
     let msg = binding.as_slice();
     let pk: PublicKey = incoming_msg.get_pk();

@@ -215,7 +215,7 @@ async fn send_cover(state: web::Data<Arc<Mutex<ServiceState>>>) -> Result<HttpRe
 }
 
 /// Sends a ciphertext to base_url/submit-agg
-async fn send_ciphertext(ciphertext: &UserSubmissionBlobUpdated, base_url: &str) {
+async fn send_ciphertext(ciphertext: &UserSubmissionBlob, base_url: &str) {
     let start = Instant::now();
 
     // Serialize the ciphertext

@@ -17,7 +17,7 @@ use std::vec::Vec;
 use std::vec;
 use sha2::{Digest, Sha256};
 
-use crate::user_request::{EntityId, UserSubmissionMessageUpdated};
+use crate::user_request::{EntityId, UserSubmissionMessage};
 use crate::ecall_interface_types::{RoundOutput, RoundOutputUpdated};
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -258,7 +258,7 @@ pub trait SignableUpdated {
     }
 }
 
-impl SignableUpdated for UserSubmissionMessageUpdated {
+impl SignableUpdated for UserSubmissionMessage {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
         hasher.input(b"Begin UserSubmissionMessage");

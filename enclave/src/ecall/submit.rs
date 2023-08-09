@@ -182,7 +182,7 @@ fn derive_reservation(
 /// returns a submission and the ratcheted shared secrets
 pub fn user_submit_internal(
     (send_request, signing_sk): &(UserSubmissionReqUpdated, SealedSigPrivKeyNoSGX),
-) -> SgxResult<(UserSubmissionBlobUpdated, SealedSharedSecretsDbClient)> {
+) -> SgxResult<(UserSubmissionBlob, SealedSharedSecretsDbClient)> {
     let UserSubmissionReqUpdated {
         user_id,
         anytrust_group_id,
@@ -313,7 +313,7 @@ pub fn user_submit_internal(
     let encrypted_msg = round_key.xor(&round_msg);
 
     // Construct the output blob
-    let mut agg_msg = UserSubmissionMessageUpdated {
+    let mut agg_msg = UserSubmissionMessage {
         user_id: *user_id,
         anytrust_group_id: *anytrust_group_id,
         round,

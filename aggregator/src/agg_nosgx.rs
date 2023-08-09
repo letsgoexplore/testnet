@@ -7,7 +7,7 @@ use rand::rngs::OsRng;
 use interface::{
     EntityId,
     RateLimitNonce,
-    UserSubmissionMessageUpdated,
+    UserSubmissionMessage,
 
 };
 use common::types_nosgx::{
