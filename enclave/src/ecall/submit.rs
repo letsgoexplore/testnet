@@ -25,7 +25,7 @@ use unseal::SealInto;
 
 use ed25519_dalek::PublicKey;
 
-fn check_reservation_updated(
+fn check_reservation(
     server_sig_pks: &[PublicKey],
     round: u32,
     prev_round_output: &RoundOutputUpdated,
@@ -69,7 +69,7 @@ fn check_reservation_updated(
 /// scheduling vector to be empty. To save bandwidth we compact the DC net message by skipping
 /// slots that are not scheduled. In short the zeros are discounted from the vector and all the
 /// reserved slots are moved up.
-fn derive_msg_slot_updated(cur_slot: usize, prev_round_output: &RoundOutputUpdated) -> SgxResult<usize> {
+fn derive_msg_slot(cur_slot: usize, prev_round_output: &RoundOutputUpdated) -> SgxResult<usize> {
     let num_zeros = prev_round_output.dc_msg.scheduling_msg[..cur_slot]
         .into_iter()
         .filter(|b| **b == 0)
@@ -106,7 +106,7 @@ fn derive_msg_slot_updated(cur_slot: usize, prev_round_output: &RoundOutputUpdat
 ///
 /// return (prev_slot_idx, prev_slot_val, next_slot_idx, next_slot_val)
 /// ```
-fn derive_reservation_updated(
+fn derive_reservation(
     usk: &NoSgxPrivateKey,
     anytrust_group_id: &EntityId,
     round: u32,
@@ -180,7 +180,7 @@ fn derive_reservation_updated(
 
 /// process user submission request
 /// returns a submission and the ratcheted shared secrets
-pub fn user_submit_internal_updated(
+pub fn user_submit_internal(
     (send_request, signing_sk): &(UserSubmissionReqUpdated, SealedSigPrivKeyNoSGX),
 ) -> SgxResult<(UserSubmissionBlobUpdated, SealedSharedSecretsDbClient)> {
     let UserSubmissionReqUpdated {
@@ -226,7 +226,7 @@ pub fn user_submit_internal_updated(
     // Get the last footprint and make a new one. If this message is cover traffic, this info won't 
     // be used at all
     let (cur_slot, cur_fp, next_slot, next_fp) =
-        derive_reservation_updated(&signing_sk, anytrust_group_id, round);
+        derive_reservation(&signing_sk, anytrust_group_id, round);
 
     // If this user is talking and it's not the first round, check the reservation. Otherwise don't
     if let UserMsg::TalkAndReserveUpdated {
@@ -234,9 +234,9 @@ pub fn user_submit_internal_updated(
         ..
     } = msg
     {
-        let msg_slot = derive_msg_slot_updated(cur_slot, prev_round_output)?;
+        let msg_slot = derive_msg_slot(cur_slot, prev_round_output)?;
         if round > 0 {
-            check_reservation_updated(&server_sig_pks, round, prev_round_output, cur_slot, cur_fp)?;
+            check_reservation(&server_sig_pks, round, prev_round_output, cur_slot, cur_fp)?;
             debug!(
                 "✅ user {} is permitted to send msg at slot {} for round {}",
                 uid, msg_slot, round
@@ -267,7 +267,7 @@ pub fn user_submit_internal_updated(
             ref prev_round_output,
             ..
         } => {
-            let msg_slot = derive_msg_slot_updated(cur_slot, prev_round_output)?;
+            let msg_slot = derive_msg_slot(cur_slot, prev_round_output)?;
             debug!("✅ slot {} will include msg {:?}", msg_slot, msg,);
             
             round_msg.scheduling_msg[next_slot] = next_fp;

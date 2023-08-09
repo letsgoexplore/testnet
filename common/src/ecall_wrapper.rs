@@ -143,10 +143,10 @@ pub mod ecall_allowed {
             new_server
         ),
         (
-            EcallUserSubmitUpdated,
+            EcallUserSubmit,
             (&UserSubmissionReqUpdated, &SealedSigPrivKeyNoSGX),
             (UserSubmissionBlobUpdated, SealedSharedSecretsDbClient),
-            user_submit_updated
+            user_submit
         ),
         (
             EcallAddToAggregate,

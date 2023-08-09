@@ -99,10 +99,10 @@ pub extern "C" fn ecall_entrypoint(
             server::new_server
         ),
         (
-            EcallUserSubmitUpdated,
+            EcallUserSubmit,
             (UserSubmissionReqUpdated, SealedSigPrivKeyNoSGX),
             (UserSubmissionBlobUpdated, SealedSharedSecretsDbClient),
-            submit::user_submit_internal_updated
+            submit::user_submit_internal
         ),
         (
             EcallAddToAggregate,
