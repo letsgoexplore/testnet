@@ -6,6 +6,7 @@ use interface::{
     RoundSecret,
     DcRoundMessage,
     UserSubmissionMessageUpdated,
+    SignableUpdated,
 };
 
 extern crate sha2;
@@ -13,6 +14,7 @@ use sha2::Sha256;
 use rand_core::SeedableRng;
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::{Hkdf, InvalidLength};
+use ed25519_dalek::{PublicKey, Signature, Verifier, SignatureError};
 
 use crate::aes_prng::Aes128Rng;
 use crate::types_nosgx::{SharedSecretsDbServer, XorNoSGX};
@@ -21,9 +23,13 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_cbor;
 
-pub fn verify_user_submission_msg(_incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), ()> {
-    // TODO: Move SignableUpdated trait to interface, include it
-    Ok(())
+pub fn verify_user_submission_msg(incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), SignatureError> {
+    let binding= incoming_msg.digest();
+    let msg = binding.as_slice();
+    let pk: PublicKey = incoming_msg.get_pk();
+    let sig = Signature::from_bytes(incoming_msg.get_sig().0.as_slice()).expect("failed to generate sig from bytes");
+
+    pk.verify(msg, &sig)
 }
 
 pub fn verify_user_attestation(_reg_blob: &UserRegistrationBlobNew) -> Result<(), ()> {
