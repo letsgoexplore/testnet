@@ -345,7 +345,7 @@ impl DcNetEnclave {
     /// 1. Verify the enclave attestations on the packages
     /// 2. Use the KEM pubkeys to derive the shared secrets.
     /// TODO: what should it do with the signing keys?
-    pub fn new_user_updated(
+    pub fn new_user(
         &self,
         server_pks: &[ServerPubKeyPackageNoSGX],
     ) -> EnclaveResult<(
@@ -354,11 +354,11 @@ impl DcNetEnclave {
         EntityId,
         UserRegistrationBlobNew,
     )> {
-        let u = ecall_allowed::new_user_updated(self.enclave.geteid(), server_pks)?;
+        let u = ecall_allowed::new_user(self.enclave.geteid(), server_pks)?;
         Ok((u.0, u.1, EntityId::from(&u.2), u.2))
     }
 
-    pub fn new_user_batch_updated(
+    pub fn new_user_batch(
         &self,
         server_pks: &[ServerPubKeyPackageNoSGX],
         n_users: usize,
@@ -367,7 +367,7 @@ impl DcNetEnclave {
         SealedSigPrivKeyNoSGX,
         UserRegistrationBlobNew,
     )>> {
-        ecall_allowed::new_user_batch_updated(self.enclave.geteid(), (server_pks, n_users))
+        ecall_allowed::new_user_batch(self.enclave.geteid(), (server_pks, n_users))
     }
 
     /// Create a new TEE protected secret key for an aggregator.

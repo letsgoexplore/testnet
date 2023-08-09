@@ -41,7 +41,7 @@ impl UserState {
         n: usize,
         pubkeys: Vec<ServerPubKeyPackageNoSGX>,
     ) -> Result<Vec<(UserState, UserRegistrationBlobNew)>> {
-        let vec = enclave.new_user_batch_updated(&pubkeys, n)?;
+        let vec = enclave.new_user_batch(&pubkeys, n)?;
 
         let users_and_reg_blobs = vec
             .into_iter()
