@@ -87,8 +87,6 @@ pub struct MarshalledSignedUserMessage(pub Vec<u8>);
 /// aggregators only.
 pub type UserSubmissionBlob = crate::UserSubmissionMessage;
 
-pub type UserSubmissionBlobUpdated = crate::UserSubmissionMessageUpdated;
-
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to
 /// aggregators of all levels as well as anytrust nodes.
 pub type RoundSubmissionBlob = crate::AggregatedMessageObsolete;

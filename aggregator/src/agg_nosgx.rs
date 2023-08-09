@@ -7,7 +7,7 @@ use rand::rngs::OsRng;
 use interface::{
     EntityId,
     RateLimitNonce,
-    UserSubmissionMessageUpdated,
+    UserSubmissionMessage,
 
 };
 use common::types_nosgx::{
@@ -199,7 +199,7 @@ fn add_to_agg(
 
 fn add_to_agg_user_submit(
     input: (
-        &UserSubmissionMessageUpdated,
+        &UserSubmissionMessage,
         &AggregatedMessage,
         &Option<BTreeSet<RateLimitNonce>>,
         &SecretKey,

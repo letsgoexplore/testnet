@@ -21,7 +21,7 @@ use interface::{
     AttestedPublicKeyNoSGX,
     ServerPubKeyPackageNoSGX,
     NewDiffieHellmanSharedSecret,
-    UserSubmissionMessageUpdated,
+    UserSubmissionMessage,
     RoundSecret,
     compute_anytrust_group_id_spk,
 };
@@ -195,7 +195,7 @@ impl XorNoSGX for DcRoundMessage {
 }
 
 pub enum SubmissionMessage {
-    UserSubmission(UserSubmissionMessageUpdated),
+    UserSubmission(UserSubmissionMessage),
     AggSubmission(AggregatedMessage),
 }
 

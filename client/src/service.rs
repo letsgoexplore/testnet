@@ -3,7 +3,7 @@ use crate::{
     UserState,
 };
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlobUpdated, UserMsg, DC_NET_MESSAGE_LENGTH};
+use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlob, UserMsg, DC_NET_MESSAGE_LENGTH};
 
 use core::ops::DerefMut;
 use std::{
@@ -211,7 +211,7 @@ async fn send_cover(state: web::Data<Arc<Mutex<ServiceState>>>) -> Result<HttpRe
 }
 
 /// Sends a ciphertext to base_url/submit-agg
-async fn send_ciphertext(ciphertext: &UserSubmissionBlobUpdated, base_url: &str) {
+async fn send_ciphertext(ciphertext: &UserSubmissionBlob, base_url: &str) {
     let start = Instant::now();
 
     // Serialize the ciphertext
