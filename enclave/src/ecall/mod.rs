@@ -1,4 +1,3 @@
-mod aggregation;
 mod keygen;
 mod server;
 mod submit;
@@ -103,17 +102,6 @@ pub extern "C" fn ecall_entrypoint(
             (UserSubmissionReqUpdated, SealedSigPrivKeyNoSGX),
             (UserSubmissionBlobUpdated, SealedSharedSecretsDbClient),
             submit::user_submit_internal
-        ),
-        (
-            EcallAddToAggregate,
-            (
-                RoundSubmissionBlob,
-                SignedPartialAggregate,
-                Option<BTreeSet<RateLimitNonce>>,
-                SealedSigPrivKey
-            ),
-            (SignedPartialAggregate, Option<BTreeSet<RateLimitNonce>>),
-            aggregation::add_to_aggregate_internal
         ),
         (
             EcallRecvUserRegistration,

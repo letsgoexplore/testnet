@@ -149,17 +149,6 @@ pub mod ecall_allowed {
             user_submit
         ),
         (
-            EcallAddToAggregate,
-            (
-                &RoundSubmissionBlob,
-                &SignedPartialAggregate,
-                &Option<BTreeSet<RateLimitNonce>>,
-                &SealedSigPrivKey
-            ),
-            (SignedPartialAggregate, Option<BTreeSet<RateLimitNonce>>),
-            add_to_agg
-        ),
-        (
             EcallRecvUserRegistration,
             // input:
             (&SignedPubKeyDb, &SealedSharedSecretDb, &SealedKemPrivKey, &UserRegistrationBlob),
