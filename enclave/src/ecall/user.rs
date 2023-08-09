@@ -1,12 +1,7 @@
-use crate::attestation::Attested;
-use crate::crypto::{SharedSecretsDb, SharedSecretsDbClient};
-use ecall::keygen::{
-    new_sgx_keypair_ext_internal,
-    new_keypair_ext_internal,
-};
+use crate::crypto::SharedSecretsDbClient;
+use ecall::keygen::new_keypair_ext_internal;
 
 use interface::*;
-use sgx_status_t::SGX_ERROR_INVALID_PARAMETER;
 use sgx_types::SgxResult;
 use std::string::ToString;
 use std::vec::Vec;
@@ -36,8 +31,6 @@ pub fn new_user(
 
     // 3. derive server secrets
     let server_secrets = SharedSecretsDbClient::derive_shared_secrets(&sk, &kem_db)?;
-
-    let (key, value) = server_secrets.db.first_key_value().unwrap();
 
     Ok((server_secrets.seal_into()?, sk.seal_into()?, pk))
 }

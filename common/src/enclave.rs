@@ -110,17 +110,6 @@ impl DcNetEnclave {
     /// If scheduling failed (e.g., due to collision) this will return
     /// Err(EnclaveLogicError(SGX_ERROR_SERVICE_UNAVAILABLE)). Higher level application should
     /// retry, for example, in the next round.
-    pub fn user_submit_round_msg(
-        &self,
-        submission_req: &UserSubmissionReq,
-        sealed_usk: &SealedSigPrivKey,
-    ) -> EnclaveResult<(UserSubmissionBlob, SealedSharedSecretDb)> {
-        Ok(ecall_allowed::user_submit(
-            self.enclave.geteid(),
-            (submission_req, sealed_usk),
-        )?)
-    }
-
     pub fn user_submit_round_msg_updated(
         &self,
         submission_req: &UserSubmissionReqUpdated,

@@ -143,12 +143,6 @@ pub mod ecall_allowed {
             new_server
         ),
         (
-            EcallUserSubmit,
-            (&UserSubmissionReq, &SealedSigPrivKey),
-            (UserSubmissionBlob, SealedSharedSecretDb),
-            user_submit
-        ),
-        (
             EcallUserSubmitUpdated,
             (&UserSubmissionReqUpdated, &SealedSigPrivKeyNoSGX),
             (UserSubmissionBlobUpdated, SealedSharedSecretsDbClient),

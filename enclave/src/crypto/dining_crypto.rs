@@ -204,49 +204,6 @@ impl SharedSecretsDb {
 /// Derives the rate limit nonce for this round. This will be random if the user is submitting
 /// cover traffic. Otherwise it will be a pseudorandom function of the the window, private key, and
 /// times talked.
-pub fn derive_round_nonce(
-    anytrust_group_id: &EntityId,
-    round: u32,
-    signing_sk: &SgxPrivateKey,
-    msg: &UserMsg,
-) -> SgxResult<RateLimitNonce> {
-    // Extract the talking counter. If this is cover traffic, return a random nonce immediately
-    let times_participated = match msg {
-        UserMsg::TalkAndReserveUpdated {
-            times_participated, ..
-        } => *times_participated,
-        UserMsg::TalkAndReserve {
-            times_participated, ..
-        } => *times_participated,
-        UserMsg::Reserve { times_participated } => *times_participated,
-        UserMsg::Cover => {
-            let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
-                error!("cant create rand {}", e);
-                SGX_ERROR_UNEXPECTED
-            })?;
-            return Ok(rand.gen::<RateLimitNonce>());
-        }
-    };
-
-    // Check that the times talked is less than the per-window limit
-    if times_participated >= DC_NET_MSGS_PER_WINDOW {
-        error!("❌ can't send. rate limit has been exceeded");
-        return Err(sgx_status_t::SGX_ERROR_SERVICE_UNAVAILABLE);
-    }
-
-    let window = round_window(round);
-
-    // Now deterministically make the nonce. nonce = H(sk, group_id, window, times_participated)
-    let mut h = Sha256::new();
-    h.input(b"rate-limit-nonce");
-    h.input(anytrust_group_id);
-    h.input(signing_sk);
-    h.input(window.to_le_bytes());
-    h.input(times_participated.to_le_bytes());
-
-    Ok(RateLimitNonce::from_bytes(&h.result()))
-}
-
 /// Derives the rate limit nonce for this round. This will be random if the user is submitting
 /// cover traffic. Otherwise it will be a pseudorandom function of the the window, private key, and
 /// times talked.
