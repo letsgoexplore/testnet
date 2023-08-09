@@ -131,39 +131,6 @@ impl DcNetEnclave {
         Ok(Default::default())
     }
 
-    /// Adds the given input from a user to the given partial aggregate
-    /// Note: if marshalled_current_aggregation is empty (len = 0), an empty aggregation is created
-    ///  and the signed message is aggregated into that.
-    pub fn add_to_aggregate(
-        &self,
-        agg: &mut SignedPartialAggregate,
-        observed_nonces: &mut Option<BTreeSet<RateLimitNonce>>,
-        new_input: &RoundSubmissionBlob,
-        signing_key: &SealedSigPrivKey,
-    ) -> EnclaveResult<()> {
-        let (new_agg, new_observed_nonces) = ecall_allowed::add_to_agg(
-            self.enclave.geteid(),
-            (new_input, agg, observed_nonces, signing_key),
-        )?;
-
-        // Update the agg and nonces
-        *agg = new_agg;
-        *observed_nonces = new_observed_nonces;
-
-        Ok(())
-    }
-
-    /// Constructs an aggregate message from the given state. The returned blob is to be sent to
-    /// the parent aggregator or an anytrust server.
-    /// Note: this is an identity function because SignedPartialAggregate and RoundSubmissionBlob
-    /// are exact the same thing.
-    pub fn finalize_aggregate(
-        &self,
-        agg: &SignedPartialAggregate,
-    ) -> EnclaveResult<RoundSubmissionBlob> {
-        return Ok(agg.clone());
-    }
-
     /// XORs the shared secrets into the given aggregate. Returns the server's share of the
     /// unblinded aggregate as well as the ratcheted shared secrets.
     ///
@@ -357,20 +324,6 @@ impl DcNetEnclave {
         UserRegistrationBlobNew,
     )>> {
         ecall_allowed::new_user_batch(self.enclave.geteid(), (server_pks, n_users))
-    }
-
-    /// Create a new TEE protected secret key for an aggregator.
-    /// Returns sealed private key, entity id, and an AggRegistrationBlob that contains the
-    /// attestation information to send to anytrust nodes.
-    pub fn new_aggregator(
-        &self,
-    ) -> EnclaveResult<(SealedSigPrivKey, EntityId, AggRegistrationBlob)> {
-        let (sealed_sk, attested_pk) = self.new_sgx_protected_key("agg".to_string())?;
-        Ok((
-            SealedSigPrivKey(sealed_sk),
-            EntityId::from(&attested_pk.pk),
-            AggRegistrationBlob(attested_pk),
-        ))
     }
 
     /// Create new TEE protected secret keys. Returns ServerRegistrationBlob that contains the
