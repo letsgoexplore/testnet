@@ -135,74 +135,10 @@ pub mod ecall_allowed {
             new_user_batch
         ),
         (
-            EcallNewServer,
-            // input
-            (),
-            // output
-            (SealedSigPrivKey, SealedKemPrivKey, ServerRegistrationBlob),
-            new_server
-        ),
-        (
             EcallUserSubmit,
             (&UserSubmissionReqUpdated, &SealedSigPrivKeyNoSGX),
             (UserSubmissionBlob, SealedSharedSecretsDbClient),
             user_submit
-        ),
-        (
-            EcallRecvUserRegistration,
-            // input:
-            (&SignedPubKeyDb, &SealedSharedSecretDb, &SealedKemPrivKey, &UserRegistrationBlob),
-            // output: updated SignedPubKeyDb, SealedSharedSecretDb
-            (SignedPubKeyDb, SealedSharedSecretDb),
-            recv_user_reg
-        ),
-        (
-            EcallRecvUserRegistrationBatch,
-            (&SignedPubKeyDb, &SealedKemPrivKey, &[UserRegistrationBlob]),
-            (SignedPubKeyDb, SealedSharedSecretDb),
-            recv_user_reg_batch
-        ),
-        (
-            EcallUnblindAggregate,
-            (&RoundSubmissionBlob,&SealedSigPrivKey,&SealedSharedSecretDb),
-            (UnblindedAggregateShareBlob, SealedSharedSecretDb),
-            unblind_aggregate
-        ),
-        (
-            EcallUnblindAggregatePartial,
-            (u32,&SealedSharedSecretDb,&BTreeSet<EntityId>),
-            RoundSecret,
-            unblind_aggregate_partial
-        ),
-        (
-            EcallUnblindAggregateMerge,
-            (&RoundSubmissionBlob,&[RoundSecret], &SealedSigPrivKey, &SealedSharedSecretDb),
-            (UnblindedAggregateShareBlob, SealedSharedSecretDb),
-            unblind_aggregate_merge
-        ),
-        (
-            EcallDeriveRoundOutput,
-            (&SealedSigPrivKey,&[UnblindedAggregateShareBlob]),
-            RoundOutput,
-            derive_round_output
-        ),
-        (
-            EcallRecvAggregatorRegistration,
-            (&SignedPubKeyDb, &AggRegistrationBlob),
-            SignedPubKeyDb,
-            recv_aggregator_registration
-        ),
-        (
-            EcallRecvServerRegistration,
-            (&SignedPubKeyDb, &ServerRegistrationBlob),
-            SignedPubKeyDb,
-            recv_server_registration
-        ),
-        (
-            EcallLeakDHSecrets,
-            &SealedSharedSecretDb,
-            SealedSharedSecretDb,
-            leak_dh_secrets
         ),
     }
 }

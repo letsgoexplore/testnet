@@ -1,5 +1,4 @@
 mod keygen;
-mod server;
 mod submit;
 mod user;
 
@@ -90,76 +89,10 @@ pub extern "C" fn ecall_entrypoint(
             user::new_user_batch
         ),
         (
-            EcallNewServer,
-            // input
-            (),
-            // output
-            (SealedSigPrivKey, SealedKemPrivKey, ServerRegistrationBlob),
-            server::new_server
-        ),
-        (
             EcallUserSubmit,
             (UserSubmissionReqUpdated, SealedSigPrivKeyNoSGX),
             (UserSubmissionBlob, SealedSharedSecretsDbClient),
             submit::user_submit_internal
-        ),
-        (
-            EcallRecvUserRegistration,
-            // input:
-            (SignedPubKeyDb, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob),
-            // output: updated SignedPubKeyDb, SealedSharedSecretDb
-            (SignedPubKeyDb, SealedSharedSecretDb),
-            server::recv_user_registration
-        ),
-        (
-            EcallRecvUserRegistrationBatch,
-            // input:
-            (SignedPubKeyDb, SealedKemPrivKey, Vec<UserRegistrationBlob>),
-            // output: updated SignedPubKeyDb, SealedSharedSecretDb
-            (SignedPubKeyDb, SealedSharedSecretDb),
-            server::recv_user_registration_batch
-        ),
-        (
-            EcallUnblindAggregate,
-            (RoundSubmissionBlob,SealedSigPrivKey,SealedSharedSecretDb),
-            (UnblindedAggregateShareBlob, SealedSharedSecretDb),
-            server::unblind_aggregate
-        ),
-        (
-            EcallUnblindAggregatePartial,
-            (u32,SealedSharedSecretDb,BTreeSet<EntityId>),
-            RoundSecret,
-            server::unblind_aggregate_partial
-        ),
-        (
-            EcallUnblindAggregateMerge,
-            (RoundSubmissionBlob,Vec<RoundSecret>, SealedSigPrivKey,SealedSharedSecretDb),
-            (UnblindedAggregateShareBlob, SealedSharedSecretDb),
-            server::unblind_aggregate_merge
-        ),
-        (
-            EcallDeriveRoundOutput,
-            (SealedSigPrivKey, Vec < UnblindedAggregateShareBlob >),
-            RoundOutput,
-            server::derive_round_output
-        ),
-        (
-            EcallRecvAggregatorRegistration,
-            (SignedPubKeyDb, AggRegistrationBlob),
-            SignedPubKeyDb,
-            server::recv_aggregator_registration
-        ),
-        (
-            EcallRecvServerRegistration,
-            (SignedPubKeyDb, ServerRegistrationBlob),
-            SignedPubKeyDb,
-            server::recv_server_registration
-        ),
-        (
-            EcallLeakDHSecrets,
-            SealedSharedSecretDb,
-            SealedSharedSecretDb,
-            server::leak_dh_secrets
         ),
     };
     //

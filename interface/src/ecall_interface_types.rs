@@ -37,19 +37,9 @@ impl_enum! {
     pub enum EcallId {
         EcallNewSgxKeypair = 1,
         EcallUnsealToPublicKey = 2,
-        EcallNewUser = 17,
-        EcallNewUserBatch = 18,
-        EcallNewServer = 4,
+        EcallNewUser = 3,
+        EcallNewUserBatch = 16,
         EcallUserSubmit = 5,
-        EcallRecvUserRegistration =7,
-        EcallRecvUserRegistrationBatch = 8,
-        EcallUnblindAggregate = 9,
-        EcallUnblindAggregatePartial = 10,
-        EcallUnblindAggregateMerge = 11,
-        EcallDeriveRoundOutput = 12,
-        EcallRecvAggregatorRegistration = 13,
-        EcallRecvServerRegistration = 14,
-        EcallLeakDHSecrets = 15,
     }
 }
 
@@ -60,17 +50,7 @@ impl EcallId {
             EcallId::EcallUnsealToPublicKey => "EcallUnsealToPublicKey",
             EcallId::EcallNewUser => "EcallNewUser",
             EcallId::EcallNewUserBatch => "EcallNewUserBatch",
-            EcallId::EcallNewServer => "EcallNewServer",
             EcallId::EcallUserSubmit => "EcallUserSubmit",
-            EcallId::EcallRecvUserRegistration => "EcallRecvUserRegistration",
-            EcallId::EcallUnblindAggregate => "EcallUnblindAgg",
-            EcallId::EcallUnblindAggregatePartial => "EcallUnblindAggPartial",
-            EcallId::EcallUnblindAggregateMerge => "EcallUnblindAggMerge",
-            EcallId::EcallDeriveRoundOutput => "EcallDeriveRoundOutput",
-            EcallId::EcallRecvAggregatorRegistration => "EcallRecvAggregatorRegistration",
-            EcallId::EcallRecvServerRegistration => "EcallRecvServerRegistration",
-            EcallId::EcallRecvUserRegistrationBatch => "EcallRecvUserRegistrationBatch",
-            EcallId::EcallLeakDHSecrets => "EcallLeakDHSecrets",
         }
     }
 }
