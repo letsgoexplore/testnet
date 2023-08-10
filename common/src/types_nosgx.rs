@@ -18,7 +18,7 @@ use interface::{
     RateLimitNonce,
     DcRoundMessage,
     NoSgxProtectedKeyPub,
-    AttestedPublicKeyNoSGX,
+    AttestedPublicKey,
     ServerPubKeyPackageNoSGX,
     NewDiffieHellmanSharedSecret,
     UserSubmissionMessage,
@@ -274,7 +274,7 @@ pub type AggPublicKey = AggRegistrationBlobNoSGX;
 /// SignedPubKeyDbNoSGX is a signed mapping between entity id and public key
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct SignedPubKeyDbNoSGX {
-    pub users: BTreeMap<EntityId, AttestedPublicKeyNoSGX>,
+    pub users: BTreeMap<EntityId, AttestedPublicKey>,
     pub servers: BTreeMap<EntityId, ServerPubKeyPackageNoSGX>,
     pub aggregators: BTreeMap<EntityId, AggPublicKey>,
 }

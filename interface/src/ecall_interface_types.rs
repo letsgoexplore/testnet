@@ -1,5 +1,5 @@
 use crate::sgx_protected_keys::{ServerPubKeyPackage, SgxProtectedKeyPub};
-use crate::nosgx_protected_keys::{AttestedPublicKeyNoSGX, NoSgxProtectedKeyPub, SignatureNoSGX};
+use crate::nosgx_protected_keys::{AttestedPublicKey, NoSgxProtectedKeyPub, SignatureNoSGX};
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
 use crate::DcRoundMessage;
@@ -67,7 +67,7 @@ pub type UserSubmissionBlob = crate::UserSubmissionMessage;
 
 /// Describes user registration information. This contains key encapsulations as well as a linkably
 /// attested signature pubkey.
-pub type UserRegistrationBlobNew = AttestedPublicKeyNoSGX;
+pub type UserRegistrationBlobNew = AttestedPublicKey;
 
 /// Describes anytrust server registration information. This contains two linkable attestations
 /// for sig key and kem key.
