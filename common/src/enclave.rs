@@ -126,7 +126,7 @@ impl DcNetEnclave {
         SealedSharedSecretsDbClient,
         SealedSigPrivKeyNoSGX,
         EntityId,
-        UserRegistrationBlobNew,
+        UserRegistrationBlob,
     )> {
         let u = ecall_allowed::new_user(self.enclave.geteid(), server_pks)?;
         Ok((u.0, u.1, EntityId::from(&u.2), u.2))
@@ -139,7 +139,7 @@ impl DcNetEnclave {
     ) -> EnclaveResult<Vec<(
         SealedSharedSecretsDbClient,
         SealedSigPrivKeyNoSGX,
-        UserRegistrationBlobNew,
+        UserRegistrationBlob,
     )>> {
         ecall_allowed::new_user_batch(self.enclave.geteid(), (server_pks, n_users))
     }

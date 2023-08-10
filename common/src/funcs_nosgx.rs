@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 use std::vec::Vec;
 use interface::{
     EntityId,
-    UserRegistrationBlobNew,
+    UserRegistrationBlob,
     RoundSecret,
     DcRoundMessage,
     UserSubmissionMessage,
@@ -32,7 +32,7 @@ pub fn verify_user_submission_msg(incoming_msg: &UserSubmissionMessage) -> Resul
     pk.verify(msg, &sig)
 }
 
-pub fn verify_user_attestation(_reg_blob: &UserRegistrationBlobNew) -> Result<(), ()> {
+pub fn verify_user_attestation(_reg_blob: &UserRegistrationBlob) -> Result<(), ()> {
     Ok(())
 }
 

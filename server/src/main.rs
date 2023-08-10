@@ -13,7 +13,7 @@ use crate::{
 };
 
 use common::cli_util;
-use interface::UserRegistrationBlobNew;
+use interface::UserRegistrationBlob;
 
 use common::types_nosgx::{
     RoundSubmissionBlobNoSGX,
@@ -159,7 +159,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-user") {
         // Parse user registration blobs from stdin
-        let reg_blobs: Vec<UserRegistrationBlobNew> = load_multi_from_stdin()?;
+        let reg_blobs: Vec<UserRegistrationBlob> = load_multi_from_stdin()?;
 
         // Feed them to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
