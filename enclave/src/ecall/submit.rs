@@ -221,7 +221,7 @@ pub fn user_submit_internal(
     debug!("✅ shared secrets matches anytrust group id");
 
     // Derive the pseudorandom rate-limit nonce
-    let rate_limit_nonce = crypto::derive_round_nonce_updated(anytrust_group_id, round, &signing_sk, msg)?;
+    let rate_limit_nonce = crypto::derive_round_nonce(anytrust_group_id, round, &signing_sk, msg)?;
 
     // Get the last footprint and make a new one. If this message is cover traffic, this info won't 
     // be used at all

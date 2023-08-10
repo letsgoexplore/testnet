@@ -1,6 +1,5 @@
 use crypto::{
     SgxPrivateKey,
-    SharedSecretsDb,
     SharedSecretsDbClient,
 };
 use interface::*;

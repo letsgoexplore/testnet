@@ -26,22 +26,6 @@ use std::convert::TryInto;
 
 use sgx_rand::Rng;
 
-/// A SharedServerSecret is the long-term secret shared between an anytrust server and this use enclave
-#[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct DiffieHellmanSharedSecret([u8; SGX_ECP256_KEY_SIZE]);
-
-impl AsRef<[u8]> for DiffieHellmanSharedSecret {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
-}
-
-impl Debug for DiffieHellmanSharedSecret {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&hex::encode(&self.0))
-    }
-}
-
 /// A SharedSecretsDbClient is a map of entity public keys to DH secrets
 /// This is used by users only, the keys are server pks
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -116,98 +100,13 @@ impl SharedSecretsDbClient {
     }
 }
 
-/// A SharedSecretsDb is a map of entity public keys to DH secrets
-/// This is used by both servers and users.
-/// When used by servers, the keys are user pks
-/// When used by users, the keys are server pks
-#[derive(Clone, Default, Serialize, Deserialize)]
-pub struct SharedSecretsDb {
-    pub round: u32,
-    /// a dictionary of keys
-    pub db: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret>,
-}
-
-impl Debug for SharedSecretsDb {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.debug_struct("SharedSecretsDb")
-            .field("round", &self.round)
-            .field("db", &self.db)
-            .finish()
-    }
-}
-
-impl SharedSecretsDb {
-    /// Derive shared secrets (using DH). Used at registration time
-    pub fn derive_shared_secrets(
-        my_sk: &SgxPrivateKey,
-        other_pks: &[SgxProtectedKeyPub],
-    ) -> SgxResult<Self> {
-        let ecc_handle = SgxEccHandle::new();
-        ecc_handle.open()?;
-
-        let mut server_secrets: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret> = BTreeMap::new();
-
-        for server_pk in other_pks.iter() {
-            if !ecc_handle.check_point(&server_pk.into())? {
-                error!("pk{} not on curve", server_pk);
-                return Err(sgx_status_t::SGX_ERROR_INVALID_PARAMETER);
-            }
-            let shared_secret =
-                match ecc_handle.compute_shared_dhkey(&my_sk.into(), &server_pk.into()) {
-                    Ok(ss) => ss,
-                    Err(e) => {
-                        error!(
-                            "error compute_shared_dhkey: err={} sk={} pk={}",
-                            e, my_sk, server_pk
-                        );
-                        return Err(e);
-                    }
-                };
-            server_secrets.insert(
-                server_pk.to_owned(),
-                DiffieHellmanSharedSecret(shared_secret.s),
-            );
-        }
-
-        Ok(SharedSecretsDb {
-            db: server_secrets,
-            ..Default::default()
-        })
-    }
-
-    pub fn anytrust_group_id(&self) -> EntityId {
-        let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
-        compute_anytrust_group_id(&keys)
-    }
-
-    /// Return ratcheted keys
-    pub fn ratchet(&self) -> SharedSecretsDb {
-        let a = self
-            .db
-            .iter()
-            .map(|(&k, v)| {
-                let new_key = Sha256::digest(&v.0);
-                let mut new_sec = DiffieHellmanSharedSecret::default();
-                new_sec.0.copy_from_slice(new_key.as_slice());
-
-                (k, new_sec)
-            })
-            .collect();
-
-        SharedSecretsDb {
-            round: self.round + 1,
-            db: a,
-        }
-    }
-}
-
 /// Derives the rate limit nonce for this round. This will be random if the user is submitting
 /// cover traffic. Otherwise it will be a pseudorandom function of the the window, private key, and
 /// times talked.
 /// Derives the rate limit nonce for this round. This will be random if the user is submitting
 /// cover traffic. Otherwise it will be a pseudorandom function of the the window, private key, and
 /// times talked.
-pub fn derive_round_nonce_updated(
+pub fn derive_round_nonce(
     anytrust_group_id: &EntityId,
     round: u32,
     signing_sk: &NoSgxPrivateKey,
@@ -284,44 +183,6 @@ pub fn derive_round_secret_client(
 
     Ok(round_secret)
 
-}
-
-/// Derives a RoundSecret as the XOR of `HKDF(shared_secrets[i], round)` for all `i` in `Some(entity_ids_to_use)`,
-/// if entity_ids_to_use is None, for all `i` in `shared_secrets.keys()`.
-pub fn derive_round_secret(
-    round: u32,
-    shared_secrets: &SharedSecretsDb,
-    entity_ids_to_use: Option<&BTreeSet<EntityId>>,
-) -> CryptoResult<RoundSecret> {
-    //type MyRng = rand_chacha::ChaCha20Rng;
-    type MyRng = Aes128Rng; // This is defined in interface::aes_rng
-
-    let mut round_secret = RoundSecret::default();
-
-    for (pk, shard_secret) in shared_secrets.db.iter() {
-        // skip entries not in entity_ids_to_use
-        if let Some(eids) = entity_ids_to_use {
-            if !eids.contains(&EntityId::from(pk)) {
-                continue;
-            }
-        }
-
-        let hk = Hkdf::<Sha256>::new(None, shard_secret.as_ref());
-
-        // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
-        let mut seed = <MyRng as SeedableRng>::Seed::default();
-
-        // info contains round and window
-        let mut info = [0; 32];
-        let cursor = &mut info;
-        LittleEndian::write_u32(cursor, round);
-        hk.expand(&info, &mut seed)?;
-
-        let mut rng = MyRng::from_seed(seed);
-        round_secret.xor_mut(&DcRoundMessage::rand_from_csprng(&mut rng));
-    }
-
-    Ok(round_secret)
 }
 
 // various functions for computing a.xor(b)
