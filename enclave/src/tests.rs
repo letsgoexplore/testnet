@@ -47,17 +47,17 @@ fn test_keypair() -> crypto::CryptoResult<(SgxSigningKey, SgxSigningPubKey)> {
 }
 
 fn sign() -> () {
-    let (sk, pk) = test_keypair().unwrap();
+    // let (sk, pk) = test_keypair().unwrap();
 
-    let mut mutable = AggregatedMessageObsolete {
-        user_ids: BTreeSet::from_iter(vec![EntityId::default()].into_iter()),
-        ..Default::default()
-    };
+    // let mut mutable = AggregatedMessageObsolete {
+    //     user_ids: BTreeSet::from_iter(vec![EntityId::default()].into_iter()),
+    //     ..Default::default()
+    // };
 
-    mutable.sign_mut(&sk).expect("sign");
+    // mutable.sign_mut(&sk).expect("sign");
 
-    assert_eq!(mutable.tee_pk, pk);
-    assert!(mutable.verify().expect("verify"));
+    // assert_eq!(mutable.tee_pk, pk);
+    // assert!(mutable.verify().expect("verify"));
 }
 
 fn aggregate() {

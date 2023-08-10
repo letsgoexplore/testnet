@@ -350,29 +350,6 @@ pub struct UserSubmissionReqUpdated {
 
 use crate::SgxSignature;
 
-/// A (potentially aggregated) message that's produced by an enclave
-/// Not used anymore.
-/// Clients use UserSubmissionMessage
-/// Aggregators and servers use AggregatedMessage
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct AggregatedMessageObsolete {
-    pub round: u32,
-    pub anytrust_group_id: EntityId,
-    pub user_ids: BTreeSet<EntityId>,
-    /// This is only Some for user-submitted messages
-    pub rate_limit_nonce: Option<RateLimitNonce>,
-    pub aggregated_msg: DcRoundMessage,
-    pub tee_sig: SgxSignature,
-    pub tee_pk: SgxSigningPubKey,
-}
-
-impl AggregatedMessageObsolete {
-    pub fn is_empty(&self) -> bool {
-        self.user_ids.is_empty()
-    }
-}
-
 /// A user submitted message that's produced by an enclave
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Serialize, Deserialize, Clone, Default)]
