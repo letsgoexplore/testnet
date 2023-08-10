@@ -8,7 +8,7 @@ use interface::{
     UserMsg,
     SealedSigPrivKeyNoSGX,
     SealedSharedSecretsDbClient,
-    ServerPubKeyPackageNoSGX,
+    ServerPubKeyPackage,
     UserRegistrationBlobNew, 
     NoSgxProtectedKeyPub,
     UserSubmissionReqUpdated,
@@ -29,7 +29,7 @@ pub struct UserState {
     /// secret. Can only be accessed from within the enclave.
     shared_secrets: SealedSharedSecretsDbClient,
     /// The anytrust servers' KEM and signing pubkeys
-    anytrust_group_keys: Vec<ServerPubKeyPackageNoSGX>,
+    anytrust_group_keys: Vec<ServerPubKeyPackage>,
     /// Times talked or reserved so far in this window
     times_participated: u32,
 }
@@ -39,7 +39,7 @@ impl UserState {
     pub fn new_multi(
         enclave: &DcNetEnclave,
         n: usize,
-        pubkeys: Vec<ServerPubKeyPackageNoSGX>,
+        pubkeys: Vec<ServerPubKeyPackage>,
     ) -> Result<Vec<(UserState, UserRegistrationBlobNew)>> {
         let vec = enclave.new_user_batch(&pubkeys, n)?;
 

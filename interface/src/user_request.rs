@@ -212,14 +212,7 @@ impl From<&AttestedPublicKey> for EntityId {
 
 impl From<&ServerPubKeyPackage> for EntityId {
     // server's entity id is computed from the signing key
-    fn from(spk: &ServerPubKeyPackage) -> Self {
-        EntityId::from(&spk.sig)
-    }
-}
-
-impl From<&ServerPubKeyPackageNoSGX> for EntityId {
-    // server's entity id is computed from the signing key
-    fn from(pk: &ServerPubKeyPackageNoSGX) -> Self {
+    fn from(pk: &ServerPubKeyPackage) -> Self {
         EntityId::from(&pk.sig)
     }
 }
@@ -311,19 +304,6 @@ impl UserMsg {
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UserSubmissionReq {
-    pub user_id: EntityId,
-    pub anytrust_group_id: EntityId,
-    pub round: u32,
-    pub msg: UserMsg,
-    /// A map from server KEM public key to sealed shared secret
-    pub shared_secrets: SealedSharedSecretDb,
-    /// A list of server public keys (can be verified using the included attestation)
-    pub server_pks: Vec<ServerPubKeyPackage>,
-}
-
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UserSubmissionReqUpdated {
     pub user_id: EntityId,
     pub anytrust_group_id: EntityId,
@@ -332,7 +312,7 @@ pub struct UserSubmissionReqUpdated {
     /// A map from server KEM public key to sealed shared secret
     pub shared_secrets: SealedSharedSecretsDbClient,
     /// A list of server public keys (can be verified using the included attestation)
-    pub server_pks: Vec<ServerPubKeyPackageNoSGX>,
+    pub server_pks: Vec<ServerPubKeyPackage>,
 }
 
 use crate::SgxSignature;

@@ -4,7 +4,7 @@ use crate::util::{Result, ServerError};
 use interface::{
     EntityId,
     UserRegistrationBlobNew,
-    ServerPubKeyPackageNoSGX,
+    ServerPubKeyPackage,
     RoundSecret,
     RoundOutput,
     DcRoundMessage,
@@ -60,7 +60,7 @@ use std::iter::FromIterator;
 use std::sync::mpsc;
 use std::thread;
 
-pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPackageNoSGX)> {
+pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPackage)> {
     let mut csprng = OsRng{};
     let sig_key = SecretKey::generate(&mut csprng);
     let kem_key = SecretKey::generate(&mut csprng);
@@ -72,7 +72,7 @@ pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPacka
     let kem_key_pk: PublicKey = (&kem_key).into();
     let kem_key_xpk: xPublicKey = xPublicKey::from(&kem_secret);
 
-    let reg = ServerPubKeyPackageNoSGX {
+    let reg = ServerPubKeyPackage {
         sig: sig_key_pk,
         kem: kem_key_pk,
         xkem: NoSgxProtectedKeyPub(kem_key_xpk.to_bytes()),

@@ -15,7 +15,7 @@ use crate::{
 
 use common::cli_util;
 use common::types_nosgx::{AggregatedMessage, SubmissionMessage};
-use interface::{ServerPubKeyPackageNoSGX, UserSubmissionMessage};
+use interface::{ServerPubKeyPackage, UserSubmissionMessage};
 use std::{fs::File, time::SystemTime};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -162,7 +162,7 @@ fn main() -> Result<(), AggregatorError> {
         // Load up the pubkeys
         let pubkeys_filename = matches.value_of("server-keys").unwrap();
         let keysfile = File::open(pubkeys_filename)?;
-        let pubkeys: Vec<ServerPubKeyPackageNoSGX> = cli_util::load_multi(keysfile)?;
+        let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
 
         let level = cli_util::parse_u32(matches.value_of("level").unwrap())?;
 

@@ -121,7 +121,7 @@ impl DcNetEnclave {
     /// TODO: what should it do with the signing keys?
     pub fn new_user(
         &self,
-        server_pks: &[ServerPubKeyPackageNoSGX],
+        server_pks: &[ServerPubKeyPackage],
     ) -> EnclaveResult<(
         SealedSharedSecretsDbClient,
         SealedSigPrivKeyNoSGX,
@@ -134,7 +134,7 @@ impl DcNetEnclave {
 
     pub fn new_user_batch(
         &self,
-        server_pks: &[ServerPubKeyPackageNoSGX],
+        server_pks: &[ServerPubKeyPackage],
         n_users: usize,
     ) -> EnclaveResult<Vec<(
         SealedSharedSecretsDbClient,
