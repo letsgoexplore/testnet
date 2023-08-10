@@ -6,7 +6,7 @@ use common::{cli_util, log_time::{log_detailed_duration, log_time}};
 use interface::RoundOutput;
 
 use common::types_nosgx::{
-    RoundSubmissionBlobNoSGX,
+    RoundSubmissionBlob,
     UnblindedAggregateShareBlobNoSGX,
 };
 
@@ -170,7 +170,7 @@ async fn submit_agg(
     println!("payload len after:{}", payload.len());
     // Parse aggregation
     println!("payload as bytes:{:?}", payload.clone().as_bytes().len());
-    let agg_data: RoundSubmissionBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
+    let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
     println!("aggregated_msg.scheduling_msg.len:{}",agg_data.aggregated_msg.scheduling_msg.len());
     println!("aggregated_msg.aggregated_msg[0].num_rows:{}",agg_data.aggregated_msg.aggregated_msg.num_rows());
     println!("aggregated_msg.aggregated_msg[0].num_columns:{}",agg_data.aggregated_msg.aggregated_msg.num_columns());

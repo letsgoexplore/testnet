@@ -39,7 +39,7 @@ use common::types_nosgx::{
     ServerRegistrationBlobNoSGX,
     AggregatedMessage,
     UnblindedAggregateShareBlobNoSGX,
-    RoundSubmissionBlobNoSGX,
+    RoundSubmissionBlob,
     UnblindedAggregateSharedNoSGX,
 };
 
@@ -268,7 +268,7 @@ pub fn unblind_aggregate_partial(
 }
 
 pub fn unblind_aggregate_merge(
-    toplevel_agg: &RoundSubmissionBlobNoSGX,
+    toplevel_agg: &RoundSubmissionBlob,
     round_secrets : &Vec<RoundSecret>,
     sig_key: &SecretKey,
     shared_secrets: &SharedSecretsDbServer,

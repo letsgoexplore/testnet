@@ -280,7 +280,7 @@ pub struct SignedPubKeyDb {
 }
 
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to anytrust nodes.
-pub type RoundSubmissionBlobNoSGX = AggregatedMessage;
+pub type RoundSubmissionBlob = AggregatedMessage;
 
 /// Describes anytrust server registration information. This contains sig key and kem key.
 pub type ServerRegistrationBlobNoSGX = ServerPubKeyPackage;
