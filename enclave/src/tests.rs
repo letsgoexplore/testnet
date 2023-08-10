@@ -2,7 +2,7 @@ use crate::interface::*;
 use crate::sgx_tunittest::*;
 use crate::std::prelude::v1::*;
 use crypto;
-use crypto::{SgxSigningKey, SignMutable, Signable};
+use crypto::{SgxSigningKey, SignMutable};
 use hkdf::Hkdf;
 use serde_cbor;
 use sgx_rand::Rng;
