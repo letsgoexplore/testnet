@@ -32,8 +32,8 @@ use sgx_rand::Rng;
 pub struct SharedSecretsDbClient {
     pub round: u32,
     /// a dictionary of keys
-    /// We use NewDiffieHellmanSharedSecret to store SharedSecret, since SharedSecret is ephemeral
-    pub db: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret>,
+    /// We use DiffieHellmanSharedSecret to store SharedSecret, since SharedSecret is ephemeral
+    pub db: BTreeMap<NoSgxProtectedKeyPub, DiffieHellmanSharedSecret>,
 }
 
 impl Default for SharedSecretsDbClient {
@@ -58,18 +58,18 @@ impl SharedSecretsDbClient {
     ) -> SgxResult<Self> {
         // 1. Generate StaticSecret from client's secret key
         let my_secret = StaticSecret::from(my_sk.r);
-        let mut client_secrets: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret> = BTreeMap::new();
+        let mut client_secrets: BTreeMap<NoSgxProtectedKeyPub, DiffieHellmanSharedSecret> = BTreeMap::new();
 
         for (kem_xpk, kem_pk) in pk_db {
             // 2. Derive the exchange pk from x_pk
             let xpk = xPublicKey::from(kem_xpk.0);
             // 3. Compute the DH shared secret from the exchange pk and static secret
             let shared_secret = my_secret.diffie_hellman(&xpk);
-            // 4. Save ephemeral SharedSecret into NewDiffieHellmanSharedSecret
+            // 4. Save ephemeral SharedSecret into DiffieHellmanSharedSecret
         let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
             client_secrets.insert(
                 NoSgxProtectedKeyPub(kem_pk.to_bytes()),
-                NewDiffieHellmanSharedSecret(shared_secret_bytes),
+                DiffieHellmanSharedSecret(shared_secret_bytes),
             );
         }
 
@@ -87,7 +87,7 @@ impl SharedSecretsDbClient {
             .map(|(&k, v)| {
                 let new_key = Sha256::digest(&v.0);
                 let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32]");
-                let new_sec = NewDiffieHellmanSharedSecret(secret_bytes);
+                let new_sec = DiffieHellmanSharedSecret(secret_bytes);
 
                 (k, new_sec)
             })

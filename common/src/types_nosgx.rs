@@ -20,7 +20,7 @@ use interface::{
     NoSgxProtectedKeyPub,
     AttestedPublicKey,
     ServerPubKeyPackage,
-    NewDiffieHellmanSharedSecret,
+    DiffieHellmanSharedSecret,
     UserSubmissionMessage,
     RoundSecret,
     compute_anytrust_group_id_spk,
@@ -206,8 +206,8 @@ pub enum SubmissionMessage {
 pub struct SharedSecretsDbServer {
     pub round: u32,
     /// a dictionary of keys
-    /// We use NewDiffieHellmanSharedSecret to store SharedSecret, since SharedSecret is ephemeral
-    pub db: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret>,
+    /// We use DiffieHellmanSharedSecret to store SharedSecret, since SharedSecret is ephemeral
+    pub db: BTreeMap<NoSgxProtectedKeyPub, DiffieHellmanSharedSecret>,
 }
 
 impl SharedSecretsDbServer {
@@ -222,16 +222,16 @@ impl SharedSecretsDbServer {
     ) -> Result<Self, SignatureError> {
         // 1. Generate StaticSecret from server's secret key
         let my_secret = StaticSecret::from(my_sk.to_bytes());
-        let mut server_secrets: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret> = BTreeMap::new();
+        let mut server_secrets: BTreeMap<NoSgxProtectedKeyPub, DiffieHellmanSharedSecret> = BTreeMap::new();
 
         for (client_xpk, client_pk) in other_pks {
             // 2. Derive the exchange pk from the client_xpk
             let xpk = xPublicKey::from(client_xpk.0);
             // 3. Compute the DH shared secret from client exchange pk and server secret
             let shared_secret = my_secret.diffie_hellman(&xpk);
-            // 4. Save the ephemeral SharedSecret into NewDiffieHellmanSharedSecret
+            // 4. Save the ephemeral SharedSecret into DiffieHellmanSharedSecret
             let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
-            server_secrets.insert(client_pk.to_owned(), NewDiffieHellmanSharedSecret(shared_secret_bytes));
+            server_secrets.insert(client_pk.to_owned(), DiffieHellmanSharedSecret(shared_secret_bytes));
         }
 
         Ok(SharedSecretsDbServer {
@@ -247,7 +247,7 @@ impl SharedSecretsDbServer {
             .map(|(&k, v)| {
                 let new_key = Sha256::digest(&v.0);
                 let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32");
-                let new_sec = NewDiffieHellmanSharedSecret(secret_bytes);
+                let new_sec = DiffieHellmanSharedSecret(secret_bytes);
 
                 (k, new_sec)
             })
