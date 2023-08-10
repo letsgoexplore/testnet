@@ -3,7 +3,7 @@ use crate::util::Result;
 use interface::{
     EntityId,
     RoundOutput,
-    UserRegistrationBlobNew,
+    UserRegistrationBlob,
     ServerPubKeyPackage,
 };
 
@@ -100,7 +100,7 @@ impl ServerState {
     /// Registers a user with this server
     pub fn recv_user_registrations(
         &mut self,
-        input_blobs: &[UserRegistrationBlobNew],
+        input_blobs: &[UserRegistrationBlob],
     ) -> Result<()> {
         recv_user_registration_batch(
             &mut self.pubkeys,

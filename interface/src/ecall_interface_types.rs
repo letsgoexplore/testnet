@@ -67,7 +67,7 @@ pub type UserSubmissionBlob = crate::UserSubmissionMessage;
 
 /// Describes user registration information. This contains key encapsulations as well as a linkably
 /// attested signature pubkey.
-pub type UserRegistrationBlobNew = AttestedPublicKey;
+pub type UserRegistrationBlob = AttestedPublicKey;
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]

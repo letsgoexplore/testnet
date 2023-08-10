@@ -9,7 +9,7 @@ use interface::{
     SealedSigPrivKeyNoSGX,
     SealedSharedSecretsDbClient,
     ServerPubKeyPackage,
-    UserRegistrationBlobNew, 
+    UserRegistrationBlob, 
     NoSgxProtectedKeyPub,
     UserSubmissionReqUpdated,
     UserSubmissionBlob,
@@ -40,7 +40,7 @@ impl UserState {
         enclave: &DcNetEnclave,
         n: usize,
         pubkeys: Vec<ServerPubKeyPackage>,
-    ) -> Result<Vec<(UserState, UserRegistrationBlobNew)>> {
+    ) -> Result<Vec<(UserState, UserRegistrationBlob)>> {
         let vec = enclave.new_user_batch(&pubkeys, n)?;
 
         let users_and_reg_blobs = vec

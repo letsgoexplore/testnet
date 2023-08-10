@@ -3,7 +3,7 @@ use crate::util::{Result, ServerError};
 
 use interface::{
     EntityId,
-    UserRegistrationBlobNew,
+    UserRegistrationBlob,
     ServerPubKeyPackage,
     RoundSecret,
     RoundOutput,
@@ -85,7 +85,7 @@ pub fn recv_user_registration_batch(
     pubkeys: &mut SignedPubKeyDbNoSGX,
     shared_secrets: &mut SharedSecretsDbServer,
     decap_key: &SecretKey,
-    input_blob: &[UserRegistrationBlobNew],
+    input_blob: &[UserRegistrationBlob],
 ) -> Result<()> {
     let (new_pubkey_db, new_secrets_db) = recv_user_reg_batch(
         (pubkeys, decap_key, &input_blob.to_vec()),
@@ -98,7 +98,7 @@ pub fn recv_user_registration_batch(
 }
 
 fn recv_user_reg_batch(
-    input: (&SignedPubKeyDbNoSGX, &SecretKey, &Vec<UserRegistrationBlobNew>),
+    input: (&SignedPubKeyDbNoSGX, &SecretKey, &Vec<UserRegistrationBlob>),
 ) -> Result<(SignedPubKeyDbNoSGX, SharedSecretsDbServer)> {
     let mut pk_db: SignedPubKeyDbNoSGX = input.0.clone();
     let my_kem_sk = input.1;
