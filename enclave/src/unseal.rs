@@ -128,18 +128,6 @@ impl UnsealableInto<NoSgxPrivateKey> for SealedSigPrivKey {
     }
 }
 
-impl SealInto<SealedKemPrivKey> for SgxPrivateKey {
-    fn seal_into(&self) -> SgxResult<SealedKemPrivKey> {
-        Ok(SealedKemPrivKey(self.seal(None)?))
-    }
-}
-
-impl UnsealableInto<SgxPrivateKey> for SealedKemPrivKey {
-    fn unseal_into(&self) -> sgx_types::SgxResult<SgxPrivateKey> {
-        Ok(unseal_vec_and_deser(&self.0)?.0) // ignore the ad
-    }
-}
-
 impl  SealInto<SealedSharedSecretsDbClient> for SharedSecretsDbClient {
     fn seal_into(&self) -> SgxResult<SealedSharedSecretsDbClient> {
         let mut sealed_shared_secrets = SealedSharedSecretsDbClient::default();
