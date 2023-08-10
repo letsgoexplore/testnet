@@ -18,7 +18,7 @@ use std::vec;
 use sha2::{Digest, Sha256};
 
 use crate::user_request::{EntityId, UserSubmissionMessage};
-use crate::ecall_interface_types::{RoundOutput, RoundOutputUpdated};
+use crate::ecall_interface_types::RoundOutput;
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
@@ -166,16 +166,6 @@ impl Hashable for RoundOutput {
     }
 }
 
-impl Hashable for RoundOutputUpdated {
-    fn sha256(&self) -> [u8; 32] {
-        let mut h = Sha256::new();
-        h.input(&self.round.to_le_bytes());
-        h.input(&self.dc_msg.digest());
-
-        h.result().try_into().unwrap()
-    }
-}
-
 pub trait MultiSignableUpdated {
     fn digest(&self) -> Vec<u8>;
     fn sign(&self, ssk: &SecretKey) -> Result<(NoSgxSignature, PublicKey), ()> {
@@ -198,7 +188,7 @@ pub trait MultiSignableUpdated {
     fn verify_multisig(&self, pks: &[PublicKey]) -> Result<Vec<usize>, ()>;
 }
 
-impl MultiSignableUpdated for RoundOutputUpdated {
+impl MultiSignableUpdated for RoundOutput {
     fn digest(&self) -> Vec<u8> {
         self.sha256().to_vec()
     }

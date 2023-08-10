@@ -215,9 +215,6 @@ pub fn derive_round_nonce_updated(
 ) -> SgxResult<RateLimitNonce> {
     // Extract the talking counter. If this is cover traffic, return a random nonce immediately
     let times_participated = match msg {
-        UserMsg::TalkAndReserveUpdated {
-            times_participated, ..
-        } => *times_participated,
         UserMsg::TalkAndReserve {
             times_participated, ..
         } => *times_participated,

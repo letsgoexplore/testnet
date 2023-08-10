@@ -28,7 +28,7 @@ use ed25519_dalek::PublicKey;
 fn check_reservation(
     server_sig_pks: &[PublicKey],
     round: u32,
-    prev_round_output: &RoundOutputUpdated,
+    prev_round_output: &RoundOutput,
     cur_slot: usize,
     cur_fp: u32,
 ) -> SgxResult<()> {
@@ -69,7 +69,7 @@ fn check_reservation(
 /// scheduling vector to be empty. To save bandwidth we compact the DC net message by skipping
 /// slots that are not scheduled. In short the zeros are discounted from the vector and all the
 /// reserved slots are moved up.
-fn derive_msg_slot(cur_slot: usize, prev_round_output: &RoundOutputUpdated) -> SgxResult<usize> {
+fn derive_msg_slot(cur_slot: usize, prev_round_output: &RoundOutput) -> SgxResult<usize> {
     let num_zeros = prev_round_output.dc_msg.scheduling_msg[..cur_slot]
         .into_iter()
         .filter(|b| **b == 0)
@@ -229,7 +229,7 @@ pub fn user_submit_internal(
         derive_reservation(&signing_sk, anytrust_group_id, round);
 
     // If this user is talking and it's not the first round, check the reservation. Otherwise don't
-    if let UserMsg::TalkAndReserveUpdated {
+    if let UserMsg::TalkAndReserve {
         ref prev_round_output,
         ..
     } = msg
@@ -262,7 +262,7 @@ pub fn user_submit_internal(
     let mut round_msg = DcRoundMessage::default();
     match msg {
         // If the user is talking and reserving, write to message and reservation slots
-        UserMsg::TalkAndReserveUpdated {
+        UserMsg::TalkAndReserve {
             msg,
             ref prev_round_output,
             ..
@@ -276,7 +276,6 @@ pub fn user_submit_internal(
                 round_msg.aggregated_msg.set(msg_slot, i, *b).unwrap();
             }
         }
-        UserMsg::TalkAndReserve { .. } => (),
         // If the user is just reserving, write to reservation slots
         UserMsg::Reserve { .. } => {
             round_msg.scheduling_msg[next_slot] = next_fp;

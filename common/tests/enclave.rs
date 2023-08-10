@@ -47,9 +47,9 @@ fn user_submit_round_msg() {
     let (user_reg_shared_secrets, user_reg_sealed_key, user_reg_uid, _) =
         enc.new_user(&spks).unwrap();
 
-    let msg = UserMsg::TalkAndReserveUpdated {
+    let msg = UserMsg::TalkAndReserve {
         msg: DcMessage(vec![1u8; DC_NET_MESSAGE_LENGTH]),
-        prev_round_output: RoundOutputUpdated::default(),
+        prev_round_output: RoundOutput::default(),
         times_participated: 0,
     };
 
