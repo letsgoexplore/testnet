@@ -14,7 +14,7 @@ use common::types_nosgx::{
     AggRegistrationBlobNoSGX,
     AggregatedMessage,
     Signable,
-    SignMutableNoSGX,
+    SignMutable,
     XorNoSGX,
     SubmissionMessage,
 };

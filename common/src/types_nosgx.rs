@@ -133,11 +133,11 @@ impl Signable for AggregatedMessage {
     }
 }
 
-pub trait SignMutableNoSGX {
+pub trait SignMutable {
     fn sign_mut(&mut self, _: &SecretKey) -> Result<(), SignatureError>;
 }
 
-impl SignMutableNoSGX for AggregatedMessage {
+impl SignMutable for AggregatedMessage {
     fn sign_mut(&mut self, sk: &SecretKey) -> Result<(), SignatureError> {
         let (sig, pk) = self.sign(sk)?;
         self.pk = pk;
@@ -313,7 +313,7 @@ impl Signable for UnblindedAggregateSharedNoSGX {
     }
 }
 
-impl SignMutableNoSGX for UnblindedAggregateSharedNoSGX {
+impl SignMutable for UnblindedAggregateSharedNoSGX {
     fn sign_mut(&mut self, ssk: &SecretKey) -> Result<(), SignatureError> {
         let (sig, pk)  = self.sign(ssk)?;
         self.sig = sig;
