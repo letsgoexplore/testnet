@@ -111,17 +111,6 @@ impl Debug for NewDiffieHellmanSharedSecret {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct SealedSigPrivKey(pub Vec<u8>);
 
-/// A KEM keypair is also an ECDSA keypair
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct SealedKemPrivKey(pub Vec<u8>);
-
-// impl AsRef<SealedKeyPair> for SealedKemPrivKey {
-//     fn as_ref(&self) -> &SealedKeyPair {
-//         &self.0
-//     }
-// }
-
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct RoundOutput {
