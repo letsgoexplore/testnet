@@ -4,7 +4,7 @@ use interface::{
     EntityId,
     RoundOutput,
     UserRegistrationBlobNew,
-    ServerPubKeyPackageNoSGX,
+    ServerPubKeyPackage,
 };
 
 use log::info;
@@ -40,7 +40,7 @@ pub struct ServerState {
     /// This server's KEM decapsulation key.
     pub decap_key: SecretKey,
     /// The KEM and signing public keys of this server
-    pub pubkey_pkg: ServerPubKeyPackageNoSGX,
+    pub pubkey_pkg: ServerPubKeyPackage,
     /// A partial aggregate of received user messages
     pub partial_agg: Option<AggregatedMessage>,
     /// A sealed database of secrets shared with users. Maps entity ID to shared secret.
@@ -52,7 +52,7 @@ pub struct ServerState {
 }
 
 impl ServerState {
-    pub fn new() -> Result<(ServerState, ServerPubKeyPackageNoSGX)> {
+    pub fn new() -> Result<(ServerState, ServerPubKeyPackage)> {
         let (ssk, ksk, server_id, reg_blob) = new_server()?;
         // Group size starts out as 1. This will increment every time an anytrust node is
         // registered with this node.

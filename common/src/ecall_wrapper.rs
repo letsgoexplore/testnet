@@ -118,13 +118,13 @@ pub mod ecall_allowed {
             unseal_to_public_key),
         (
             EcallNewUser,
-            &[ServerPubKeyPackageNoSGX],
+            &[ServerPubKeyPackage],
             (SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew),
             new_user
         ),
         (
             EcallNewUserBatch,
-            (&[ServerPubKeyPackageNoSGX], usize), // input
+            (&[ServerPubKeyPackage], usize), // input
             Vec<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)>, // output
             new_user_batch
         ),

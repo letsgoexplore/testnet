@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 
 use interface::{
     compute_group_id, EntityId, RateLimitNonce,
-    DC_NET_ROUNDS_PER_WINDOW, ServerPubKeyPackageNoSGX,
+    DC_NET_ROUNDS_PER_WINDOW, ServerPubKeyPackage,
 };
 use serde::{Deserialize, Serialize};
 
@@ -47,7 +47,7 @@ impl AggregatorState {
     /// Makes a new aggregate given the pubkeys of the servers. leaf_node = true iff this
     /// aggregator is a leaf-level aggregator
     pub(crate) fn new(
-        pubkeys: Vec<ServerPubKeyPackageNoSGX>,
+        pubkeys: Vec<ServerPubKeyPackage>,
         level: u32,
         agg_number: u32,
     ) -> Result<(AggregatorState, AggRegistrationBlobNoSGX)> {

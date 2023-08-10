@@ -11,7 +11,7 @@ extern crate interface;
 extern crate sgx_types;
 
 use env_logger::{Builder, Env};
-use interface::{DcMessage, EntityId, UserSubmissionReq, DC_NET_MESSAGE_LENGTH};
+use interface::{DcMessage, EntityId, DC_NET_MESSAGE_LENGTH};
 use log::*;
 use std::time::Instant;
 use std::{collections::BTreeSet, vec};
@@ -23,18 +23,6 @@ fn init_logger() {
 
     let _ = Builder::from_env(env).try_init();
     let _ = env_logger::builder().is_test(true).try_init();
-}
-
-/// create n server public keys
-fn create_server_pubkeys(enc: &DcNetEnclave, n: i32) -> Vec<ServerPubKeyPackage> {
-    let mut pks = Vec::new();
-
-    for _ in 0..n {
-        let s = enc.new_server().unwrap();
-        pks.push(s.3);
-    }
-
-    pks
 }
 
 #[test]

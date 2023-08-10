@@ -19,7 +19,7 @@ use interface::{
     DcRoundMessage,
     NoSgxProtectedKeyPub,
     AttestedPublicKey,
-    ServerPubKeyPackageNoSGX,
+    ServerPubKeyPackage,
     NewDiffieHellmanSharedSecret,
     UserSubmissionMessage,
     RoundSecret,
@@ -275,7 +275,7 @@ pub type AggPublicKey = AggRegistrationBlobNoSGX;
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct SignedPubKeyDbNoSGX {
     pub users: BTreeMap<EntityId, AttestedPublicKey>,
-    pub servers: BTreeMap<EntityId, ServerPubKeyPackageNoSGX>,
+    pub servers: BTreeMap<EntityId, ServerPubKeyPackage>,
     pub aggregators: BTreeMap<EntityId, AggPublicKey>,
 }
 
@@ -283,7 +283,7 @@ pub struct SignedPubKeyDbNoSGX {
 pub type RoundSubmissionBlobNoSGX = AggregatedMessage;
 
 /// Describes anytrust server registration information. This contains sig key and kem key.
-pub type ServerRegistrationBlobNoSGX = ServerPubKeyPackageNoSGX;
+pub type ServerRegistrationBlobNoSGX = ServerPubKeyPackage;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UnblindedAggregateSharedNoSGX {
