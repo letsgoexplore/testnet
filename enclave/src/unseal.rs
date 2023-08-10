@@ -128,18 +128,6 @@ impl UnsealableInto<NoSgxPrivateKey> for SealedSigPrivKeyNoSGX {
     }
 }
 
-impl SealInto<SealedSigPrivKey> for SgxPrivateKey {
-    fn seal_into(&self) -> SgxResult<SealedSigPrivKey> {
-        Ok(SealedSigPrivKey(self.seal(None)?))
-    }
-}
-
-impl UnsealableInto<SgxPrivateKey> for SealedSigPrivKey {
-    fn unseal_into(&self) -> sgx_types::SgxResult<SgxPrivateKey> {
-        Ok(unseal_vec_and_deser(&self.0)?.0) // ignore the ad
-    }
-}
-
 impl SealInto<SealedKemPrivKey> for SgxPrivateKey {
     fn seal_into(&self) -> SgxResult<SealedKemPrivKey> {
         Ok(SealedKemPrivKey(self.seal(None)?))

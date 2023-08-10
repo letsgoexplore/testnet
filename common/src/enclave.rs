@@ -78,17 +78,6 @@ impl DcNetEnclave {
         debug!("enclave destroyed.");
     }
 
-    /// Returns the public key corresponding to the sealed secret key
-    pub fn unseal_to_public_key_on_p256(
-        &self,
-        sealed_private_key: &Vec<u8>,
-    ) -> EnclaveResult<SgxProtectedKeyPub> {
-        Ok(ecall_allowed::unseal_to_public_key(
-            self.enclave.geteid(),
-            sealed_private_key,
-        )?)
-    }
-
     /// Given a message, constructs a round message for sending to an aggregator
     /// SGX will
     ///     1. Check the signature on the preivous round output against a signing key (might have to change API a bit for that)

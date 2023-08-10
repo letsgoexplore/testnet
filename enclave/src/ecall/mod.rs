@@ -53,16 +53,6 @@ pub extern "C" fn ecall_entrypoint(
     let r = match_ecall_ids! {
         ecall_id, inp, inp_len, output, output_cap, output_used,
         (
-            EcallUnsealToPublicKey,
-           Vec<u8>, // sealed sk
-            SgxProtectedKeyPub,
-            |sealed_sk: &Vec<u8>| {
-                let sk: SgxPrivateKey = SealedSigPrivKey(sealed_sk.to_vec()).unseal_into()?;
-
-                SgxProtectedKeyPub::try_from(&sk)
-            }
-        ),
-        (
             EcallNewUser,
             // input
             Vec < ServerPubKeyPackage >,
