@@ -112,11 +112,6 @@ pub mod ecall_allowed {
 
     match_ecall_ids! {
         (
-            EcallUnsealToPublicKey,
-            &Vec<u8>,
-            SgxProtectedKeyPub,
-            unseal_to_public_key),
-        (
             EcallNewUser,
             &[ServerPubKeyPackage],
             (SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlob),
