@@ -181,7 +181,7 @@ fn derive_reservation(
 /// process user submission request
 /// returns a submission and the ratcheted shared secrets
 pub fn user_submit_internal(
-    (send_request, signing_sk): &(UserSubmissionReqUpdated, SealedSigPrivKeyNoSGX),
+    (send_request, signing_sk): &(UserSubmissionReqUpdated, SealedSigPrivKey),
 ) -> SgxResult<(UserSubmissionBlob, SealedSharedSecretsDbClient)> {
     let UserSubmissionReqUpdated {
         user_id,
