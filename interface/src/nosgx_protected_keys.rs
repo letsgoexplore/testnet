@@ -53,7 +53,7 @@ impl NoSgxProtectedKeyPub {
 /// AttestedPublicKey is pk + attestation
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Default)]
-pub struct AttestedPublicKeyNoSGX {
+pub struct AttestedPublicKey {
     pub pk: NoSgxProtectedKeyPub,
     pub xpk: NoSgxProtectedKeyPub,
     pub role: std::string::String,
@@ -61,9 +61,9 @@ pub struct AttestedPublicKeyNoSGX {
     pub tee_linkable_attestation: std::vec::Vec<u8>, // binds this key to an enclave
 }
 
-impl Debug for AttestedPublicKeyNoSGX {
+impl Debug for AttestedPublicKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AttestedPublicKeyNoSGX")
+        f.debug_struct("AttestedPublicKey")
             .field("pk", &self.pk)
             .field("xpk", &self.xpk)
             .field("role", &self.role)

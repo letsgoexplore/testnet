@@ -231,8 +231,8 @@ impl From<&PublicKey> for EntityId {
     }
 }
 
-impl From<&AttestedPublicKeyNoSGX> for EntityId {
-    fn from(pk: &AttestedPublicKeyNoSGX) -> Self {
+impl From<&AttestedPublicKey> for EntityId {
+    fn from(pk: &AttestedPublicKey) -> Self {
         EntityId::from(&pk.pk)
     }
 }

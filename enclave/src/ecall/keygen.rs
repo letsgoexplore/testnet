@@ -9,7 +9,7 @@ use std::vec;
 
 use x25519_dalek::{StaticSecret, PublicKey};
 
-pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(NoSgxPrivateKey, AttestedPublicKeyNoSGX)> {
+pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(NoSgxPrivateKey, AttestedPublicKey)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
         error!("can't create rand {}", e);
         SGX_ERROR_UNEXPECTED
@@ -19,7 +19,7 @@ pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(NoSgxPrivateKey, Attes
     let sk = rand.gen::<NoSgxPrivateKey>();
     let secret = StaticSecret::from(sk.r);
     let xpk = PublicKey::from(&secret);
-    let attested_key = AttestedPublicKeyNoSGX {
+    let attested_key = AttestedPublicKey {
         pk: NoSgxProtectedKeyPub::try_from(&sk).map_err(|e| {
             error!("can't generate NoSgxProtectedKeyPub from NoSgxPrivateKey: {}", e);
             SGX_ERROR_UNEXPECTED
