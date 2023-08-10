@@ -53,14 +53,6 @@ impl EcallId {
     }
 }
 
-/// Describes a partial aggregate. It can consist of a single user's round message (i.e., the
-/// output of `user_submit_round_msg`, or the XOR of multiple user's round messages (i.e., the
-/// output of `finalize_aggregate`).
-/// Inside an enclave this is deserialized to an AggregatedMessage
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct MarshalledSignedUserMessage(pub Vec<u8>);
-
 /// Contains the user's entity ID along with his submissions. This is passed to the base level
 /// aggregators only.
 pub type UserSubmissionBlob = crate::UserSubmissionMessage;
