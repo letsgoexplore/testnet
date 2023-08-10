@@ -92,15 +92,15 @@ impl Debug for SealedSharedSecretsDbClient {
 /// A shared secret is the long-term secret shared between an anytrust server and this user
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct NewDiffieHellmanSharedSecret(pub [u8; SHARED_SECRET_LENGTH]);
+pub struct DiffieHellmanSharedSecret(pub [u8; SHARED_SECRET_LENGTH]);
 
-impl AsRef<[u8]> for NewDiffieHellmanSharedSecret {
+impl AsRef<[u8]> for DiffieHellmanSharedSecret {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl Debug for NewDiffieHellmanSharedSecret {
+impl Debug for DiffieHellmanSharedSecret {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(&hex::encode(&self.0))
     }
