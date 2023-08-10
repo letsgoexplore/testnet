@@ -95,7 +95,7 @@ impl DcNetEnclave {
     pub fn user_submit_round_msg(
         &self,
         submission_req: &UserSubmissionReqUpdated,
-        sealed_usk: &SealedSigPrivKeyNoSGX,
+        sealed_usk: &SealedSigPrivKey,
     ) -> EnclaveResult<(UserSubmissionBlob, SealedSharedSecretsDbClient)> {
         Ok(ecall_allowed::user_submit(
             self.enclave.geteid(),
@@ -113,7 +113,7 @@ impl DcNetEnclave {
         server_pks: &[ServerPubKeyPackage],
     ) -> EnclaveResult<(
         SealedSharedSecretsDbClient,
-        SealedSigPrivKeyNoSGX,
+        SealedSigPrivKey,
         EntityId,
         UserRegistrationBlob,
     )> {
@@ -127,7 +127,7 @@ impl DcNetEnclave {
         n_users: usize,
     ) -> EnclaveResult<Vec<(
         SealedSharedSecretsDbClient,
-        SealedSigPrivKeyNoSGX,
+        SealedSigPrivKey,
         UserRegistrationBlob,
     )>> {
         ecall_allowed::new_user_batch(self.enclave.geteid(), (server_pks, n_users))

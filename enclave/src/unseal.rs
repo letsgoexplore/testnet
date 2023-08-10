@@ -116,13 +116,13 @@ pub trait UnsealableInto<T> {
     fn unseal_into(&self) -> SgxResult<T>;
 }
 
-impl SealInto<SealedSigPrivKeyNoSGX> for NoSgxPrivateKey {
-    fn seal_into(&self) -> SgxResult<SealedSigPrivKeyNoSGX> {
-        Ok(SealedSigPrivKeyNoSGX(self.seal(None)?))
+impl SealInto<SealedSigPrivKey> for NoSgxPrivateKey {
+    fn seal_into(&self) -> SgxResult<SealedSigPrivKey> {
+        Ok(SealedSigPrivKey(self.seal(None)?))
     }
 }
 
-impl UnsealableInto<NoSgxPrivateKey> for SealedSigPrivKeyNoSGX {
+impl UnsealableInto<NoSgxPrivateKey> for SealedSigPrivKey {
     fn unseal_into(&self) -> sgx_types::SgxResult<NoSgxPrivateKey> {
         Ok(unseal_vec_and_deser(&self.0)?.0) // ignore the ad
     }

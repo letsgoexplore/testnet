@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use interface::{
     EntityId,
     UserMsg,
-    SealedSigPrivKeyNoSGX,
+    SealedSigPrivKey,
     SealedSharedSecretsDbClient,
     ServerPubKeyPackage,
     UserRegistrationBlob, 
@@ -24,7 +24,7 @@ pub struct UserState {
     /// A unique for the set anytrust servers that this client is registered with
     anytrust_group_id: EntityId,
     /// This client's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedSigPrivKeyNoSGX,
+    signing_key: SealedSigPrivKey,
     /// The secrets that this client shares with the anytrust servers. Maps entity ID to shared
     /// secret. Can only be accessed from within the enclave.
     shared_secrets: SealedSharedSecretsDbClient,

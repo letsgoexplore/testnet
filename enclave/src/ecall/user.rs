@@ -15,7 +15,7 @@ use ed25519_dalek::PublicKey;
 /// anytrust node
 pub fn new_user(
     anytrust_server_pks: &Vec<ServerPubKeyPackage>,
-) -> SgxResult<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlob)> {
+) -> SgxResult<(SealedSharedSecretsDbClient, SealedSigPrivKey, UserRegistrationBlob)> {
     // 1. validate the input
     let mut kem_db: BTreeMap<NoSgxProtectedKeyPub, PublicKey> = BTreeMap::new();
     // let mut kem_pks = vec![];
@@ -37,7 +37,7 @@ pub fn new_user(
 
 pub fn new_user_batch(
     (anytrust_server_pks, n_user): &(Vec<ServerPubKeyPackage>, usize),
-) -> SgxResult<Vec<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlob)>> {
+) -> SgxResult<Vec<(SealedSharedSecretsDbClient, SealedSigPrivKey, UserRegistrationBlob)>> {
     let mut users = vec![];
     for _ in 0..*n_user {
         let u = new_user(anytrust_server_pks)?;

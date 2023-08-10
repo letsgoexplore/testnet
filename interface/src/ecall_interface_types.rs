@@ -109,7 +109,7 @@ impl Debug for NewDiffieHellmanSharedSecret {
 /// A signing keypair is an ECDSA keypair
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct SealedSigPrivKeyNoSGX(pub Vec<u8>);
+pub struct SealedSigPrivKey(pub Vec<u8>);
 
 /// A KEM keypair is also an ECDSA keypair
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
