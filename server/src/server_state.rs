@@ -2,7 +2,7 @@ use crate::util::Result;
 
 use interface::{
     EntityId,
-    RoundOutputUpdated,
+    RoundOutput,
     UserRegistrationBlobNew,
     ServerPubKeyPackageNoSGX,
 };
@@ -93,7 +93,7 @@ impl ServerState {
     pub fn derive_round_output(
         &self,
         server_aggs: &[UnblindedAggregateShareBlobNoSGX],
-    ) -> Result<RoundOutputUpdated> {
+    ) -> Result<RoundOutput> {
         derive_round_output(&self.signing_key, server_aggs)
     }
 

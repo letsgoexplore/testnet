@@ -112,12 +112,6 @@ pub mod ecall_allowed {
 
     match_ecall_ids! {
         (
-            EcallNewSgxKeypair,
-            String,
-            (Vec<u8>, AttestedPublicKey),
-            new_sgx_keypair
-        ),
-        (
             EcallUnsealToPublicKey,
             &Vec<u8>,
             SgxProtectedKeyPub,

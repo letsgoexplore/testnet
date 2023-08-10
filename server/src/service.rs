@@ -3,7 +3,7 @@ use crate::{
     ServerState,
 };
 use common::cli_util;
-use interface::RoundOutputUpdated;
+use interface::RoundOutput;
 
 use common::types_nosgx::{
     RoundSubmissionBlobNoSGX,
@@ -45,7 +45,7 @@ pub(crate) struct ServiceState {
     /// Contains the URL of the anytrust leader. If `None`, it's you.
     pub(crate) leader_url: Option<String>,
     /// A map from round to the round's output
-    pub(crate) round_outputs: BTreeMap<u32, RoundOutputUpdated>,
+    pub(crate) round_outputs: BTreeMap<u32, RoundOutput>,
     /// The path to this server's state file. If `None`, state is not persisted to disk
     pub(crate) server_state_path: Option<String>,
 }

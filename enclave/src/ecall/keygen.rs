@@ -9,23 +9,6 @@ use std::vec;
 
 use x25519_dalek::{StaticSecret, PublicKey};
 
-pub fn new_sgx_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, AttestedPublicKey)> {
-    let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
-        error!("cant create rand {}", e);
-        SGX_ERROR_UNEXPECTED
-    })?;
-
-    // generate a random secret key
-    let sk = rand.gen::<SgxPrivateKey>();
-    let attested_key = AttestedPublicKey {
-        pk: SgxSigningPubKey::try_from(&sk)?,
-        role: role.to_string(),
-        tee_linkable_attestation: vec![0], // TODO: add attestation
-    };
-
-    Ok((sk, attested_key))
-}
-
 pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(NoSgxPrivateKey, AttestedPublicKeyNoSGX)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
         error!("can't create rand {}", e);

@@ -1,4 +1,4 @@
-use crate::sgx_protected_keys::{AttestedPublicKey, ServerPubKeyPackage, SgxProtectedKeyPub};
+use crate::sgx_protected_keys::{ServerPubKeyPackage, SgxProtectedKeyPub};
 use crate::nosgx_protected_keys::{AttestedPublicKeyNoSGX, NoSgxProtectedKeyPub, SignatureNoSGX};
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
@@ -35,7 +35,6 @@ macro_rules! impl_enum {
 impl_enum! {
     #[repr(u8)]
     pub enum EcallId {
-        EcallNewSgxKeypair = 1,
         EcallUnsealToPublicKey = 2,
         EcallNewUser = 3,
         EcallNewUserBatch = 16,
@@ -46,7 +45,6 @@ impl_enum! {
 impl EcallId {
     pub fn as_str(&self) -> &str {
         match *self {
-            EcallId::EcallNewSgxKeypair => "EcallNewSgxKeypair",
             EcallId::EcallUnsealToPublicKey => "EcallUnsealToPublicKey",
             EcallId::EcallNewUser => "EcallNewUser",
             EcallId::EcallNewUserBatch => "EcallNewUserBatch",
@@ -69,17 +67,7 @@ pub type UserSubmissionBlob = crate::UserSubmissionMessage;
 
 /// Describes user registration information. This contains key encapsulations as well as a linkably
 /// attested signature pubkey.
-pub type UserRegistrationBlob = AttestedPublicKey;
-
-/// Describes user registration information. This contains key encapsulations as well as a linkably
-/// attested signature pubkey.
 pub type UserRegistrationBlobNew = AttestedPublicKeyNoSGX;
-
-/// Describes aggregator registration information. This contains a linkably attested signature
-/// pubkey.
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct AggRegistrationBlob(pub AttestedPublicKey);
 
 /// Describes anytrust server registration information. This contains two linkable attestations
 /// for sig key and kem key.
@@ -181,27 +169,9 @@ pub struct SealedKemPrivKey(pub Vec<u8>);
 //     }
 // }
 
-/// SignedPubKeyDb is a signed mapping between entity id and public key
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Default, Serialize, Debug, Deserialize)]
-pub struct SignedPubKeyDb {
-    pub users: BTreeMap<EntityId, AttestedPublicKey>,
-    pub servers: BTreeMap<EntityId, ServerPubKeyPackage>,
-    pub aggregators: BTreeMap<EntityId, AttestedPublicKey>,
-}
-
-// TODO: Figure out what this should contain. Probably just a long bitstring.
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
 pub struct RoundOutput {
-    pub round: u32,
-    pub dc_msg: DcRoundMessage,
-    pub server_sigs: Vec<Signature>,
-}
-
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Default, Serialize, Debug, Deserialize)]
-pub struct RoundOutputUpdated {
     pub round: u32,
     pub dc_msg: DcRoundMessage,
     pub server_sigs: Vec<SignatureNoSGX>,

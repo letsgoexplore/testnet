@@ -6,7 +6,7 @@ use interface::{
     UserRegistrationBlobNew,
     ServerPubKeyPackageNoSGX,
     RoundSecret,
-    RoundOutputUpdated,
+    RoundOutput,
     DcRoundMessage,
     SignatureNoSGX,
     MultiSignableUpdated,
@@ -303,7 +303,7 @@ pub fn unblind_aggregate_merge(
 pub fn derive_round_output(
     sig_sk: &SecretKey,
     server_aggs: &[UnblindedAggregateShareBlobNoSGX],
-) -> Result<RoundOutputUpdated> {
+) -> Result<RoundOutput> {
     if server_aggs.is_empty() {
         error!("empty shares array");
         return Err(ServerError::UnexpectedError);
@@ -329,7 +329,7 @@ pub fn derive_round_output(
     // Finally xor secrets with the message
     final_msg.xor_mut_nosgx(&final_aggregation);
 
-    let mut round_output = RoundOutputUpdated {
+    let mut round_output = RoundOutput {
         round,
         dc_msg: final_msg,
         server_sigs: vec![],

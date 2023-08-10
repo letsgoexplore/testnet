@@ -204,12 +204,6 @@ impl From<&PublicKey> for EntityId {
     }
 }
 
-impl From<&AttestedPublicKey> for EntityId {
-    fn from(pk: &AttestedPublicKey) -> Self {
-        EntityId::from(&pk.pk)
-    }
-}
-
 impl From<&AttestedPublicKeyNoSGX> for EntityId {
     fn from(pk: &AttestedPublicKeyNoSGX) -> Self {
         EntityId::from(&pk.pk)
@@ -292,13 +286,6 @@ impl Debug for RateLimitNonce {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum UserMsg {
-    TalkAndReserveUpdated {
-        msg: DcMessage,
-        /// Output of previous round signed by one or more anytrust server
-        prev_round_output: RoundOutputUpdated,
-        /// The number of times the user has already talked or reserved this window
-        times_participated: u32,
-    },
     TalkAndReserve {
         msg: DcMessage,
         /// Output of previous round signed by one or more anytrust server

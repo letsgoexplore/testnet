@@ -1,4 +1,4 @@
-use crate::interface::{RoundOutput, SgxSignature, SgxSigningPubKey};
+use crate::interface::{SgxSignature, SgxSigningPubKey};
 use crate::interface::{NoSgxPrivateKey, Hashable};
 use crate::types::CryptoError;
 use sgx_types::{SgxError, SgxResult, SGX_ECP256_KEY_SIZE};
@@ -63,47 +63,6 @@ pub trait MultiSignable {
     /// verify against a list of public keys
     /// return indices of keys that verify
     fn verify_multisig(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>>;
-}
-
-impl MultiSignable for RoundOutput {
-    fn digest(&self) -> Vec<u8> {
-        self.sha256().to_vec()
-    }
-
-    fn verify_multisig(&self, pks: &[SgxSigningPubKey]) -> SgxResult<Vec<usize>> {
-        log::debug!(
-            "verifying RoundOutput (with {} signatures) against a list of {} server PKs",
-            self.server_sigs.len(),
-            pks.len()
-        );
-
-        // digest
-        let msg_hash = self.digest();
-
-        let ecdsa_handler = sgx_tcrypto::SgxEccHandle::new();
-        ecdsa_handler.open()?;
-
-        let mut verified = vec![];
-        for i in 0..self.server_sigs.len() {
-            let sig = self.server_sigs[i].sig;
-            let pk = self.server_sigs[i].pk;
-
-            // verify the signature
-            if ecdsa_handler.ecdsa_verify_slice(&msg_hash, &pk.into(), &sig.into())? {
-                debug!("signature verified against {}", pk);
-            }
-
-            // check if pk is in the server PK list
-            match pks.iter().position(|&k| k == pk) {
-                Some(i) => verified.push(i),
-                None => {
-                    log::error!("PK {} is not in the server PK list", pk);
-                }
-            }
-        }
-
-        Ok(verified)
-    }
 }
 
 mod aes_rng;

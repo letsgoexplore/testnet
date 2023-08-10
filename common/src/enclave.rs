@@ -78,13 +78,6 @@ impl DcNetEnclave {
         debug!("enclave destroyed.");
     }
 
-    /// This method can be used for creating signing keys and KEM private keys.
-    /// Use unseal_to_pubkey to unseal the key and compute its public key.
-    /// Returns (sealed sk, AttestedPublicKey)
-    fn new_sgx_protected_key(&self, role: String) -> EnclaveResult<(Vec<u8>, AttestedPublicKey)> {
-        Ok(ecall_allowed::new_sgx_keypair(self.enclave.geteid(), role)?)
-    }
-
     /// Returns the public key corresponding to the sealed secret key
     pub fn unseal_to_public_key_on_p256(
         &self,
