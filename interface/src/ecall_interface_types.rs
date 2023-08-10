@@ -74,34 +74,6 @@ pub type UserRegistrationBlob = AttestedPublicKey;
 pub struct SealedFootprintTicket(pub Vec<u8>);
 
 /// Enclave-protected secrets shared between anytrust servers and users.
-/// This data structure is used by both users and servers.
-/// On the user side, the key is server's signing key
-/// On the client side, the key is user's signing key
-/// TODO: protect the integrity of pks
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Default, Clone, Serialize, Deserialize)]
-pub struct SealedSharedSecretDb {
-    pub round: u32,
-    pub db: BTreeMap<SgxProtectedKeyPub, Vec<u8>>,
-}
-
-impl SealedSharedSecretDb {
-    pub fn anytrust_group_id(&self) -> EntityId {
-        let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
-        crate::compute_anytrust_group_id(&keys)
-    }
-}
-
-impl Debug for SealedSharedSecretDb {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        let pks: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
-        f.debug_struct("SealedSharedSecretDb")
-            .field("pks", &pks)
-            .finish()
-    }
-}
-
-/// Enclave-protected secrets shared between anytrust servers and users.
 /// This data structure is use by users only
 /// The key is server's public key
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
