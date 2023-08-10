@@ -18,7 +18,7 @@ use common::types_nosgx::{
     SignedPubKeyDbNoSGX,
     RoundSubmissionBlobNoSGX,
     UnblindedAggregateShareBlobNoSGX,
-    AggRegistrationBlobNoSGX,
+    AggRegistrationBlob,
     ServerRegistrationBlobNoSGX,
 };
 
@@ -115,7 +115,7 @@ impl ServerState {
     /// Registers an aggregator with this server
     pub fn recv_aggregator_registration(
         &mut self,
-        input_blob: &AggRegistrationBlobNoSGX,
+        input_blob: &AggRegistrationBlob,
     ) -> Result<()> {
         recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
 

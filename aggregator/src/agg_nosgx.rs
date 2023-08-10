@@ -11,7 +11,7 @@ use interface::{
 
 };
 use common::types_nosgx::{
-    AggRegistrationBlobNoSGX,
+    AggRegistrationBlob,
     AggregatedMessage,
     Signable,
     SignMutable,
@@ -24,15 +24,15 @@ use std::collections::BTreeSet;
 use log::{error, debug, warn};
 
 /// Create a new secret key for an aggregator.
-/// Returns secret key, entity id, and an AggRegistrationBlobNoSGX that contains the
+/// Returns secret key, entity id, and an AggRegistrationBlob that contains the
 /// information to send to anytrust nodes.
-pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlobNoSGX)> {
+pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlob)> {
     let mut csprng = OsRng{};
     let sk = SecretKey::generate(&mut csprng);
     // The standard hash function used for most ed25519 libraries is SHA-512
     let pk: PublicKey = (&sk).into();
 
-    let blob = AggRegistrationBlobNoSGX {
+    let blob = AggRegistrationBlob {
         pk,
         role: "agg".to_string(),
     };

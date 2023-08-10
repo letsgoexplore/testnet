@@ -43,7 +43,7 @@ use x25519_dalek::{
 };
 
 #[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct AggRegistrationBlobNoSGX {
+pub struct AggRegistrationBlob {
     pub pk: PublicKey,
     pub role: std::string::String,
 }
@@ -269,7 +269,7 @@ impl Default for SharedSecretsDbServer {
     }
 }
 
-pub type AggPublicKey = AggRegistrationBlobNoSGX;
+pub type AggPublicKey = AggRegistrationBlob;
 
 /// SignedPubKeyDbNoSGX is a signed mapping between entity id and public key
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]

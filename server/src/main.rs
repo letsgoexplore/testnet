@@ -19,7 +19,7 @@ use common::types_nosgx::{
     RoundSubmissionBlobNoSGX,
     UnblindedAggregateShareBlobNoSGX,
     ServerRegistrationBlobNoSGX,
-    AggRegistrationBlobNoSGX,
+    AggRegistrationBlob,
 };
 
 use std::{error::Error, fs::File};
@@ -173,7 +173,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-aggregator") {
         // Parse an aggregator registration blob from stdin
-        let reg_blob: AggRegistrationBlobNoSGX = load_from_stdin()?;
+        let reg_blob: AggRegistrationBlob = load_from_stdin()?;
 
         // Feed it to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();

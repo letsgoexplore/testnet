@@ -12,7 +12,7 @@ extern crate ed25519_dalek;
 use ed25519_dalek::SecretKey;
 
 use common::types_nosgx::{
-    AggRegistrationBlobNoSGX,
+    AggRegistrationBlob,
     AggregatedMessage,
     SubmissionMessage,
 };
@@ -50,7 +50,7 @@ impl AggregatorState {
         pubkeys: Vec<ServerPubKeyPackage>,
         level: u32,
         agg_number: u32,
-    ) -> Result<(AggregatorState, AggRegistrationBlobNoSGX)> {
+    ) -> Result<(AggregatorState, AggRegistrationBlob)> {
         let (sk, agg_id, reg_data) = new_aggregator()?;
 
         let anytrust_ids: BTreeSet<EntityId> =
