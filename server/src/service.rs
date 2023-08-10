@@ -6,7 +6,7 @@ use common::cli_util;
 use interface::RoundOutput;
 
 use common::types_nosgx::{
-    RoundSubmissionBlobNoSGX,
+    RoundSubmissionBlob,
     UnblindedAggregateShareBlobNoSGX,
 };
 
@@ -147,7 +147,7 @@ async fn submit_agg(
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
-    let agg_data: RoundSubmissionBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
+    let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
 
     // Do the processing step. Unblind the input, add the share, and if we're the leader we finish
     // the round by combining the shares

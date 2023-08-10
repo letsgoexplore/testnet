@@ -16,7 +16,7 @@ use common::types_nosgx::{
     AggregatedMessage,
     SharedSecretsDbServer,
     SignedPubKeyDb,
-    RoundSubmissionBlobNoSGX,
+    RoundSubmissionBlob,
     UnblindedAggregateShareBlobNoSGX,
     AggRegistrationBlob,
     ServerRegistrationBlobNoSGX,
@@ -78,7 +78,7 @@ impl ServerState {
     /// unblinded aggregate as well as the ratcheted shared secrets
     pub fn unblind_aggregate(
         &mut self,
-        toplevel_agg: &RoundSubmissionBlobNoSGX,
+        toplevel_agg: &RoundSubmissionBlob,
     ) -> Result<UnblindedAggregateShareBlobNoSGX> {
         let (share, ratcheted_secrets) =
             unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
