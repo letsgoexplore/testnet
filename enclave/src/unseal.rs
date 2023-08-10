@@ -253,39 +253,4 @@ pub trait MarshallAs<T> {
 pub trait UnmarshalledAs<T> {
     fn unmarshal(&self) -> SgxResult<T>;
 }
-//
-// impl UnmarshalledAs<AggregatedMessage> for RoundSubmissionBlob {
-//     fn unmarshal(&self) -> sgx_types::SgxResult<AggregatedMessage> {
-//         deserialize_from_vec(&self.0)
-//     }
-// }
-//
-// impl MarshallAs<RoundSubmissionBlob> for interface::AggregatedMessage {
-//     fn marshal(&self) -> SgxResult<RoundSubmissionBlob> {
-//         Ok(RoundSubmissionBlob(serialize_to_vec(&self)?))
-//     }
-// }
 
-// impl MarshallAs<SignedPartialAggregate> for interface::AggregatedMessage {
-//     fn marshal(&self) -> SgxResult<SignedPartialAggregate> {
-//         Ok(SignedPartialAggregate(serialize_to_vec(&self)?))
-//     }
-// }
-//
-// impl UnmarshalledAs<AggregatedMessage> for SignedPartialAggregate {
-//     fn unmarshal(&self) -> sgx_types::SgxResult<AggregatedMessage> {
-//         deserialize_from_vec(&self.0)
-//     }
-// }
-
-impl MarshallAs<UnblindedAggregateShareBlob> for messages_types::UnblindedAggregateShare {
-    fn marshal(&self) -> sgx_types::SgxResult<UnblindedAggregateShareBlob> {
-        Ok(UnblindedAggregateShareBlob(serialize_to_vec(&self)?))
-    }
-}
-
-impl UnmarshalledAs<messages_types::UnblindedAggregateShare> for UnblindedAggregateShareBlob {
-    fn unmarshal(&self) -> sgx_types::SgxResult<messages_types::UnblindedAggregateShare> {
-        deserialize_from_vec(&self.0)
-    }
-}
