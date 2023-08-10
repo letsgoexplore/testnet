@@ -29,7 +29,7 @@ use rand::rngs::OsRng;
 use std::time::Instant;
 
 use common::types_nosgx::{
-    SignMutableNoSGX,
+    SignMutable,
     XorNoSGX,
     MarshallAsNoSGX,
     UnmarshalledAsNoSGX,
