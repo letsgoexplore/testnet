@@ -36,7 +36,7 @@ use common::types_nosgx::{
     SharedSecretsDbServer,
     SignedPubKeyDb,
     AggRegistrationBlob,
-    ServerRegistrationBlobNoSGX,
+    ServerRegistrationBlob,
     AggregatedMessage,
     UnblindedAggregateShareBlobNoSGX,
     RoundSubmissionBlob,
@@ -153,7 +153,7 @@ pub fn recv_aggregator_registration(
 
 pub fn recv_server_registration(
     pubkeys: &mut SignedPubKeyDb,
-    input_blob: &ServerRegistrationBlobNoSGX
+    input_blob: &ServerRegistrationBlob
 ) -> Result<()> {
     let mut new_db = pubkeys.clone();
     let server_pk = input_blob;

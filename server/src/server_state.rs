@@ -19,7 +19,7 @@ use common::types_nosgx::{
     RoundSubmissionBlob,
     UnblindedAggregateShareBlobNoSGX,
     AggRegistrationBlob,
-    ServerRegistrationBlobNoSGX,
+    ServerRegistrationBlob,
 };
 
 use crate::server_nosgx::{
@@ -126,7 +126,7 @@ impl ServerState {
     /// anytrust group
     pub fn recv_server_registration(
         &mut self,
-        input_blob: &ServerRegistrationBlobNoSGX,
+        input_blob: &ServerRegistrationBlob,
     ) -> Result<()> {
         // Input the registration and increment the size of the group
         recv_server_registration(&mut self.pubkeys, input_blob)?;

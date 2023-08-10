@@ -18,7 +18,7 @@ use interface::UserRegistrationBlob;
 use common::types_nosgx::{
     RoundSubmissionBlob,
     UnblindedAggregateShareBlobNoSGX,
-    ServerRegistrationBlobNoSGX,
+    ServerRegistrationBlob,
     AggRegistrationBlob,
 };
 
@@ -186,7 +186,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-server") {
         // Parse an aggregator registration blob from stdin
-        let reg_blob: ServerRegistrationBlobNoSGX = load_from_stdin()?;
+        let reg_blob: ServerRegistrationBlob = load_from_stdin()?;
 
         // Feed it to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();

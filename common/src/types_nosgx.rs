@@ -283,7 +283,7 @@ pub struct SignedPubKeyDb {
 pub type RoundSubmissionBlob = AggregatedMessage;
 
 /// Describes anytrust server registration information. This contains sig key and kem key.
-pub type ServerRegistrationBlobNoSGX = ServerPubKeyPackage;
+pub type ServerRegistrationBlob = ServerPubKeyPackage;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UnblindedAggregateSharedNoSGX {
