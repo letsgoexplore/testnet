@@ -271,9 +271,9 @@ impl Default for SharedSecretsDbServer {
 
 pub type AggPublicKey = AggRegistrationBlob;
 
-/// SignedPubKeyDbNoSGX is a signed mapping between entity id and public key
+/// SignedPubKeyDb is a signed mapping between entity id and public key
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
-pub struct SignedPubKeyDbNoSGX {
+pub struct SignedPubKeyDb {
     pub users: BTreeMap<EntityId, AttestedPublicKey>,
     pub servers: BTreeMap<EntityId, ServerPubKeyPackage>,
     pub aggregators: BTreeMap<EntityId, AggPublicKey>,

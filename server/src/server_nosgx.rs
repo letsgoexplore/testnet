@@ -34,7 +34,7 @@ use common::types_nosgx::{
     MarshallAsNoSGX,
     UnmarshalledAsNoSGX,
     SharedSecretsDbServer,
-    SignedPubKeyDbNoSGX,
+    SignedPubKeyDb,
     AggRegistrationBlob,
     ServerRegistrationBlobNoSGX,
     AggregatedMessage,
@@ -82,7 +82,7 @@ pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPacka
 }
 
 pub fn recv_user_registration_batch(
-    pubkeys: &mut SignedPubKeyDbNoSGX,
+    pubkeys: &mut SignedPubKeyDb,
     shared_secrets: &mut SharedSecretsDbServer,
     decap_key: &SecretKey,
     input_blob: &[UserRegistrationBlob],
@@ -98,9 +98,9 @@ pub fn recv_user_registration_batch(
 }
 
 fn recv_user_reg_batch(
-    input: (&SignedPubKeyDbNoSGX, &SecretKey, &Vec<UserRegistrationBlob>),
-) -> Result<(SignedPubKeyDbNoSGX, SharedSecretsDbServer)> {
-    let mut pk_db: SignedPubKeyDbNoSGX = input.0.clone();
+    input: (&SignedPubKeyDb, &SecretKey, &Vec<UserRegistrationBlob>),
+) -> Result<(SignedPubKeyDb, SharedSecretsDbServer)> {
+    let mut pk_db: SignedPubKeyDb = input.0.clone();
     let my_kem_sk = input.1;
 
     for u in input.2.iter() {
@@ -134,7 +134,7 @@ fn recv_user_reg_batch(
 }
 
 pub fn recv_aggregator_registration(
-    pubkeys: &mut SignedPubKeyDbNoSGX,
+    pubkeys: &mut SignedPubKeyDb,
     input_blob: &AggRegistrationBlob
 ) -> Result<()> {
     let mut new_db = pubkeys.clone();
@@ -152,7 +152,7 @@ pub fn recv_aggregator_registration(
 }
 
 pub fn recv_server_registration(
-    pubkeys: &mut SignedPubKeyDbNoSGX,
+    pubkeys: &mut SignedPubKeyDb,
     input_blob: &ServerRegistrationBlobNoSGX
 ) -> Result<()> {
     let mut new_db = pubkeys.clone();
