@@ -81,7 +81,7 @@ impl AggregatedMessage {
     }
 }
 
-pub trait SignableNoSGX {
+pub trait Signable {
     fn digest(&self) -> Vec<u8>;
     fn get_sig(&self) -> Signature;
     fn get_pk(&self) -> PublicKey;
@@ -110,7 +110,7 @@ pub trait SignableNoSGX {
     }
 }
 
-impl SignableNoSGX for AggregatedMessage {
+impl Signable for AggregatedMessage {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
         hasher.input(b"Begin AggregatedMessage");
@@ -293,7 +293,7 @@ pub struct UnblindedAggregateSharedNoSGX {
     pub pk: PublicKey,
 }
 
-impl SignableNoSGX for UnblindedAggregateSharedNoSGX {
+impl Signable for UnblindedAggregateSharedNoSGX {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
         hasher.input(b"Begin UnblindedAggregateShareNoSGX");

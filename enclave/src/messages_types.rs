@@ -1,5 +1,4 @@
 use crypto::SgxSigningKey;
-use crypto::SignMutable;
 use crypto::SignMutableUpdated;
 use interface::{RoundSecret, SgxSignature, SgxSigningPubKey, NoSgxPrivateKey};
 use sgx_types::SgxError;

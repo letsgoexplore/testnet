@@ -13,7 +13,7 @@ use interface::{
 use common::types_nosgx::{
     AggRegistrationBlobNoSGX,
     AggregatedMessage,
-    SignableNoSGX,
+    Signable,
     SignMutableNoSGX,
     XorNoSGX,
     SubmissionMessage,
