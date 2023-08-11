@@ -589,7 +589,9 @@ re_setup_aggregator(){
 seperate_dataset(){
     user_num=$1
     thread_num=$THREAD_NUM
+    cd aggregator
     $CMD_PREFIX split-dataset --user-number $user_num --thread-number $thread_num
+    cd ..
 }
 
 # Commands with parameters:
