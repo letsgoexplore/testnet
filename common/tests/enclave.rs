@@ -41,7 +41,7 @@ fn user_submit_round_msg() {
         times_participated: 0,
     };
 
-    let req_1 = UserSubmissionReqUpdated {
+    let req_1 = UserSubmissionReq {
         user_id: user_reg_uid,
         anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
         round: 0,
@@ -79,7 +79,7 @@ fn user_reserve_slot() {
         times_participated: 0,
     };
 
-    let req_1 = UserSubmissionReqUpdated {
+    let req_1 = UserSubmissionReq {
         user_id: user_reg_uid,
         anytrust_group_id: user_reg_shared_secrets.anytrust_group_id(),
         round: 0,

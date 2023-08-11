@@ -8,8 +8,8 @@ pub type CryptoResult<T> = Result<T, CryptoError>;
 
 use sha2::Digest;
 
-pub trait SignMutableUpdated {
-    fn sign_mut_updated(&mut self, _: &NoSgxPrivateKey) -> SgxError;
+pub trait SignMutableSGX {
+    fn sign_mut_sgx(&mut self, _: &NoSgxPrivateKey) -> SgxError;
 }
 
 mod aes_rng;

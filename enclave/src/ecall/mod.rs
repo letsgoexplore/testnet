@@ -70,7 +70,7 @@ pub extern "C" fn ecall_entrypoint(
         ),
         (
             EcallUserSubmit,
-            (UserSubmissionReqUpdated, SealedSigPrivKey),
+            (UserSubmissionReq, SealedSigPrivKey),
             (UserSubmissionBlob, SealedSharedSecretsDbClient),
             submit::user_submit_internal
         ),

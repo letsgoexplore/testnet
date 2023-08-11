@@ -304,7 +304,7 @@ impl UserMsg {
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UserSubmissionReqUpdated {
+pub struct UserSubmissionReq {
     pub user_id: EntityId,
     pub anytrust_group_id: EntityId,
     pub round: u32,
