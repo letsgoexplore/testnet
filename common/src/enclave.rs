@@ -94,7 +94,7 @@ impl DcNetEnclave {
     /// retry, for example, in the next round.
     pub fn user_submit_round_msg(
         &self,
-        submission_req: &UserSubmissionReqUpdated,
+        submission_req: &UserSubmissionReq,
         sealed_usk: &SealedSigPrivKey,
     ) -> EnclaveResult<(UserSubmissionBlob, SealedSharedSecretsDbClient)> {
         Ok(ecall_allowed::user_submit(

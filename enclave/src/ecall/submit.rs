@@ -7,7 +7,7 @@ use crate::unseal::UnsealableInto;
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use crypto;
-use crypto::SignMutableUpdated;
+use crypto::SignMutableSGX;
 use interface::MultiSignable;
 use log::debug;
 use sgx_types::sgx_status_t::{
@@ -181,9 +181,9 @@ fn derive_reservation(
 /// process user submission request
 /// returns a submission and the ratcheted shared secrets
 pub fn user_submit_internal(
-    (send_request, signing_sk): &(UserSubmissionReqUpdated, SealedSigPrivKey),
+    (send_request, signing_sk): &(UserSubmissionReq, SealedSigPrivKey),
 ) -> SgxResult<(UserSubmissionBlob, SealedSharedSecretsDbClient)> {
-    let UserSubmissionReqUpdated {
+    let UserSubmissionReq {
         user_id,
         anytrust_group_id,
         round,
@@ -323,7 +323,7 @@ pub fn user_submit_internal(
     };
 
     // Sign
-    if agg_msg.sign_mut_updated(&signing_sk).is_err() {
+    if agg_msg.sign_mut_sgx(&signing_sk).is_err() {
         error!("can't sign");
         return Err(SGX_ERROR_UNEXPECTED);
     }

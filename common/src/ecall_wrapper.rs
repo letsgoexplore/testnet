@@ -125,7 +125,7 @@ pub mod ecall_allowed {
         ),
         (
             EcallUserSubmit,
-            (&UserSubmissionReqUpdated, &SealedSigPrivKey),
+            (&UserSubmissionReq, &SealedSigPrivKey),
             (UserSubmissionBlob, SealedSharedSecretsDbClient),
             user_submit
         ),

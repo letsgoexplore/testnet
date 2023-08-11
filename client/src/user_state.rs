@@ -11,7 +11,7 @@ use interface::{
     ServerPubKeyPackage,
     UserRegistrationBlob, 
     NoSgxProtectedKeyPub,
-    UserSubmissionReqUpdated,
+    UserSubmissionReq,
     UserSubmissionBlob,
     DC_NET_ROUNDS_PER_WINDOW,
     compute_anytrust_group_id_spk,
@@ -76,7 +76,7 @@ impl UserState {
         msg: UserMsg,
     ) -> Result<UserSubmissionBlob> {
         let msg_is_cover = msg.is_cover();
-        let req = UserSubmissionReqUpdated {
+        let req = UserSubmissionReq {
             user_id: self.user_id,
             anytrust_group_id: self.anytrust_group_id,
             round,
