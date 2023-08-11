@@ -1,5 +1,5 @@
 use crate::sgx_protected_keys::SgxProtectedKeyPub;
-use crate::nosgx_protected_keys::{AttestedPublicKey, NoSgxProtectedKeyPub, SignatureNoSGX};
+use crate::nosgx_protected_keys::{AttestedPublicKey, NoSgxProtectedKeyPub, OutputSignature};
 use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
 use crate::DcRoundMessage;
@@ -116,5 +116,5 @@ pub struct SealedSigPrivKey(pub Vec<u8>);
 pub struct RoundOutput {
     pub round: u32,
     pub dc_msg: DcRoundMessage,
-    pub server_sigs: Vec<SignatureNoSGX>,
+    pub server_sigs: Vec<OutputSignature>,
 }

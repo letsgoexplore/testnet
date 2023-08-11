@@ -8,7 +8,7 @@ use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use crypto;
 use crypto::SignMutableUpdated;
-use interface::MultiSignableUpdated;
+use interface::MultiSignable;
 use log::debug;
 use sgx_types::sgx_status_t::{
     SGX_ERROR_SERVICE_UNAVAILABLE,

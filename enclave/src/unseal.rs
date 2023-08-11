@@ -172,12 +172,3 @@ impl UnsealableInto<SharedSecretsDbClient> for SealedSharedSecretsDbClient {
         Ok(db)
     }
 }
-
-pub trait MarshallAs<T> {
-    fn marshal(&self) -> SgxResult<T>;
-}
-
-pub trait UnmarshalledAs<T> {
-    fn unmarshal(&self) -> SgxResult<T>;
-}
-

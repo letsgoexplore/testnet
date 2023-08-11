@@ -134,20 +134,14 @@ pub struct ServerPubKeyPackage {
 /// Store the bytes of signatures
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Debug, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
-pub struct NoSgxSignature(pub Vec<u8>);
-
-// impl Default for NoSgxSignature {
-//     fn default() -> Self {
-//         Self([0u8; SIGNATURE_LENGTH])
-//     }
-// }
+pub struct SignatureBytes(pub Vec<u8>);
 
 /// Used by servers in round outputs
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct SignatureNoSGX {
+pub struct OutputSignature {
     pub pk: PublicKey,
-    pub sig: NoSgxSignature,
+    pub sig: SignatureBytes,
 }
 
 pub trait Hashable {
@@ -166,9 +160,9 @@ impl Hashable for RoundOutput {
     }
 }
 
-pub trait MultiSignableUpdated {
+pub trait MultiSignable {
     fn digest(&self) -> Vec<u8>;
-    fn sign(&self, ssk: &SecretKey) -> Result<(NoSgxSignature, PublicKey), ()> {
+    fn sign(&self, ssk: &SecretKey) -> Result<(SignatureBytes, PublicKey), ()> {
         let dig = self.digest();
 
         let pk: PublicKey = ssk.into();
@@ -179,7 +173,7 @@ pub trait MultiSignableUpdated {
         keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
 
         let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
-        let sig = NoSgxSignature(keypair.sign(dig.as_slice()).to_bytes().to_vec());
+        let sig = SignatureBytes(keypair.sign(dig.as_slice()).to_bytes().to_vec());
 
         Ok((sig, pk))
     }
@@ -188,7 +182,7 @@ pub trait MultiSignableUpdated {
     fn verify_multisig(&self, pks: &[PublicKey]) -> Result<Vec<usize>, ()>;
 }
 
-impl MultiSignableUpdated for RoundOutput {
+impl MultiSignable for RoundOutput {
     fn digest(&self) -> Vec<u8> {
         self.sha256().to_vec()
     }
@@ -229,9 +223,9 @@ impl MultiSignableUpdated for RoundOutput {
 
 pub trait SignableUpdated {
     fn digest(&self) -> Vec<u8>;
-    fn get_sig(&self) -> NoSgxSignature;
+    fn get_sig(&self) -> SignatureBytes;
     fn get_pk(&self) -> PublicKey;
-    fn sign(&self, ssk: &NoSgxPrivateKey) -> Result<(NoSgxSignature, PublicKey), ()> {
+    fn sign(&self, ssk: &NoSgxPrivateKey) -> Result<(SignatureBytes, PublicKey), ()> {
         let dig = self.digest();
 
         let pk: PublicKey = (&SecretKey::from_bytes(&ssk.r).expect("Failed to generate pk from sk bytes")).into();
@@ -242,7 +236,7 @@ pub trait SignableUpdated {
         keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
 
         let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
-        let sig = NoSgxSignature(keypair.sign(dig.as_slice()).to_bytes().to_vec());
+        let sig = SignatureBytes(keypair.sign(dig.as_slice()).to_bytes().to_vec());
 
         Ok((sig, pk))
     }
@@ -263,7 +257,7 @@ impl SignableUpdated for UserSubmissionMessage {
         hasher.result().to_vec()
     }
 
-    fn get_sig(&self) -> NoSgxSignature {
+    fn get_sig(&self) -> SignatureBytes {
         self.tee_sig.clone()
     }
 

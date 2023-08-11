@@ -286,20 +286,20 @@ pub type RoundSubmissionBlob = AggregatedMessage;
 pub type ServerRegistrationBlob = ServerPubKeyPackage;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct UnblindedAggregateSharedNoSGX {
+pub struct UnblindedAggregateShare {
     pub encrypted_msg: AggregatedMessage,
     pub key_share: RoundSecret,
     pub sig: Signature,
     pub pk: PublicKey,
 }
 
-impl Signable for UnblindedAggregateSharedNoSGX {
+impl Signable for UnblindedAggregateShare {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
-        hasher.input(b"Begin UnblindedAggregateShareNoSGX");
+        hasher.input(b"Begin UnblindedAggregateShare");
         hasher.input(self.encrypted_msg.digest());
         hasher.input(self.key_share.digest());
-        hasher.input(b"End UnblindedAggregateShareNoSGX");
+        hasher.input(b"End UnblindedAggregateShare");
 
         hasher.result().to_vec()
     }
@@ -313,7 +313,7 @@ impl Signable for UnblindedAggregateSharedNoSGX {
     }
 }
 
-impl SignMutable for UnblindedAggregateSharedNoSGX {
+impl SignMutable for UnblindedAggregateShare {
     fn sign_mut(&mut self, ssk: &SecretKey) -> Result<(), SignatureError> {
         let (sig, pk)  = self.sign(ssk)?;
         self.sig = sig;
@@ -325,24 +325,24 @@ impl SignMutable for UnblindedAggregateSharedNoSGX {
 
 /// The unblinded aggregate output by a single anytrust node
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct UnblindedAggregateShareBlobNoSGX(pub Vec<u8>);
+pub struct UnblindedAggregateShareBlob(pub Vec<u8>);
 
-pub trait MarshallAsNoSGX<T> {
-    fn marshal_nosgx(&self) -> Result<T, serde_cbor::Error>;
+pub trait MarshallAs<T> {
+    fn marshal(&self) -> Result<T, serde_cbor::Error>;
 }
 
-pub trait UnmarshalledAsNoSGX<T> {
-    fn unmarshal_nosgx(&self) -> Result<T, serde_cbor::Error>;
+pub trait UnmarshalledAs<T> {
+    fn unmarshal(&self) -> Result<T, serde_cbor::Error>;
 }
 
-impl MarshallAsNoSGX<UnblindedAggregateShareBlobNoSGX> for UnblindedAggregateSharedNoSGX {
-    fn marshal_nosgx(&self) -> Result<UnblindedAggregateShareBlobNoSGX, serde_cbor::Error> {
-        Ok(UnblindedAggregateShareBlobNoSGX(serialize_to_vec(&self)?))
+impl MarshallAs<UnblindedAggregateShareBlob> for UnblindedAggregateShare {
+    fn marshal(&self) -> Result<UnblindedAggregateShareBlob, serde_cbor::Error> {
+        Ok(UnblindedAggregateShareBlob(serialize_to_vec(&self)?))
     }
 }
 
-impl UnmarshalledAsNoSGX<UnblindedAggregateSharedNoSGX> for UnblindedAggregateShareBlobNoSGX {
-    fn unmarshal_nosgx(&self) -> Result<UnblindedAggregateSharedNoSGX, serde_cbor::Error> {
+impl UnmarshalledAs<UnblindedAggregateShare> for UnblindedAggregateShareBlob {
+    fn unmarshal(&self) -> Result<UnblindedAggregateShare, serde_cbor::Error> {
         deserialize_from_vec(&self.0)
     }
 }

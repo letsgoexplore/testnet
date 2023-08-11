@@ -354,7 +354,7 @@ pub struct UserSubmissionMessage {
     /// This is only Some for user-submitted messages
     pub rate_limit_nonce: Option<RateLimitNonce>,
     pub aggregated_msg: DcRoundMessage,
-    pub tee_sig: NoSgxSignature,
+    pub tee_sig: SignatureBytes,
     pub tee_pk: PublicKey,
 }
 

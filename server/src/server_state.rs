@@ -17,7 +17,7 @@ use common::types_nosgx::{
     SharedSecretsDbServer,
     SignedPubKeyDb,
     RoundSubmissionBlob,
-    UnblindedAggregateShareBlobNoSGX,
+    UnblindedAggregateShareBlob,
     AggRegistrationBlob,
     ServerRegistrationBlob,
 };
@@ -79,7 +79,7 @@ impl ServerState {
     pub fn unblind_aggregate(
         &mut self,
         toplevel_agg: &RoundSubmissionBlob,
-    ) -> Result<UnblindedAggregateShareBlobNoSGX> {
+    ) -> Result<UnblindedAggregateShareBlob> {
         let (share, ratcheted_secrets) =
             unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
 
@@ -92,7 +92,7 @@ impl ServerState {
     /// Derives the final round output given all the shares of the unblinded aggregates
     pub fn derive_round_output(
         &self,
-        server_aggs: &[UnblindedAggregateShareBlobNoSGX],
+        server_aggs: &[UnblindedAggregateShareBlob],
     ) -> Result<RoundOutput> {
         derive_round_output(&self.signing_key, server_aggs)
     }
