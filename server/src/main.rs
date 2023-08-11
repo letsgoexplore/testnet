@@ -17,7 +17,7 @@ use interface::UserRegistrationBlob;
 
 use common::types_nosgx::{
     RoundSubmissionBlob,
-    UnblindedAggregateShareBlobNoSGX,
+    UnblindedAggregateShareBlob,
     ServerRegistrationBlob,
     AggRegistrationBlob,
 };
@@ -215,7 +215,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Parse each server's unblinded inputs
         let shares_filename = matches.value_of("shares").unwrap();
         let sharefile = File::open(shares_filename)?;
-        let shares: Vec<UnblindedAggregateShareBlobNoSGX> = cli_util::load_multi(sharefile)?;
+        let shares: Vec<UnblindedAggregateShareBlob> = cli_util::load_multi(sharefile)?;
 
         // Feed it to the state and output the result
         let state_path = matches.value_of("server-state").unwrap();

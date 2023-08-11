@@ -7,7 +7,7 @@ use interface::RoundOutput;
 
 use common::types_nosgx::{
     RoundSubmissionBlob,
-    UnblindedAggregateShareBlobNoSGX,
+    UnblindedAggregateShareBlob,
 };
 
 use core::ops::DerefMut;
@@ -41,7 +41,7 @@ impl ResponseError for ApiError {}
 // #[derive(Clone)]
 pub(crate) struct ServiceState {
     pub(crate) server_state: ServerState,
-    pub(crate) round_shares: Vec<UnblindedAggregateShareBlobNoSGX>,
+    pub(crate) round_shares: Vec<UnblindedAggregateShareBlob>,
     /// Contains the URL of the anytrust leader. If `None`, it's you.
     pub(crate) leader_url: Option<String>,
     /// A map from round to the round's output
@@ -107,7 +107,7 @@ fn leader_finish_round(state: &mut ServiceState) {
 }
 
 /// Sends the given unblinded share to `base_url/submit-share`
-async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlobNoSGX) {
+async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlob) {
     // Serialize the share
     let mut body = Vec::new();
     cli_util::save(&mut body, &share).expect("could not serialize share");
@@ -234,7 +234,7 @@ async fn submit_share(
     }
 
     // Parse the share and add it to our shares
-    let share: UnblindedAggregateShareBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
+    let share: UnblindedAggregateShareBlob = cli_util::load(&mut payload.as_bytes())?;
     round_shares.push(share);
     info!("Got share. Number of shares is now {}", round_shares.len());
 

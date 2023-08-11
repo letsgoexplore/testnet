@@ -8,8 +8,8 @@ use interface::{
     RoundSecret,
     RoundOutput,
     DcRoundMessage,
-    SignatureNoSGX,
-    MultiSignableUpdated,
+    OutputSignature,
+    MultiSignable,
     NoSgxProtectedKeyPub,
 };
 
@@ -31,16 +31,16 @@ use std::time::Instant;
 use common::types_nosgx::{
     SignMutable,
     XorNoSGX,
-    MarshallAsNoSGX,
-    UnmarshalledAsNoSGX,
+    MarshallAs,
+    UnmarshalledAs,
     SharedSecretsDbServer,
     SignedPubKeyDb,
     AggRegistrationBlob,
     ServerRegistrationBlob,
     AggregatedMessage,
-    UnblindedAggregateShareBlobNoSGX,
+    UnblindedAggregateShareBlob,
     RoundSubmissionBlob,
-    UnblindedAggregateSharedNoSGX,
+    UnblindedAggregateShare,
 };
 
 use common::funcs_nosgx::{
@@ -173,7 +173,7 @@ pub fn unblind_aggregate(
     toplevel_agg: &AggregatedMessage,
     signing_key: &SecretKey,
     shared_secrets: &SharedSecretsDbServer,
-) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
+) -> Result<(UnblindedAggregateShareBlob, SharedSecretsDbServer)> {
     unblind_aggregate_mt(
         toplevel_agg,
         signing_key,
@@ -187,7 +187,7 @@ pub fn unblind_aggregate_mt(
     signing_key: &SecretKey,
     shared_secrets: &SharedSecretsDbServer,
     n_threads: usize,
-) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
+) -> Result<(UnblindedAggregateShareBlob, SharedSecretsDbServer)> {
     let start = Instant::now();
     let chunk_size = (toplevel_agg.user_ids.len() + n_threads - 1) / n_threads;
     assert_ne!(chunk_size, 0);
@@ -272,13 +272,13 @@ pub fn unblind_aggregate_merge(
     round_secrets : &Vec<RoundSecret>,
     sig_key: &SecretKey,
     shared_secrets: &SharedSecretsDbServer,
-) -> Result<(UnblindedAggregateShareBlobNoSGX, SharedSecretsDbServer)> {
+) -> Result<(UnblindedAggregateShareBlob, SharedSecretsDbServer)> {
     let mut round_secret = RoundSecret::default();
     for rs in round_secrets.iter() {
         round_secret.xor_mut_nosgx(rs);
     }
 
-    let mut unblind_agg = UnblindedAggregateSharedNoSGX {
+    let mut unblind_agg = UnblindedAggregateShare {
         encrypted_msg: toplevel_agg.clone(),
         key_share: round_secret,
         sig: Signature::from_bytes(&[0u8; 64]).expect("failed to generate Signature from bytes"),
@@ -295,14 +295,14 @@ pub fn unblind_aggregate_merge(
     });
 
     Ok((
-        unblind_agg.marshal_nosgx().expect("marshal unblind agg failed"),
+        unblind_agg.marshal().expect("marshal unblind agg failed"),
         shared_secrets.ratchet()
     ))
 }
 
 pub fn derive_round_output(
     sig_sk: &SecretKey,
-    server_aggs: &[UnblindedAggregateShareBlobNoSGX],
+    server_aggs: &[UnblindedAggregateShareBlob],
 ) -> Result<RoundOutput> {
     if server_aggs.is_empty() {
         error!("empty shares array");
@@ -313,12 +313,12 @@ pub fn derive_round_output(
     let mut final_msg = DcRoundMessage::default();
 
     // We require all s in shares should have the same aggregated_msg
-    let first_msg = server_aggs[0].unmarshal_nosgx().expect("failed to unmarshal the unblinded aggregated share");
+    let first_msg = server_aggs[0].unmarshal().expect("failed to unmarshal the unblinded aggregated share");
     let final_aggregation = first_msg.encrypted_msg.aggregated_msg;
     let round = first_msg.encrypted_msg.round;
 
     for s in server_aggs.iter() {
-        let share = s.unmarshal_nosgx().expect("failed to unmarshal the unblinded aggregated share");
+        let share = s.unmarshal().expect("failed to unmarshal the unblinded aggregated share");
         if share.encrypted_msg.aggregated_msg != final_aggregation {
             error!("share {:?} has a different final agg", share);
             return Err(ServerError::UnexpectedError);
@@ -337,7 +337,7 @@ pub fn derive_round_output(
 
     let (sig, pk) = round_output.sign(sig_sk).expect("failed to sign the round output");
     
-    round_output.server_sigs.push(SignatureNoSGX {pk, sig});
+    round_output.server_sigs.push(OutputSignature {pk, sig});
 
     debug!(
         "⏰ round {} concluded with output {:?}",
