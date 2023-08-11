@@ -1,5 +1,4 @@
 use crate::agg_state::AggregatorState;
-use common::cli_util;
 use std::{fs::File, io, convert::TryInto};
 use interface::{UserSubmissionMessageUpdated};
 use common::{cli_util, enclave::EnclaveError};
