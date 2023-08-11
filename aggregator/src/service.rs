@@ -227,7 +227,7 @@ async fn aggregate_eval(
     let share:AggregatedMessage = agg_state
     .finalize_aggregate()
     .expect("could not finalize aggregate");
-    debug!("{}'s share is:{:?}, forward-url is {:?}",agg_number, share, forward_urls.clone());
+    // debug!("{}'s share is:{:?}, forward-url is {:?}",agg_number, share, forward_urls.clone());
     actix_rt::spawn(send_share_to_root(forward_urls.clone(), share));
     
 
@@ -246,10 +246,10 @@ async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage){
     // step 2: Send the serialized contents as an HTTP POST to leader/submit-share
     let timeout_sec = 5;
     let base_url = &base_url[0];
-    debug!(
-        "Sending share to {} with timeout {}s, content is {:?}",
-        base_url, timeout_sec, body.clone()
-    );
+    // debug!(
+    //     "Sending share to {} with timeout {}s, content is {:?}",
+    //     base_url, timeout_sec, body.clone()
+    // );
     let client = Client::builder()
         .timeout(Duration::from_secs(timeout_sec))
         .finish();
