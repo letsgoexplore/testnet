@@ -647,6 +647,9 @@ elif [[ $1 == "cal-time" ]]; then
     cal_time
 elif [[ $1 == "save-data" ]]; then
     save_data
+elif [[ $1 == "seperate" ]]; then
+    # $2: user number
+    seperate_dataset $2
 else
     echo "Did not recognize command"
 fi
