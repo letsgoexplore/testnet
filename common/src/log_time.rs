@@ -17,7 +17,7 @@ pub fn log_server_detailed_duration(event:&str, duration: u128) {
 
 }
 
-pub fn log_leader_time() {
+pub fn log_time() {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
