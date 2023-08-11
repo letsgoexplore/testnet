@@ -64,7 +64,7 @@ clean() {
     rm -f $AGG_ENCRYPT_TIME_LOG || true
     rm -f $ERROR_LOG || true
     rm -f $SUCCESS_LOG || true
-    rm -f $AGG_STATE_PREFIX*.txt || true
+    # rm -f $AGG_STATE_PREFIX*.txt || true
     echo "Cleaned"
 }
 

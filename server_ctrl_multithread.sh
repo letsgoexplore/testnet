@@ -27,22 +27,15 @@ SERVER_PORT="28942"
 SERVER_IP=("18.116.70.88" "35.180.204.216" "54.177.151.14" "52.196.213.17" "34.219.28.135")
 
 # -q to reduce clutter
-# CMD_PREFIX="cargo run --release -- "
+CMD_PREFIX="cargo run --release -- "
 # [onlytest]
-CMD_PREFIX="cargo run -- "
+# CMD_PREFIX="cargo run -- "
 SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
-LEADER=1
-NUM_FOLLOWERS=4
-NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-
-NUM_USERS=128
-NUM_AGGREGATOR=1
-MESSAGE_LENGTH=160
-NUM_SLOT=128
 ROUND=0
 ROUND_DURATION=100000
-THREAD_NUM=4
+THREAD_NUM=32
+
 log_time() {
     timestamp=$(date +%s%N)
     echo "$timestamp" >> $TIME_LOG
@@ -164,7 +157,7 @@ setup_aggregator() {
                 STATE="${SERVER_STATE%.txt}$i.txt"
                 echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
             done
-            echo "Set up aggregator $(($i+1))"
+            echo "Set up aggregator $i"
             cd ..
         done
     fi
@@ -579,7 +572,7 @@ re_setup_aggregator(){
                 STATE="${SERVER_STATE%.txt}$i.txt"
                 echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
             done
-            echo "Set up aggregator $(($i+1))"
+            echo "Set up aggregator $i"
             cd ..
         done
     fi
@@ -649,6 +642,8 @@ elif [[ $1 == "cal-time" ]]; then
     cal_time
 elif [[ $1 == "save-data" ]]; then
     save_data
+elif [[ $1 == "log-time" ]]; then
+    log_time
 elif [[ $1 == "seperate" ]]; then
     # $2: user number
     seperate_dataset $2

@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, save_output, ServerError},
     ServerState,
 };
-use common::{cli_util, log_time::{log_server_time, log_server_detailed_duration, log_leader_time}};
+use common::{cli_util, log_time::{log_server_time, log_server_detailed_duration, log_time}};
 use interface::RoundOutputUpdated;
 
 use common::types_nosgx::{
@@ -204,7 +204,7 @@ async fn submit_agg(
 ) -> Result<HttpResponse, ApiError> {
     let start = Instant::now();
     let input_start = Instant::now();
-    log_leader_time();
+    log_time();
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
@@ -252,7 +252,7 @@ async fn submit_agg(
                 if round_shares.len() == group_size {
                     info!("Finishing round");
                     leader_finish_round(state_handle.deref_mut());
-                    log_leader_time();
+                    log_time();
                     // log_server_time("finish round");
                 }
             }
@@ -321,7 +321,7 @@ async fn submit_share(
     if round_shares.len() == group_size {
         info!("Finishing round");
         leader_finish_round(handle.deref_mut());
-        log_leader_time();
+        log_time();
         // log_server_time("finish round");
     }
 
