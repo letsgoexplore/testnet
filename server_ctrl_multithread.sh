@@ -606,7 +606,7 @@ elif [[ $1 == "setup-env" ]]; then
 elif [[ $1 == "setup-param" ]]; then
     setup_parameter $2 $3 $4
 elif [[ $1 == "resetup-agg" ]]; then
-    re_setup_aggregator ${#SERVER_IP[@]}
+    re_setup_aggregator $2
 elif [[ $1 == "start-leader" ]]; then
     start_leader
 elif [[ $1 == "start-follower" ]]; then
