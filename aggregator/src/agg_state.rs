@@ -34,6 +34,10 @@ pub struct AggregatorState {
     partial_agg: Option<AggregatedMessage>,
     /// The level in the aggregation tree of this aggregator. 0 means this is a leaf aggregator.
     pub(crate) level: u32,
+    /// The sequence number of aggregator. 
+    /// Note: [onlyevaluation] this is only for evaluation use.
+    /// This is for aggregator knowing which file to save or read the msg.
+    pub(crate) agg_number: u32,
     /// The observed rate limiting nonces from this window. This is Some iff this aggregator is a
     /// leaf aggregator
     observed_nonces: Option<BTreeSet<RateLimitNonce>>,
@@ -45,6 +49,7 @@ impl AggregatorState {
     pub(crate) fn new(
         pubkeys: Vec<ServerPubKeyPackageNoSGX>,
         level: u32,
+        agg_number: u32,
     ) -> Result<(AggregatorState, AggRegistrationBlobNoSGX)> {
         let (sk, agg_id, reg_data) = new_aggregator()?;
 
@@ -65,6 +70,7 @@ impl AggregatorState {
             signing_key: sk,
             partial_agg: None,
             level,
+            agg_number: agg_number,
             observed_nonces,
         };
 

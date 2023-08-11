@@ -3,6 +3,7 @@
 USER_STATE="client/user-state.txt"
 AGG_FINALAGG="aggregator/final-agg.txt"
 AGG_ROOTSTATE="aggregator/agg-root-state.txt"
+AGG_STATE_PREFIX="aggregator/agg_state_"
 SERVER_STATE="server/server-state.txt"
 SERVER_SHARES="server/shares.txt"
 SERVER_SHARES_PARTIAL="server/partial_shares.txt"
@@ -26,20 +27,22 @@ SERVER_PORT="28942"
 SERVER_IP=("18.116.70.88" "35.180.204.216" "54.177.151.14" "52.196.213.17" "34.219.28.135")
 
 # -q to reduce clutter
-CMD_PREFIX="RUSTFLAGS=-Ctarget-feature=+aes,+ssse3 cargo run --release -- "
+# CMD_PREFIX="cargo run --release -- "
+# [onlytest]
+CMD_PREFIX="cargo run -- "
 SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
 LEADER=1
-NUM_FOLLOWERS=9
-#
+NUM_FOLLOWERS=4
 NUM_SERVERS=$((LEADER + NUM_FOLLOWERS))
-NUM_USERS=4000
+
+NUM_USERS=128
 NUM_AGGREGATOR=1
 MESSAGE_LENGTH=160
-NUM_SLOT=1024
+NUM_SLOT=128
 ROUND=0
-
-
+ROUND_DURATION=100000
+THREAD_NUM=4
 log_time() {
     timestamp=$(date +%s%N)
     echo "$timestamp" >> $TIME_LOG
@@ -67,6 +70,13 @@ clean() {
     rm -f $AGG_STATE_PREFIX*.txt || true
     echo "Cleaned"
 }
+
+# build() {
+#     make -C enclave
+#     for d in "client" "server" "aggregator"; do
+#         pushd $d && cargo build && popd
+#     done
+# }
 
 # Creates new servers and records their KEM pubkeys
 setup_server() {
@@ -125,24 +135,42 @@ setup_server() {
 
 # Creates new aggregators wrt the server KEM pubkeys
 setup_aggregator() {
-    # We only have one aggregator right now
+    # step 1: setup root-aggregator
     cd aggregator
     NUM_SERVERS=$1
+    NUM_LEAF_AGGREGATORS=$THREAD_NUM
     # Make a new root aggregator and capture the registration data
     AGG_REG=$(
-        $CMD_PREFIX new --level 0 --agg-state "../$AGG_ROOTSTATE" --server-keys "../$AGG_SERVERKEYS"
+        $CMD_PREFIX new --level 0 --agg-number 0 --agg-state "../$AGG_ROOTSTATE" --server-keys "../$AGG_SERVERKEYS"
     )
-
-    # Now do the registration
+     # Now do the registration
     cd ../server
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
         echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
     done
-
-    echo "Set up aggregator"
+    echo "Set up root aggregator"
     cd ..
+
+    # step 2: setup aggregator
+    if [[ $NUM_LEAF_AGGREGATORS -gt 0 ]]; then
+        for i in $(seq 1 $NUM_LEAF_AGGREGATORS); do
+            cd aggregator
+            file_name="$AGG_STATE_PREFIX$i.txt"
+            AGG_REG=$(
+                $CMD_PREFIX new --level 1 --agg-number $i --agg-state "../$file_name" --server-keys "../$AGG_SERVERKEYS")
+            cd ../server
+            for i in $(seq 1 $NUM_SERVERS); do
+                STATE="${SERVER_STATE%.txt}$i.txt"
+                echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
+            done
+            echo "Set up aggregator $(($i+1))"
+            cd ..
+        done
+    fi
+    
 }
+
 
 setup_client() {
     cd client
@@ -156,7 +184,7 @@ setup_client() {
             --server-keys "../$USER_SERVERKEYS"
     )
 
-    # Now do oteh registrations
+    # Now do other registrations
     cd ../server
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
@@ -178,7 +206,6 @@ setup_parameter() {
     export DC_NET_N_SLOTS=$2
     export FOOTPRINT_N_SLOTS=$footprint_n_slots
     export DC_NUM_USER=$3
-
 }
 
 setup_env() {
@@ -247,12 +274,12 @@ single_client_send() {
         STATE="${USER_STATE%.txt}$USER_SEQ.txt"
         PAYLOAD=$(cat $FILENAME)
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
-
+        aggre_port=$((AGGREGATOR_PORT + USER_SEQ % THREAD_NUM + 1))
         RUST_LOG=debug $CMD_PREFIX start-service \
             --user-state "../$STATE" \
             --round $ROUND \
             --bind "localhost:$USER_PORT" \
-            --agg-url "http://localhost:$AGGREGATOR_PORT" &
+            --agg-url "http://localhost:$aggre_port" &
 
         cd ..
         
@@ -265,7 +292,7 @@ single_client_send() {
         cd client
         echo "$PAYLOAD" > $FILENAME
               
-        sleep 2.6 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+        sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
         -X POST \
         -H "Content-Type: text/plain" \
         --data-binary "@$FILENAME"
@@ -276,7 +303,7 @@ single_client_send() {
             echo $USER_SEQ >> "../$SUCCESS_LOG"
         fi)
         cd ..
-        sleep 1.4 && kill_clients
+        sleep 2.4 && kill_clients
 }
 
 multi_client_send_cover() {
@@ -296,11 +323,12 @@ single_client_send_cover() {
         cd client
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
         STATE="${USER_STATE%.txt}$USER_SEQ.txt"
+        aggre_port=$((AGGREGATOR_PORT + USER_SEQ % THREAD_NUM + 1))
         RUST_LOG=debug $CMD_PREFIX start-service \
             --user-state "../$STATE" \
             --round $ROUND \
             --bind "localhost:$USER_PORT" \
-            --agg-url "http://localhost:$AGGREGATOR_PORT" &
+            --agg-url "http://localhost:$aggre_port" &
 
         cd ..
 
@@ -314,7 +342,7 @@ single_client_send_cover() {
             echo $USER_SEQ >> "../$SUCCESS_LOG"
         fi)
         cd ..
-        sleep 1.4 && kill_clients
+        sleep 2.4 && kill_clients
 }
 
 retry_failed_clients() {
@@ -336,21 +364,29 @@ retry_failed_clients() {
 
 # aggregate-evaluation
 aggregate_evaluation(){
-    curl -s POST "http://localhost:$AGGREGATOR_PORT/aggregate-eval"
+    NUM_LEAF_AGGREGATORS=$THREAD_NUM
+    if [[ $NUM_LEAF_AGGREGATORS -gt 0 ]]; then
+        for i in $(seq 1 $NUM_LEAF_AGGREGATORS); do
+            port=$(($AGGREGATOR_PORT+$i))
+            curl -s POST "http://localhost:$port/aggregate-eval" &
+        done
+    fi
 }
 
 # Starts the root aggregator
-start_root_agg() {
+start_agg() {
     NUM_SERVERS=$1
+    NUM_LEAF_AGGREGATORS=$THREAD_NUM
     SERVER_IP=("$@")
     cd aggregator
     echo "starting aggregator..."
     # Build first so that build time doesn't get included in the start time
-    cargo build
+    cargo build --release
 
+    # step 1: start root aggregator
     # Start the aggregator in 5 sec from now
     NOW=$(date +%s)
-    START_TIME=$(($NOW + 5))
+    START_TIME=$(($NOW + 20))
     for i in $(seq 1 $NUM_SERVERS); do
         ip=${SERVER_IP[$i]}
         if [[ $i -eq 1 ]]; then
@@ -365,10 +401,32 @@ start_root_agg() {
         --round $ROUND \
         --bind "localhost:$AGGREGATOR_PORT" \
         --start-time $START_TIME \
-        --round-duration 10000 \
+        --round-duration $ROUND_DURATION \
         --forward-to $FORWARD_TO &
         # --no-persist \
     sleep 1
+
+    # step 2: start leaf aggregators
+    if [[ $NUM_LEAF_AGGREGATORS -gt 0 ]]; then
+        for i in $(seq 1 $NUM_LEAF_AGGREGATORS); do
+            NOW=$(date +%s)
+            START_TIME=$(($NOW + 20))
+            file_name="$AGG_STATE_PREFIX$i.txt"
+            port=$(($AGGREGATOR_PORT+$i))
+            forward_url="http://localhost:$AGGREGATOR_PORT"
+            
+            RUST_LOG=debug $CMD_PREFIX start-service \
+                --agg-state "../$file_name" \
+                --round $ROUND \
+                --bind "localhost:$port" \
+                --start-time $START_TIME \
+                --round-duration $ROUND_DURATION \
+                --forward-to $forward_url &
+                # --no-persist \
+            echo "start aggregator $i" 
+        done
+    fi
+    sleep 5
     cd ..
 }
 
@@ -504,6 +562,36 @@ save_data() {
     curl "http://localhost:$AGGREGATOR_PORT/save-data"
 
 }
+
+# [single2multi] this is for re-setup, to ultilize the dataset of singlethread, changing it to multi-thread
+# in single-thread, there is only one root aggregator; and now, we want several more aggregators.
+re_setup_aggregator(){
+    NUM_SERVERS=$1
+    NUM_LEAF_AGGREGATORS=$THREAD_NUM
+    if [[ $NUM_LEAF_AGGREGATORS -gt 0 ]]; then
+        for i in $(seq 1 $NUM_LEAF_AGGREGATORS); do
+            cd aggregator
+            file_name="$AGG_STATE_PREFIX$i.txt"
+            AGG_REG=$(
+                $CMD_PREFIX new --level 1 --agg-number $i --agg-state "../$file_name" --server-keys "../$AGG_SERVERKEYS")
+            cd ../server
+            for i in $(seq 1 $NUM_SERVERS); do
+                STATE="${SERVER_STATE%.txt}$i.txt"
+                echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
+            done
+            echo "Set up aggregator $(($i+1))"
+            cd ..
+        done
+    fi
+}
+
+# [single2multi] this is to seperate the single dataset to multiple small datasets, for multi-thread purpose
+seperate_dataset(){
+    user_num=$1
+    thread_num=$THREAD_NUM
+    $CMD_PREFIX split-dataset --user-number $user_num --thread-number $thread_num
+}
+
 # Commands with parameters:
 #     encrypt-msg <MSG> takes a plain string. E.g., `./server_ctrl.sh encrypt-msg hello`
 #     get-round-result <ROUND> takes an integer. E.g., `./server_ctrl.sh get-round-result 4`
@@ -515,12 +603,14 @@ elif [[ $1 == "setup-env" ]]; then
     setup_env $2 $3 $4 $5
 elif [[ $1 == "setup-param" ]]; then
     setup_parameter $2 $3 $4
+elif [[ $1 == "resetup-agg" ]]; then
+    re_setup_aggregator ${#SERVER_IP[@]}
 elif [[ $1 == "start-leader" ]]; then
     start_leader
 elif [[ $1 == "start-follower" ]]; then
     start_follower $2 "${SERVER_IP[@]}"
 elif [[ $1 == "start-agg" ]]; then
-    start_root_agg $2 "${SERVER_IP[@]}"
+    start_agg ${#SERVER_IP[@]} "${SERVER_IP[@]}"
 elif [[ $1 == "start-client" ]]; then
     start_client
 # elif [[ $1 == "start-agg" ]]; then
@@ -560,3 +650,4 @@ elif [[ $1 == "save-data" ]]; then
 else
     echo "Did not recognize command"
 fi
+

@@ -10,7 +10,7 @@ pub use crate::util::AggregatorError;
 use crate::{
     agg_state::AggregatorState,
     service::start_service,
-    util::{load_from_stdin, load_state, save_state, save_to_stdout},
+    util::{load_from_stdin, load_state, save_state, save_to_stdout, split_data_collection},
 };
 
 use common::cli_util;
@@ -66,6 +66,17 @@ fn main() -> Result<(), AggregatorError> {
                         .help(
                             "Indicates the level in the aggregation tree of this aggregator. 0 \
                             means this is a leaf aggregator.",
+                        ),
+                )
+                .arg(
+                    Arg::with_name("agg-number")
+                        .short("a")
+                        .long("agg-number")
+                        .required(true)
+                        .takes_value(true)
+                        .value_name("LEVEL")
+                        .help(
+                            "[onlyevaluation] This is for aggregator knowing which file to save or read the msg.",
                         ),
                 )
                 .arg(
@@ -156,6 +167,28 @@ fn main() -> Result<(), AggregatorError> {
                         .help("If this is set, the service will not persist its state to disk"),
                 ),
         )
+        .subcommand(
+            SubCommand::with_name("split-dataset")
+                .about("[single2multi] This is to seperate the single dataset to multiple small datasets, for multi-thread purpose")
+                .arg(
+                    Arg::with_name("user-number")
+                        .short("u")
+                        .long("user-number")
+                        .value_name("USERNUM")
+                        .required(true)
+                        .takes_value(true)
+                        .help("user number in the dataset"),
+                )
+                .arg(
+                    Arg::with_name("thread-number")
+                        .short("m")
+                        .long("thread-number")
+                        .value_name("THREADNUM")
+                        .required(true)
+                        .takes_value(true)
+                        .help("how many piece to seperate into"),
+                ),
+        )
         .get_matches();
 
     if let Some(matches) = matches.subcommand_matches("new") {
@@ -165,9 +198,10 @@ fn main() -> Result<(), AggregatorError> {
         let pubkeys: Vec<ServerPubKeyPackageNoSGX> = cli_util::load_multi(keysfile)?;
 
         let level = cli_util::parse_u32(matches.value_of("level").unwrap())?;
+        let agg_number = cli_util::parse_u32(matches.value_of("agg-number").unwrap())?;
 
         // Make a new state and agg registration. Save the state and and print the registration
-        let (state, reg_blob) = AggregatorState::new(pubkeys, level)?;
+        let (state, reg_blob) = AggregatorState::new(pubkeys, level, agg_number)?;
         let state_path = matches.value_of("agg-state").unwrap();
         save_state(&state_path, &state)?;
         save_to_stdout(&reg_blob)?;
@@ -267,13 +301,23 @@ fn main() -> Result<(), AggregatorError> {
         };
 
         let level = agg_state.level;
-        let state = service::ServiceState {
+        let state = service::ServiceState::new(
             agg_state,
             forward_urls,
             round,
             agg_state_path,
-        };
+        );
         start_service(bind_addr, state, round_dur, start_time, level).unwrap();
+    }
+
+    if let Some(matches) = matches.subcommand_matches("split-dataset") {
+        // Load the parameter
+        let user_num = cli_util::parse_u32(matches.value_of("user-number").unwrap())?;
+        let thread_num = cli_util::parse_u32(matches.value_of("thread-number").unwrap())?;
+
+        // split the dataset
+        split_data_collection(user_num, thread_num);
+        
     }
 
     Ok(())

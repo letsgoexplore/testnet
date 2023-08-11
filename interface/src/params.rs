@@ -21,6 +21,8 @@ pub const DC_NET_ROUNDS_PER_WINDOW: u32 = 100;
 /// A user is allowed to talk this many times per window
 pub const DC_NET_MSGS_PER_WINDOW: u32 = 10;
 
+/// The thread number of the aggregator
+pub const AGGREGATOR_THREAD_NUMBER: usize = 4;
 /// The size of an anytrust shared secret
 pub const SERVER_KEY_LENGTH: usize = DC_NET_MESSAGE_LENGTH;
 
