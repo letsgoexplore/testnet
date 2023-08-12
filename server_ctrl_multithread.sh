@@ -584,10 +584,10 @@ re_setup_aggregator(){
             AGG_REG=$(
                 $CMD_PREFIX new --level 1 --agg-number $i --agg-state "../$file_name" --server-keys "../$AGG_SERVERKEYS")
             cd ../server
-            for i in $(seq 1 $NUM_SERVERS); do
-                STATE="${SERVER_STATE%.txt}$i.txt"
-                echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
-            done
+            # for i in $(seq 1 $NUM_SERVERS); do
+            #     STATE="${SERVER_STATE%.txt}$i.txt"
+            #     echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
+            # done
             echo "Set up aggregator $i"
             cd ..
         done
