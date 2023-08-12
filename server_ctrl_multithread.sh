@@ -24,7 +24,7 @@ SUCCESS_LOG="aggregator/success.txt"
 CLIENT_SERVICE_PORT="9323"
 AGGREGATOR_PORT="18300"
 SERVER_PORT="28942"
-SERVER_IP=("18.116.70.88" "35.180.204.216" "54.177.151.14" "52.196.213.17" "34.219.28.135")
+SERVER_IP=("3.14.7.185" "52.47.154.44" "18.144.69.94" "18.183.239.156" "34.219.28.135")
 
 # -q to reduce clutter
 CMD_PREFIX="cargo run --release -- "
@@ -430,7 +430,7 @@ start_leader() {
     setup_parameter $MESSAGE_LENGTH $NUM_SLOT $NUM_USERS
     cd server
     echo "starting leader..."
-    STATE="${SERVER_STATE%.txt}$LEADER.txt"
+    STATE="${SERVER_STATE%.txt}1.txt"
     leader_ip=${SERVER_IP[0]}
     leader_addr="0.0.0.0:$SERVER_PORT"
     echo "leader addr: $leader_addr"
