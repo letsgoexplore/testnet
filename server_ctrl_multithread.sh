@@ -61,6 +61,7 @@ clean() {
     rm -f $ERROR_LOG || true
     rm -f $SUCCESS_LOG || true
     rm -f $AGG_STATE_PREFIX*.txt || true
+    rm -f ${AGG_DATA%.txt}*.txt || true
     echo "Cleaned"
 }
 
