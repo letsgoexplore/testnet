@@ -26,7 +26,7 @@ eval_multi(){
     rm -f $AGG_DATA || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
     # 
-    num_users=("1024")
+    num_users=("2048")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
     num_follower=4
