@@ -563,17 +563,31 @@ save_data() {
 re_setup_aggregator(){
     NUM_SERVERS=$1
     NUM_LEAF_AGGREGATORS=$THREAD_NUM
+
+    # step 1: regenerate server-keys.txt
+    touch $USER_SERVERKEYS
+    cd server
+    for i in $(seq 1 $NUM_SERVERS); do
+        STATE="${SERVER_STATE%.txt}$i.txt"
+        # Save the server pubkeys
+        $CMD_PREFIX get-pubkeys --server-state "../$STATE" >> "../$USER_SERVERKEYS"
+    done
+    # Copy the pubkeys file to the aggregators
+    cp "../$USER_SERVERKEYS" "../$AGG_SERVERKEYS"
+    cd ..
+
+    # step 2: generate the aggregator
     if [[ $NUM_LEAF_AGGREGATORS -gt 0 ]]; then
         for i in $(seq 1 $NUM_LEAF_AGGREGATORS); do
             cd aggregator
             file_name="$AGG_STATE_PREFIX$i.txt"
             AGG_REG=$(
                 $CMD_PREFIX new --level 1 --agg-number $i --agg-state "../$file_name" --server-keys "../$AGG_SERVERKEYS")
-            # cd ../server
-            # for i in $(seq 1 $NUM_SERVERS); do
-            #     STATE="${SERVER_STATE%.txt}$i.txt"
-            #     echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
-            # done
+            cd ../server
+            for i in $(seq 1 $NUM_SERVERS); do
+                STATE="${SERVER_STATE%.txt}$i.txt"
+                echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
+            done
             echo "Set up aggregator $i"
             cd ..
         done
