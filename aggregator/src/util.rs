@@ -4,6 +4,7 @@ use interface::{UserSubmissionMessageUpdated};
 use common::{cli_util, enclave::EnclaveError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use rayon::prelude::*;
 use log::info;
 
 pub(crate) type Result<T> = core::result::Result<T, AggregatorError>;
@@ -53,7 +54,7 @@ pub(crate) fn split_data_collection(num_user:u32, thread: u32){
 
 	let remainder = num_user % thread;
 	let single_leaf_agg_msg_num = (num_user - remainder)/thread;
-	for i in 0..remainder{
+	(0..remainder).into_par_iter().for_each(|i| {
 		let index_start = (i*(single_leaf_agg_msg_num+1)).try_into().unwrap();
         let index_end  = ((i+1)*(single_leaf_agg_msg_num+1)).try_into().unwrap();
         let data_slice: &[UserSubmissionMessageUpdated] = &data_collection_loaded[index_start..index_end];
@@ -65,8 +66,8 @@ pub(crate) fn split_data_collection(num_user:u32, thread: u32){
         let file = std::fs::File::create(save_path.clone()).unwrap();
         cli_util::save(file, &data_vec).unwrap();
         info!("Data saved to {}", save_path);
-	}
-	for i in remainder..thread{
+	});
+	(remainder..thread).into_par_iter().for_each(|i| {
         let index_start = (i * single_leaf_agg_msg_num + remainder).try_into().unwrap();
         let index_end = ((i+1) * single_leaf_agg_msg_num + remainder).try_into().unwrap();
         let data_slice: &[UserSubmissionMessageUpdated] = &data_collection_loaded[index_start..index_end];
@@ -78,5 +79,5 @@ pub(crate) fn split_data_collection(num_user:u32, thread: u32){
         let file = std::fs::File::create(save_path.clone()).unwrap();
         cli_util::save(file, &data_vec).unwrap();
         info!("Data saved to {}", save_path);
-	}
+	});
 }
