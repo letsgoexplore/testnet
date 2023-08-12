@@ -62,6 +62,7 @@ clean() {
     rm -f $SUCCESS_LOG || true
     rm -f $AGG_STATE_PREFIX*.txt || true
     rm -f ${AGG_DATA%.txt}*.txt || true
+    rm -f ./aggregator/time_recorder.txt || true
     echo "Cleaned"
 }
 
