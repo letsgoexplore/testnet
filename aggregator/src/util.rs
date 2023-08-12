@@ -25,7 +25,11 @@ pub enum AggregatorError {
 
 pub(crate) fn load_state(save_path: &str) -> Result<AggregatorState> {
     let save_file = File::open(save_path)?;
-    Ok(cli_util::load(save_file)?)
+    let mut loaded_state: AggregatorState = cli_util::load(save_file)?;
+    if loaded_state.agg_number.is_none() {
+        loaded_state.agg_number = Some(0);
+    }
+    Ok(loaded_state)
 }
 
 pub(crate) fn save_state(save_path: &str, state: &AggregatorState) -> Result<()> {

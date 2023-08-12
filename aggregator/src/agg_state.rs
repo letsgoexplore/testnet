@@ -37,7 +37,7 @@ pub struct AggregatorState {
     /// The sequence number of aggregator. 
     /// Note: [onlyevaluation] this is only for evaluation use.
     /// This is for aggregator knowing which file to save or read the msg.
-    pub(crate) agg_number: u32,
+    pub(crate) agg_number: Option<u32>,
     /// The observed rate limiting nonces from this window. This is Some iff this aggregator is a
     /// leaf aggregator
     observed_nonces: Option<BTreeSet<RateLimitNonce>>,
@@ -70,7 +70,7 @@ impl AggregatorState {
             signing_key: sk,
             partial_agg: None,
             level,
-            agg_number: agg_number,
+            agg_number: Some(agg_number),
             observed_nonces,
         };
 

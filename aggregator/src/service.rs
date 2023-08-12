@@ -138,7 +138,7 @@ async fn submit_agg(
         ref agg_state,
         ..
     } = handle.deref_mut();
-    let agg_number = agg_state.agg_number;
+    let agg_number = agg_state.agg_number.unwrap();
 
     //step 4: judging whether all msg is sent; if so, save it to file.
     let num_user = 
@@ -175,7 +175,7 @@ async fn save_data_collection(
         ref agg_state,
         ..
     } = *handle;
-    let agg_number = agg_state.agg_number;
+    let agg_number = agg_state.agg_number.unwrap();
     
     //step 2: open data_collection
     let data_collection = &combined_data.data_collection;
@@ -206,7 +206,7 @@ async fn aggregate_eval(
 
     // step 2: load from file
     // let load_start = std::time::Instant::now();
-    let agg_number = agg_state.agg_number;
+    let agg_number = agg_state.agg_number.unwrap();
     let save_path_prefix = "data_collection_";
     let save_path_postfix = ".txt";
     let save_path =  format!("{}{}{}", save_path_prefix, agg_number, save_path_postfix);
