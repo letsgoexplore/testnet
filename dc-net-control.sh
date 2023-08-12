@@ -247,6 +247,8 @@ mitigate_server_state(){
         LOCAL_ADDR="./server/server-state$i.txt"
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         TARGET_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/server-state$i.txt"
+        chmod 400 "pem_key/ss$i.pem"
+        KEY_ADDRESS="pem_key/ss$i.pem"
         scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$TARGET_ADDR"
         echo "success! address:$TARGET_ADDR"
     done
