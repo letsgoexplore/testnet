@@ -291,6 +291,7 @@ async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage){
 async fn submit_agg_from_agg(
     (payload, combined_data): (String, web::Data<CombinedData>),
 ) -> Result<HttpResponse, ApiError> {
+    {
     // step 1: unwrap input
     let combined_data_ref=combined_data.get_ref();
     let state = &combined_data_ref.state;
@@ -308,6 +309,7 @@ async fn submit_agg_from_agg(
     //step 3: add to aggregate
     let agg_data = SubmissionMessage::AggSubmission(data);
     agg_state.add_to_aggregate(&agg_data)?;
+    }
     
     //step 4: judge whether all shares are collected
     if root_data_collection.len() == AGGREGATOR_THREAD_NUMBER {
