@@ -15,7 +15,8 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, SystemTime},
     fs::File, io, env,
-    convert::TryInto
+    convert::TryInto,
+    any::type_name,
 };
 use actix_rt::{
     spawn,
@@ -311,7 +312,7 @@ async fn submit_agg_from_agg(
     //step 4: judge whether all shares are collected
     if root_data_collection.len() == AGGREGATOR_THREAD_NUMBER {
         log_time();
-        force_round_output(state.clone()).await;
+        force_round_output(handle.deref_mut()).await;
         info!("root-agg successfully send msg to server");
     }
 
@@ -342,10 +343,10 @@ async fn force_round_end(
 }
 
 /// root will trigger this function to send msg to server
-async fn force_round_output(state: Arc<Mutex<ServiceState>>){
+async fn force_round_output(state: &mut ServiceState){
     debug!("start round output!");
     let send_timeout = Duration::from_secs(20);
-    let (agg_payload, forward_urls) = get_agg_payload(&*state);
+    let (agg_payload, forward_urls) = get_agg_payload(state);
     debug!("forward_urls is {:?}", forward_urls);
     spawn(
         actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(|r| {
@@ -383,15 +384,10 @@ async fn round_num(
 
 /// Finalizes and serializes the current aggregator state. Returns the pyaload nad all the
 /// forwarding URLs
-fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
+fn get_agg_payload(state: &mut ServiceState) -> (Vec<u8>, Vec<String>) {
     let start = std::time::Instant::now();
-
-    let handle = state.lock().unwrap();
-    let ServiceState {
-        ref agg_state,
-        ref forward_urls,
-        ..
-    } = *handle;
+    let agg_state = state.agg_state;
+    let forward_urls = state.forward_urls;
 
     // Finalize and serialize the aggregate
     let agg = agg_state
