@@ -387,8 +387,8 @@ async fn round_num(
 /// forwarding URLs
 fn get_agg_payload(state: &mut ServiceState) -> (Vec<u8>, Vec<String>) {
     let start = std::time::Instant::now();
-    let agg_state = state.agg_state;
-    let forward_urls = state.forward_urls;
+    let agg_state = &state.agg_state;
+    let forward_urls = &state.forward_urls;
 
     // Finalize and serialize the aggregate
     let agg = agg_state
