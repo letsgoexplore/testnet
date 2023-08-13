@@ -334,7 +334,7 @@ async fn force_round_end(
 
 
     // step 2: force round output
-    force_round_output(state);
+    force_round_output(state.clone());
     // let duration = start.elapsed();
     // debug!("[agg] force_round_end: {:?}", duration);
 
