@@ -324,6 +324,7 @@ setup_remote(){
 agg_eval(){
     ./server_ctrl_multithread.sh stop-all
     ./server_ctrl_multithread.sh start-agg
+    sleep 15
     ./server_ctrl_multithread.sh agg-eval
 }
 
