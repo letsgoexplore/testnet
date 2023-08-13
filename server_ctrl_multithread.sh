@@ -35,6 +35,7 @@ SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 ROUND=0
 ROUND_DURATION=100000
 THREAD_NUM=32
+LOG_TYPE=info
 
 log_time() {
     timestamp=$(date +%s%N)
@@ -375,6 +376,7 @@ start_agg() {
     NUM_SERVERS=$1
     NUM_LEAF_AGGREGATORS=$THREAD_NUM
     SERVER_IP=("$@")
+    export RUST_LOG=$LOG_TYPE
     cd aggregator
     echo "starting aggregator..."
     # Build first so that build time doesn't get included in the start time
