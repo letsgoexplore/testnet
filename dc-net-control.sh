@@ -266,7 +266,7 @@ start_leader(){
         source ~/.bashrc
         cd testnet
         docker start dcnet-5
-        docker exec -dit dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx; \
+        docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx; \
         ./server_ctrl_multithread.sh stop-all;\
         nohup ./server_ctrl_multithread.sh start-leader $dc_net_message_length $dc_net_n_slot $num_users > /dev/null 2>&1 &\"
         cd
@@ -287,7 +287,7 @@ start_follower(){
             source ~/.bashrc
             cd testnet
             docker start dcnet-5
-            docker exec -dit dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx; \
+            docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx; \
             ./server_ctrl_multithread.sh stop-all;\
             nohup ./server_ctrl_multithread.sh start-follower $((i+1)) $dc_net_message_length $dc_net_n_slot $num_users > /dev/null 2>&1 &\"
             cd
