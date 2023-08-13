@@ -214,6 +214,7 @@ update_code(){
         KEY_ADDRESS="pem_key/ss$i.pem"
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd $WORKING_ADDR
+            git config pull.rebase true
             git pull
             cd
             exit
