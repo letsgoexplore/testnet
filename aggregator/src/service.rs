@@ -335,7 +335,7 @@ async fn force_round_end(
 
 
     // step 2: force round output
-    force_round_output(state.clone());
+    force_round_output(state.deref_mut());
     // let duration = start.elapsed();
     // debug!("[agg] force_round_end: {:?}", duration);
 
@@ -505,7 +505,7 @@ async fn round_finalization_loop(
 
         // The round has ended. Serialize the aggregate and forward it in the background. Time out
         // after 1 second
-        let (agg_payload, forward_urls) = get_agg_payload(&state);
+        let (agg_payload, forward_urls) = get_agg_payload(state.deref_mut());
         // debug!("agg_payload.len: {}", agg_payload.len());
         // debug!("forward_urls: {:?}", forward_urls);
 
