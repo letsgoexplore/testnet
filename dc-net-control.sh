@@ -1,6 +1,6 @@
 #!/bin/bash
-SERVER_IP=("3.14.7.185" "52.47.154.44" "18.144.69.94" "18.183.239.156" "34.219.28.135")
-SERVER_AWS_COMMANDS=("ec2-3-14-7-185.us-east-2.compute.amazonaws.com" "ec2-52-47-154-44.eu-west-3.compute.amazonaws.com" "ec2-18-144-69-94.us-west-1.compute.amazonaws.com" "ec2-18-183-239-156.ap-northeast-1.compute.amazonaws.com" "ec2-34-219-28-135.us-west-2.compute.amazonaws.com")
+SERVER_IP=("18.188.164.240" "15.188.33.243" "54.177.208.2" "13.115.33.72" "34.222.93.229")
+SERVER_AWS_COMMANDS=("ec2-18-188-164-240.us-east-2.compute.amazonaws.com" "ec2-15-188-33-243.eu-west-3.compute.amazonaws.com" "ec2-54-177-208-2.us-west-1.compute.amazonaws.com" "ec2-13-115-33-72.ap-northeast-1.compute.amazonaws.com" "ec2-34-222-93-229.us-west-2.compute.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
@@ -262,17 +262,16 @@ start_leader(){
     num_users=$3
     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[0]}
     KEY_ADDRESS="pem_key/ss1.pem"
-    $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND '
+    $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
         source ~/.bashrc
         cd testnet
         docker start dcnet-5
-        docker exec -it dcnet-5 /bin/bash -c "export PATH=/root/.cargo/bin:$PATH; cd sgx; \
-        ./server_ctrl_multithread.sh stop-all; \
-        ./server_ctrl_multithread.sh start-leader $dc_net_message_length $dc_net_n_slot $num_users"
+        docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx; \
+        ./server_ctrl_multithread.sh stop-all;\
+        nohup ./server_ctrl_multithread.sh start-leader $dc_net_message_length $dc_net_n_slot $num_users > /dev/null 2>&1 &\"
         cd
-        echo "start leader"
-        exit
-    '
+        echo \"start leader\"
+    "
 }
 
 start_follower(){
@@ -284,16 +283,15 @@ start_follower(){
     for i in $(seq 1 $num_follower); do
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$i]}
         KEY_ADDRESS="pem_key/ss$((i+1)).pem"
-        $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "dc_net_message_length
+        $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             source ~/.bashrc
             cd testnet
             docker start dcnet-5
-            docker exec -it dcnet-5 /bin/bash -c "export PATH=/root/.cargo/bin:$PATH; cd sgx; \
-            ./server_ctrl_multithread.sh stop-all; \
-            ./server_ctrl_multithread.sh start-follower $((i+1)) $dc_net_message_length $dc_net_n_slot $num_users"
+            docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx; \
+            ./server_ctrl_multithread.sh stop-all;\
+            nohup ./server_ctrl_multithread.sh start-follower $((i+1)) $dc_net_message_length $dc_net_n_slot $num_users > /dev/null 2>&1 &\"
             cd
-            echo "start follower $((i+1))"
-            exit
+            echo \"start follower $((i+1))\"
         "
     done
 }
@@ -420,9 +418,9 @@ elif [[ $1 == "set-param" ]]; then
 elif [[ $1 == "mitigate" ]]; then
     mitigate_server_state ${#SERVER_IP[@]}
 elif [[ $1 == "start-leader" ]]; then
-    start_leader
+    start_leader $2 $3 $4
 elif [[ $1 == "start-follower" ]]; then
-    start_follower $2
+    start_follower $2 $3 $4 $5
 elif [[ $1 == "cal-time" ]]; then
     cal_time $2 $3 $4 $5
 elif [[ $1 == "cal-leader" ]]; then
