@@ -244,7 +244,7 @@ async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage){
     cli_util::save(&mut body, &share).expect("could not serialize share");
 
     // step 2: Send the serialized contents as an HTTP POST to leader/submit-share
-    let timeout_sec = 20;
+    let timeout_sec = 5;
     let base_url = &base_url[0];
     // debug!(
     //     "Sending share to {} with timeout {}s, content is {:?}",
@@ -311,7 +311,7 @@ async fn submit_agg_from_agg(
     //step 4: judge whether all shares are collected
     if root_data_collection.len() == AGGREGATOR_THREAD_NUMBER {
         log_time();
-        force_round_output(state).await;
+        force_round_output(state);
         info!("root-agg successfully send msg to server");
     }
 
@@ -343,7 +343,7 @@ async fn force_round_end(
 
 /// root will trigger this function to send msg to server
 async fn force_round_output(state: &Arc<Mutex<ServiceState>>){
-    let send_timeout = Duration::from_secs(20);
+    let send_timeout = Duration::from_secs(10);
     let (agg_payload, forward_urls) = get_agg_payload(&**state);
 
     spawn(
@@ -401,7 +401,7 @@ fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
 
     // let duration = start.elapsed();
     // debug!("[agg] get_agg_payload: {:?}", duration);
-    debug!("forward_urls is {:?}", forward_urls.clone());
+
     (payload, forward_urls.clone())
 }
 
