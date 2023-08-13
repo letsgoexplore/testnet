@@ -244,7 +244,7 @@ async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage){
     cli_util::save(&mut body, &share).expect("could not serialize share");
 
     // step 2: Send the serialized contents as an HTTP POST to leader/submit-share
-    let timeout_sec = 5;
+    let timeout_sec = 20;
     let base_url = &base_url[0];
     // debug!(
     //     "Sending share to {} with timeout {}s, content is {:?}",
@@ -343,7 +343,7 @@ async fn force_round_end(
 
 /// root will trigger this function to send msg to server
 async fn force_round_output(state: &Arc<Mutex<ServiceState>>){
-    let send_timeout = Duration::from_secs(10);
+    let send_timeout = Duration::from_secs(20);
     let (agg_payload, forward_urls) = get_agg_payload(&**state);
 
     spawn(
