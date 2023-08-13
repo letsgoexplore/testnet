@@ -345,16 +345,25 @@ async fn force_round_end(
 async fn force_round_output(state: &Arc<Mutex<ServiceState>>){
     debug!("start round output!");
     let send_timeout = Duration::from_secs(20);
-    let (agg_payload, forward_urls) = get_agg_payload(&**state);
-    debug!("forward_urls is {:?}", forward_urls);
-    spawn(
-        actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(|r| {
-            if r.is_err() {
-                error!("sending aggregation was hit");
-            }
-        }),
-    );
+    let result = get_agg_payload(&**state);
+    match result {
+        Ok((agg_payload, forward_urls)) => {
+            debug!("forward_urls is {:?}", forward_urls);
+            spawn(
+                actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(|r| {
+                    if r.is_err() {
+                        error!("sending aggregation was hit");
+                    }
+                }),
+            );
 
+        },
+        Err(err_msg) => {
+            error!("Error in get_agg_payload: {}", err_msg);
+        }
+    }
+
+    
     // [onlyevaluation]Start the next round immediately
     // as we will only do evaluation, we will not actually start nextround
     // start_next_round(state.clone());
@@ -383,28 +392,41 @@ async fn round_num(
 
 /// Finalizes and serializes the current aggregator state. Returns the pyaload nad all the
 /// forwarding URLs
-fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
+fn get_agg_payload(state: &Mutex<ServiceState>) -> Result<(Vec<u8>, Vec<String>), &'static str> {
     let start = std::time::Instant::now();
 
-    let handle = state.lock().unwrap();
+    let handle = match state.lock() {
+        Ok(handle) => handle,
+        Err(_) => {
+            debug!("[agg] Failed to lock the state");
+            return Err("Failed to lock the state");
+        }
+    };
+    
     let ServiceState {
         ref agg_state,
         ref forward_urls,
         ..
     } = *handle;
 
-    // Finalize and serialize the aggregate
-    let agg = agg_state
-        .finalize_aggregate()
-        .expect("could not finalize aggregate");
-    let mut payload = Vec::new();
-    cli_util::save(&mut payload, &agg).expect("could not serialize aggregate");
+    let agg = match agg_state.finalize_aggregate() {
+        Ok(agg) => agg,
+        Err(_) => {
+            debug!("[agg] Could not finalize aggregate");
+            return Err("Could not finalize aggregate");
+        }
+    };
 
-    // let duration = start.elapsed();
-    // debug!("[agg] get_agg_payload: {:?}", duration);
+    let mut payload = Vec::new();
+    if let Err(_) = cli_util::save(&mut payload, &agg) {
+        debug!("[agg] Could not serialize aggregate");
+        return Err("Could not serialize aggregate");
+    }
+
     debug!("forward_urls is {:?}", forward_urls.clone());
-    (payload, forward_urls.clone())
+    Ok((payload, forward_urls.clone()))
 }
+
 
 /// Sends a finalized aggregate to base_url/submit-agg for all base_url in forward_urls
 async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
