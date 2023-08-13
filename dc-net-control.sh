@@ -210,6 +210,7 @@ update_code(){
     NUM_SERVERS=$1
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
+        KEY_ADDRESS="pem_key/ss$i.pem"
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd $WORKING_ADDR
             git pull
@@ -256,6 +257,7 @@ mitigate_server_state(){
 
 start_leader(){
     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[0]}
+    KEY_ADDRESS="pem_key/ss1.pem"
     $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND '
         export PATH="$HOME/.cargo/bin:$PATH"
         source ~/.bashrc
