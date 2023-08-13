@@ -308,7 +308,7 @@ cal_leader(){
     send_back
 }
 
-agg_eval(){
+setup_remote(){
     num_follower=$1
     dc_net_message_length=$2
     dc_net_n_slot=$3
@@ -319,8 +319,9 @@ agg_eval(){
     start_leader $dc_net_message_length $dc_net_n_slot $num_users
     start_follower $num_follower $dc_net_message_length $dc_net_n_slot $num_users
     echo "start followers"
+}
 
-    sleep 5
+agg_eval(){
     ./server_ctrl_multithread.sh stop-all
     ./server_ctrl_multithread.sh start-agg
     ./server_ctrl_multithread.sh agg-eval
@@ -405,9 +406,11 @@ elif [[ $1 == "3" ]]; then
     step_3
 elif [[ $1 == "4" ]]; then
     step_4
-elif [[ $1 == "agg-eval" ]]; then
+elif [[ $1 == "set-rem" ]]; then
     # follower length slot user
-    agg_eval $2 $3 $4 $5
+    setup_remote $2 $3 $4 $5
+elif [[ $1 == "agg-eval" ]]; then
+    agg_eval
 elif [[ $1 == "clean" ]]; then
     clean_all ${#SERVER_IP[@]}
 elif [[ $1 == "clean-rem" ]]; then
