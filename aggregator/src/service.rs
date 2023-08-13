@@ -332,10 +332,11 @@ async fn force_round_end(
     // step 1: unwrap input
     let combined_data_ref=combined_data.get_ref();
     let state = &combined_data_ref.state;
+    let mut handle = state.lock().unwrap();
 
 
     // step 2: force round output
-    force_round_output(state.deref_mut());
+    force_round_output(handle.deref_mut());
     // let duration = start.elapsed();
     // debug!("[agg] force_round_end: {:?}", duration);
 
@@ -486,6 +487,7 @@ async fn round_finalization_loop(
     mut start_time: SystemTime,
     level: u32,
 ) { 
+    let mut handle = state.lock().unwrap();
     let one_sec = Duration::from_secs(100);
     let send_timeout = one_sec;
     let propagation_dur = Duration::from_secs(PROPAGATION_SECS);
@@ -505,7 +507,7 @@ async fn round_finalization_loop(
 
         // The round has ended. Serialize the aggregate and forward it in the background. Time out
         // after 1 second
-        let (agg_payload, forward_urls) = get_agg_payload(state.deref_mut());
+        let (agg_payload, forward_urls) = get_agg_payload(handle.deref_mut());
         // debug!("agg_payload.len: {}", agg_payload.len());
         // debug!("forward_urls: {:?}", forward_urls);
 
