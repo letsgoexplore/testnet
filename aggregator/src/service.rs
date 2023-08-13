@@ -312,7 +312,7 @@ async fn submit_agg_from_agg(
     //step 4: judge whether all shares are collected
     if root_data_collection.len() == AGGREGATOR_THREAD_NUMBER {
         log_time();
-        force_round_output(handle.deref_mut()).await;
+        force_round_output(state).await;
         info!("root-agg successfully send msg to server");
     }
 
@@ -332,11 +332,10 @@ async fn force_round_end(
     // step 1: unwrap input
     let combined_data_ref=combined_data.get_ref();
     let state = &combined_data_ref.state;
-    let mut handle = state.lock().unwrap();
 
 
     // step 2: force round output
-    force_round_output(handle.deref_mut());
+    force_round_output(state);
     // let duration = start.elapsed();
     // debug!("[agg] force_round_end: {:?}", duration);
 
@@ -344,10 +343,10 @@ async fn force_round_end(
 }
 
 /// root will trigger this function to send msg to server
-async fn force_round_output(state: &mut ServiceState){
+async fn force_round_output(state: Arc<Mutex<ServiceState>>){
     debug!("start round output!");
     let send_timeout = Duration::from_secs(20);
-    let (agg_payload, forward_urls) = get_agg_payload(state);
+    let (agg_payload, forward_urls) = get_agg_payload(&state);
     debug!("forward_urls is {:?}", forward_urls);
     spawn(
         actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(|r| {
@@ -385,10 +384,15 @@ async fn round_num(
 
 /// Finalizes and serializes the current aggregator state. Returns the pyaload nad all the
 /// forwarding URLs
-fn get_agg_payload(state: &mut ServiceState) -> (Vec<u8>, Vec<String>) {
+fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
     let start = std::time::Instant::now();
-    let agg_state = &state.agg_state;
-    let forward_urls = &state.forward_urls;
+
+    let handle = state.lock().unwrap();
+    let ServiceState {
+        ref agg_state,
+        ref forward_urls,
+        ..
+    } = *handle;
 
     // Finalize and serialize the aggregate
     let agg = agg_state
@@ -487,7 +491,6 @@ async fn round_finalization_loop(
     mut start_time: SystemTime,
     level: u32,
 ) { 
-    let mut handle = state.lock().unwrap();
     let one_sec = Duration::from_secs(100);
     let send_timeout = one_sec;
     let propagation_dur = Duration::from_secs(PROPAGATION_SECS);
@@ -507,7 +510,7 @@ async fn round_finalization_loop(
 
         // The round has ended. Serialize the aggregate and forward it in the background. Time out
         // after 1 second
-        let (agg_payload, forward_urls) = get_agg_payload(handle.deref_mut());
+        let (agg_payload, forward_urls) = get_agg_payload(&state);
         // debug!("agg_payload.len: {}", agg_payload.len());
         // debug!("forward_urls: {:?}", forward_urls);
 
