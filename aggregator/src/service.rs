@@ -531,26 +531,34 @@ async fn round_finalization_loop(
 
         // The round has ended. Serialize the aggregate and forward it in the background. Time out
         // after 1 second
-        let Ok(agg_payload, forward_urls) = get_agg_payload(&state);
+        let result = get_agg_payload(&state);
+        match result {
+            Ok((agg_payload, forward_urls)) => {
+                spawn(
+                    actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(
+                        |r| {
+                            if r.is_err() {
+                                error!("timeout for sending aggregation was hit");
+                            }
+                        },
+                    ),
+                );
+        
+                // Start the next round early
+                start_next_round(state.clone());
+        
+                // The official round start time is right after propagation terminates. We update this so
+                // that end_time is calculated correctly.
+                start_time = start_time + round_dur + propagation_dur;
+            },
+            Err(err_msg) => {
+                error!("Error in get_agg_payload: {}", err_msg);
+            }
+        }
         // debug!("agg_payload.len: {}", agg_payload.len());
         // debug!("forward_urls: {:?}", forward_urls);
 
-        spawn(
-            actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(
-                |r| {
-                    if r.is_err() {
-                        error!("timeout for sending aggregation was hit");
-                    }
-                },
-            ),
-        );
-
-        // Start the next round early
-        start_next_round(state.clone());
-
-        // The official round start time is right after propagation terminates. We update this so
-        // that end_time is calculated correctly.
-        start_time = start_time + round_dur + propagation_dur;
+        
     }
 }
 
