@@ -345,7 +345,7 @@ async fn force_round_end(
 async fn force_round_output(state: &Arc<Mutex<ServiceState>>){
     debug!("start round output!");
     let send_timeout = Duration::from_secs(20);
-    let result = get_agg_payload(&**state);
+    let result = get_agg_payload(&*state);
     match result {
         Ok((agg_payload, forward_urls)) => {
             debug!("forward_urls is {:?}", forward_urls);
