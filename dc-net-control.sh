@@ -179,10 +179,11 @@ clean_remote(){
     NUM_SERVERS=$1
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
+        KEY_ADDRESS="pem_key/ss$i.pem"
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            chmod +x '$WORKING_ADDR/server_ctrl.sh'
+            chmod +x '$WORKING_ADDR/server_ctrl_multithread.sh'
             cd $WORKING_ADDR
-            ./server_ctrl.sh clean
+            ./server_ctrl_multithread.sh clean
             cd
             exit
         "
@@ -197,9 +198,9 @@ set_param(){
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            chmod +x '$WORKING_ADDR/server_ctrl.sh'
+            chmod +x '$WORKING_ADDR/server_ctrl_multithread.sh'
             cd $WORKING_ADDR
-            ./server_ctrl.sh setup-param $dc_net_message_length $dc_net_n_slot $num_user
+            ./server_ctrl_multithread.sh setup-param $dc_net_message_length $dc_net_n_slot $num_user
             cd
             exit
         "
@@ -256,31 +257,42 @@ mitigate_server_state(){
 }
 
 start_leader(){
+    dc_net_message_length=$1
+    dc_net_n_slot=$2
+    num_users=$3
     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[0]}
     KEY_ADDRESS="pem_key/ss1.pem"
     $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND '
-        export PATH="$HOME/.cargo/bin:$PATH"
         source ~/.bashrc
-        cd dc-net/testnet/
-        chmod +x ./script/run_leader.sh
-        docker start dcnet-4
-        docker exec -d dcnet-4 './sgx/script/run_leader.sh'
-        sleep 3
+        cd testnet
+        docker start dcnet-5
+        docker exec -it dcnet-5 /bin/bash -c "export PATH=/root/.cargo/bin:$PATH; cd sgx; \
+        ./server_ctrl_multithread.sh stop-all; \
+        ./server_ctrl_multithread.sh start-leader $dc_net_message_length $dc_net_n_slot $num_users"
         cd
+        echo "start leader"
         exit
     '
 }
 
 start_follower(){
     num_follower=$1
+    dc_net_message_length=$2
+    dc_net_n_slot=$3
+    num_users=$4
+    
     for i in $(seq 1 $num_follower); do
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$i]}
-        $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            export PATH="$HOME/.cargo/bin:$PATH"
+        KEY_ADDRESS="pem_key/ss$((i+1)).pem"
+        $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "dc_net_message_length
             source ~/.bashrc
-            cd dc-net/testnet/
-            ./server_ctrl.sh start-follower $((i+1))
+            cd testnet
+            docker start dcnet-5
+            docker exec -it dcnet-5 /bin/bash -c "export PATH=/root/.cargo/bin:$PATH; cd sgx; \
+            ./server_ctrl_multithread.sh stop-all; \
+            ./server_ctrl_multithread.sh start-follower $((i+1)) $dc_net_message_length $dc_net_n_slot $num_users"
             cd
+            echo "start follower $((i+1))"
             exit
         "
     done
@@ -296,6 +308,23 @@ cal_leader(){
     dc_net_message_length=$4
     cal_time $1 $2 $3 $4
     send_back
+}
+
+agg_eval(){
+    num_follower=$1
+    dc_net_message_length=$2
+    dc_net_n_slot=$3
+    num_users=$4
+    clean_remote ${#SERVER_IP[@]}
+    update_code ${#SERVER_IP[@]}
+    mitigate_server_state ${#SERVER_IP[@]}
+    start_leader $dc_net_message_length $dc_net_n_slot $num_users
+    start_follower $num_follower $dc_net_message_length $dc_net_n_slot $num_users
+    echo "start followers"
+
+    sleep 5
+    ./server_ctrl_multithread.sh stop-all
+    ./server_ctrl_multithread.sh agg-eval
 }
 
 # force_root_round_end() {
@@ -377,8 +406,9 @@ elif [[ $1 == "3" ]]; then
     step_3
 elif [[ $1 == "4" ]]; then
     step_4
-elif [[ $1 == "5" ]]; then
-    step_5
+elif [[ $1 == "agg-eval" ]]; then
+    # follower length slot user
+    agg_eval $2 $3 $4 $5
 elif [[ $1 == "clean" ]]; then
     clean_all ${#SERVER_IP[@]}
 elif [[ $1 == "clean-rem" ]]; then
