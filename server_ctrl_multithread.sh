@@ -361,10 +361,12 @@ retry_failed_clients() {
 aggregate_evaluation(){
     NUM_LEAF_AGGREGATORS=$THREAD_NUM
     if [[ $NUM_LEAF_AGGREGATORS -gt 0 ]]; then
+        echo "start"
         for i in $(seq 1 $NUM_LEAF_AGGREGATORS); do
             port=$(($AGGREGATOR_PORT+$i))
             curl -s POST "http://localhost:$port/aggregate-eval" &
         done
+        echo "done"
     fi
 }
 
