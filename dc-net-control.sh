@@ -386,10 +386,10 @@ stop_remote(){
     NUM_SERVERS=$1
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
+        KEY_ADDRESS="pem_key/ss$i.pem"
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            chmod +x "$WORKING_ADDR/server_ctrl.sh"
             cd $WORKING_ADDR
-            ./server_ctrl.sh stop-all
+            ./server_ctrl_multithread.sh stop-all
             cd
             exit
         "
