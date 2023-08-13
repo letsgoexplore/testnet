@@ -394,7 +394,7 @@ async fn round_num(
 /// forwarding URLs
 fn get_agg_payload(state: &Mutex<ServiceState>) -> Result<(Vec<u8>, Vec<String>), &'static str> {
     let start = std::time::Instant::now();
-
+    debug!("1");
     let handle = match state.lock() {
         Ok(handle) => handle,
         Err(_) => {
@@ -403,6 +403,7 @@ fn get_agg_payload(state: &Mutex<ServiceState>) -> Result<(Vec<u8>, Vec<String>)
         }
     };
     
+    debug!("2");
     let ServiceState {
         ref agg_state,
         ref forward_urls,
@@ -417,6 +418,7 @@ fn get_agg_payload(state: &Mutex<ServiceState>) -> Result<(Vec<u8>, Vec<String>)
         }
     };
 
+    debug!("3");
     let mut payload = Vec::new();
     if let Err(_) = cli_util::save(&mut payload, &agg) {
         debug!("[agg] Could not serialize aggregate");
