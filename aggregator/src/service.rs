@@ -312,7 +312,7 @@ async fn submit_agg_from_agg(
     //step 4: judge whether all shares are collected
     if root_data_collection.len() == AGGREGATOR_THREAD_NUMBER {
         log_time();
-        force_round_output(*state).await;
+        force_round_output(&state).await;
         info!("root-agg successfully send msg to server");
     }
 
@@ -335,7 +335,7 @@ async fn force_round_end(
 
 
     // step 2: force round output
-    force_round_output(*state);
+    force_round_output(&state);
     // let duration = start.elapsed();
     // debug!("[agg] force_round_end: {:?}", duration);
 
