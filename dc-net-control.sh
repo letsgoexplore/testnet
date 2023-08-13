@@ -322,6 +322,7 @@ agg_eval(){
 
     sleep 5
     ./server_ctrl_multithread.sh stop-all
+    ./server_ctrl_multithread.sh start-agg
     ./server_ctrl_multithread.sh agg-eval
 }
 
