@@ -313,10 +313,11 @@ async fn submit_agg_from_agg(
         
         //step 4: judge whether all shares are collected
         if root_data_collection.len() == AGGREGATOR_THREAD_NUMBER {
-            let flag = true;
+            flag = true;
         }
     }   
     if flag {
+        info!("collecting all shares!")
         log_time();
         force_round_output(&*state).await;
         info!("root-agg successfully send msg to server");
