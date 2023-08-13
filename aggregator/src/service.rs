@@ -384,7 +384,7 @@ async fn round_num(
 
 /// Finalizes and serializes the current aggregator state. Returns the pyaload nad all the
 /// forwarding URLs
-async fn get_agg_payload(state: Arc<Mutex<ServiceState>>) -> (Vec<u8>, Vec<String>) {
+fn get_agg_payload(state: Arc<Mutex<ServiceState>>) -> (Vec<u8>, Vec<String>) {
     let start = std::time::Instant::now();
 
     let handle = state.lock().unwrap();
