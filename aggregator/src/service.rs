@@ -531,7 +531,7 @@ async fn round_finalization_loop(
 
         // The round has ended. Serialize the aggregate and forward it in the background. Time out
         // after 1 second
-        let (agg_payload, forward_urls) = get_agg_payload(&state);
+        let Ok(agg_payload, forward_urls) = get_agg_payload(&state);
         // debug!("agg_payload.len: {}", agg_payload.len());
         // debug!("forward_urls: {:?}", forward_urls);
 
