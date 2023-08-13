@@ -317,7 +317,7 @@ async fn submit_agg_from_agg(
         }
     }   
     if flag {
-        info!("collecting all shares!")
+        info!("collecting all shares!");
         log_time();
         force_round_output(&*state).await;
         info!("root-agg successfully send msg to server");
