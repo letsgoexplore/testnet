@@ -429,6 +429,9 @@ start_agg() {
 
 # Starts the anytrust leader
 start_leader() {
+    MESSAGE_LENGTH=$1
+    NUM_SLOT=$2
+    NUM_USERS=$3
     setup_parameter $MESSAGE_LENGTH $NUM_SLOT $NUM_USERS
     cd server
     echo "starting leader..."
@@ -446,6 +449,9 @@ start_leader() {
 
 # Starts the anytrust followers
 start_follower() {
+    MESSAGE_LENGTH=$2
+    NUM_SLOT=$3
+    NUM_USERS=$4
     setup_parameter $MESSAGE_LENGTH $NUM_SLOT $NUM_USERS
     cd server
     STATE="${SERVER_STATE%.txt}$1.txt"
@@ -619,9 +625,9 @@ elif [[ $1 == "setup-param" ]]; then
 elif [[ $1 == "resetup-agg" ]]; then
     re_setup_aggregator $2
 elif [[ $1 == "start-leader" ]]; then
-    start_leader
+    start_leader $2 $3 $4
 elif [[ $1 == "start-follower" ]]; then
-    start_follower $2 "${SERVER_IP[@]}"
+    start_follower $2 $3 $4 $5"${SERVER_IP[@]}"
 elif [[ $1 == "start-agg" ]]; then
     start_agg ${#SERVER_IP[@]} "${SERVER_IP[@]}"
 elif [[ $1 == "start-client" ]]; then
