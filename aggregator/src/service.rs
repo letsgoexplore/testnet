@@ -422,7 +422,7 @@ async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
     info!("Forwarding aggregate to {:?}", forward_urls_reverse);
     for base_url in forward_urls_reverse {
         // Send the serialized contents
-        let timeout_sec = 1;
+        let timeout_sec = 5;
         let client = Client::builder()
         .timeout(Duration::from_secs(timeout_sec))
         .finish();
