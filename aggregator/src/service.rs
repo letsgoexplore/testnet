@@ -311,7 +311,7 @@ async fn submit_agg_from_agg(
     //step 4: judge whether all shares are collected
     if root_data_collection.len() == AGGREGATOR_THREAD_NUMBER {
         log_time();
-        force_round_output(state);
+        force_round_output(state).await();
         info!("root-agg successfully send msg to server");
     }
 
@@ -401,7 +401,7 @@ fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
 
     // let duration = start.elapsed();
     // debug!("[agg] get_agg_payload: {:?}", duration);
-
+    debug!("forward_urls is {:?}", forward_urls.clone());
     (payload, forward_urls.clone())
 }
 
