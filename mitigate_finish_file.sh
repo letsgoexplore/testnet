@@ -58,8 +58,13 @@ mitigate_to_database(){
     LOCAL_ADDR="$FOLDER/aggregator_time_recorder.txt"
     REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/aggregator/time_recorder.txt"
     scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
-    echo "success! server-keys moved"
+    echo "success! agg-recorder moved"
 
+    # mitigate aggregate time-record
+    LOCAL_ADDR="$FOLDER/server_time_recorder.txt"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/time_recorder.txt"
+    scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+    echo "success! server-record moved"
     # mitigate server_ctrl.sh
     # LOCAL_ADDR="$FOLDER/server_ctrl.sh"
     # REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server_ctrl.sh"
