@@ -260,7 +260,6 @@ fn main() -> Result<(), AggregatorError> {
 
     if let Some(matches) = matches.subcommand_matches("start-service") {
         // Load the args
-        env_logger::init();
         let bind_addr = matches.value_of("bind").unwrap().to_string();
         let round = cli_util::parse_u32(matches.value_of("round").unwrap())?;
         let round_dur = {
