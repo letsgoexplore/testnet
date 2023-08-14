@@ -17,7 +17,7 @@ use std::vec::Vec;
 use std::vec;
 use sha2::{Digest, Sha256};
 
-use crate::user_request::EntityId;
+use crate::user_request::{EntityId, UserSubmissionMessageUpdated};
 use crate::ecall_interface_types::{RoundOutput, RoundOutputUpdated};
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -234,5 +234,50 @@ impl MultiSignableUpdated for RoundOutputUpdated {
         }
 
         Ok(verified)
+    }
+}
+
+pub trait SignableUpdated {
+    fn digest(&self) -> Vec<u8>;
+    fn get_sig(&self) -> NoSgxSignature;
+    fn get_pk(&self) -> PublicKey;
+    fn sign(&self, ssk: &NoSgxPrivateKey) -> Result<(NoSgxSignature, PublicKey), ()> {
+        let dig = self.digest();
+
+        let pk: PublicKey = (&SecretKey::from_bytes(&ssk.r).expect("Failed to generate pk from sk bytes")).into();
+        let sk_bytes: [u8; SECRET_KEY_LENGTH] = ssk.r;
+        let pk_bytes: [u8; PUBLIC_KEY_LENGTH] = pk.to_bytes();
+        let mut keypair_bytes: [u8; KEYPAIR_LENGTH] = [0; KEYPAIR_LENGTH];
+        keypair_bytes[..SECRET_KEY_LENGTH].copy_from_slice(&sk_bytes);
+        keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
+
+        let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
+        let sig = NoSgxSignature(keypair.sign(dig.as_slice()).to_bytes().to_vec());
+
+        Ok((sig, pk))
+    }
+}
+
+impl SignableUpdated for UserSubmissionMessageUpdated {
+    fn digest(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.input(b"Begin UserSubmissionMessage");
+        hasher.input(&self.anytrust_group_id);
+        // for id in self.user_ids.iter() {
+        //     hasher.input(id);
+        // }
+        hasher.input(self.user_id);
+        hasher.input(&self.aggregated_msg.digest());
+        hasher.input(b"End UserSubmissionMessage");
+
+        hasher.result().to_vec()
+    }
+
+    fn get_sig(&self) -> NoSgxSignature {
+        self.tee_sig.clone()
+    }
+
+    fn get_pk(&self) -> PublicKey {
+        self.tee_pk
     }
 }

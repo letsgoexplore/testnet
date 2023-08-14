@@ -46,27 +46,6 @@ pub trait Signable {
     }
 }
 
-pub trait SignableUpdated {
-    fn digest(&self) -> Vec<u8>;
-    fn get_sig(&self) -> NoSgxSignature;
-    fn get_pk(&self) -> PublicKey;
-    fn sign(&self, ssk: &NoSgxPrivateKey) -> SgxResult<(NoSgxSignature, PublicKey)> {
-        let dig = self.digest();
-
-        let pk: PublicKey = (&SecretKey::from_bytes(&ssk.r).unwrap()).into();
-        let sk_bytes: [u8; SECRET_KEY_LENGTH] = ssk.r;
-        let pk_bytes: [u8; PUBLIC_KEY_LENGTH] = pk.to_bytes();
-        let mut keypair_bytes: [u8; KEYPAIR_LENGTH] = [0; KEYPAIR_LENGTH];
-        keypair_bytes[..SECRET_KEY_LENGTH].copy_from_slice(&sk_bytes);
-        keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
-
-        let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
-        let sig = NoSgxSignature(keypair.sign(dig.as_slice()).to_bytes().to_vec());
-
-        Ok((sig, pk))
-    }
-}
-
 pub trait SignMutable {
     fn sign_mut(&mut self, _: &SgxSigningKey) -> SgxError;
 }
