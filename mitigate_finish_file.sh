@@ -41,6 +41,13 @@ mitigate_to_database(){
         echo "success! data_collection_$i moved"
     done
 
+    for i in $(seq 1 $NUM_THREAD); do 
+        LOCAL_ADDR="$FOLDER/data_collection_$i.txt" 
+        REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/aggregator/agg_state_$i.txt"
+        scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+        echo "success! data_collection_$i moved"
+    done
+
     # mitigate server-keys
     LOCAL_ADDR="$FOLDER/server-keys.txt"
     REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/aggregator/server-keys.txt"
@@ -100,6 +107,13 @@ database_to_test(){
     for i in $(seq 1 $NUM_THREAD); do 
         LOCAL_ADDR="$FOLDER/data_collection_$i.txt" 
         REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/aggregator/data_collection_$i.txt"
+        scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
+        echo "success! data_collection_$i moved"
+    done
+
+    for i in $(seq 1 $NUM_THREAD); do 
+        LOCAL_ADDR="$FOLDER/data_collection_$i.txt" 
+        REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/aggregator/agg_state_$i.txt"
         scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
         echo "success! data_collection_$i moved"
     done
