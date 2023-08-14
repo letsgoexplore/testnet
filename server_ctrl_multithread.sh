@@ -219,7 +219,7 @@ start_client() {
     for i in $(seq 1 $NUM_USERS); do
         STATE="${USER_STATE%.txt}$i.txt"
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
-        RUST_LOG=debug $CMD_PREFIX start-service \
+        RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
             --user-state ../$STATE \
             --round $ROUND \
             --bind localhost:$USER_PORT \
@@ -271,7 +271,7 @@ single_client_send() {
         PAYLOAD=$(cat $FILENAME)
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
         aggre_port=$((AGGREGATOR_PORT + USER_SEQ % THREAD_NUM + 1))
-        RUST_LOG=debug $CMD_PREFIX start-service \
+        RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
             --user-state "../$STATE" \
             --round $ROUND \
             --bind "localhost:$USER_PORT" \
@@ -320,7 +320,7 @@ single_client_send_cover() {
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
         STATE="${USER_STATE%.txt}$USER_SEQ.txt"
         aggre_port=$((AGGREGATOR_PORT + USER_SEQ % THREAD_NUM + 1))
-        RUST_LOG=debug $CMD_PREFIX start-service \
+        RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
             --user-state "../$STATE" \
             --round $ROUND \
             --bind "localhost:$USER_PORT" \
@@ -376,7 +376,6 @@ start_agg() {
     NUM_SERVERS=$1
     NUM_LEAF_AGGREGATORS=$THREAD_NUM
     SERVER_IP=("$@")
-    export RUST_LOG=$LOG_TYPE
     cd aggregator
     echo "starting aggregator..."
     # Build first so that build time doesn't get included in the start time
@@ -395,7 +394,7 @@ start_agg() {
         fi
     done
     echo "Aggregator Forward-to:$FORWARD_TO"
-    RUST_LOG=debug $CMD_PREFIX start-service \
+    RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
         --agg-state "../$AGG_ROOTSTATE" \
         --round $ROUND \
         --bind "localhost:$AGGREGATOR_PORT" \
@@ -414,7 +413,7 @@ start_agg() {
             port=$(($AGGREGATOR_PORT+$i))
             forward_url="http://localhost:$AGGREGATOR_PORT"
             
-            RUST_LOG=debug $CMD_PREFIX start-service \
+            RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
                 --agg-state "../$file_name" \
                 --round $ROUND \
                 --bind "localhost:$port" \
@@ -441,7 +440,7 @@ start_leader() {
     leader_ip=${SERVER_IP[0]}
     leader_addr="0.0.0.0:$SERVER_PORT"
     echo "leader addr: $leader_addr"
-    RUST_LOG=debug $CMD_PREFIX start-service \
+    RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
         --server-state "../$STATE" \
         --bind $leader_addr &
         # --no-persist \
@@ -462,7 +461,7 @@ start_follower() {
     index=$(($1-1))
     follower_ip=${SERVER_IP[$index]}
     follower_addr="0.0.0.0:$SERVER_PORT"
-    RUST_LOG=debug $CMD_PREFIX start-service \
+    RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
         --server-state "../$STATE" \
         --bind $follower_addr \
         --leader-url $leader_addr &
