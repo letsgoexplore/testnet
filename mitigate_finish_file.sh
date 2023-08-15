@@ -196,7 +196,7 @@ if [[ $1 == "database" ]]; then
     # source AWS Command, Folder-name num_server num_thread/num_leaf_aggregator
     mitigate_to_database $2 $3 $4 $5
 elif [[ $1 == "send-back-recorder" ]]; then
-    send_time_recorder_to_databse
+    send_time_recorder_to_databse $2 $3 $4 $5
 elif [[ $1 == "fromdatabase" ]]; then
     # source AWS Command, Folder-name num_server num_thread/num_leaf_aggregator
     database_to_test $2 $3 $4 $5
