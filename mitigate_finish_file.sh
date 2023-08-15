@@ -65,6 +65,11 @@ mitigate_to_database(){
     REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/time_recorder.txt"
     scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
     echo "success! server-record moved"
+
+    LOCAL_ADDR="$FOLDER/time_recorder_detailed_timestamp.txt"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/time_recorder_detailed_timestamp.txt"
+    scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+    echo "success! server-record moved"
     # mitigate server_ctrl.sh
     # LOCAL_ADDR="$FOLDER/server_ctrl.sh"
     # REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server_ctrl.sh"
@@ -95,6 +100,12 @@ send_time_recorder_to_databse(){
     REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/time_recorder.txt"
     scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
     echo "success! server-record moved"
+
+    LOCAL_ADDR="$FOLDER/time_recorder_detailed_timestamp.txt"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/time_recorder_detailed_timestamp.txt"
+    scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+    echo "success! server-record moved"
+
 }
 
 database_to_test(){

@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, save_output, ServerError},
     ServerState,
 };
-use common::{cli_util, log_time::{log_server_time, log_server_detailed_duration, log_time}};
+use common::{cli_util, log_time::{log_server_time, log_detailed_duration, log_time}};
 use interface::RoundOutputUpdated;
 
 use common::types_nosgx::{
@@ -225,14 +225,14 @@ async fn submit_agg(
         // log input time
         let input_duration = input_start.elapsed();
         debug!("[server] uinput: {:?}", input_duration);
-        log_server_detailed_duration("input", input_duration.as_nanos());
+        log_detailed_duration("input", input_duration.as_nanos());
 
         let unblind_start = Instant::now();
         // Unblind the input
         let share = server_state.unblind_aggregate(&agg_data)?;
         let unblind_duration = unblind_start.elapsed();
         debug!("[server] unblind_aggregate: {:?}", unblind_duration);
-        log_server_detailed_duration("unblind_aggregate", unblind_duration.as_nanos());
+        log_detailed_duration("unblind_aggregate", unblind_duration.as_nanos());
         // log_server_time("finish unblind");
 
         // debug!("unblinded share: {:?}", share);
@@ -279,7 +279,7 @@ async fn submit_agg(
     // log_server_time("AFTER save");
     let duration = start.elapsed();
     debug!("[server] submit_agg: {:?}", duration);
-    log_server_detailed_duration("submit_agg", duration.as_nanos());
+    log_detailed_duration("submit_agg", duration.as_nanos());
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
@@ -314,7 +314,7 @@ async fn submit_share(
 
     let duration = start.elapsed();
     debug!("[server] aggregate_share: {:?}", duration);
-    log_server_detailed_duration("aggregate_share", duration.as_nanos());
+    log_detailed_duration("aggregate_share", duration.as_nanos());
     
     // log_server_time("after merging");
     // If all the shares are in, that's the end of the round

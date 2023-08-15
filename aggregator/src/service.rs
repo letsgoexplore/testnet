@@ -3,7 +3,7 @@ use crate::{
     AggregatorState,
 };
 use common::cli_util;
-use common::log_time::log_time;
+use common::log_time::{log_time, log_detailed_time};
 use common::types_nosgx::{
     AggregatedMessage,
     SubmissionMessage,
@@ -218,6 +218,8 @@ async fn aggregate_eval(
     
     // step 3: aggregate
     log_time();
+    let log_msg = format!("leaf-agg{} start aggregate", agg_number);
+    log_detailed_time(log_msg);
     for data in data_collection_loaded{
         let agg_data = SubmissionMessage::UserSubmission(data);
         agg_state.add_to_aggregate(&agg_data)?;
@@ -229,8 +231,11 @@ async fn aggregate_eval(
     .finalize_aggregate()
     .expect("could not finalize aggregate");
     // debug!("{}'s share is:{:?}, forward-url is {:?}",agg_number, share, forward_urls.clone());
+    let log_msg = format!("leaf-agg{} before sending to root", agg_number);
+    log_detailed_time(log_msg);
     actix_rt::spawn(send_share_to_root(forward_urls.clone(), share));
-    
+    let log_msg = format!("leaf-agg{} after sending to root", agg_number);
+    log_detailed_time(log_msg);
 
     // debug!("[agg] aggregating log time: {:?}", load_duration);
     // debug!("[agg] aggregating time: {:?}", duration);
@@ -291,6 +296,9 @@ async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage){
 async fn submit_agg_from_agg(
     (payload, combined_data): (String, web::Data<CombinedData>),
 ) -> Result<HttpResponse, ApiError> {
+    let log_msg = format!("receiving leaf share");
+    log_detailed_time(log_msg);
+
     // step 1: unwrap input
     let mut flag:bool =false;
     let combined_data_ref=combined_data.get_ref();
@@ -306,10 +314,14 @@ async fn submit_agg_from_agg(
         //step 2: unwrap payload
         let data: AggregatedMessage = cli_util::load(&mut payload.as_bytes())?;
         root_data_collection.push(data.clone());
+        let log_msg = format!("root finish unwrapping msg");
+        log_detailed_time(log_msg);
 
         //step 3: add to aggregate
         let agg_data = SubmissionMessage::AggSubmission(data);
         agg_state.add_to_aggregate(&agg_data)?;
+        let log_msg = format!("root finish aggregating");
+        log_detailed_time(log_msg);
         
         //step 4: judge whether all shares are collected
         if root_data_collection.len() == AGGREGATOR_THREAD_NUMBER {
@@ -318,6 +330,8 @@ async fn submit_agg_from_agg(
     }   
     if flag {
         info!("collecting all shares!");
+        let log_msg = format!("root start output");
+        log_detailed_time(log_msg);
         log_time();
         force_round_output(&*state).await;
         info!("root-agg successfully send msg to server");
