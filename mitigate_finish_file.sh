@@ -78,6 +78,25 @@ mitigate_to_database(){
     # echo "success! data_collection moved"
 }
 
+send_time_recorder_to_databse(){
+    SERVER_AWS_COMMAND=$1
+    FOLDER="$FOLDER_PREFIX/$2"
+    NUM_SERVERS=$3
+    NUM_THREAD=$4
+    
+    # mitigate aggregate time-record
+    LOCAL_ADDR="$FOLDER/aggregator_time_recorder.txt"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/aggregator/time_recorder.txt"
+    scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+    echo "success! agg-recorder moved"
+
+    # mitigate aggregate time-record
+    LOCAL_ADDR="$FOLDER/server_time_recorder.txt"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/time_recorder.txt"
+    scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+    echo "success! server-record moved"
+}
+
 database_to_test(){
     SERVER_AWS_COMMAND=$1
     FOLDER="$FOLDER_PREFIX/$2"
@@ -176,6 +195,8 @@ database_to_test(){
 if [[ $1 == "database" ]]; then
     # source AWS Command, Folder-name num_server num_thread/num_leaf_aggregator
     mitigate_to_database $2 $3 $4 $5
+elif [[ $1 == "send-back-recorder" ]]; then
+    send_time_recorder_to_databse
 elif [[ $1 == "fromdatabase" ]]; then
     # source AWS Command, Folder-name num_server num_thread/num_leaf_aggregator
     database_to_test $2 $3 $4 $5
