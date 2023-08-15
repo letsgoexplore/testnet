@@ -234,8 +234,6 @@ async fn aggregate_eval(
     let log_msg = format!("leaf-agg{} before sending to root", agg_number);
     log_detailed_time(log_msg);
     actix_rt::spawn(send_share_to_root(forward_urls.clone(), share));
-    let log_msg = format!("leaf-agg{} after sending to root", agg_number);
-    log_detailed_time(log_msg);
 
     // debug!("[agg] aggregating log time: {:?}", load_duration);
     // debug!("[agg] aggregating time: {:?}", duration);
@@ -313,6 +311,8 @@ async fn submit_agg_from_agg(
 
         //step 2: unwrap payload
         let data: AggregatedMessage = cli_util::load(&mut payload.as_bytes())?;
+        let log_msg = format!("root already load");
+        log_detailed_time(log_msg);
         root_data_collection.push(data.clone());
         let log_msg = format!("root finish unwrapping msg");
         log_detailed_time(log_msg);
