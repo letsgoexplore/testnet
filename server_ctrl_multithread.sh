@@ -64,6 +64,7 @@ clean() {
     rm -f $AGG_STATE_PREFIX*.txt || true
     rm -f ${AGG_DATA%.txt}*.txt || true
     rm -f ./aggregator/time_recorder.txt || true
+    rm -f ./aggregator/time_recorder_detailed_timestamp.txt || true
     echo "Cleaned"
 }
 
