@@ -302,17 +302,14 @@ async fn submit_agg_from_agg(
     let combined_data_ref=combined_data.get_ref();
     let state = &combined_data_ref.state;
     {
+        //step 2: unwrap payload
+        let data: AggregatedMessage = cli_util::load(&mut payload.as_bytes())?;
         let mut handle = state.lock().unwrap();
         let ServiceState {
             ref mut agg_state,
             ref mut root_data_collection,
             ..
         } = handle.deref_mut();
-
-        //step 2: unwrap payload
-        let log_msg = format!("already lock");
-        log_detailed_time(log_msg);
-        let data: AggregatedMessage = cli_util::load(&mut payload.as_bytes())?;
         let log_msg = format!("root already load");
         log_detailed_time(log_msg);
         root_data_collection.push(data.clone());
