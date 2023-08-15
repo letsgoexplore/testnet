@@ -29,7 +29,7 @@ use actix_web::{
     http::{StatusCode, Uri},
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError,
 };
-use futures::future::FutureExt;
+use futures::future::{FutureExt, join_all};
 use log::{error, info, debug};
 use thiserror::Error;
 
@@ -416,35 +416,46 @@ fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
 /// Sends a finalized aggregate to base_url/submit-agg for all base_url in forward_urls
 async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
     let start = std::time::Instant::now();
-
     let mut forward_urls_reverse = forward_urls.clone();
     forward_urls_reverse.reverse();
     info!("Forwarding aggregate to {:?}", forward_urls_reverse);
+
+    // Create a vector to store all the futures
+    let mut futures = Vec::new();
+
     for base_url in forward_urls_reverse {
-        // Send the serialized contents
-        let timeout_sec = 5;
-        let client = Client::builder()
-        .timeout(Duration::from_secs(timeout_sec))
-        .finish();
-        let post_path: Uri = [&base_url, "/submit-agg"].concat().parse().expect(&format!(
-            "Couldn't not append '/submit-agg' to forward URL {}",
-            base_url
-        ));
-        match client.post(post_path).send_body(payload.clone()).await {
-            Ok(res) => {
-                if res.status() == StatusCode::OK {
-                    info!("Successfully sent finalize aggregate")
-                } else {
-                    error!("Could not send finalized aggregate-msg error: {:?}", res)
-                }
-            }
-            Err(e) => error!("Could not send finalized aggregate-network error: {:?}", e),
-        }
+        let future = send_to_url(base_url, payload.clone());
+        futures.push(future);
     }
+
+    // Await all futures to complete in parallel
+    join_all(futures).await;
 
     // let duration = start.elapsed();
     // debug!("[agg] send_aggregate: {:?}", duration);
 }
+
+async fn send_to_url(base_url: String, payload: Vec<u8>) {
+    let timeout_sec = 5;
+    let client = Client::builder()
+        .timeout(Duration::from_secs(timeout_sec))
+        .finish();
+    let post_path: Uri = [&base_url, "/submit-agg"].concat().parse().expect(&format!(
+        "Couldn't not append '/submit-agg' to forward URL {}",
+        base_url
+    ));
+    match client.post(post_path).send_body(payload).await {
+        Ok(res) => {
+            if res.status() == StatusCode::OK {
+                info!("Successfully sent finalize aggregate")
+            } else {
+                error!("Could not send finalized aggregate-msg error: {:?}", res)
+            }
+        }
+        Err(e) => error!("Could not send finalized aggregate-network error: {:?}", e),
+    }
+}
+
 
 // Saves the state and start the next round
 fn start_next_round(state: Arc<Mutex<ServiceState>>) {

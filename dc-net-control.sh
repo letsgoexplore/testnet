@@ -19,13 +19,13 @@ SUCCESS_LOG="aggregator/success.txt"
 # num_aggregator=1
 # dc_net_message_length=160
 
+
 eval_multi(){
     # remove the log_time_all file
     su ubuntu ./dc-net-control.sh rm-leader-time-log
     rm -f $TIME_LOG_ALL || true
     rm -f $AGG_DATA || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    # 
     num_users=("2048")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
@@ -40,6 +40,7 @@ eval_multi(){
     # dc_net_message_lengths=("20" "40" "60" "80" "100" "120" "140" "160")
     
     for num_user in "${num_users[@]}"; do
+        ./server_ctrl_multithread.sh stop-all
         footprint_n_slots=$(expr 4 \* $dc_net_n_slot)
         export DC_NUM_USER=$num_user
         export DC_NET_MESSAGE_LENGTH=$dc_net_message_length
@@ -134,40 +135,6 @@ eval(){
     done
 }
 
-
-step_1(){
-    # remove the log_time_all file
-    rm_time_log_all_at_leader
-    rm -f $TIME_LOG_ALL || true
-    dc_net_n_slot=$num_user
-    update_code $num_server
-    clean_all $num_server
-    set_param $num_server $dc_net_message_length $dc_net_n_slot
-    echo "finish 1"
-}
-
-step_2(){
-    echo $num_user
-    ./server_ctrl.sh setup-env $dc_net_message_length $dc_net_n_slot $num_server $num_user
-    echo "finish 2"
-}
-
-step_3(){
-    mitigate_server_state $num_server
-}
-
-step_4(){
-    ./server_ctrl.sh start-agg $num_server
-    # echo "finish 6"
-    ./server_ctrl.sh multi $num_user $dc_net_message_length
-}
-
-step_5(){
-    cal_time $num_server $num_aggregator $num_user $dc_net_message_length
-    send_back
-    stop_all
-}
-
 clean_all(){
     NUM_SERVERS=$1
     ./server_ctrl.sh clean
@@ -190,23 +157,6 @@ clean_remote(){
     done
 }
 
-set_param(){
-    NUM_SERVERS=$1
-    dc_net_message_length=$2
-    dc_net_n_slot=$3
-    num_user=$4
-    for i in $(seq 1 $NUM_SERVERS); do 
-        SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
-        $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            chmod +x '$WORKING_ADDR/server_ctrl_multithread.sh'
-            cd $WORKING_ADDR
-            ./server_ctrl_multithread.sh setup-param $dc_net_message_length $dc_net_n_slot $num_user
-            cd
-            exit
-        "
-    done
-}
-
 update_code(){
     NUM_SERVERS=$1
     for i in $(seq 1 $NUM_SERVERS); do 
@@ -217,27 +167,6 @@ update_code(){
             git config pull.rebase true
             git pull
             cd
-            exit
-        "
-    done
-}
-
-update_clean_and_set_param_for_all(){
-    NUM_SERVERS=$1
-    dc_net_message_length=$2
-    dc_net_n_slot=$3
-    # clean local
-    ./server_ctrl.sh clean
-    # update and clean server 
-    for i in $(seq 1 $NUM_SERVERS); do 
-        SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
-        $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            chmod +x ./dc-net/testnet/server_ctrl.sh
-            echo 'before clean'
-            cd ./dc-net/testnet
-            ./server_ctrl.sh clean
-            echo 'clean server'
-            ./server_ctrl.sh setup-param $dc_net_message_length $dc_net_n_slot
             exit
         "
     done
@@ -329,11 +258,6 @@ agg_eval(){
     ./server_ctrl_multithread.sh agg-eval
 }
 
-# force_root_round_end() {
-
-
-# }
-
 cal_time(){
     num_server=$1
     num_aggregator=$2
@@ -369,13 +293,6 @@ send_back(){
     echo "success! address:$TARGET_ADDR"
 }
 
-# send_back_from_remote_aggregator(){
-#     SEQ=$1
-#     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$SEQ]}
-#     TARGET_ADDR=""
-#     SOURCE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/$TIME_LOG_ALL"
-# }
-
 stop_all(){
     NUM_SERVERS=$1
     ./server_ctrl.sh stop-all
@@ -400,16 +317,8 @@ if [[ $1 == "eval" ]]; then
     eval
 elif [[ $1 == "eval-m" ]]; then
     eval_multi
-elif [[ $1 == "1" ]]; then
-    step_1
-elif [[ $1 == "2" ]]; then
-    step_2
-elif [[ $1 == "3" ]]; then
-    step_3
-elif [[ $1 == "4" ]]; then
-    step_4
 elif [[ $1 == "set-rem" ]]; then
-    # follower length slot user
+    # follower slot_length slot_num user_num
     setup_remote $2 $3 $4 $5
 elif [[ $1 == "agg-eval" ]]; then
     agg_eval
@@ -419,17 +328,19 @@ elif [[ $1 == "clean-rem" ]]; then
     clean_remote ${#SERVER_IP[@]}    
 elif [[ $1 == "update" ]]; then
     update_code ${#SERVER_IP[@]}
-elif [[ $1 == "set-param" ]]; then
-    set_param $2 $3 $4 $5
 elif [[ $1 == "mitigate" ]]; then
     mitigate_server_state ${#SERVER_IP[@]}
 elif [[ $1 == "start-leader" ]]; then
+    # slot_length slot_num user_num
     start_leader $2 $3 $4
 elif [[ $1 == "start-follower" ]]; then
+    # follower slot_length slot_num user_num
     start_follower $2 $3 $4 $5
 elif [[ $1 == "cal-time" ]]; then
+    # server_num agg_num user_num slot_length
     cal_time $2 $3 $4 $5
 elif [[ $1 == "cal-leader" ]]; then
+    # server_num agg_num user_num slot_length
     cal_leader $2 $3 $4 $5
 elif [[ $1 == "send-back" ]]; then
     send_back
