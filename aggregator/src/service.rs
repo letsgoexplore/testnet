@@ -591,7 +591,7 @@ pub(crate) async fn start_service(
             cfg.service(submit_agg).service(force_round_end).service(round_num).service(aggregate_eval).service(save_data_collection).service(submit_agg_from_agg);
         })
     })
-    .workers(1)
+    .workers(16)
     .bind(bind_addr)
     .expect("could not bind")
     .run()
