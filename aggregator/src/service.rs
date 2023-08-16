@@ -294,25 +294,25 @@ async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage){
 async fn submit_agg_from_agg(
     (payload, combined_data): (String, web::Data<CombinedData>),
 ) -> Result<HttpResponse, ApiError> {
+    //step 1: unwrap payload
     let log_msg = format!("receiving leaf share");
     log_detailed_time(log_msg);
+    let data: AggregatedMessage = cli_util::load(&mut payload.as_bytes())?;
+    root_data_collection.push(data.clone());
+    let log_msg = format!("root already load");
+    log_detailed_time(log_msg);
 
-    // step 1: unwrap input
+    // step 2: unwrap input
     let mut flag:bool =false;
     let combined_data_ref=combined_data.get_ref();
     let state = &combined_data_ref.state;
     {
-        //step 2: unwrap payload
-        let data: AggregatedMessage = cli_util::load(&mut payload.as_bytes())?;
         let mut handle = state.lock().unwrap();
         let ServiceState {
             ref mut agg_state,
             ref mut root_data_collection,
             ..
         } = handle.deref_mut();
-        let log_msg = format!("root already load");
-        log_detailed_time(log_msg);
-        root_data_collection.push(data.clone());
         let log_msg = format!("root finish unwrapping msg");
         log_detailed_time(log_msg);
 
