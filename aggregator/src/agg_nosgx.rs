@@ -131,7 +131,7 @@ fn add_to_agg(
     // if the current aggregation is empty we create a single-msg aggregation
     if current_aggregation.is_empty() {
         debug!("current aggregation is emtpy");
-        let mut agg = incoming_msg.clone();
+        current_aggregation = incoming_msg.clone();
         match agg.sign_mut(&sk) {
             Ok(()) => (),
             Err(e) => {
