@@ -7,6 +7,7 @@ use interface::{
     DcRoundMessage,
     UserSubmissionMessage,
     SignableUpdated,
+    Xor,
 };
 
 extern crate sha2;
@@ -17,7 +18,7 @@ use hkdf::{Hkdf, InvalidLength};
 use ed25519_dalek::{PublicKey, Signature, Verifier, SignatureError};
 
 use crate::aes_prng::Aes128Rng;
-use crate::types_nosgx::{SharedSecretsDbServer, XorNoSGX};
+use crate::types_nosgx::SharedSecretsDbServer;
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -66,7 +67,7 @@ pub fn derive_round_secret_server(
         hk.expand(&info, &mut seed)?;
 
         let mut rng = MyRng::from_seed(seed);
-        round_secret.xor_mut_nosgx(&DcRoundMessage::rand_from_csprng(&mut rng));
+        round_secret.xor_mut(&DcRoundMessage::rand_from_csprng(&mut rng));
     }
 
     Ok(round_secret)

@@ -147,53 +147,6 @@ impl SignMutable for AggregatedMessage {
     }
 }
 
-pub trait XorNoSGX: Clone {
-    // xor_mut_nosgx computes and sets self = xor(self, other)
-    fn xor_mut_nosgx(&mut self, other: &Self)
-    where
-        Self: Sized;
-
-    // xor_nosgx returns xor(self, other)
-    fn xor_nosgx(&self, other: &Self) -> Self {
-        let mut copy = self.clone();
-        copy.xor_mut_nosgx(other);
-        copy
-    }
-}
-
-impl XorNoSGX for DcRoundMessage {
-    fn xor_mut_nosgx(&mut self, other: &Self) {
-        assert_eq!(
-            self.aggregated_msg.num_rows(),
-            other.aggregated_msg.num_rows()
-        );
-        assert_eq!(
-            self.aggregated_msg.num_columns(),
-            other.aggregated_msg.num_columns()
-        );
-
-        // XOR the scheduling messages
-        for (lhs, rhs) in self
-            .scheduling_msg
-            .as_mut_slice()
-            .iter_mut()
-            .zip(other.scheduling_msg.as_slice().iter())
-        {
-            *lhs ^= rhs;
-        }
-
-        // XOR the round messages
-        for (lhs, rhs) in self
-            .aggregated_msg
-            .as_mut_slice()
-            .iter_mut()
-            .zip(other.aggregated_msg.as_slice().iter())
-        {
-            *lhs ^= rhs;
-        }
-    }
-}
-
 pub enum SubmissionMessage {
     UserSubmission(UserSubmissionMessage),
     AggSubmission(AggregatedMessage),
