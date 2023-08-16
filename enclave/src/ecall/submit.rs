@@ -2,7 +2,6 @@ extern crate interface;
 extern crate sgx_types;
 
 use self::interface::*;
-use crate::crypto::Xor;
 use crate::unseal::UnsealableInto;
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;

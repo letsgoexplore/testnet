@@ -17,7 +17,7 @@ use std::vec::Vec;
 use std::vec;
 use sha2::{Digest, Sha256};
 
-use crate::user_request::{EntityId, UserSubmissionMessage};
+use crate::user_request::{EntityId, UserSubmissionMessage, DcMessage, DcRoundMessage};
 use crate::ecall_interface_types::RoundOutput;
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -263,5 +263,61 @@ impl SignableUpdated for UserSubmissionMessage {
 
     fn get_pk(&self) -> PublicKey {
         self.tee_pk
+    }
+}
+
+// various functions for computing a.xor(b)
+pub trait Xor: Clone {
+    // xor_mut computes and sets self = xor(self, other)
+    fn xor_mut(&mut self, other: &Self)
+    where
+        Self: Sized;
+
+    // xor returns xor(self, other)
+    fn xor(&self, other: &Self) -> Self {
+        let mut copy = self.clone();
+        copy.xor_mut(other);
+        copy
+    }
+}
+
+impl Xor for DcMessage {
+    fn xor_mut(&mut self, other: &Self) {
+        for (lhs, rhs) in self.0.iter_mut().zip(other.0.iter()) {
+            *lhs ^= rhs
+        }
+    }
+}
+
+impl Xor for DcRoundMessage {
+    fn xor_mut(&mut self, other: &Self) {
+        assert_eq!(
+            self.aggregated_msg.num_rows(),
+            other.aggregated_msg.num_rows()
+        );
+        assert_eq!(
+            self.aggregated_msg.num_columns(),
+            other.aggregated_msg.num_columns()
+        );
+
+        // XOR the scheduling messages
+        for (lhs, rhs) in self
+            .scheduling_msg
+            .as_mut_slice()
+            .iter_mut()
+            .zip(other.scheduling_msg.as_slice().iter())
+        {
+            *lhs ^= rhs;
+        }
+
+        // XOR the round messages
+        for (lhs, rhs) in self
+            .aggregated_msg
+            .as_mut_slice()
+            .iter_mut()
+            .zip(other.aggregated_msg.as_slice().iter())
+        {
+            *lhs ^= rhs;
+        }
     }
 }

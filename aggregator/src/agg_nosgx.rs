@@ -8,6 +8,7 @@ use interface::{
     EntityId,
     RateLimitNonce,
     UserSubmissionMessage,
+    Xor,
 
 };
 use common::types_nosgx::{
@@ -15,7 +16,6 @@ use common::types_nosgx::{
     AggregatedMessage,
     Signable,
     SignMutable,
-    XorNoSGX,
     SubmissionMessage,
 };
 use common::funcs_nosgx::verify_user_submission_msg;
@@ -173,7 +173,7 @@ fn add_to_agg(
         current_aggregation.user_ids.extend(&incoming_msg.user_ids);
         current_aggregation
             .aggregated_msg
-            .xor_mut_nosgx(&incoming_msg.aggregated_msg);
+            .xor_mut(&incoming_msg.aggregated_msg);
 
         // sign
         match current_aggregation.sign_mut(&sk){
@@ -282,7 +282,7 @@ fn add_to_agg_user_submit(
         current_aggregation.user_ids.insert(incoming_msg.user_id.clone());
         current_aggregation
             .aggregated_msg
-            .xor_mut_nosgx(&incoming_msg.aggregated_msg);
+            .xor_mut(&incoming_msg.aggregated_msg);
 
         // sign
         match current_aggregation.sign_mut(&sk) {

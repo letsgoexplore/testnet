@@ -11,6 +11,7 @@ use interface::{
     OutputSignature,
     MultiSignable,
     NoSgxProtectedKeyPub,
+    Xor,
 };
 
 use ed25519_dalek::{
@@ -30,7 +31,6 @@ use std::time::Instant;
 
 use common::types_nosgx::{
     SignMutable,
-    XorNoSGX,
     MarshallAs,
     UnmarshalledAs,
     SharedSecretsDbServer,
@@ -275,7 +275,7 @@ pub fn unblind_aggregate_merge(
 ) -> Result<(UnblindedAggregateShareBlob, SharedSecretsDbServer)> {
     let mut round_secret = RoundSecret::default();
     for rs in round_secrets.iter() {
-        round_secret.xor_mut_nosgx(rs);
+        round_secret.xor_mut(rs);
     }
 
     let mut unblind_agg = UnblindedAggregateShare {
@@ -323,11 +323,11 @@ pub fn derive_round_output(
             error!("share {:?} has a different final agg", share);
             return Err(ServerError::UnexpectedError);
         }
-        final_msg.xor_mut_nosgx(&share.key_share);
+        final_msg.xor_mut(&share.key_share);
     }
 
     // Finally xor secrets with the message
-    final_msg.xor_mut_nosgx(&final_aggregation);
+    final_msg.xor_mut(&final_aggregation);
 
     let mut round_output = RoundOutput {
         round,
