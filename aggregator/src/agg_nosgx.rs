@@ -238,14 +238,13 @@ fn add_to_agg_user_submit(
 
     // if the current aggregation is empty we create a single-msg aggregation
     if current_aggregation.is_empty() {
-        let mut agg = AggregatedMessage::default();
         let incoming_msg_clone = incoming_msg.clone();
-        agg.round = incoming_msg_clone.round;
-        agg.anytrust_group_id = incoming_msg_clone.anytrust_group_id;
-        agg.user_ids = BTreeSet::from_iter(vec![incoming_msg_clone.user_id.clone()].into_iter());
-        agg.rate_limit_nonce = incoming_msg_clone.rate_limit_nonce;
-        agg.aggregated_msg = incoming_msg_clone.aggregated_msg;
-        match agg.sign_mut(&sk) {
+        current_aggregation.round = incoming_msg_clone.round;
+        current_aggregation.anytrust_group_id = incoming_msg_clone.anytrust_group_id;
+        current_aggregation.user_ids = BTreeSet::from_iter(vec![incoming_msg_clone.user_id.clone()].into_iter());
+        current_aggregation.rate_limit_nonce = incoming_msg_clone.rate_limit_nonce;
+        current_aggregation.aggregated_msg = incoming_msg_clone.aggregated_msg;
+        match current_aggregation.sign_mut(&sk) {
             Ok(()) => (),
             Err(e) => {
                 error!("can't sign on aggregation: {:?}", e);
