@@ -4,7 +4,6 @@ use crate::user_request::EntityId;
 
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
-use std::vec::Vec;
 
 use rand_core::RngCore;
 use sgx_types::{sgx_ec256_public_t, SGX_ECP256_KEY_SIZE};

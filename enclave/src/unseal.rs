@@ -1,7 +1,4 @@
-use crypto::{
-    SgxPrivateKey,
-    SharedSecretsDbClient,
-};
+use crypto::SharedSecretsDbClient;
 use interface::*;
 use messages_types;
 use serde::de::DeserializeOwned;

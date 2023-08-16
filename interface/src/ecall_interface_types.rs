@@ -1,6 +1,4 @@
-use crate::sgx_protected_keys::SgxProtectedKeyPub;
 use crate::nosgx_protected_keys::{AttestedPublicKey, NoSgxProtectedKeyPub, OutputSignature};
-use crate::sgx_signature::Signature;
 use crate::user_request::EntityId;
 use crate::DcRoundMessage;
 use crate::params::SHARED_SECRET_LENGTH;

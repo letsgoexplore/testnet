@@ -108,8 +108,6 @@ pub mod ecall_allowed {
     use interface::*;
     use EcallId::*;
 
-    use std::collections::BTreeSet;
-
     match_ecall_ids! {
         (
             EcallNewUser,

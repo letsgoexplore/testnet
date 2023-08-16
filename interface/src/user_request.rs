@@ -342,8 +342,6 @@ pub struct UserSubmissionReq {
     pub server_pks: Vec<ServerPubKeyPackage>,
 }
 
-use crate::SgxSignature;
-
 /// A user submitted message that's produced by an enclave
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Serialize, Deserialize, Clone, Default)]
