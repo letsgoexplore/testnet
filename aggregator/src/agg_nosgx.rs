@@ -132,13 +132,10 @@ fn add_to_agg(
     if current_aggregation.is_empty() {
         debug!("current aggregation is emtpy");
         current_aggregation = incoming_msg.clone();
-        match agg.sign_mut(&sk) {
-            Ok(()) => (),
-            Err(e) => {
-                error!("can't sign on aggregation: {:?}", e);
-                return Err(AggregatorError::InvalidParameter);
-            }
-        };
+        agg.sign_mut(&sk).map_err(|e| {
+            error!("can't sign on aggregation: {:?}", e);
+            AggregatorError::InvalidParameter
+        })?;
         return Ok(());
     } else {
         // now that we know both current_aggregation and incoming_msg are not empty
@@ -241,16 +238,13 @@ fn add_to_agg_user_submit(
         let incoming_msg_clone = incoming_msg.clone();
         current_aggregation.round = incoming_msg_clone.round;
         current_aggregation.anytrust_group_id = incoming_msg_clone.anytrust_group_id;
-        current_aggregation.user_ids = BTreeSet::from_iter(vec![incoming_msg_clone.user_id.clone()].into_iter());
+        current_aggregation.user_ids.insert(incoming_msg_clone.user_id.clone());
         current_aggregation.rate_limit_nonce = incoming_msg_clone.rate_limit_nonce;
         current_aggregation.aggregated_msg = incoming_msg_clone.aggregated_msg;
-        match current_aggregation.sign_mut(&sk) {
-            Ok(()) => (),
-            Err(e) => {
-                error!("can't sign on aggregation: {:?}", e);
-                return Err(AggregatorError::InvalidParameter);
-            }
-        };
+        agg.sign_mut(&sk).map_err(|e| {
+            error!("can't sign on aggregation: {:?}", e);
+            AggregatorError::InvalidParameter
+        })?;
         return Ok(());
     } else {
         // now that we know both current_aggregation and incoming_msg are not empty
