@@ -246,8 +246,8 @@ setup_remote(){
     clean_remote ${#SERVER_IP[@]}
     update_code ${#SERVER_IP[@]}
     mitigate_server_state ${#SERVER_IP[@]}
-    start_leader $dc_net_message_length $dc_net_n_slot $num_users
-    start_follower $num_follower $dc_net_message_length $dc_net_n_slot $num_users
+    # start_leader $dc_net_message_length $dc_net_n_slot $num_users
+    # start_follower $num_follower $dc_net_message_length $dc_net_n_slot $num_users
     # echo "start followers"
 }
 
