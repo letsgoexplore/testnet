@@ -227,6 +227,8 @@ async fn aggregate_eval(
     // let duration = start.elapsed();
 
     // step 4: send to root
+    let log_msg = format!("leaf-agg{} before finalize", agg_number);
+    log_detailed_time(log_msg);
     let share:AggregatedMessage = agg_state
     .finalize_aggregate()
     .expect("could not finalize aggregate");
