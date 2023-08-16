@@ -132,7 +132,7 @@ fn add_to_agg(
     if current_aggregation.is_empty() {
         debug!("current aggregation is emtpy");
         current_aggregation = incoming_msg.clone();
-        agg.sign_mut(&sk).map_err(|e| {
+        current_aggregation.sign_mut(&sk).map_err(|e| {
             error!("can't sign on aggregation: {:?}", e);
             AggregatorError::InvalidParameter
         })?;
@@ -241,7 +241,7 @@ fn add_to_agg_user_submit(
         current_aggregation.user_ids.insert(incoming_msg_clone.user_id.clone());
         current_aggregation.rate_limit_nonce = incoming_msg_clone.rate_limit_nonce;
         current_aggregation.aggregated_msg = incoming_msg_clone.aggregated_msg;
-        agg.sign_mut(&sk).map_err(|e| {
+        current_aggregation.sign_mut(&sk).map_err(|e| {
             error!("can't sign on aggregation: {:?}", e);
             AggregatorError::InvalidParameter
         })?;
