@@ -35,7 +35,7 @@ use std::prelude::v1::*;
 use std::collections::{BTreeSet, BTreeMap};
 use std::convert::TryInto;
 
-use core::fmt::{Debug, Formatter};
+use core::fmt::Debug;
 
 use x25519_dalek::{
     StaticSecret,

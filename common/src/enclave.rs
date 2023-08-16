@@ -3,11 +3,9 @@ use sgx_types;
 use sgx_types::*;
 use sgx_urts;
 use sgx_urts::SgxEnclave;
-use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 use interface::*;
-use std::time::Instant;
 
 // error type for enclave operations
 use quick_error::quick_error;
@@ -34,11 +32,6 @@ pub type EnclaveResult<T> = Result<T, EnclaveError>;
 pub struct DcNetEnclave {
     enclave: sgx_urts::SgxEnclave,
 }
-
-use itertools::Itertools;
-use std::iter::FromIterator;
-use std::sync::mpsc;
-use std::thread;
 
 use crate::ecall_wrapper::ecall_allowed;
 

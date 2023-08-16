@@ -1,10 +1,6 @@
-use crypto::SgxSigningKey;
 use crypto::SignMutableSGX;
-use interface::{RoundSecret, SgxSignature, SgxSigningPubKey, NoSgxPrivateKey};
+use interface::NoSgxPrivateKey;
 use sgx_types::SgxError;
-use sha2::Digest;
-use sha2::Sha256;
-use std::vec::Vec;
 
 use interface::{UserSubmissionMessage, SignableUpdated};
 

@@ -5,7 +5,6 @@ mod user;
 use interface::*;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_SUCCESS};
 use sgx_types::{sgx_status_t, SgxResult};
-use unseal::{SealInto, UnsealableInto};
 
 use std::collections::BTreeSet;
 use std::slice;
@@ -21,8 +20,6 @@ macro_rules! match_ecall_ids {
     }
 }
 
-use std::convert::TryFrom;
-use std::string::String;
 use std::vec::Vec;
 
 #[no_mangle]
@@ -93,7 +90,6 @@ macro_rules! unmarshal_or_abort {
     };
 }
 
-use crypto::SgxPrivateKey;
 use env_logger::{Builder, Env};
 use serde::Serialize;
 use sgx_types::SgxError;

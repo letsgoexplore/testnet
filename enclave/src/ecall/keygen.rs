@@ -1,5 +1,4 @@
 use core::convert::TryFrom;
-use crypto::SgxPrivateKey;
 use interface::*;
 use sgx_rand::Rng;
 use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;

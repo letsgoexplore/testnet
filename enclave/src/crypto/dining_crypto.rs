@@ -11,10 +11,8 @@ use sha2::Sha256;
 use self::aes_rng::Aes128Rng;
 use super::*;
 use rand::SeedableRng;
-use sgx_tcrypto::SgxEccHandle;
 use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::Result as FmtResult;
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 
 use ed25519_dalek::PublicKey;
 use x25519_dalek::{

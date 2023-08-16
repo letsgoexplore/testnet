@@ -17,8 +17,6 @@ use std::{ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};
 
-use log::debug;
-
 fn main() -> Result<(), UserError> {
     // Do setup
     env_logger::init();
