@@ -1,6 +1,6 @@
 #!/bin/bash
-SERVER_IP=("3.142.152.137" "35.180.137.142" "52.53.129.235" "54.64.52.125" "35.89.167.47")
-SERVER_AWS_COMMANDS=("ec2-3-142-152-137.us-east-2.compute.amazonaws.com" "ec2-35-180-137-142.eu-west-3.compute.amazonaws.com" "ec2-52-53-129-235.us-west-1.compute.amazonaws.com" "ec2-54-64-52-125.ap-northeast-1.compute.amazonaws.com" "ec2-35-89-167-47.us-west-2.compute.amazonaws.com")
+SERVER_IP=("18.222.104.14" "52.47.136.149" "54.177.246.178" "54.199.62.243" "34.216.204.239" "3.96.51.57" "3.126.59.169" "18.132.246.116" "15.228.149.179" "52.91.27.159")
+SERVER_AWS_COMMANDS=("ec2-18-222-104-14.us-east-2.compute.amazonaws.com" "ec2-52-47-136-149.eu-west-3.compute.amazonaws.com" "ec2-54-177-246-178.us-west-1.compute.amazonaws.com" "ec2-54-199-62-243.ap-northeast-1.compute.amazonaws.com" "ec2-34-216-204-239.us-west-2.compute.amazonaws.com" "ec2-3-96-51-57.ca-central-1.compute.amazonaws.com" "ec2-3-126-59-169.eu-central-1.compute.amazonaws.com" "ec2-18-132-246-116.eu-west-2.compute.amazonaws.com" "ec2-15-228-149-179.sa-east-1.compute.amazonaws.com" "ec2-52-91-27-159.compute-1.amazonaws.com")
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
