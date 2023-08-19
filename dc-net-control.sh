@@ -375,6 +375,7 @@ eval_all(){
         ./server_ctrl_multithread.sh cal-time;\
         echo \"finish calculating time\" \"
     "
+    sleep 120
     ./mitigate_finish_file.sh send-back-recorder $AGG_AWS_COMMAND "m-$num_server-$dc_net_n_slot-$num_users-$dc_net_message_length" $num_server $THREAD_NUM
 }
 
