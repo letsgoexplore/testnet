@@ -353,7 +353,8 @@ eval_all(){
         cd testnet1
         git pull
         docker start dcnet-5
-        docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx; \
+        docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx;\
+        ./server_ctrl_multithread.sh clean;\
         su ubuntu ./dc-net-control.sh set-rem $num_follower $dc_net_message_length $dc_net_n_slot $num_users;\
         for i in {1..5}
         do  
