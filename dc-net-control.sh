@@ -350,26 +350,24 @@ eval_all(){
 
     $SSH_PREFIX $KEY_ADDRESS $AGG_AWS_COMMAND "
         source ~/.bashrc
-        export PATH=/root/.cargo/bin:$PATH
         cd testnet1
         git pull
-        su ubuntu ./dc-net-control.sh set-rem $num_follower $dc_net_message_length $dc_net_n_slot $num_users
+        docker start dcnet-5
+        docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx; \
+        su ubuntu ./dc-net-control.sh set-rem $num_follower $dc_net_message_length $dc_net_n_slot $num_users;\
         for i in {1..5}
         do  
-            echo \"start exp $i\"
             ./dc-net-control.sh agg-eval
             if [ $num_users -gt 4000 ]; then
                 sleep 40
             else
                 sleep 20
             fi
-        done
-
-        su ubuntu ./dc-net-control.sh send-back
-        echo \"finish sending back\"
-
-        ./server_ctrl_multithread.sh cal-time
-        echo \"finish calculating time\"
+        done;\
+        su ubuntu ./dc-net-control.sh send-back;\
+        echo \"finish sending back\";\
+        ./server_ctrl_multithread.sh cal-time;\
+        echo \"finish calculating time\" \"
     "
     ./mitigate_finish_file.sh send-back-recorder $AGG_AWS_COMMAND "m-$num_server-$dc_net_n_slot-$num_users-$dc_net_message_length" $num_server $THREAD_NUM
 }
