@@ -345,6 +345,12 @@ eval_all(){
     dc_net_n_slot=$3
     num_users=$4
 
+    $SSH_PREFIX $KEY_ADDRESS $AGG_AWS_COMMAND "
+        source ~/.bashrc
+        cd testnet1
+        ./server_ctrl_multithread.sh clean;
+    "
+
     echo "sending from database/m-$num_server-$dc_net_n_slot-$num_users-$dc_net_message_length"
     ./mitigate_finish_file.sh fromdatabase $AGG_AWS_COMMAND "m-$num_server-$dc_net_n_slot-$num_users-$dc_net_message_length" $num_server $THREAD_NUM
 
@@ -354,7 +360,6 @@ eval_all(){
         git pull
         docker start dcnet-5
         docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx;\
-        ./server_ctrl_multithread.sh clean;\
         su ubuntu ./dc-net-control.sh set-rem $num_follower $dc_net_message_length $dc_net_n_slot $num_users;\
         for i in {1..5}
         do  
