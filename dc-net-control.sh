@@ -363,7 +363,7 @@ eval_all(){
                 sleep 20
             fi
         done
-        
+
         su ubuntu ./dc-net-control.sh send-back
         echo \"finish sending back\"
 
@@ -377,6 +377,9 @@ if [[ $1 == "eval" ]]; then
     eval
 elif [[ $1 == "eval-m" ]]; then
     eval_multi
+elif [[ $1 == "eval-all" ]]; then
+    # follower slot_length slot_num user_num
+    eval_all $2 $3 $4 $5
 elif [[ $1 == "set-rem" ]]; then
     # follower slot_length slot_num user_num
     setup_remote $2 $3 $4 $5
