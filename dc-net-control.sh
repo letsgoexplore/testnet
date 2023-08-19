@@ -1,6 +1,6 @@
 #!/bin/bash
-SERVER_IP=("18.221.165.58" "35.180.35.198" "54.177.180.131" "43.206.224.32" "34.208.46.57")
-SERVER_AWS_COMMANDS=("ec2-18-221-165-58.us-east-2.compute.amazonaws.com" "ec2-35-180-35-198.eu-west-3.compute.amazonaws.com" "ec2-54-177-180-131.us-west-1.compute.amazonaws.com" "ec2-43-206-224-32.ap-northeast-1.compute.amazonaws.com" "ec2-34-208-46-57.us-west-2.compute.amazonaws.com")
+SERVER_IP=("18.221.165.58" "35.180.35.198" "54.177.180.131" "43.206.224.32" "34.208.46.57" "99.79.63.232" "35.158.121.163" "13.40.111.247" "15.228.163.219" "54.210.239.112")
+SERVER_AWS_COMMANDS=("ec2-18-221-165-58.us-east-2.compute.amazonaws.com" "ec2-35-180-35-198.eu-west-3.compute.amazonaws.com" "ec2-54-177-180-131.us-west-1.compute.amazonaws.com" "ec2-43-206-224-32.ap-northeast-1.compute.amazonaws.com" "ec2-34-208-46-57.us-west-2.compute.amazonaws.com" "ec2-99-79-63-232.ca-central-1.compute.amazonaws.com" "ec2-35-158-121-163.eu-central-1.compute.amazonaws.com" "ec2-13-40-111-247.eu-west-2.compute.amazonaws.com" "ec2-15-228-163-219.sa-east-1.compute.amazonaws.com" "ec2-54-210-239-112.compute-1.amazonaws.com")
 AGG_AWS_COMMAND="ec2-52-15-94-176.us-east-2.compute.amazonaws.com"
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
@@ -13,7 +13,7 @@ AGG_DATA="aggregator/data_collection.txt"
 ERROR_LOG="aggregator/error.txt"
 SUCCESS_LOG="aggregator/success.txt"
 THREAD_NUM=32
-is_WAN=1
+is_WAN=0
 # num_user=10
 # num_leader=1
 # # num_follower=("0" "3" "5" "7")
