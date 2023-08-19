@@ -330,6 +330,8 @@ elif [[ $1 == "eval-m" ]]; then
 elif [[ $1 == "set-rem" ]]; then
     # follower slot_length slot_num user_num
     setup_remote $2 $3 $4 $5
+elif [[ $1 == "start-exp" ]]; then
+    start_exp $2 $3 $4 $5
 elif [[ $1 == "agg-eval" ]]; then
     agg_eval
 elif [[ $1 == "clean" ]]; then
