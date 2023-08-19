@@ -29,10 +29,10 @@ eval_multi(){
     rm -f $TIME_LOG_ALL || true
     rm -f $AGG_DATA || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_users=("2048")
+    num_users=("4000")
     num_leader=1
     # num_follower=("0" "3" "5" "7")
-    num_follower=4
+    num_follower=9
     num_server=$((num_leader + num_follower))
     num_leaf_aggregator=32
     dc_net_message_length=160
