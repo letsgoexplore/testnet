@@ -1,6 +1,7 @@
 #!/bin/bash
 SERVER_IP=("18.222.104.14" "52.47.136.149" "54.177.246.178" "54.199.62.243" "18.246.65.167")
 SERVER_AWS_COMMANDS=("ec2-18-222-104-14.us-east-2.compute.amazonaws.com" "ec2-52-47-136-149.eu-west-3.compute.amazonaws.com" "ec2-54-177-246-178.us-west-1.compute.amazonaws.com" "ec2-54-199-62-243.ap-northeast-1.compute.amazonaws.com" "ec2-18-246-65-167.us-west-2.compute.amazonaws.com")
+AGG_AWS_COMMAND="ec2-52-15-94-176.us-east-2.compute.amazonaws.com"
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
@@ -11,6 +12,8 @@ TIME_LOG_ALL="server/time_recorder_all.txt"
 AGG_DATA="aggregator/data_collection.txt"
 ERROR_LOG="aggregator/error.txt"
 SUCCESS_LOG="aggregator/success.txt"
+THREAD_NUM=32
+is_WAN=0
 # num_user=10
 # num_leader=1
 # # num_follower=("0" "3" "5" "7")
@@ -146,7 +149,9 @@ clean_remote(){
     NUM_SERVERS=$1
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
-        KEY_ADDRESS="pem_key/ss$i.pem"
+        if [ $is_WAN -eq 1 ]; then 
+            KEY_ADDRESS="pem_key/ss$i.pem"
+        fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             chmod +x '$WORKING_ADDR/server_ctrl_multithread.sh'
             cd $WORKING_ADDR
@@ -161,7 +166,9 @@ update_code(){
     NUM_SERVERS=$1
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
-        KEY_ADDRESS="pem_key/ss$i.pem"
+        if [ $is_WAN -eq 1 ]; then 
+            KEY_ADDRESS="pem_key/ss$i.pem"
+        fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd $WORKING_ADDR
             git config pull.rebase true
@@ -180,7 +187,9 @@ mitigate_server_state(){
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         TARGET_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/server-state$i.txt"
         chmod 400 "pem_key/ss$i.pem"
-        KEY_ADDRESS="pem_key/ss$i.pem"
+        if [ $is_WAN -eq 1 ]; then 
+            KEY_ADDRESS="pem_key/ss$i.pem"
+        fi
         scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$TARGET_ADDR"
         echo "success! address:$TARGET_ADDR"
     done
@@ -191,7 +200,9 @@ start_leader(){
     dc_net_n_slot=$2
     num_users=$3
     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[0]}
-    KEY_ADDRESS="pem_key/ss1.pem"
+    if [ $is_WAN -eq 1 ]; then 
+            KEY_ADDRESS="pem_key/ss1.pem"
+    fi
     $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
         source ~/.bashrc
         cd testnet
@@ -212,7 +223,9 @@ start_follower(){
     
     for i in $(seq 1 $num_follower); do
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$i]}
-        KEY_ADDRESS="pem_key/ss$((i+1)).pem"
+        if [ $is_WAN -eq 1 ]; then 
+            KEY_ADDRESS="pem_key/ss$((i+1)).pem"
+        fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             source ~/.bashrc
             cd testnet
@@ -313,7 +326,9 @@ stop_remote(){
     NUM_SERVERS=$1
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
-        KEY_ADDRESS="pem_key/ss$i.pem"
+        if [ $is_WAN -eq 1 ]; then 
+            KEY_ADDRESS="pem_key/ss$i.pem"
+        fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd $WORKING_ADDR
             ./server_ctrl_multithread.sh stop-all
@@ -321,6 +336,41 @@ stop_remote(){
             exit
         "
     done
+}
+
+eval_all(){
+    num_follower=$1
+    num_server=$((num_follower+1))
+    dc_net_message_length=$2
+    dc_net_n_slot=$3
+    num_users=$4
+
+    echo "sending from database/m-$num_server-$dc_net_n_slot-$num_users-$dc_net_message_length"
+    ./mitigate_finish_file.sh fromdatabase $AGG_AWS_COMMAND "m-$num_server-$dc_net_n_slot-$num_users-$dc_net_message_length" $num_server $THREAD_NUM
+
+    $SSH_PREFIX $KEY_ADDRESS $AGG_AWS_COMMAND "
+        source ~/.bashrc
+        cd testnet1
+        git pull
+        su ubuntu ./dc-net-control.sh set-rem $num_follower $dc_net_message_length $dc_net_n_slot $num_users
+        for i in {1..5}
+        do  
+            echo \"start exp $i\"
+            ./dc-net-control.sh agg-eval
+            if [ $num_users -gt 4000 ]; then
+                sleep 40
+            else
+                sleep 20
+            fi
+        done
+        
+        su ubuntu ./dc-net-control.sh send-back
+        echo \"finish sending back\"
+
+        ./server_ctrl_multithread.sh cal-time
+        echo \"finish calculating time\"
+    "
+    ./mitigate_finish_file.sh send-back-recorder $AGG_AWS_COMMAND "m-$num_server-$dc_net_n_slot-$num_users-$dc_net_message_length" $num_server $THREAD_NUM
 }
 
 if [[ $1 == "eval" ]]; then
