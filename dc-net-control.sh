@@ -350,6 +350,7 @@ eval_all(){
 
     $SSH_PREFIX $KEY_ADDRESS $AGG_AWS_COMMAND "
         source ~/.bashrc
+        export PATH=/root/.cargo/bin:$PATH
         cd testnet1
         git pull
         su ubuntu ./dc-net-control.sh set-rem $num_follower $dc_net_message_length $dc_net_n_slot $num_users
