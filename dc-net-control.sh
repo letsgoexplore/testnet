@@ -360,8 +360,9 @@ eval_all(){
         git pull
         docker start dcnet-5
         docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx;\
-        su ubuntu ./dc-net-control.sh set-rem $num_follower $dc_net_message_length $dc_net_n_slot $num_users;\
-        for i in {1..5}
+        echo haha;\
+        nohub su ubuntu ./dc-net-control.sh set-rem $num_follower $dc_net_message_length $dc_net_n_slot $num_users;\
+        nohub for i in {1..5}
         do  
             ./dc-net-control.sh agg-eval
             if [ $num_users -gt 4000 ]; then
@@ -370,9 +371,9 @@ eval_all(){
                 sleep 20
             fi
         done;\
-        su ubuntu ./dc-net-control.sh send-back;\
+        nohub su ubuntu ./dc-net-control.sh send-back;\
         echo \"finish sending back\";\
-        ./server_ctrl_multithread.sh cal-time;\
+        nohub ./server_ctrl_multithread.sh cal-time;\
         echo \"finish calculating time\" \"
     "
     sleep 120
