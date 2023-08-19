@@ -171,8 +171,8 @@ update_code(){
         fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd $WORKING_ADDR
-            git config pull.rebase true
-            git pull
+            git fetch origin master
+            git reset --hard origin/master
             cd
             exit
         "
