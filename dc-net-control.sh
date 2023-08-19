@@ -251,6 +251,16 @@ setup_remote(){
     # echo "start followers"
 }
 
+start_exp(){
+    num_follower=$1
+    dc_net_message_length=$2
+    dc_net_n_slot=$3
+    num_users=$4
+    start_leader $dc_net_message_length $dc_net_n_slot $num_users
+    start_follower $num_follower $dc_net_message_length $dc_net_n_slot $num_users
+    agg_eval
+}
+
 agg_eval(){
     ./server_ctrl_multithread.sh stop-all
     ./server_ctrl_multithread.sh start-agg

@@ -1,17 +1,41 @@
 # -*- coding: utf-8 -*-
 
-def time_cal():
-    # part1: calculate the entire time
-    with open("server/time_recorder.txt", "r") as file:
+def read_timestamps_from_file(filepath):
+    timestamps = []
+    with open(filepath, "r") as file:
         lines = file.readlines()
-        timestamps = [int(line.strip()) for line in lines]
+        for line in lines:
+            line = line.strip()
+            # If the line is empty or too long, set the value to 0
+            if not line or len(line) > 20:
+                timestamps.append(0)
+                continue
+            try:
+                timestamps.append(int(line))
+            except ValueError:
+                # If the line cannot be converted to an integer, set the value to 0
+                timestamps.append(0)
+    return timestamps
 
-    dt1 = timestamps[0]
-    dt2 = timestamps[-1]
+def time_cal():
+    # Read timestamps from aggregator and server files
+    agg_timestamps = read_timestamps_from_file("aggregator/time_recorder.txt")
+    server_timestamps = read_timestamps_from_file("server/time_recorder.txt")
+    
+    group_num = len(server_timestamps) // 2
+    
+    with open("server/result_time.txt", "a") as file:
+        for i in range(group_num):
+            ts1 = agg_timestamps[33*i]
+            ts2 = agg_timestamps[33*i+32]
+            ts3 = server_timestamps[2*i]
+            ts4 = server_timestamps[2*i+1]
 
-
-    time_difference = dt2 - dt1
-    with open("server/time_recorder_all.txt", "a") as file:
-        # file.write(str(time_difference) + "\n")
-        file.write("duration after sending to end:" + str(time_difference) + "ns\n")
-    print(time_difference)
+            agg_runtime = ts2 - ts1
+            server_runtime = ts4 - ts3
+            end2end_time = ts4 - ts1
+            
+            file.write("group" + str(i) + ":\n")
+            file.write("agg_runtime:" + str(agg_runtime) + "ns\n")
+            file.write("server_runtime:" + str(server_runtime) + "ns\n")
+            file.write("end2end_time:" + str(end2end_time) + "ns\n")
