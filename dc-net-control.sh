@@ -146,15 +146,15 @@ client_eval(){
     # num_users=("30" "60" "90" "120" "150" "180" "210")
     num_user=1024
     num_leader=1
-    # num_follower=("0" "3" "5" "7")
-    num_follower=4
-    num_server=$((num_leader + num_follower))
+    num_servers=("5" "8" "16" "32" "64" "128" "256" "512" "1024")
     num_leaf_aggregator=32
     # dc_net_message_length=160
     dc_net_n_slot=1024
-    dc_net_message_lengths=("160" "250" "500" "1000" "2000")
+    # dc_net_message_lengths=("160" "250" "500" "1000" "2000")
+    dc_net_message_length=160
     
-    for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
+    # for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
+    for num_server in "${num_servers[@]}"; do
         ./server_ctrl_multithread.sh stop-all
         echo "dc_net_message_length: $dc_net_message_length" >> $CLINET_TIME_LOG
         footprint_n_slots=$(expr 4 \* $dc_net_n_slot)
