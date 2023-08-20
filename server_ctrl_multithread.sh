@@ -213,7 +213,38 @@ client_eval(){
 
     clean
     setup_parameter $DC_NET_MESSAGE_LENGTH $DC_NET_N_SLOTS $NUM_USERS
-    setup_server $NUM_SERVERS
+    
+    #setup server
+    touch $USER_SERVERKEYS
+    cd server
+
+    # Accumulate the server registration data in this variable. The separator we use is ';'
+    SERVER_REGS=""
+
+    # Make a bunch of servers and save their pubkeys in client/ and aggregator/
+    for i in $(seq 1 $NUM_SERVERS); do
+        STATE="${SERVER_STATE%.txt}$i.txt"
+
+        # Make a new server and save the registration data
+        SERVER_REG=$(
+            $CMD_PREFIX new --server-state "../$STATE"
+        )
+        # Append
+        if [[ i -eq 1 ]]; then
+            SERVER_REGS="$SERVER_REG"
+        else
+            SERVER_REGS="$SERVER_REGS;$SERVER_REG"
+        fi
+
+        # Save the server pubkeys
+        $CMD_PREFIX get-pubkeys --server-state "../$STATE" >> "../$USER_SERVERKEYS"
+    done
+
+    # Copy the pubkeys file to the aggregators
+    cp "../$USER_SERVERKEYS" "../$AGG_SERVERKEYS"
+
+    # Read the regs into a variable
+    IFS=';' read -ra SERVER_REGS <<< "$SERVER_REGS"
     
     cd client
     # Make new clients and capture the registration data
