@@ -143,7 +143,6 @@ client_eval(){
     su ubuntu ./dc-net-control.sh rm-leader-time-log
     rm -f $TIME_LOG_ALL || true
     rm -f $AGG_DATA || true
-    rm -f $CLINET_TIME_LOG || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
     num_users=1024
     num_leader=1
