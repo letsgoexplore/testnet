@@ -165,7 +165,7 @@ client_eval(){
         export FOOTPRINT_N_SLOTS=$footprint_n_slots
         export RUSTFLAGS="-Ctarget-feature=+aes,+ssse3"
         ./server_ctrl_multithread.sh clean
-        ./server_ctrl_multithread.sh client-eval $dc_net_message_length $dc_net_n_slot $num_server $num_user
+        ./server_ctrl_multithread.sh client-eval-setup $dc_net_message_length $dc_net_n_slot $num_server $num_user
     done
 }
 
