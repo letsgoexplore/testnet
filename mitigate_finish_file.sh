@@ -76,7 +76,7 @@ mitigate_to_database(){
     REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/result_time.txt"
     scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
     echo "success! result_time-record moved"
-    
+
     # mitigate server_ctrl.sh
     # LOCAL_ADDR="$FOLDER/server_ctrl.sh"
     # REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server_ctrl.sh"
@@ -171,6 +171,16 @@ database_to_test(){
     scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
     echo "success! server-keys moved"
 
+send_back_client_test(){
+    SERVER_AWS_COMMAND=$1
+    FOLDER="$FOLDER_PREFIX/$2"
+
+    LOCAL_ADDR="$FOLDER/result_time.txt"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/client/result_time.txt"
+    scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
+    echo "success! result_time-record moved"
+}
+
     # # mitigate server_ctrl.sh
     # LOCAL_ADDR="$FOLDER/server_ctrl.sh"
     # REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server_ctrl.sh"
@@ -223,6 +233,8 @@ elif [[ $1 == "send-back-recorder" ]]; then
 elif [[ $1 == "fromdatabase" ]]; then
     # source AWS Command, Folder-name num_server num_thread/num_leaf_aggregator
     database_to_test $2 $3 $4 $5
+elif [[ $1 == "client"]]; then
+    send_back_client_test $2 $3
 else
     echo "command incorrect"
 fi
