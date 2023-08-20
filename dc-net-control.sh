@@ -143,6 +143,7 @@ client_eval(){
     su ubuntu ./dc-net-control.sh rm-leader-time-log
     rm -f $TIME_LOG_ALL || true
     rm -f $AGG_DATA || true
+    rm -f $CLINET_TIME_LOG || true
     # num_users=("30" "60" "90" "120" "150" "180" "210")
     num_users=1024
     num_leader=1
@@ -155,10 +156,11 @@ client_eval(){
     # dc_net_n_slots=("10" "20" "30")
     # dc_net_n_slots=("20" "30" "40" "50")
     # dc_net_n_slots=("5" "10")
-    dc_net_message_lengths=("160" "250" "500" "1000" "2000")
+    dc_net_message_lengths=("160")
     
     for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
         ./server_ctrl_multithread.sh stop-all
+        echo "dc_net_message_length: $dc_net_message_length" >> $CLINET_TIME_LOG
         footprint_n_slots=$(expr 4 \* $dc_net_n_slot)
         export DC_NUM_USER=$num_user
         export DC_NET_MESSAGE_LENGTH=$dc_net_message_length
@@ -445,6 +447,8 @@ elif [[ $1 == "eval-m" ]]; then
 elif [[ $1 == "eval-all" ]]; then
     # follower slot_length slot_num user_num
     eval_all $2 $3 $4 $5
+elif [[ $1 == "eval-all" ]]; then
+    client_eval
 elif [[ $1 == "set-rem" ]]; then
     # follower slot_length slot_num user_num
     setup_remote $2 $3 $4 $5
