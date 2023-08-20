@@ -246,7 +246,7 @@ client_eval(){
     # Read the regs into a variable
     IFS=';' read -ra SERVER_REGS <<< "$SERVER_REGS"
     
-    cd client
+    cd ../client
     # Make new clients and capture the registration data
     USER_REG=$(
         $CMD_PREFIX new \
