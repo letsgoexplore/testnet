@@ -156,7 +156,8 @@ client_eval(){
     # for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
     for num_server in "${num_servers[@]}"; do
         ./server_ctrl_multithread.sh stop-all
-        echo "dc_net_message_length: $dc_net_message_length" >> $CLINET_TIME_LOG
+        # echo "dc_net_message_length: $dc_net_message_length" >> $CLINET_TIME_LOG
+        echo "num_server: $num_server" >> $CLINET_TIME_LOG
         footprint_n_slots=$(expr 4 \* $dc_net_n_slot)
         export DC_NUM_USER=$num_user
         export DC_NET_MESSAGE_LENGTH=$dc_net_message_length
