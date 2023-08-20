@@ -153,9 +153,6 @@ client_eval(){
     num_leaf_aggregator=32
     # dc_net_message_length=160
     dc_net_n_slot=1024
-    # dc_net_n_slots=("10" "20" "30")
-    # dc_net_n_slots=("20" "30" "40" "50")
-    # dc_net_n_slots=("5" "10")
     dc_net_message_lengths=("160")
     
     for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
@@ -447,7 +444,7 @@ elif [[ $1 == "eval-m" ]]; then
 elif [[ $1 == "eval-all" ]]; then
     # follower slot_length slot_num user_num
     eval_all $2 $3 $4 $5
-elif [[ $1 == "eval-all" ]]; then
+elif [[ $1 == "eval-c" ]]; then
     client_eval
 elif [[ $1 == "set-rem" ]]; then
     # follower slot_length slot_num user_num
