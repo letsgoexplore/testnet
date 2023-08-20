@@ -177,7 +177,7 @@ send_back_client_test(){
     FOLDER="$FOLDER_PREFIX/$2"
 
     LOCAL_ADDR="$FOLDER/result_time.txt"
-    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/client/result_time.txt"
+    REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/client/time_recorder.txt"
     scp -i $KEY_ADDRESS "$REMOTE_ADDR" "$LOCAL_ADDR" 
     echo "success! result_time-record moved"
 }
