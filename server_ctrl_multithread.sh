@@ -215,16 +215,16 @@ client_eval(){
     clean
     setup_parameter $DC_NET_MESSAGE_LENGTH $DC_NET_N_SLOTS $NUM_USERS
     setup_server $NUM_SERVERS
-    
-    cd client
-    # Make new clients and capture the registration data
-    USER_REG=$(
-        $CMD_PREFIX new \
-            --num-regs $NUM_USERS \
-            --user-state "../$USER_STATE" \
-            --server-keys "../$USER_SERVERKEYS"
-    )
-    cd ..
+    setup_client $NUM_SERVERS $NUM_USERS
+    # cd client
+    # # Make new clients and capture the registration data
+    # USER_REG=$(
+    #     $CMD_PREFIX new \
+    #         --num-regs $NUM_USERS \
+    #         --user-state "../$USER_STATE" \
+    #         --server-keys "../$USER_SERVERKEYS"
+    # )
+    # cd ..
 
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message(10,$DC_NET_MESSAGE_LENGTH)"
     for i in {1..10}
