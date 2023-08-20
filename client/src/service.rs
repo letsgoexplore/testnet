@@ -123,18 +123,16 @@ async fn encrypt_msg(
 
     // Encrypt the message and send it
 
-    let start_submit = Instant::now();
     let ciphertext = user_state.submit_round_msg(&enclave, *round, msg)?;
-    let duration_submit = start_submit.elapsed();
+    let duration_submit = start.elapsed();
     debug!("[client] submit_round_msg: {:?}", duration_submit);
-    log_client_encrypt_time(duration_submit.as_nanos());
+    log_duration(duration_submit.as_nanos());
 
     debug!("round: {}", ciphertext.round);
     debug!("scheduling_msg.len(): {}", ciphertext.aggregated_msg.scheduling_msg.len());
     debug!("aggregated_msg.len(): {} * {}", ciphertext.aggregated_msg.aggregated_msg.num_rows(), ciphertext.aggregated_msg.aggregated_msg.num_columns());
 
     send_ciphertext(&ciphertext, agg_url).await;
-    log_client_time();
     // Increment the round and save the user state
     *round += 1;
     user_state_path.as_ref().map(|path| {
@@ -145,9 +143,6 @@ async fn encrypt_msg(
         }
     });
 
-    let duration = start.elapsed();
-    debug!("[client] encrypt-msg: {:?}", duration);
-    log_duration(duration.as_nanos());
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 

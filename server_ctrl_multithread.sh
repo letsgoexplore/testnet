@@ -205,7 +205,7 @@ setup_parameter() {
     export DC_NUM_USER=$3
 }
 
-client_eval_setup(){
+client_eval(){
     DC_NET_MESSAGE_LENGTH=$1
     DC_NET_N_SLOTS=$2
     NUM_SERVERS=$3
@@ -219,24 +219,18 @@ client_eval_setup(){
     # Make new clients and capture the registration data
     USER_REG=$(
         $CMD_PREFIX new \
-            --num-regs $NUM_USERS \
+            --num-regs 10 \
             --user-state "../$USER_STATE" \
-            --server-keys "../$USER_SERVERKEYS" &
+            --server-keys "../$USER_SERVERKEYS"
     )
-    sleep 240
-    cd ..   
-}
+    cd ..
 
-client_eval(){
-    DC_NET_MESSAGE_LENGTH=$1
-    DC_NET_N_SLOTS=$2
-    NUM_SERVERS=$3
-    NUM_USERS=$4
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message(10,$DC_NET_MESSAGE_LENGTH)"
     for i in {1..10}
     do
         single_client_send $i
     done
+
 }
 
 setup_env() {
@@ -656,10 +650,8 @@ if [[ $1 == "clean" ]]; then
     clean
 elif [[ $1 == "setup-env" ]]; then
     setup_env $2 $3 $4 $5
-elif [[ $1 == "client-eval-setup" ]]; then
-    client_eval_setup $2 $3 $4 $5
 elif [[ $1 == "client-eval" ]]; then
-    client_eval $2 
+    client_eval $2 $3 $4 $5
 elif [[ $1 == "setup-param" ]]; then
     setup_parameter $2 $3 $4
 elif [[ $1 == "resetup-agg" ]]; then
