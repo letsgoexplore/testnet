@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, UserError},
     UserState,
 };
-use common::{cli_util, enclave::DcNetEnclave, log_time::{log_client_encrypt_time,log_client_time}};
+use common::{cli_util, enclave::DcNetEnclave, log_time::{log_client_encrypt_time,log_client_time, log_duration}};
 use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlobUpdated, UserMsg, DC_NET_MESSAGE_LENGTH, EVALUATE_FLAG};
 
 use core::ops::DerefMut;
@@ -147,7 +147,7 @@ async fn encrypt_msg(
 
     let duration = start.elapsed();
     debug!("[client] encrypt-msg: {:?}", duration);
-
+    log_duration(duration.as_nanos());
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 

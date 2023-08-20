@@ -12,6 +12,7 @@ TIME_LOG_ALL="server/time_recorder_all.txt"
 AGG_DATA="aggregator/data_collection.txt"
 ERROR_LOG="aggregator/error.txt"
 SUCCESS_LOG="aggregator/success.txt"
+CLINET_TIME_LOG="client/time_recorder.txt"
 THREAD_NUM=32
 is_WAN=0
 # num_user=10
@@ -131,6 +132,62 @@ eval(){
         ./server_ctrl.sh start-agg $num_server
         echo "finish 6"
         ./server_ctrl.sh multi $num_user $dc_net_message_length $dc_net_n_slot
+        sleep 3
+        # su - ubuntu ./dc-net-control.sh cal-time $num_server $num_aggregator $num_user $dc_net_message_length
+        # su - ubuntu ./dc-net-control.sh send-back
+        # su - ubuntu ./dc-net-control.sh stop-all
+    done
+}
+
+client_eval(){
+    su ubuntu ./dc-net-control.sh rm-leader-time-log
+    rm -f $TIME_LOG_ALL || true
+    rm -f $AGG_DATA || true
+    # num_users=("30" "60" "90" "120" "150" "180" "210")
+    num_users=1024
+    num_leader=1
+    # num_follower=("0" "3" "5" "7")
+    num_follower=4
+    num_server=$((num_leader + num_follower))
+    num_leaf_aggregator=32
+    # dc_net_message_length=160
+    dc_net_n_slot=1024
+    # dc_net_n_slots=("10" "20" "30")
+    # dc_net_n_slots=("20" "30" "40" "50")
+    # dc_net_n_slots=("5" "10")
+    dc_net_message_lengths=("160" "250" "500" "1000" "2000")
+    
+    for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
+        ./server_ctrl_multithread.sh stop-all
+        footprint_n_slots=$(expr 4 \* $dc_net_n_slot)
+        export DC_NUM_USER=$num_user
+        export DC_NET_MESSAGE_LENGTH=$dc_net_message_length
+        export DC_NET_N_SLOTS=$dc_net_n_slot
+        export FOOTPRINT_N_SLOTS=$footprint_n_slots
+        export RUSTFLAGS="-Ctarget-feature=+aes,+ssse3"
+        # su ubuntu ./dc-net-control.sh update
+        # su ubuntu ./dc-net-control.sh clean
+        # su ubuntu ./dc-net-control.sh set-param $num_server $dc_net_message_length $dc_net_n_slot $num_user
+        echo "finish 1"
+        ./server_ctrl_multithread.sh clean
+        ./server_ctrl_multithread.sh setup-env $dc_net_message_length $dc_net_n_slot $num_server $num_user
+        touch $ERROR_LOG
+        touch $SUCCESS_LOG
+        echo "finish 2"
+        sleep 1
+        # su ubuntu ./dc-net-control.sh mitigate
+        echo "finish 3"
+        sleep 1
+        # su - ubuntu -c ./dc-net-control.sh start-leader
+        # echo "finish 4"
+        # sleep 100
+        # if [[ $num_follower -gt 0 ]]; then
+        #     su - ubuntu -c ./dc-net-control.sh start-followers $num_follower
+        #     echo "finish 5"
+        # fi
+        ./server_ctrl_multithread.sh start-agg $num_server
+        echo "finish 6"
+        ./server_ctrl_multithread.sh multi $num_user $dc_net_message_length $dc_net_n_slot
         sleep 3
         # su - ubuntu ./dc-net-control.sh cal-time $num_server $num_aggregator $num_user $dc_net_message_length
         # su - ubuntu ./dc-net-control.sh send-back
