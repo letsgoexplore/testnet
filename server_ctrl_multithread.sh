@@ -250,7 +250,7 @@ client_eval(){
     # Make new clients and capture the registration data
     USER_REG=$(
         $CMD_PREFIX new \
-            --num-regs 10 \
+            --num-regs $NUM_USERS \
             --user-state "../$USER_STATE" \
             --server-keys "../$USER_SERVERKEYS"
     )
