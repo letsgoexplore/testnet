@@ -206,6 +206,34 @@ setup_parameter() {
     export DC_NUM_USER=$3
 }
 
+client_eval(){
+    DC_NET_MESSAGE_LENGTH=$1
+    DC_NET_N_SLOTS=$2
+    NUM_SERVERS=$3
+    NUM_USERS=$4
+
+    clean
+    setup_parameter $DC_NET_MESSAGE_LENGTH $DC_NET_N_SLOTS $NUM_USERS
+    setup_server $NUM_SERVERS
+    
+    cd client
+    # Make new clients and capture the registration data
+    USER_REG=$(
+        $CMD_PREFIX new \
+            --num-regs $NUM_USERS \
+            --user-state "../$USER_STATE" \
+            --server-keys "../$USER_SERVERKEYS"
+    )
+    cd ..
+
+    python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message(10,$DC_NET_MESSAGE_LENGTH)"
+    for i in {1..10}
+    do
+        single_client_send $i
+    done
+
+}
+
 setup_env() {
     clean
     setup_parameter $1 $2 $4
@@ -266,42 +294,42 @@ test_multi_client() {
 single_client_send() {
     USER_SEQ=$1
     echo "client $USER_SEQ begins to send msg"
-        # start one client at a time
-        cd client
-        FILENAME="message/clientmessage_$(($USER_SEQ-1)).txt"
-        STATE="${USER_STATE%.txt}$USER_SEQ.txt"
-        PAYLOAD=$(cat $FILENAME)
-        USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
-        aggre_port=$((AGGREGATOR_PORT + USER_SEQ % THREAD_NUM + 1))
-        RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
-            --user-state "../$STATE" \
-            --round $ROUND \
-            --bind "localhost:$USER_PORT" \
-            --agg-url "http://localhost:$aggre_port" &
+    # start one client at a time
+    cd client
+    FILENAME="message/clientmessage_$(($USER_SEQ-1)).txt"
+    STATE="${USER_STATE%.txt}$USER_SEQ.txt"
+    PAYLOAD=$(cat $FILENAME)
+    USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
+    aggre_port=$((AGGREGATOR_PORT + USER_SEQ % THREAD_NUM + 1))
+    RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
+        --user-state "../$STATE" \
+        --round $ROUND \
+        --bind "localhost:$USER_PORT" \
+        --agg-url "http://localhost:$aggre_port" &
 
-        cd ..
-        
-        if [[ $ROUND -gt 0 ]]; then
-            PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
-            PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
-        fi
+    cd ..
+    
+    if [[ $ROUND -gt 0 ]]; then
+        PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
+        PAYLOAD="$PAYLOAD,$PREV_ROUND_OUTPUT"
+    fi
 
-        # Do the operation
-        cd client
-        echo "$PAYLOAD" > $FILENAME
-              
-        sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
-        -X POST \
-        -H "Content-Type: text/plain" \
-        --data-binary "@$FILENAME"
-        if [[ $? -ne 0 ]]; then
-            # log error
-            echo $USER_SEQ >> "../$ERROR_LOG"
-        else
-            echo $USER_SEQ >> "../$SUCCESS_LOG"
-        fi)
-        cd ..
-        sleep 2.4 && kill_clients
+    # Do the operation
+    cd client
+    echo "$PAYLOAD" > $FILENAME
+            
+    sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
+    -X POST \
+    -H "Content-Type: text/plain" \
+    --data-binary "@$FILENAME"
+    if [[ $? -ne 0 ]]; then
+        # log error
+        echo $USER_SEQ >> "../$ERROR_LOG"
+    else
+        echo $USER_SEQ >> "../$SUCCESS_LOG"
+    fi)
+    cd ..
+    sleep 2.4 && kill_clients
 }
 
 multi_client_send_cover() {
@@ -623,6 +651,8 @@ if [[ $1 == "clean" ]]; then
     clean
 elif [[ $1 == "setup-env" ]]; then
     setup_env $2 $3 $4 $5
+elif [[ $1 == "client-eval" ]]; then
+    client_eval $2 $3 $4 $5
 elif [[ $1 == "setup-param" ]]; then
     setup_parameter $2 $3 $4
 elif [[ $1 == "resetup-agg" ]]; then

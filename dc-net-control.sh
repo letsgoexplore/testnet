@@ -152,7 +152,7 @@ client_eval(){
     num_leaf_aggregator=32
     # dc_net_message_length=160
     dc_net_n_slot=1024
-    dc_net_message_lengths=("160")
+    dc_net_message_lengths=("160" "250" "500" "1000" "2000")
     
     for dc_net_message_length in "${dc_net_message_lengths[@]}"; do
         ./server_ctrl_multithread.sh stop-all
@@ -163,33 +163,8 @@ client_eval(){
         export DC_NET_N_SLOTS=$dc_net_n_slot
         export FOOTPRINT_N_SLOTS=$footprint_n_slots
         export RUSTFLAGS="-Ctarget-feature=+aes,+ssse3"
-        # su ubuntu ./dc-net-control.sh update
-        # su ubuntu ./dc-net-control.sh clean
-        # su ubuntu ./dc-net-control.sh set-param $num_server $dc_net_message_length $dc_net_n_slot $num_user
-        echo "finish 1"
         ./server_ctrl_multithread.sh clean
-        ./server_ctrl_multithread.sh setup-env $dc_net_message_length $dc_net_n_slot $num_server $num_user
-        touch $ERROR_LOG
-        touch $SUCCESS_LOG
-        echo "finish 2"
-        sleep 1
-        # su ubuntu ./dc-net-control.sh mitigate
-        echo "finish 3"
-        sleep 1
-        # su - ubuntu -c ./dc-net-control.sh start-leader
-        # echo "finish 4"
-        # sleep 100
-        # if [[ $num_follower -gt 0 ]]; then
-        #     su - ubuntu -c ./dc-net-control.sh start-followers $num_follower
-        #     echo "finish 5"
-        # fi
-        ./server_ctrl_multithread.sh start-agg $num_server
-        echo "finish 6"
-        ./server_ctrl_multithread.sh multi $num_user $dc_net_message_length $dc_net_n_slot
-        sleep 3
-        # su - ubuntu ./dc-net-control.sh cal-time $num_server $num_aggregator $num_user $dc_net_message_length
-        # su - ubuntu ./dc-net-control.sh send-back
-        # su - ubuntu ./dc-net-control.sh stop-all
+        ./server_ctrl_multithread.sh client-eval $dc_net_message_length $dc_net_n_slot $num_server $num_user
     done
 }
 
