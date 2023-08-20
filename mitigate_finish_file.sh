@@ -233,7 +233,7 @@ elif [[ $1 == "send-back-recorder" ]]; then
 elif [[ $1 == "fromdatabase" ]]; then
     # source AWS Command, Folder-name num_server num_thread/num_leaf_aggregator
     database_to_test $2 $3 $4 $5
-elif [[ $1 == "client"]]; then
+elif [[ $1 == "client" ]]; then
     send_back_client_test $2 $3
 else
     echo "command incorrect"
