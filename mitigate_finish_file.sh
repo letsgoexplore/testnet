@@ -170,6 +170,7 @@ database_to_test(){
     REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/aggregator/server-keys.txt"
     scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
     echo "success! server-keys moved"
+}
 
 send_back_client_test(){
     SERVER_AWS_COMMAND=$1
@@ -192,7 +193,7 @@ send_back_client_test(){
     # REMOTE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/dc-net-control.sh"
     # scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$REMOTE_ADDR" 
     # echo "success! data_collection moved"
-}
+
 
 # mitigate_to_test(){
 #     SERVER_AWS_COMMAND=$1
