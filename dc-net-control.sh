@@ -146,7 +146,7 @@ client_eval(){
     # num_users=("30" "60" "90" "120" "150" "180" "210")
     num_user=1024
     num_leader=1
-    num_servers=("64" "128" "256" "512" "1024")
+    num_servers=("128" "256" "512" "1024")
     num_leaf_aggregator=32
     # dc_net_message_length=160
     dc_net_n_slot=1024
