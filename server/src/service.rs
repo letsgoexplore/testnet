@@ -291,6 +291,7 @@ async fn submit_share(
     // Unpack state
     // log_server_time("start unpacking");
     let start = Instant::now();
+    log_time();
     let mut handle = state.get_ref().lock().unwrap();
     let group_size = handle.server_state.anytrust_group_size;
     let ServiceState {
