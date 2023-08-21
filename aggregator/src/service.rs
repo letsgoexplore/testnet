@@ -227,6 +227,10 @@ async fn aggregate_eval(
     for data in data_collection_loaded{
         let agg_data = SubmissionMessage::UserSubmission(data);
         agg_state.add_to_aggregate(&agg_data)?;
+        if agg_number==16{
+            let log_msg = format!("leaf-agg{} add to aggregate", agg_number);
+            log_detailed_time(log_msg);
+        }
     }
     // let duration = start.elapsed();
 
