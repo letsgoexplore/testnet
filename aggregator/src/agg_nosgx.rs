@@ -3,7 +3,7 @@ use crate::util::{AggregatorError, Result};
 use ed25519_dalek::{SecretKey, PublicKey};
 extern crate rand;
 use rand::rngs::OsRng;
-
+use rand::Rng;
 use interface::{
     EntityId,
     RateLimitNonce,
@@ -18,6 +18,7 @@ use common::types_nosgx::{
     XorNoSGX,
     SubmissionMessage,
 };
+use common::log_time::{log_detailed_time};
 use common::funcs_nosgx::verify_user_submission_msg;
 use std::collections::BTreeSet;
 use std::iter::FromIterator;
@@ -199,6 +200,18 @@ fn add_to_agg_user_submit(
         &SecretKey,
     ),
 ) -> Result<()> {
+    let mut rng = rand::thread_rng();
+    let rand_num: i32 = rng.gen_range(0..500);
+    let flag:bool=false;
+    if rand_num == 250{
+        flag = true;
+    }
+
+    if flag {
+        let log_msg = format!("random{} start add to agg", rand_num);
+        log_detailed_time(log_msg);
+    }  
+
     let (incoming_msg, current_aggregation, observed_nonces, sk) = input;
 
     // Error if asked to add an empty msg to an empty aggregation
@@ -223,6 +236,11 @@ fn add_to_agg_user_submit(
             return Err(AggregatorError::InvalidParameter);
         }
     }
+
+    if flag {
+        let log_msg = format!("random{} finish verify", rand_num);
+        log_detailed_time(log_msg);
+    } 
 
     // If the set of rate-limit nonces is Some, see if the given nonce appears in it. If so, this
     // message is dropped. If not, add the nonce to the set. If no nonce is provided, error.
@@ -285,6 +303,10 @@ fn add_to_agg_user_submit(
             .aggregated_msg
             .xor_mut_nosgx(&incoming_msg.aggregated_msg);
 
+        if flag {
+            let log_msg = format!("random{} finish xor", rand_num);
+            log_detailed_time(log_msg);
+        } 
         // sign
         match current_aggregation.sign_mut(&sk) {
             Ok(()) => (),
@@ -293,6 +315,11 @@ fn add_to_agg_user_submit(
                 return Err(AggregatorError::InvalidParameter);
             }
         };
+
+        if flag {
+            let log_msg = format!("random{} finish signing", rand_num);
+            log_detailed_time(log_msg);
+        } 
 
         Ok(())
     }   
