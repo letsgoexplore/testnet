@@ -97,14 +97,13 @@ use rand_core::{CryptoRng, RngCore};
 impl DcRoundMessage {
     /// used by signature
     pub fn digest(&self) -> Vec<u8> {
-        let mut b: Vec<u8> = Vec::new();
+        let mut hasher = Sha256::new();
         for i in self.scheduling_msg.iter() {
-            b.extend(&i.to_le_bytes())
+            hasher.input(&i.to_le_bytes());
         }
 
-        b.extend(&self.aggregated_msg.as_row_major());
-
-        b
+        hasher.input(&self.aggregated_msg.as_row_major());
+        hasher.result().to_vec()
     }
 
     pub fn rand_from_csprng<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
