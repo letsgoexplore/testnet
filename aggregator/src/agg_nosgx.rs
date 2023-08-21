@@ -201,7 +201,7 @@ fn add_to_agg_user_submit(
     ),
 ) -> Result<()> {
     let mut rng = rand::thread_rng();
-    let rand_num: i32 = rng.gen_range(0..500);
+    let rand_num: i32 = rng.gen_range(0,500);
     let flag:bool=false;
     if rand_num == 250{
         flag = true;
