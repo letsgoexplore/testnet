@@ -1,7 +1,7 @@
 #!/bin/bash
-SERVER_IP=("3.17.142.115" "13.38.126.187" "54.176.183.215" "13.115.178.105" "34.212.229.166")
-SERVER_AWS_COMMANDS=("ec2-3-17-142-115.us-east-2.compute.amazonaws.com" "ec2-13-38-126-187.eu-west-3.compute.amazonaws.com" "ec2-54-176-183-215.us-west-1.compute.amazonaws.com" "ec2-13-115-178-105.ap-northeast-1.compute.amazonaws.com" "ec2-34-212-229-166.us-west-2.compute.amazonaws.com")
-AGG_AWS_COMMAND="ec2-52-15-94-176.us-east-2.compute.amazonaws.com"
+SERVER_IP=("3.142.122.210" "15.237.41.105" "54.67.28.59" "54.199.249.197" "18.237.202.217")
+SERVER_AWS_COMMANDS=("ec2-3-142-122-210.us-east-2.compute.amazonaws.com" "ec2-15-237-41-105.eu-west-3.compute.amazonaws.com" "ec2-54-67-28-59.us-west-1.compute.amazonaws.com" "ec2-54-199-249-197.ap-northeast-1.compute.amazonaws.com" "ec2-18-237-202-217.us-west-2.compute.amazonaws.com")
+AGG_AWS_COMMAND="ec2-52-14-111-17.us-east-2.compute.amazonaws.com"
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 TIME_LOG_ALL="server/time_recorder_all.txt"
@@ -146,7 +146,7 @@ client_eval(){
     # num_users=("30" "60" "90" "120" "150" "180" "210")
     num_user=1024
     num_leader=1
-    num_servers=("128" "256" "512" "1024")
+    num_servers=("32" "128" "256" "512" "1024")
     num_leaf_aggregator=32
     # dc_net_message_length=160
     dc_net_n_slot=1024
