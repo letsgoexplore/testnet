@@ -18,6 +18,7 @@ use sha2::Digest;
 use sha2::Sha256;
 use std::convert::TryFrom;
 use std::prelude::v1::*;
+use std::env;
 use unseal::SealInto;
 
 use ed25519_dalek::PublicKey;
@@ -119,11 +120,17 @@ fn derive_msg_slot(cur_slot: usize, prev_round_output: &RoundOutput) -> SgxResul
         .filter(|b| **b == 0)
         .count();
     let msg_slot = cur_slot - num_zeros;
+    let dc_net_n_slots = if PARAMETER_FLAG {
+        env::var("DC_NET_N_SLOTS")
+        .unwrap_or_else(|_| "100".to_string())
+        .parse::<usize>()
+        .expect("Invalid DC_NET_N_SLOTS value")}
+    else{DC_NET_N_SLOTS};
 
     // Do a bounds check
     if msg_slot > DC_NET_N_SLOTS {
         error!("❌ can't send. scheduling failure. you need to wait for the next round.
-            \tcur_slot: {}, num_zeros: {}, msg_slot: {}, DC_NET_N_SLOTS:{}", cur_slot, num_zeros, msg_slot, DC_NET_N_SLOTS);
+            \tcur_slot: {}, num_zeros: {}, msg_slot: {}, DC_NET_N_SLOTS:{}", cur_slot, num_zeros, msg_slot, dc_net_n_slots);
         Err(SGX_ERROR_SERVICE_UNAVAILABLE)
     } else {
         Ok(msg_slot)
@@ -136,11 +143,17 @@ fn derive_msg_slot_updated(cur_slot: usize, prev_round_output: &RoundOutputUpdat
         .filter(|b| **b == 0)
         .count();
     let msg_slot = cur_slot - num_zeros;
+    let dc_net_n_slots = if PARAMETER_FLAG {
+        env::var("DC_NET_N_SLOTS")
+        .unwrap_or_else(|_| "100".to_string())
+        .parse::<usize>()
+        .expect("Invalid DC_NET_N_SLOTS value")}
+    else{DC_NET_N_SLOTS};
 
     // Do a bounds check
-    if msg_slot > DC_NET_N_SLOTS {
+    if msg_slot > dc_net_n_slots {
         error!("❌ can't send. scheduling failure. you need to wait for the next round.
-            \tcur_slot: {}, num_zeros: {}, msg_slot: {}, DC_NET_N_SLOTS:{}", cur_slot, num_zeros, msg_slot, DC_NET_N_SLOTS);
+            \tcur_slot: {}, num_zeros: {}, msg_slot: {}, DC_NET_N_SLOTS:{}", cur_slot, num_zeros, msg_slot, dc_net_n_slots);
         Err(SGX_ERROR_SERVICE_UNAVAILABLE)
     } else {
         Ok(msg_slot)
@@ -212,12 +225,24 @@ fn derive_reservation(
 
     let next_slot_idx = h4_to_u32(SCHED_SLOT_IDX, usk, anytrust_group_id, round) as usize;
     let next_slot_val = h4_to_u32(SCHED_SLOT_VAL, usk, anytrust_group_id, round);
+    let dc_net_n_slots = if PARAMETER_FLAG {
+        env::var("DC_NET_N_SLOTS")
+        .unwrap_or_else(|_| "100".to_string())
+        .parse::<usize>()
+        .expect("Invalid DC_NET_N_SLOTS value")}
+    else{DC_NET_N_SLOTS};
+    let footprint_n_slots = if PARAMETER_FLAG {
+        env::var("FOOTPRINT_N_SLOTS")
+        .unwrap_or_else(|_| "100".to_string())
+        .parse::<usize>()
+        .expect("Invalid FOOTPRINT_N_SLOTS value")}
+    else{FOOTPRINT_N_SLOTS};
 
     (
-        prev_slot_idx % FOOTPRINT_N_SLOTS,
-        prev_slot_val % (DC_NET_N_SLOTS as u32),
-        next_slot_idx % FOOTPRINT_N_SLOTS,
-        next_slot_val % (DC_NET_N_SLOTS as u32),
+        prev_slot_idx % footprint_n_slots,
+        prev_slot_val % (dc_net_n_slots as u32),
+        next_slot_idx % footprint_n_slots,
+        next_slot_val % (dc_net_n_slots as u32),
     )
 }
 
@@ -272,12 +297,24 @@ fn derive_reservation_updated(
 
     let next_slot_idx = h4_to_u32(SCHED_SLOT_IDX, usk, anytrust_group_id, round) as usize;
     let next_slot_val = h4_to_u32(SCHED_SLOT_VAL, usk, anytrust_group_id, round);
+    let dc_net_n_slots = if PARAMETER_FLAG {
+        env::var("DC_NET_N_SLOTS")
+        .unwrap_or_else(|_| "100".to_string())
+        .parse::<usize>()
+        .expect("Invalid DC_NET_N_SLOTS value")}
+    else{DC_NET_N_SLOTS};
+    let footprint_n_slots = if PARAMETER_FLAG {
+        env::var("FOOTPRINT_N_SLOTS")
+        .unwrap_or_else(|_| "100".to_string())
+        .parse::<usize>()
+        .expect("Invalid FOOTPRINT_N_SLOTS value")}
+    else{FOOTPRINT_N_SLOTS};
 
     (
-        prev_slot_idx % FOOTPRINT_N_SLOTS,
-        prev_slot_val % (DC_NET_N_SLOTS as u32),
-        next_slot_idx % FOOTPRINT_N_SLOTS,
-        next_slot_val % (DC_NET_N_SLOTS as u32),
+        prev_slot_idx % footprint_n_slots,
+        prev_slot_val % (dc_net_n_slots as u32),
+        next_slot_idx % footprint_n_slots,
+        next_slot_val % (dc_net_n_slots as u32),
     )
 }
 
