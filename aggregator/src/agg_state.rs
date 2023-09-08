@@ -34,6 +34,10 @@ pub struct AggregatorState {
     partial_agg: Option<AggregatedMessage>,
     /// The level in the aggregation tree of this aggregator. 0 means this is a leaf aggregator.
     pub(crate) level: u32,
+    /// The sequence number of aggregator. 
+    /// Note: [onlyevaluation] this is only for evaluation use.
+    /// This is for aggregator knowing which file to save or read the msg.
+    pub(crate) agg_number: Option<u32>,
     /// The observed rate limiting nonces from this window. This is Some iff this aggregator is a
     /// leaf aggregator
     observed_nonces: Option<BTreeSet<RateLimitNonce>>,
@@ -45,6 +49,7 @@ impl AggregatorState {
     pub(crate) fn new(
         pubkeys: Vec<ServerPubKeyPackageNoSGX>,
         level: u32,
+        agg_number: u32,
     ) -> Result<(AggregatorState, AggRegistrationBlobNoSGX)> {
         let (sk, agg_id, reg_data) = new_aggregator()?;
 
@@ -65,6 +70,7 @@ impl AggregatorState {
             signing_key: sk,
             partial_agg: None,
             level,
+            agg_number: Some(agg_number),
             observed_nonces,
         };
 
@@ -106,12 +112,19 @@ impl AggregatorState {
 
     /// Packages the current aggregate into a message that can be sent to the next aggregator or an
     /// anytrust node
+    // use std::mem;
     pub(crate) fn finalize_aggregate(&self) -> Result<AggregatedMessage> {
         let partial_agg = self
             .partial_agg
             .as_ref()
             .ok_or(AggregatorError::Uninitialized)?;
         let blob = finalize_aggregate(partial_agg)?;
+        println!("aggregated_msg.scheduling_msg.len:{}",blob.aggregated_msg.scheduling_msg.len());
+        // println!("aggregated_msg.aggregated_msg.len:{}",blob.aggregated_msg.aggregated_msg.len());
+        // println!("aggregated_msg.aggregated_msg[0].array.len:{}",blob.aggregated_msg.aggregated_msg[0].array.len());
+        println!("aggregated_msg.aggregated_msg[0].num_rows:{}",blob.aggregated_msg.aggregated_msg.num_rows());
+        println!("aggregated_msg.aggregated_msg[0].num_columns:{}",blob.aggregated_msg.aggregated_msg.num_columns());
+        println!("Btree length:{}",blob.user_ids.len());
 
         Ok(blob)
     }
