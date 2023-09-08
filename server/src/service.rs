@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, save_output, ServerError},
     ServerState,
 };
-use common::{cli_util, log_time::{log_server_time, log_detailed_duration, log_time}};
+use common::{cli_util, log_time::{log_detailed_duration, log_time}};
 use interface::RoundOutputUpdated;
 
 use common::types_nosgx::{
@@ -17,13 +17,11 @@ use std::{
     time::{Duration, Instant},
 };
 
-use actix_rt::spawn;
 use actix_web::{
     client::Client,
     get,
     http::{StatusCode, Uri},
-    post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError, Result, dev, error, FromRequest,
-    middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers},
+    post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError, Result,
 };
 use actix::clock::sleep;
 // use futures_util::future::ok;
@@ -51,7 +49,6 @@ pub(crate) struct ServiceState {
     pub(crate) round_outputs: BTreeMap<u32, RoundOutputUpdated>,
     /// The path to this server's state file. If `None`, state is not persisted to disk
     pub(crate) server_state_path: Option<String>,
-    pub(crate) mutex: Mutex<()>,
 }
 
 impl ServiceState {
@@ -66,7 +63,6 @@ impl ServiceState {
             leader_url,
             round_outputs: BTreeMap::new(),
             round_shares: Vec::new(),
-            mutex: Mutex::new(()),
         }
     }
 }
@@ -114,7 +110,7 @@ fn leader_finish_round(state: &mut ServiceState) {
 /// Sends the given unblinded share to `base_url/submit-share`
 async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlobNoSGX, state: web::Data<Arc<Mutex<ServiceState>>>) {
     // Serialize the share
-    let mut state = state.get_ref().lock().unwrap();
+    let _state = state.get_ref().lock().unwrap();
     let mut body = Vec::new();
     println!("send_share_to_leader share:{}", share.0.len());
     cli_util::save(&mut body, &share).expect("could not serialize share");
@@ -408,15 +404,6 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
     // };
 
     info!("Making new server on {}", bind_addr);
-    let json_cfg = Arc::new(web::JsonConfig::default()
-    // limit request payload size
-    .limit(1024 * 1024 * 10)
-    // only accept text/plain content type
-    // .content_type(|mime| mime == mime::TEXT_PLAIN)
-    // use custom error handler
-    .error_handler(|err, req| {
-        error::InternalError::from_response(err, HttpResponse::Conflict().into()).into()
-    }));
     
     // Start the web server
     HttpServer::new(move || {

@@ -14,9 +14,7 @@ use core::ops::DerefMut;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, SystemTime},
-    fs::File, io, env,
-    convert::TryInto,
-    any::type_name,
+    fs::File, env,
 };
 use actix_rt::{
     spawn,
@@ -179,7 +177,7 @@ async fn save_data_collection(
     
     //step 2: open data_collection
     let data_collection = &combined_data.data_collection;
-    let mut data_collection_handle = data_collection.lock().unwrap();
+    let data_collection_handle = data_collection.lock().unwrap();
     let save_path_prefix = "data_collection_";
     let save_path_postfix = ".txt";
     let save_path =  format!("{}{}{}", save_path_prefix, agg_number, save_path_postfix);
@@ -388,7 +386,7 @@ async fn force_round_end(
     let state = &combined_data_ref.state;
 
     // step 2: force round output
-    force_round_output(&*state);
+    force_round_output(&*state).await;
     let duration = start.elapsed();
     debug!("[agg] force_round_end: {:?}", duration);
 
@@ -453,8 +451,8 @@ fn get_agg_payload(state: &Mutex<ServiceState>) -> (Vec<u8>, Vec<String>) {
     let mut payload = Vec::new();
     cli_util::save(&mut payload, &agg).expect("could not serialize aggregate");
 
-    // let duration = start.elapsed();
-    // debug!("[agg] get_agg_payload: {:?}", duration);
+    let duration = start.elapsed();
+    debug!("[agg] get_agg_payload: {:?}", duration);
     debug!("forward_urls is {:?}", forward_urls.clone());
     (payload, forward_urls.clone())
 }
@@ -477,8 +475,8 @@ async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
     // Await all futures to complete in parallel
     join_all(futures).await;
 
-    // let duration = start.elapsed();
-    // debug!("[agg] send_aggregate: {:?}", duration);
+    let duration = start.elapsed();
+    debug!("[agg] send_aggregate: {:?}", duration);
 }
 
 async fn send_to_url(base_url: String, payload: Vec<u8>) {
@@ -507,7 +505,6 @@ async fn send_to_url(base_url: String, payload: Vec<u8>) {
 // Saves the state and start the next round
 fn start_next_round(state: &Mutex<ServiceState>) {
     let start = std::time::Instant::now();
-
     let mut handle = state.lock().unwrap();
     let ServiceState {
         ref mut agg_state,
@@ -532,8 +529,8 @@ fn start_next_round(state: &Mutex<ServiceState>) {
         .clear(*round)
         .expect("could not start new round");
 
-    // let duration = start.elapsed();
-    // debug!("[agg] start_next_round: {:?}", duration);
+    let duration = start.elapsed();
+    debug!("[agg] start_next_round: {:?}", duration);
 }
 
 // This converts future system time to a monotonic instant. Doing this has weird edge cases in

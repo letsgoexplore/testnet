@@ -24,13 +24,13 @@ pub enum ServerError {
 }
 
 impl From<SignatureError> for ServerError {
-    fn from(error: SignatureError) -> Self {
+    fn from(_error: SignatureError) -> Self {
         ServerError::UnexpectedError
     }
 }
 
 impl From<rand::Error> for ServerError {
-    fn from(error: rand::Error) -> Self {
+    fn from(_error: rand::Error) -> Self {
         ServerError::UnexpectedError
     }
 }

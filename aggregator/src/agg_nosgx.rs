@@ -20,7 +20,6 @@ use common::types_nosgx::{
 };
 use common::funcs_nosgx::verify_user_submission_msg;
 use std::collections::BTreeSet;
-use std::iter::FromIterator;
 
 use log::{error, debug, warn};
 

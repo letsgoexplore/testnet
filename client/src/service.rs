@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, UserError},
     UserState,
 };
-use common::{cli_util, enclave::DcNetEnclave, log_time::{log_client_encrypt_time,log_client_time, log_duration}};
+use common::{cli_util, enclave::DcNetEnclave, log_time::{log_duration}};
 use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlobUpdated, UserMsg, DC_NET_MESSAGE_LENGTH, PARAMETER_FLAG};
 
 use core::ops::DerefMut;
