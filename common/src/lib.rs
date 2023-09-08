@@ -7,6 +7,7 @@ extern crate sgx_urts;
 extern crate tonic;
 
 pub mod cli_util;
+pub mod log_time;
 pub mod enclave;
 pub mod types_nosgx;
 pub mod funcs_nosgx;
