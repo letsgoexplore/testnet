@@ -2,13 +2,14 @@ use crate::{
     util::{save_state, UserError},
     UserState,
 };
-use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlobUpdated, UserMsg, DC_NET_MESSAGE_LENGTH};
+use common::{cli_util, enclave::DcNetEnclave, log_time::{log_client_encrypt_time,log_client_time, log_duration}};
+use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlobUpdated, UserMsg, DC_NET_MESSAGE_LENGTH, PARAMETER_FLAG};
 
 use core::ops::DerefMut;
 use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant},
+    env,
 };
 
 use actix_web::{
@@ -64,7 +65,7 @@ async fn encrypt_msg(
     // debug!("payload: {:?}", payload);
     // The payload is msg COMMA prev_rount_output
     let mut payload_it = payload.split(',');
-
+    *round=0;
     // debug!("payload_it: {:?}", payload_it);
 
     // Load the message first. It's just a base64 string of length <= DC_NET_MESSAGE_LENGTH
@@ -79,11 +80,18 @@ async fn encrypt_msg(
         )
         .map_err(cli_util::SerializationError::from)?;
 
+        let dc_net_message_length = if PARAMETER_FLAG {
+            env::var("DC_NET_MESSAGE_LENGTH")
+            .unwrap_or_else(|_| "160".to_string())
+            .parse::<usize>()
+            .expect("Invalid DC_NET_MESSAGE_LENGTH value")}
+        else{DC_NET_MESSAGE_LENGTH};
+
         // Check the length
-        if msg_bytes.len() > DC_NET_MESSAGE_LENGTH {
+        if msg_bytes.len() > dc_net_message_length {
             return Err(ApiError::Malformed(format!(
                 "input message must be less than {} bytes long",
-                DC_NET_MESSAGE_LENGTH
+                dc_net_message_length
             )));
         }
 
@@ -115,18 +123,16 @@ async fn encrypt_msg(
 
     // Encrypt the message and send it
 
-    let start_submit = Instant::now();
     let ciphertext = user_state.submit_round_msg(&enclave, *round, msg)?;
-    let duration_submit = start_submit.elapsed();
+    let duration_submit = start.elapsed();
     debug!("[client] submit_round_msg: {:?}", duration_submit);
-
+    log_duration(duration_submit.as_nanos());
 
     debug!("round: {}", ciphertext.round);
     debug!("scheduling_msg.len(): {}", ciphertext.aggregated_msg.scheduling_msg.len());
     debug!("aggregated_msg.len(): {} * {}", ciphertext.aggregated_msg.aggregated_msg.num_rows(), ciphertext.aggregated_msg.aggregated_msg.num_columns());
 
     send_ciphertext(&ciphertext, agg_url).await;
-
     // Increment the round and save the user state
     *round += 1;
     user_state_path.as_ref().map(|path| {
@@ -136,9 +142,6 @@ async fn encrypt_msg(
             _ => (),
         }
     });
-
-    let duration = start.elapsed();
-    debug!("[client] encrypt-msg: {:?}", duration);
 
     Ok(HttpResponse::Ok().body("OK\n"))
 }
@@ -196,7 +199,8 @@ async fn send_cover(state: web::Data<Arc<Mutex<ServiceState>>>) -> Result<HttpRe
     // Encrypt an empty message and send it
     let ciphertext = user_state.submit_round_msg(&enclave, *round, UserMsg::Cover)?;
     send_ciphertext(&ciphertext, agg_url).await;
-    debug!("send success!");
+    // log_client_time();
+    debug!("send cover success!");
     // Increment the round and save the user state
     *round += 1;
     user_state_path.as_ref().map(|path| {
@@ -252,7 +256,7 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
 
     // Start the web server
     HttpServer::new(move || {
-        App::new().data(state.clone()).configure(|cfg| {
+        App::new().data(state.clone()).data(web::PayloadConfig::new(10 << 21)).configure(|cfg| {
             cfg.service(encrypt_msg);
             cfg.service(reserve_slot);
             cfg.service(send_cover);
