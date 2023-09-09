@@ -123,16 +123,16 @@ pub mod ecall_allowed {
             SgxProtectedKeyPub,
             unseal_to_public_key),
         (
-            EcallNewUserUpdated,
+            EcallNewUser,
             &[ServerPubKeyPackageNoSGX],
             (SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew),
-            new_user_updated
+            new_user
         ),
         (
-            EcallNewUserBatchUpdated,
+            EcallNewUserBatch,
             (&[ServerPubKeyPackageNoSGX], usize), // input
             Vec<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)>, // output
-            new_user_batch_updated
+            new_user_batch
         ),
         (
             EcallNewServer,

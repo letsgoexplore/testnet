@@ -18,7 +18,7 @@ use ed25519_dalek::PublicKey;
 /// Derives shared secrets with all the given KEM pubkeys, and derived a new signing pubkey.
 /// Returns sealed secrets, a sealed private key, and a registration message to send to an
 /// anytrust node
-pub fn new_user_updated(
+pub fn new_user(
     anytrust_server_pks: &Vec<ServerPubKeyPackageNoSGX>,
 ) -> SgxResult<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)> {
     // 1. validate the input
@@ -42,12 +42,12 @@ pub fn new_user_updated(
     Ok((server_secrets.seal_into()?, sk.seal_into()?, pk))
 }
 
-pub fn new_user_batch_updated(
+pub fn new_user_batch(
     (anytrust_server_pks, n_user): &(Vec<ServerPubKeyPackageNoSGX>, usize),
 ) -> SgxResult<Vec<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)>> {
     let mut users = vec![];
     for _ in 0..*n_user {
-        let u = new_user_updated(anytrust_server_pks)?;
+        let u = new_user(anytrust_server_pks)?;
         users.push(u);
     }
     
