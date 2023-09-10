@@ -8,7 +8,7 @@ use common::types_nosgx::{
     AggregatedMessage,
     SubmissionMessage,
 };
-use interface::{UserSubmissionMessageUpdated, PARAMETER_FLAG, EVALUATION_FLAG, AGGREGATOR_THREAD_NUMBER, DC_NUM_USER};
+use interface::{UserSubmissionMessage, PARAMETER_FLAG, EVALUATION_FLAG, AGGREGATOR_THREAD_NUMBER, DC_NUM_USER};
 
 use core::ops::DerefMut;
 use std::{
@@ -81,7 +81,7 @@ impl ServiceState {
 
 struct CombinedData{
     state: Arc<Mutex<ServiceState>>,
-    data_collection: Arc<Mutex<Vec<UserSubmissionMessageUpdated>>>
+    data_collection: Arc<Mutex<Vec<UserSubmissionMessage>>>
 }
 
 /// Receives a partial aggregate from user, for evaluation purpose
@@ -107,7 +107,7 @@ async fn submit_agg(
     let level = agg_state.level;
 
     // step 3: load data and push to data_collection
-    let data: UserSubmissionMessageUpdated = cli_util::load(&mut payload.as_bytes())?;
+    let data: UserSubmissionMessage = cli_util::load(&mut payload.as_bytes())?;
     let mut data_collection_handle = data_collection.lock().unwrap();
     data_collection_handle.push(data.clone());
 
@@ -210,11 +210,11 @@ async fn aggregate_eval(
     let save_path_postfix = ".txt";
     let save_path =  format!("{}{}{}", save_path_prefix, agg_number, save_path_postfix);
     let file = File::open(save_path.clone())?;
-    let data_collection_loaded: Vec<UserSubmissionMessageUpdated> = cli_util::load(file)?;
+    let data_collection_loaded: Vec<UserSubmissionMessage> = cli_util::load(file)?;
     info!("Data loaded from {}", save_path);
     // let save_path_2 =  format!("{}{}{}", save_path_prefix, agg_number+16, save_path_postfix);
     // let file_2 = File::open(save_path_2.clone())?;
-    // let data_collection_loaded_2: Vec<UserSubmissionMessageUpdated> = cli_util::load(file_2)?;
+    // let data_collection_loaded_2: Vec<UserSubmissionMessage> = cli_util::load(file_2)?;
 
     // step 3: aggregate
     let logflag:bool = false;
@@ -606,7 +606,7 @@ pub(crate) async fn start_service(
 ) -> std::io::Result<()> {
     let state = Arc::new(Mutex::new(state));
     let state_copy = state.clone();
-    let data_collection = Arc::new(Mutex::new(Vec::<UserSubmissionMessageUpdated>::new()));
+    let data_collection = Arc::new(Mutex::new(Vec::<UserSubmissionMessage>::new()));
 
     Arbiter::spawn(round_finalization_loop(
         state_copy, round_dur, start_time, level,

@@ -1,6 +1,6 @@
 use crate::agg_state::AggregatorState;
 use std::{fs::File, io, convert::TryInto};
-use interface::{UserSubmissionMessageUpdated};
+use interface::{UserSubmissionMessage};
 use common::{cli_util, enclave::EnclaveError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -53,7 +53,7 @@ pub(crate) fn save_to_stdout<S: Serialize>(val: &S) -> Result<()> {
 pub(crate) fn split_data_collection(num_user:u32, thread: u32){
     let save_path = "data_collection.txt";
     let file = File::open(save_path).unwrap();
-    let data_collection_loaded: Vec<UserSubmissionMessageUpdated> = cli_util::load(file).unwrap();
+    let data_collection_loaded: Vec<UserSubmissionMessage> = cli_util::load(file).unwrap();
     info!("Data loaded from {}", save_path);
 
 	let remainder = num_user % thread;
@@ -61,8 +61,8 @@ pub(crate) fn split_data_collection(num_user:u32, thread: u32){
 	(0..remainder).into_par_iter().for_each(|i| {
 		let index_start = (i*(single_leaf_agg_msg_num+1)).try_into().unwrap();
         let index_end  = ((i+1)*(single_leaf_agg_msg_num+1)).try_into().unwrap();
-        let data_slice: &[UserSubmissionMessageUpdated] = &data_collection_loaded[index_start..index_end];
-        let data_vec: Vec<UserSubmissionMessageUpdated> = data_slice.to_vec();
+        let data_slice: &[UserSubmissionMessage] = &data_collection_loaded[index_start..index_end];
+        let data_vec: Vec<UserSubmissionMessage> = data_slice.to_vec();
 
         let save_path_prefix = "data_collection_";
         let save_path_postfix = ".txt";
@@ -74,8 +74,8 @@ pub(crate) fn split_data_collection(num_user:u32, thread: u32){
 	(remainder..thread).into_par_iter().for_each(|i| {
         let index_start = (i * single_leaf_agg_msg_num + remainder).try_into().unwrap();
         let index_end = ((i+1) * single_leaf_agg_msg_num + remainder).try_into().unwrap();
-        let data_slice: &[UserSubmissionMessageUpdated] = &data_collection_loaded[index_start..index_end];
-        let data_vec: Vec<UserSubmissionMessageUpdated> = data_slice.to_vec();
+        let data_slice: &[UserSubmissionMessage] = &data_collection_loaded[index_start..index_end];
+        let data_vec: Vec<UserSubmissionMessage> = data_slice.to_vec();
         
         let save_path_prefix = "data_collection_";
         let save_path_postfix = ".txt";
