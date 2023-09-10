@@ -192,7 +192,7 @@ fn add_to_agg(
 
 fn add_to_agg_user_submit(
     input: (
-        &UserSubmissionMessageUpdated,
+        &UserSubmissionMessage,
         &mut AggregatedMessage,
         &mut Option<BTreeSet<RateLimitNonce>>,
         &SecretKey,

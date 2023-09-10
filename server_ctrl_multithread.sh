@@ -256,11 +256,11 @@ client_eval(){
     )
     cd ..
 
-    # python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message(10,$DC_NET_MESSAGE_LENGTH)"
-    # for i in {1..10}
-    # do
-    #     single_client_send $i
-    # done
+    python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message(10,$DC_NET_MESSAGE_LENGTH)"
+    for i in {1..10}
+    do
+        single_client_send $i
+    done
 
 }
 
