@@ -4,7 +4,7 @@ extern crate interface;
 mod server_state;
 mod service;
 mod util;
-mod server_nosgx;
+mod server;
 
 use crate::{
     server_state::ServerState,

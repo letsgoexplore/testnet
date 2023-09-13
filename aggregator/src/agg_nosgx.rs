@@ -18,7 +18,6 @@ use common::types_nosgx::{
     SignMutable,
     SubmissionMessage,
 };
-use common::funcs_nosgx::verify_user_submission_msg;
 use std::collections::BTreeSet;
 
 use log::{error, debug, warn};
@@ -213,14 +212,11 @@ fn add_to_agg_user_submit(
     }
 
     // now we are sure incoming_msg is not empty we treat it as untrusted input and verify signature
-    match verify_user_submission_msg(&incoming_msg) {
-        Ok(()) => {
-            // debug!("signature verification succeeded");
-        },
-        Err(e) => {
-            error!("can't verify sig on incoming_msg: {:?}", e);
-            return Err(AggregatorError::InvalidParameter);
-        }
+    if incoming_msg.verify_sig() {
+        debug!("signature verification succeeded");}
+    else {
+        error!("can't verify sig on incoming_msg");
+        return Err(AggregatorError::InvalidParameter);
     }
 
     // If the set of rate-limit nonces is Some, see if the given nonce appears in it. If so, this

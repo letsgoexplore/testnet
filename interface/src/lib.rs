@@ -29,14 +29,10 @@ cfg_if! {
 mod array2d;
 mod ecall_interface_types;
 mod params;
-mod sgx_protected_keys;
-mod sgx_signature;
 mod user_request;
-mod nosgx_protected_keys;
+mod sgx_protected_keys;
 
 pub use ecall_interface_types::*;
 pub use params::*;
-pub use sgx_protected_keys::*;
-pub use sgx_signature::*;
 pub use user_request::*;
-pub use nosgx_protected_keys::*;
+pub use sgx_protected_keys::*;

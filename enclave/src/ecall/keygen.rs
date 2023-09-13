@@ -12,21 +12,21 @@ use std::fmt;
 
 use x25519_dalek::{StaticSecret, PublicKey};
 use ed25519_dalek::SECRET_KEY_LENGTH;
+use crate::crypto::SgxPrivateKey;
 
-
-pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(NoSgxPrivateKey, AttestedPublicKey)> {
+pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, AttestedPublicKey)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
         error!("can't create rand {}", e);
         SGX_ERROR_UNEXPECTED
     })?;
 
     // generate a random secret key
-    let sk = rand.gen::<NoSgxPrivateKey>();
+    let sk = rand.gen::<SgxPrivateKey>();
     let secret = StaticSecret::from(sk.r);
     let xpk = PublicKey::from(&secret);
     let attested_key = AttestedPublicKey {
-        pk: NoSgxProtectedKeyPub(xpk.to_bytes()),
-        xpk: NoSgxProtectedKeyPub(xpk.to_bytes()),
+        pk: SgxProtectedKeyPub(xpk.to_bytes()),
+        xpk: SgxProtectedKeyPub(xpk.to_bytes()),
         role: role.to_string(),
         tee_linkable_attestation: vec![0], // TODO: add attestation
     };

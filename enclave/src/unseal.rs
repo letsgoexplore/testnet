@@ -1,4 +1,4 @@
-use crypto::SharedSecretsDbClient;
+use crypto::{SharedSecretsDbClient,SgxPrivateKey};
 use interface::*;
 use messages_types;
 use serde::de::DeserializeOwned;
@@ -113,14 +113,14 @@ pub trait UnsealableInto<T> {
     fn unseal_into(&self) -> SgxResult<T>;
 }
 
-impl SealInto<SealedSigPrivKey> for NoSgxPrivateKey {
+impl SealInto<SealedSigPrivKey> for SgxPrivateKey {
     fn seal_into(&self) -> SgxResult<SealedSigPrivKey> {
         Ok(SealedSigPrivKey(self.seal(None)?))
     }
 }
 
-impl UnsealableInto<NoSgxPrivateKey> for SealedSigPrivKey {
-    fn unseal_into(&self) -> sgx_types::SgxResult<NoSgxPrivateKey> {
+impl UnsealableInto<SgxPrivateKey> for SealedSigPrivKey {
+    fn unseal_into(&self) -> sgx_types::SgxResult<SgxPrivateKey> {
         Ok(unseal_vec_and_deser(&self.0)?.0) // ignore the ad
     }
 }

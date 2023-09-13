@@ -2,7 +2,6 @@ use crate::interface::*;
 use crate::sgx_tunittest::*;
 use crate::std::prelude::v1::*;
 use crypto;
-use crypto::SgxSigningKey;
 use hkdf::Hkdf;
 use serde_cbor;
 use sgx_rand::Rng;
@@ -35,15 +34,6 @@ fn hkdf() {
     let expected =
         "3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865";
     assert_eq!(hex::encode(&okm[..]), expected);
-}
-
-fn test_keypair() -> crypto::CryptoResult<(SgxSigningKey, SgxSigningPubKey)> {
-    let handle = sgx_tcrypto::SgxEccHandle::new();
-    handle.open().unwrap();
-    match handle.create_key_pair() {
-        Ok(pair) => Ok((crypto::KemPrvKey::from(pair.0), KemPubKey::from(pair.1))),
-        Err(e) => Err(CryptoError::SgxCryptoLibError(e)),
-    }
 }
 
 fn sign() -> () {

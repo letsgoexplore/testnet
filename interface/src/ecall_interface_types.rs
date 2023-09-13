@@ -1,6 +1,6 @@
-use crate::nosgx_protected_keys::{AttestedPublicKey, NoSgxProtectedKeyPub, OutputSignature};
+use crate::sgx_protected_keys::{AttestedPublicKey, SgxProtectedKeyPub, OutputSignature};
 use crate::user_request::EntityId;
-use crate::DcRoundMessage;
+use crate::user_request::DcRoundMessage;
 use crate::params::SHARED_SECRET_LENGTH;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
@@ -68,19 +68,19 @@ pub struct SealedFootprintTicket(pub Vec<u8>);
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct SealedSharedSecretsDbClient {
     pub round: u32,
-    pub db: BTreeMap<NoSgxProtectedKeyPub, Vec<u8>>,
+    pub db: BTreeMap<SgxProtectedKeyPub, Vec<u8>>,
 }
 
 impl SealedSharedSecretsDbClient {
     pub fn anytrust_group_id(&self) -> EntityId {
-        let keys: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
-        crate::compute_anytrust_group_id_spk(&keys)
+        let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        crate::compute_anytrust_group_id(&keys)
     }
 }
 
 impl Debug for SealedSharedSecretsDbClient {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        let pks: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        let pks: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
         f.debug_struct("SealedSharedSecretsDbClient")
             .field("pks", &pks)
             .finish()
