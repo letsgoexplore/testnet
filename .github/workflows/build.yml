@@ -3,7 +3,7 @@ on: push
 env:
   LD_RUN_PATH: /usr/lib:/usr/local/lib
   LD_LIBRARY_PATH: /usr/lib:/usr/local/lib:/opt/sgxsdk/sdk_libs
-  PATH: "/root/:cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/sgxsdk/bin:/opt/sgxsdk/bin/x64"
+  PATH: "/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/sgxsdk/bin:/opt/sgxsdk/bin/x64"
 jobs:
   build-everything:
     runs-on: ubuntu-20.04
@@ -15,10 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build enclave
-        run: PATH=/root/.cargo/bin:$PATH make
+        run: make
         working-directory: ./enclave
       - name: Build client
-        run: PATH=/root/.cargo/bin:$PATH cargo b
+        run: cargo b
         working-directory: ./enclave
       - name: Run test
         run: bash ./run_tests.sh
+        working-directory: .
