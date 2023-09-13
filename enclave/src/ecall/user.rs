@@ -63,6 +63,7 @@ pub fn new_user_batch(
 pub fn new_user_updated(
     anytrust_server_pks: &Vec<ServerPubKeyPackageNoSGX>,
 ) -> SgxResult<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)> {
+    log::debug!("here");
     // 1. validate the input
     let mut kem_db: BTreeMap<NoSgxProtectedKeyPub, PublicKey> = BTreeMap::new();
     // let mut kem_pks = vec![];
@@ -87,8 +88,10 @@ pub fn new_user_updated(
 pub fn new_user_batch_updated(
     (anytrust_server_pks, n_user): &(Vec<ServerPubKeyPackageNoSGX>, usize),
 ) -> SgxResult<Vec<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)>> {
+    log::debug!("hello. n_user {}", n_user);
     let mut users = vec![];
     for _ in 0..*n_user {
+        log::debug!("in loop");
         let u = new_user_updated(anytrust_server_pks)?;
         users.push(u);
     }

@@ -4,6 +4,7 @@ extern crate cfg_if;
 use cfg_if::cfg_if;
 extern crate hex;
 extern crate sha2;
+extern crate log;
 
 cfg_if! {
     if #[cfg(feature = "untrusted")] {
@@ -35,7 +36,6 @@ mod nosgx_protected_keys;
 
 pub use ecall_interface_types::*;
 pub use params::*;
-#[allow(dead_code)]
 pub use sgx_protected_keys::*;
 pub use sgx_signature::*;
 pub use user_request::*;
