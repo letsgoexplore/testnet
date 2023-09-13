@@ -55,8 +55,8 @@ impl SgxProtectedKeyPub {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct AttestedPublicKey {
-    pub pk: SgxProtectedKeyPub,
-    pub xpk: SgxProtectedKeyPub,  // TODO: pk and xpk are the same thing. should only keep one.
+    pub pk: SgxProtectedKeyPub,   // sig pub key
+    pub xpk: SgxProtectedKeyPub,  // kem pub key. todo: both keys are derived from the same secret.
     pub role: std::string::String,
     /// role denotes the intended use of this key e.g., "aggregator" "client" "anytrust server"
     pub tee_linkable_attestation: std::vec::Vec<u8>, // binds this key to an enclave

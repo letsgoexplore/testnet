@@ -42,11 +42,15 @@ use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;
 use sgx_types::SgxResult;
 use interface::UserSubmissionMessage;
 
-pub fn pk_from_sk(sk: &SgxPrivateKey) -> SgxResult<PublicKey> {
+pub fn ed25519pk_from_sk(sk: &SgxPrivateKey) -> SgxResult<PublicKey> {
+    log::debug!("pk_from_sk");
     let sk = SecretKey::from_bytes(&sk.r).map_err(|e|{
         SGX_ERROR_UNEXPECTED
     })?;
-    Ok(PublicKey::from(&sk))
+
+    let pk = PublicKey::from(&sk);
+    log::debug!("done pk_from_sk");
+    Ok(pk)
 }
 
 use interface::{SignatureBytes};
