@@ -157,7 +157,7 @@ fn derive_reservation(
     )
 }
 
-use crypto::pk_from_sk;
+use crypto::ed25519pk_from_sk;
 
 /// process user submission request
 /// returns a submission and the ratcheted shared secrets
@@ -179,7 +179,7 @@ pub fn user_submit_internal(
     // unseal user's sk
     let signing_sk = signing_sk.unseal_into()?;
     //check user signing key matches user_id
-    if EntityId::from(&pk_from_sk(&signing_sk)?) != *user_id {
+    if EntityId::from(&ed25519pk_from_sk(&signing_sk)?) != *user_id {
         error!("user id mismatch");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }

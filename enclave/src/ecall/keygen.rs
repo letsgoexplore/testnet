@@ -10,8 +10,11 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt;
 
-use x25519_dalek::{StaticSecret, PublicKey};
-use ed25519_dalek::SECRET_KEY_LENGTH;
+use x25519_dalek::StaticSecret;
+use x25519_dalek::PublicKey as xPublicKey;
+use ed25519_dalek::SecretKey;
+use ed25519_dalek::{Keypair, SECRET_KEY_LENGTH};
+use crypto::ed25519pk_from_sk;
 use crate::crypto::SgxPrivateKey;
 
 pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, AttestedPublicKey)> {
@@ -21,15 +24,20 @@ pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, Atteste
     })?;
 
     // generate a random secret key
-    let sk = rand.gen::<SgxPrivateKey>();
-    let secret = StaticSecret::from(sk.r);
-    let xpk = PublicKey::from(&secret);
+    let secret = SgxPrivateKey::rand(&mut rand);
+    log::debug!("secret {}, len={}", hex::encode(secret.r), secret.r.len());
+
+    let x_secret = StaticSecret::from(secret.r);
+    let xpk = xPublicKey::from(&x_secret);
+
+    let pk = ed25519pk_from_sk(&secret)?;
+    log::debug!("sk to pk succeed");
     let attested_key = AttestedPublicKey {
-        pk: SgxProtectedKeyPub(xpk.to_bytes()),
+        pk: SgxProtectedKeyPub(pk.to_bytes()),
         xpk: SgxProtectedKeyPub(xpk.to_bytes()),
         role: role.to_string(),
         tee_linkable_attestation: vec![0], // TODO: add attestation
     };
 
-    Ok((sk, attested_key))
+    Ok((secret, attested_key))
 }
