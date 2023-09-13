@@ -14,8 +14,9 @@ use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
 use std::convert::TryFrom;
 use std::vec::Vec;
-use std::vec;
+use std::{println, vec};
 use sha2::{Digest, Sha256};
+use log;
 
 use crate::user_request::{EntityId, UserSubmissionMessage, DcMessage, DcRoundMessage};
 use crate::ecall_interface_types::RoundOutput;
@@ -116,7 +117,10 @@ impl AsRef<[u8]> for &NoSgxPrivateKey {
 impl TryFrom<&NoSgxPrivateKey> for NoSgxProtectedKeyPub {
     type Error = &'static str;
     fn try_from(sk: &NoSgxPrivateKey) -> Result<Self, Self::Error> {
-        let sk = SecretKey::from_bytes(&sk.r).expect("Cannot generate the secret key from the given bytes");
+        let sk = match SecretKey::from_bytes(&sk.r) {
+            Ok(sk) => sk,
+            Err(e) => {return Err("Cannot generate the secret key from the given bytes");}
+        };
         let pk = PublicKey::from(&sk);
         Ok(NoSgxProtectedKeyPub(pk.to_bytes()))
     }

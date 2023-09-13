@@ -36,7 +36,7 @@ dependencies = [
  "bytes 0.5.6",
  "futures-core",
  "futures-sink",
- "log 0.4.19",
+ "log",
  "pin-project 0.4.30",
  "tokio 0.2.25",
  "tokio-util 0.3.1",
@@ -73,7 +73,7 @@ dependencies = [
  "either",
  "futures-util",
  "http",
- "log 0.4.19",
+ "log",
  "trust-dns-proto",
  "trust-dns-resolver",
 ]
@@ -111,12 +111,12 @@ dependencies = [
  "itoa 0.4.8",
  "language-tags 0.2.2",
  "lazy_static",
- "log 0.4.19",
+ "log",
  "mime",
  "percent-encoding",
  "pin-project 1.1.2",
  "rand 0.7.3",
- "regex 1.8.4",
+ "regex",
  "serde 1.0.164",
  "serde_json",
  "serde_urlencoded",
@@ -174,8 +174,8 @@ checksum = "2ad299af73649e1fc893e333ccf86f377751eb95ff875d095131574c6f43452c"
 dependencies = [
  "bytestring",
  "http",
- "log 0.4.19",
- "regex 1.8.4",
+ "log",
+ "regex",
  "serde 1.0.164",
 ]
 
@@ -216,7 +216,7 @@ dependencies = [
  "actix-utils 2.0.0",
  "futures-channel",
  "futures-util",
- "log 0.4.19",
+ "log",
  "mio 0.6.23",
  "mio-uds",
  "num_cpus",
@@ -268,7 +268,7 @@ dependencies = [
  "derive_more",
  "futures-channel",
  "lazy_static",
- "log 0.4.19",
+ "log",
  "num_cpus",
  "parking_lot 0.11.2",
  "threadpool",
@@ -301,7 +301,7 @@ dependencies = [
  "futures-channel",
  "futures-sink",
  "futures-util",
- "log 0.4.19",
+ "log",
  "pin-project 0.4.30",
  "slab",
 ]
@@ -342,10 +342,10 @@ dependencies = [
  "futures-core",
  "futures-util",
  "fxhash",
- "log 0.4.19",
+ "log",
  "mime",
  "pin-project 1.1.2",
- "regex 1.8.4",
+ "regex",
  "serde 1.0.164",
  "serde_json",
  "serde_urlencoded",
@@ -554,7 +554,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "derive_more",
  "futures-core",
- "log 0.4.19",
+ "log",
  "mime",
  "percent-encoding",
  "rand 0.7.3",
@@ -615,14 +615,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
 dependencies = [
  "generic-array 0.14.7",
-]
-
-[[package]]
-name = "block-cipher-trait"
-version = "0.6.2"
-source = "git+https://github.com/mesalock-linux/rustcrypto-traits-sgx#7a5cb154f438c2401b3d8e37de96dd0acf8f493e"
-dependencies = [
- "generic-array 0.12.4",
 ]
 
 [[package]]
@@ -761,14 +753,14 @@ dependencies = [
  "hkdf",
  "interface",
  "itertools 0.10.5",
- "log 0.4.19",
+ "log",
  "prost",
  "quick-error 2.0.1",
  "rand 0.6.5",
  "rand_core 0.6.4",
  "rand_os",
  "serde 1.0.164",
- "serde_cbor 0.11.2",
+ "serde_cbor",
  "sgx_serialize",
  "sgx_serialize_derive",
  "sgx_types",
@@ -898,39 +890,9 @@ dependencies = [
  "cfg-if 1.0.0",
  "digest 0.9.0",
  "rand_core 0.5.1",
- "serde 1.0.118",
  "serde 1.0.164",
  "subtle 2.5.0",
  "zeroize",
-]
-
-[[package]]
-name = "dcnetenclave"
-version = "1.0.0"
-dependencies = [
- "aes-ctr",
- "byteorder",
- "ed25519-dalek",
- "env_logger 0.7.1",
- "hex",
- "hkdf",
- "interface",
- "log 0.4.14",
- "quick-error 1.2.2",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "serde 1.0.118",
- "serde_cbor 0.11.1",
- "sgx_rand",
- "sgx_tcrypto",
- "sgx_trts",
- "sgx_tse",
- "sgx_tseal",
- "sgx_tstd",
- "sgx_tunittest",
- "sgx_types",
- "sha2 0.8.2",
- "x25519-dalek",
 ]
 
 [[package]]
@@ -1031,27 +993,15 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.7.1"
-source = "git+https://github.com/bl4ck5un/env_logger-sgx#fecc9f085249e08651fc5f46364e7236b694772e"
-dependencies = [
- "humantime 1.3.0",
- "log 0.4.14",
- "regex 1.3.1",
- "sgx_tstd",
- "termcolor 1.0.5",
-]
-
-[[package]]
-name = "env_logger"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a19187fea3ac7e84da7dacf48de0c45d63c6a76f9490dae389aead16c243fce3"
 dependencies = [
  "atty",
- "humantime 2.1.0",
- "log 0.4.19",
- "regex 1.8.4",
- "termcolor 1.2.0",
+ "humantime",
+ "log",
+ "regex",
+ "termcolor",
 ]
 
 [[package]]
@@ -1061,10 +1011,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a12e6657c4c97ebab115a42dcee77225f7f482cdd841cf7088c657a42e9e00e7"
 dependencies = [
  "atty",
- "humantime 2.1.0",
- "log 0.4.19",
- "regex 1.8.4",
- "termcolor 1.2.0",
+ "humantime",
+ "log",
+ "regex",
+ "termcolor",
 ]
 
 [[package]]
@@ -1470,15 +1420,6 @@ checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
 
 [[package]]
 name = "humantime"
-version = "1.3.0"
-source = "git+https://github.com/bl4ck5un/humantime-sgx#090ded27dd530964bb06f36d5683c8ce0f524645"
-dependencies = [
- "quick-error 1.2.2",
- "sgx_tstd",
-]
-
-[[package]]
-name = "humantime"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
@@ -1556,6 +1497,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "ed25519-dalek",
  "hex",
+ "log",
  "rand_core 0.6.4",
  "serde 1.0.118",
  "serde 1.0.164",
@@ -1699,18 +1641,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.14"
-source = "git+https://github.com/bl4ck5un/log-sgx#d957ba075b0afff2a80571b4a83940e6cbf9937b"
-dependencies = [
- "cfg-if 1.0.0",
- "sgx_tstd",
-]
-
-[[package]]
-name = "log"
-version = "0.4.19"
+version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b06a4cde4c0f271a446782e3eff8de789548ce57dbc8eca9292c27f4a42004b4"
+checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 
 [[package]]
 name = "lru-cache"
@@ -1775,7 +1708,7 @@ dependencies = [
  "iovec",
  "kernel32-sys",
  "libc",
- "log 0.4.19",
+ "log",
  "miow",
  "net2",
  "slab",
@@ -2038,7 +1971,7 @@ dependencies = [
  "bytes 1.4.0",
  "heck 0.3.3",
  "itertools 0.9.0",
- "log 0.4.19",
+ "log",
  "multimap",
  "petgraph",
  "prost",
@@ -2069,11 +2002,6 @@ dependencies = [
  "bytes 1.4.0",
  "prost",
 ]
-
-[[package]]
-name = "quick-error"
-version = "1.2.2"
-source = "git+https://github.com/mesalock-linux/quick-error-sgx#468bf2cce746f34dd3df8c1c5b4a5a6494914d36"
 
 [[package]]
 name = "quick-error"
@@ -2330,30 +2258,13 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.3.1"
-source = "git+https://github.com/bl4ck5un/regex-sgx#2f0cdeb38df9cea3041cbda91fbe9d40819d1eb8"
-dependencies = [
- "regex-syntax 0.6.12",
- "sgx_tstd",
-]
-
-[[package]]
-name = "regex"
 version = "1.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0ab3ca65655bb1e41f2a8c8cd662eb4fb035e67c3f78da1d61dffe89d07300f"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-syntax 0.7.2",
-]
-
-[[package]]
-name = "regex-syntax"
-version = "0.6.12"
-source = "git+https://github.com/bl4ck5un/regex-sgx#2f0cdeb38df9cea3041cbda91fbe9d40819d1eb8"
-dependencies = [
- "sgx_tstd",
+ "regex-syntax",
 ]
 
 [[package]]
@@ -2477,16 +2388,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "416bda436f9aab92e02c8e10d49a15ddd339cea90b6e340fe51ed97abb548294"
 dependencies = [
  "serde 1.0.164",
-]
-
-[[package]]
-name = "serde_cbor"
-version = "0.11.1"
-source = "git+https://github.com/bl4ck5un/cbor-sgx#cf7c677fc5242e74b24b1939c230fc566687061a"
-dependencies = [
- "half",
- "serde 1.0.118",
- "sgx_tstd",
 ]
 
 [[package]]
@@ -2648,25 +2549,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sgx_tse"
-version = "1.1.6"
-source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.6#c3d82372dff81e5bafb07f71bc8ad532d06b504e"
-dependencies = [
- "sgx_types",
-]
-
-[[package]]
-name = "sgx_tseal"
-version = "1.1.6"
-source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.6#c3d82372dff81e5bafb07f71bc8ad532d06b504e"
-dependencies = [
- "sgx_tcrypto",
- "sgx_trts",
- "sgx_tse",
- "sgx_types",
-]
-
-[[package]]
 name = "sgx_tstd"
 version = "1.1.6"
 source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.6#c3d82372dff81e5bafb07f71bc8ad532d06b504e"
@@ -2680,14 +2562,6 @@ dependencies = [
  "sgx_trts",
  "sgx_types",
  "sgx_unwind",
-]
-
-[[package]]
-name = "sgx_tunittest"
-version = "1.1.6"
-source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.6#c3d82372dff81e5bafb07f71bc8ad532d06b504e"
-dependencies = [
- "sgx_tstd",
 ]
 
 [[package]]
@@ -2725,7 +2599,7 @@ dependencies = [
  "env_logger 0.9.3",
  "futures",
  "interface",
- "log 0.4.19",
+ "log",
  "rand 0.7.3",
  "rayon",
  "serde 1.0.164",
@@ -2745,7 +2619,7 @@ dependencies = [
  "common",
  "env_logger 0.9.3",
  "interface",
- "log 0.4.19",
+ "log",
  "serde 1.0.164",
  "thiserror",
 ]
@@ -2766,7 +2640,7 @@ dependencies = [
  "env_logger 0.9.3",
  "interface",
  "itertools 0.10.5",
- "log 0.4.19",
+ "log",
  "rand 0.7.3",
  "serde 1.0.164",
  "sha2 0.9.9",
@@ -2937,14 +2811,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "213701ba3370744dcd1a12960caa4843b3d68b4d1c0a5d575e0d65b2ee9d16c0"
 
 [[package]]
-name = "stream-cipher"
-version = "0.3.2"
-source = "git+https://github.com/mesalock-linux/rustcrypto-traits-sgx#7a5cb154f438c2401b3d8e37de96dd0acf8f493e"
-dependencies = [
- "generic-array 0.12.4",
-]
-
-[[package]]
 name = "strsim"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3016,14 +2882,6 @@ dependencies = [
  "redox_syscall 0.3.5",
  "rustix",
  "windows-sys",
-]
-
-[[package]]
-name = "termcolor"
-version = "1.0.5"
-source = "git+https://github.com/bl4ck5un/termcolor-sgx#3b53fb0371b546219d0fbb723b08f53148494c04"
-dependencies = [
- "sgx_tstd",
 ]
 
 [[package]]
@@ -3197,7 +3055,7 @@ dependencies = [
  "bytes 0.5.6",
  "futures-core",
  "futures-sink",
- "log 0.4.19",
+ "log",
  "pin-project-lite 0.1.12",
  "tokio 0.2.25",
 ]
@@ -3211,7 +3069,7 @@ dependencies = [
  "bytes 1.4.0",
  "futures-core",
  "futures-sink",
- "log 0.4.19",
+ "log",
  "pin-project-lite 0.2.10",
  "tokio 1.29.1",
 ]
@@ -3310,7 +3168,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ce8c33a8d48bd45d624a6e523445fd21ec13d3653cd51f681abf67418f54eb8"
 dependencies = [
  "cfg-if 1.0.0",
- "log 0.4.19",
+ "log",
  "pin-project-lite 0.2.10",
  "tracing-attributes",
  "tracing-core",
@@ -3358,7 +3216,7 @@ dependencies = [
  "futures",
  "idna 0.2.3",
  "lazy_static",
- "log 0.4.19",
+ "log",
  "rand 0.7.3",
  "smallvec",
  "thiserror",
@@ -3376,7 +3234,7 @@ dependencies = [
  "futures",
  "ipconfig",
  "lazy_static",
- "log 0.4.19",
+ "log",
  "lru-cache",
  "resolv-conf",
  "smallvec",
@@ -3497,7 +3355,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ef2b6d3c510e9625e5fe6f509ab07d66a760f0885d858736483c32ed7809abd"
 dependencies = [
  "bumpalo",
- "log 0.4.19",
+ "log",
  "once_cell",
  "proc-macro2",
  "quote 1.0.29",
@@ -3686,7 +3544,6 @@ dependencies = [
  "cfg-if 1.0.0",
  "curve25519-dalek",
  "rand_core 0.5.1",
- "serde 1.0.118",
  "serde 1.0.164",
  "zeroize",
 ]

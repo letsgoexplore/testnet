@@ -63,9 +63,8 @@ CUSTOM_COMMON_PATH := ./vendor/common
 
 ######## Cargo Settings ########
 # The tmp dir to hold intermediate compilation output
-# this must correspond to .cargo/config.toml
-# TARGET_DIR := /tmp/sgxdcnet/target/release
-TARGET_DIR := /tmp/sgxdcnet/target/debug
+# TARGET_DIR := /tmp/sgxdcnet/enclave/target/release
+TARGET_DIR := /tmp/sgxdcnet/enclave/target/debug
 
 ######## Enclave Settings ########
 

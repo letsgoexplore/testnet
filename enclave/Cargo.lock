@@ -135,7 +135,7 @@ dependencies = [
  "hex",
  "hkdf",
  "interface",
- "log",
+ "log 0.4.14",
  "quick-error",
  "rand",
  "rand_core 0.6.4",
@@ -199,7 +199,7 @@ version = "0.7.1"
 source = "git+https://github.com/bl4ck5un/env_logger-sgx#fecc9f085249e08651fc5f46364e7236b694772e"
 dependencies = [
  "humantime",
- "log",
+ "log 0.4.14",
  "regex",
  "sgx_tstd",
  "termcolor",
@@ -285,6 +285,7 @@ dependencies = [
  "cfg-if",
  "ed25519-dalek",
  "hex",
+ "log 0.4.20",
  "rand_core 0.6.4",
  "serde",
  "sgx_rand",
@@ -309,6 +310,12 @@ dependencies = [
  "cfg-if",
  "sgx_tstd",
 ]
+
+[[package]]
+name = "log"
+version = "0.4.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 
 [[package]]
 name = "opaque-debug"
