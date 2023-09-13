@@ -20,50 +20,7 @@ use ed25519_dalek::PublicKey;
 /// anytrust node
 pub fn new_user(
     anytrust_server_pks: &Vec<ServerPubKeyPackage>,
-) -> SgxResult<(SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob)> {
-    // 1. validate the input
-    let mut kem_pks = vec![];
-    for k in anytrust_server_pks {
-        if !k.verify_attestation() {
-            return Err(SGX_ERROR_INVALID_PARAMETER);
-        }
-
-        kem_pks.push(k.kem);
-    }
-
-    let role = "user".to_string();
-
-    // 2. generate a SGX protected key. used for both signing and round key derivation
-    let (sk, pk) = new_sgx_keypair_ext_internal(&role)?;
-
-    // 3. derive server secrets
-    let server_secrets = SharedSecretsDb::derive_shared_secrets(&sk, &kem_pks)?;
-
-    debug!("DH secrets {:?}", server_secrets);
-
-    Ok((server_secrets.seal_into()?, sk.seal_into()?, pk))
-}
-
-
-pub fn new_user_batch(
-    (anytrust_server_pks, n_user): &(Vec<ServerPubKeyPackage>, usize),
-) -> SgxResult<Vec<(SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob)>> {
-    let mut users = vec![];
-    for _ in 0..*n_user {
-        let u = new_user(anytrust_server_pks)?;
-        users.push(u);
-    }
-
-    Ok(users)
-}
-
-/// Derives shared secrets with all the given KEM pubkeys, and derived a new signing pubkey.
-/// Returns sealed secrets, a sealed private key, and a registration message to send to an
-/// anytrust node
-pub fn new_user_updated(
-    anytrust_server_pks: &Vec<ServerPubKeyPackageNoSGX>,
-) -> SgxResult<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)> {
-    log::debug!("here");
+) -> SgxResult<(SealedSharedSecretsDbClient, SealedSigPrivKey, UserRegistrationBlob)> {
     // 1. validate the input
     let mut kem_db: BTreeMap<NoSgxProtectedKeyPub, PublicKey> = BTreeMap::new();
     // let mut kem_pks = vec![];
@@ -85,14 +42,12 @@ pub fn new_user_updated(
     Ok((server_secrets.seal_into()?, sk.seal_into()?, pk))
 }
 
-pub fn new_user_batch_updated(
-    (anytrust_server_pks, n_user): &(Vec<ServerPubKeyPackageNoSGX>, usize),
-) -> SgxResult<Vec<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)>> {
-    log::debug!("hello. n_user {}", n_user);
+pub fn new_user_batch(
+    (anytrust_server_pks, n_user): &(Vec<ServerPubKeyPackage>, usize),
+) -> SgxResult<Vec<(SealedSharedSecretsDbClient, SealedSigPrivKey, UserRegistrationBlob)>> {
     let mut users = vec![];
     for _ in 0..*n_user {
-        log::debug!("in loop");
-        let u = new_user_updated(anytrust_server_pks)?;
+        let u = new_user(anytrust_server_pks)?;
         users.push(u);
     }
     

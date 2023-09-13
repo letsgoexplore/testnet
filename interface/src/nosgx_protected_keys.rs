@@ -18,8 +18,8 @@ use std::{println, vec};
 use sha2::{Digest, Sha256};
 use log;
 
-use crate::user_request::{EntityId, UserSubmissionMessageUpdated};
-use crate::ecall_interface_types::{RoundOutput, RoundOutputUpdated};
+use crate::user_request::{EntityId, UserSubmissionMessage, DcMessage, DcRoundMessage};
+use crate::ecall_interface_types::RoundOutput;
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
@@ -54,7 +54,7 @@ impl NoSgxProtectedKeyPub {
 /// AttestedPublicKey is pk + attestation
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Default)]
-pub struct AttestedPublicKeyNoSGX {
+pub struct AttestedPublicKey {
     pub pk: NoSgxProtectedKeyPub,
     pub xpk: NoSgxProtectedKeyPub,
     pub role: std::string::String,
@@ -62,9 +62,9 @@ pub struct AttestedPublicKeyNoSGX {
     pub tee_linkable_attestation: std::vec::Vec<u8>, // binds this key to an enclave
 }
 
-impl Debug for AttestedPublicKeyNoSGX {
+impl Debug for AttestedPublicKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AttestedPublicKeyNoSGX")
+        f.debug_struct("AttestedPublicKey")
             .field("pk", &self.pk)
             .field("xpk", &self.xpk)
             .field("role", &self.role)
@@ -129,7 +129,7 @@ impl TryFrom<&NoSgxPrivateKey> for NoSgxProtectedKeyPub {
 /// Contains a server's signing and KEM pubkeys
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Debug)]
-pub struct ServerPubKeyPackageNoSGX {
+pub struct ServerPubKeyPackage {
     pub sig: PublicKey,
     pub kem: PublicKey,
     pub xkem: NoSgxProtectedKeyPub,
@@ -138,20 +138,14 @@ pub struct ServerPubKeyPackageNoSGX {
 /// Store the bytes of signatures
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Default, Debug, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
-pub struct NoSgxSignature(pub Vec<u8>);
-
-// impl Default for NoSgxSignature {
-//     fn default() -> Self {
-//         Self([0u8; SIGNATURE_LENGTH])
-//     }
-// }
+pub struct SignatureBytes(pub Vec<u8>);
 
 /// Used by servers in round outputs
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct SignatureNoSGX {
+pub struct OutputSignature {
     pub pk: PublicKey,
-    pub sig: NoSgxSignature,
+    pub sig: SignatureBytes,
 }
 
 pub trait Hashable {
@@ -170,19 +164,9 @@ impl Hashable for RoundOutput {
     }
 }
 
-impl Hashable for RoundOutputUpdated {
-    fn sha256(&self) -> [u8; 32] {
-        let mut h = Sha256::new();
-        h.input(&self.round.to_le_bytes());
-        h.input(&self.dc_msg.digest());
-
-        h.result().try_into().unwrap()
-    }
-}
-
-pub trait MultiSignableUpdated {
+pub trait MultiSignable {
     fn digest(&self) -> Vec<u8>;
-    fn sign(&self, ssk: &SecretKey) -> Result<(NoSgxSignature, PublicKey), ()> {
+    fn sign(&self, ssk: &SecretKey) -> Result<(SignatureBytes, PublicKey), ()> {
         let dig = self.digest();
 
         let pk: PublicKey = ssk.into();
@@ -193,7 +177,7 @@ pub trait MultiSignableUpdated {
         keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
 
         let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
-        let sig = NoSgxSignature(keypair.sign(dig.as_slice()).to_bytes().to_vec());
+        let sig = SignatureBytes(keypair.sign(dig.as_slice()).to_bytes().to_vec());
 
         Ok((sig, pk))
     }
@@ -202,7 +186,7 @@ pub trait MultiSignableUpdated {
     fn verify_multisig(&self, pks: &[PublicKey]) -> Result<Vec<usize>, ()>;
 }
 
-impl MultiSignableUpdated for RoundOutputUpdated {
+impl MultiSignable for RoundOutput {
     fn digest(&self) -> Vec<u8> {
         self.sha256().to_vec()
     }
@@ -243,9 +227,9 @@ impl MultiSignableUpdated for RoundOutputUpdated {
 
 pub trait SignableUpdated {
     fn digest(&self) -> Vec<u8>;
-    fn get_sig(&self) -> NoSgxSignature;
+    fn get_sig(&self) -> SignatureBytes;
     fn get_pk(&self) -> PublicKey;
-    fn sign(&self, ssk: &NoSgxPrivateKey) -> Result<(NoSgxSignature, PublicKey), ()> {
+    fn sign(&self, ssk: &NoSgxPrivateKey) -> Result<(SignatureBytes, PublicKey), ()> {
         let dig = self.digest();
 
         let pk: PublicKey = (&SecretKey::from_bytes(&ssk.r).expect("Failed to generate pk from sk bytes")).into();
@@ -256,13 +240,13 @@ pub trait SignableUpdated {
         keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
 
         let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
-        let sig = NoSgxSignature(keypair.sign(dig.as_slice()).to_bytes().to_vec());
+        let sig = SignatureBytes(keypair.sign(dig.as_slice()).to_bytes().to_vec());
 
         Ok((sig, pk))
     }
 }
 
-impl SignableUpdated for UserSubmissionMessageUpdated {
+impl SignableUpdated for UserSubmissionMessage {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
         hasher.input(b"Begin UserSubmissionMessage");
@@ -277,11 +261,67 @@ impl SignableUpdated for UserSubmissionMessageUpdated {
         hasher.result().to_vec()
     }
 
-    fn get_sig(&self) -> NoSgxSignature {
+    fn get_sig(&self) -> SignatureBytes {
         self.tee_sig.clone()
     }
 
     fn get_pk(&self) -> PublicKey {
         self.tee_pk
+    }
+}
+
+// various functions for computing a.xor(b)
+pub trait Xor: Clone {
+    // xor_mut computes and sets self = xor(self, other)
+    fn xor_mut(&mut self, other: &Self)
+    where
+        Self: Sized;
+
+    // xor returns xor(self, other)
+    fn xor(&self, other: &Self) -> Self {
+        let mut copy = self.clone();
+        copy.xor_mut(other);
+        copy
+    }
+}
+
+impl Xor for DcMessage {
+    fn xor_mut(&mut self, other: &Self) {
+        for (lhs, rhs) in self.0.iter_mut().zip(other.0.iter()) {
+            *lhs ^= rhs
+        }
+    }
+}
+
+impl Xor for DcRoundMessage {
+    fn xor_mut(&mut self, other: &Self) {
+        assert_eq!(
+            self.aggregated_msg.num_rows(),
+            other.aggregated_msg.num_rows()
+        );
+        assert_eq!(
+            self.aggregated_msg.num_columns(),
+            other.aggregated_msg.num_columns()
+        );
+
+        // XOR the scheduling messages
+        for (lhs, rhs) in self
+            .scheduling_msg
+            .as_mut_slice()
+            .iter_mut()
+            .zip(other.scheduling_msg.as_slice().iter())
+        {
+            *lhs ^= rhs;
+        }
+
+        // XOR the round messages
+        for (lhs, rhs) in self
+            .aggregated_msg
+            .as_mut_slice()
+            .iter_mut()
+            .zip(other.aggregated_msg.as_slice().iter())
+        {
+            *lhs ^= rhs;
+        }
     }
 }

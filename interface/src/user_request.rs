@@ -210,22 +210,9 @@ impl From<&AttestedPublicKey> for EntityId {
     }
 }
 
-impl From<&AttestedPublicKeyNoSGX> for EntityId {
-    fn from(pk: &AttestedPublicKeyNoSGX) -> Self {
-        EntityId::from(&pk.pk)
-    }
-}
-
 impl From<&ServerPubKeyPackage> for EntityId {
     // server's entity id is computed from the signing key
-    fn from(spk: &ServerPubKeyPackage) -> Self {
-        EntityId::from(&spk.sig)
-    }
-}
-
-impl From<&ServerPubKeyPackageNoSGX> for EntityId {
-    // server's entity id is computed from the signing key
-    fn from(pk: &ServerPubKeyPackageNoSGX) -> Self {
+    fn from(pk: &ServerPubKeyPackage) -> Self {
         EntityId::from(&pk.sig)
     }
 }
@@ -292,13 +279,6 @@ impl Debug for RateLimitNonce {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum UserMsg {
-    TalkAndReserveUpdated {
-        msg: DcMessage,
-        /// Output of previous round signed by one or more anytrust server
-        prev_round_output: RoundOutputUpdated,
-        /// The number of times the user has already talked or reserved this window
-        times_participated: u32,
-    },
     TalkAndReserve {
         msg: DcMessage,
         /// Output of previous round signed by one or more anytrust server
@@ -330,52 +310,14 @@ pub struct UserSubmissionReq {
     pub round: u32,
     pub msg: UserMsg,
     /// A map from server KEM public key to sealed shared secret
-    pub shared_secrets: SealedSharedSecretDb,
+    pub shared_secrets: SealedSharedSecretsDbClient,
     /// A list of server public keys (can be verified using the included attestation)
     pub server_pks: Vec<ServerPubKeyPackage>,
 }
 
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UserSubmissionReqUpdated {
-    pub user_id: EntityId,
-    pub anytrust_group_id: EntityId,
-    pub round: u32,
-    pub msg: UserMsg,
-    /// A map from server KEM public key to sealed shared secret
-    pub shared_secrets: SealedSharedSecretsDbClient,
-    /// A list of server public keys (can be verified using the included attestation)
-    pub server_pks: Vec<ServerPubKeyPackageNoSGX>,
-}
-
-use crate::SgxSignature;
-
-/// A (potentially aggregated) message that's produced by an enclave
-/// Not used anymore.
-/// Clients use UserSubmissionMessage
-/// Aggregators and servers use AggregatedMessage
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct AggregatedMessageObsolete {
-    pub round: u32,
-    pub anytrust_group_id: EntityId,
-    pub user_ids: BTreeSet<EntityId>,
-    /// This is only Some for user-submitted messages
-    pub rate_limit_nonce: Option<RateLimitNonce>,
-    pub aggregated_msg: DcRoundMessage,
-    pub tee_sig: SgxSignature,
-    pub tee_pk: SgxSigningPubKey,
-}
-
-impl AggregatedMessageObsolete {
-    pub fn is_empty(&self) -> bool {
-        self.user_ids.is_empty()
-    }
-}
-
 /// A user submitted message that's produced by an enclave
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct UserSubmissionMessage {
     pub round: u32,
     pub anytrust_group_id: EntityId,
@@ -383,31 +325,11 @@ pub struct UserSubmissionMessage {
     /// This is only Some for user-submitted messages
     pub rate_limit_nonce: Option<RateLimitNonce>,
     pub aggregated_msg: DcRoundMessage,
-    pub tee_sig: SgxSignature,
-    pub tee_pk: SgxSigningPubKey,
-}
-
-impl UserSubmissionMessage {
-    pub fn is_empty(&self) -> bool {
-        false
-    }
-}
-
-/// A user submitted message that's produced by an enclave
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize, Clone, Default)]
-pub struct UserSubmissionMessageUpdated {
-    pub round: u32,
-    pub anytrust_group_id: EntityId,
-    pub user_id: EntityId,
-    /// This is only Some for user-submitted messages
-    pub rate_limit_nonce: Option<RateLimitNonce>,
-    pub aggregated_msg: DcRoundMessage,
-    pub tee_sig: NoSgxSignature,
+    pub tee_sig: SignatureBytes,
     pub tee_pk: PublicKey,
 }
 
-impl UserSubmissionMessageUpdated {
+impl UserSubmissionMessage {
     pub fn is_empty(&self) -> bool {
         false
     }

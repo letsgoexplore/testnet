@@ -13,13 +13,13 @@ use crate::{
 };
 
 use common::cli_util;
-use interface::UserRegistrationBlobNew;
+use interface::UserRegistrationBlob;
 
 use common::types_nosgx::{
-    RoundSubmissionBlobNoSGX,
-    UnblindedAggregateShareBlobNoSGX,
-    ServerRegistrationBlobNoSGX,
-    AggRegistrationBlobNoSGX,
+    RoundSubmissionBlob,
+    UnblindedAggregateShareBlob,
+    ServerRegistrationBlob,
+    AggRegistrationBlob,
 };
 
 use std::{error::Error, fs::File};
@@ -159,7 +159,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-user") {
         // Parse user registration blobs from stdin
-        let reg_blobs: Vec<UserRegistrationBlobNew> = load_multi_from_stdin()?;
+        let reg_blobs: Vec<UserRegistrationBlob> = load_multi_from_stdin()?;
 
         // Feed them to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
@@ -173,7 +173,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-aggregator") {
         // Parse an aggregator registration blob from stdin
-        let reg_blob: AggRegistrationBlobNoSGX = load_from_stdin()?;
+        let reg_blob: AggRegistrationBlob = load_from_stdin()?;
 
         // Feed it to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
@@ -186,7 +186,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-server") {
         // Parse an aggregator registration blob from stdin
-        let reg_blob: ServerRegistrationBlobNoSGX = load_from_stdin()?;
+        let reg_blob: ServerRegistrationBlob = load_from_stdin()?;
 
         // Feed it to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
@@ -199,7 +199,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("unblind-aggregate") {
         // Load the aggregation blob
-        let agg_blob: RoundSubmissionBlobNoSGX = load_from_stdin()?;
+        let agg_blob: RoundSubmissionBlob = load_from_stdin()?;
 
         // Feed it to the state and print the result
         let state_path = matches.value_of("server-state").unwrap();
@@ -215,7 +215,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Parse each server's unblinded inputs
         let shares_filename = matches.value_of("shares").unwrap();
         let sharefile = File::open(shares_filename)?;
-        let shares: Vec<UnblindedAggregateShareBlobNoSGX> = cli_util::load_multi(sharefile)?;
+        let shares: Vec<UnblindedAggregateShareBlob> = cli_util::load_multi(sharefile)?;
 
         // Feed it to the state and output the result
         let state_path = matches.value_of("server-state").unwrap();

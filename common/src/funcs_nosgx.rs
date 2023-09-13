@@ -2,11 +2,12 @@ use std::collections::BTreeSet;
 use std::vec::Vec;
 use interface::{
     EntityId,
-    UserRegistrationBlobNew,
+    UserRegistrationBlob,
     RoundSecret,
     DcRoundMessage,
-    UserSubmissionMessageUpdated,
+    UserSubmissionMessage,
     SignableUpdated,
+    Xor,
 };
 
 extern crate sha2;
@@ -17,13 +18,13 @@ use hkdf::{Hkdf, InvalidLength};
 use ed25519_dalek::{PublicKey, Signature, Verifier, SignatureError};
 
 use crate::aes_prng::Aes128Rng;
-use crate::types_nosgx::{SharedSecretsDbServer, XorNoSGX};
+use crate::types_nosgx::SharedSecretsDbServer;
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_cbor;
 
-pub fn verify_user_submission_msg(incoming_msg: &UserSubmissionMessageUpdated) -> Result<(), SignatureError> {
+pub fn verify_user_submission_msg(incoming_msg: &UserSubmissionMessage) -> Result<(), SignatureError> {
     let binding= incoming_msg.digest();
     let msg = binding.as_slice();
     let pk: PublicKey = incoming_msg.get_pk();
@@ -32,7 +33,7 @@ pub fn verify_user_submission_msg(incoming_msg: &UserSubmissionMessageUpdated) -
     pk.verify(msg, &sig)
 }
 
-pub fn verify_user_attestation(_reg_blob: &UserRegistrationBlobNew) -> Result<(), ()> {
+pub fn verify_user_attestation(_reg_blob: &UserRegistrationBlob) -> Result<(), ()> {
     Ok(())
 }
 
@@ -66,7 +67,7 @@ pub fn derive_round_secret_server(
         hk.expand(&info, &mut seed)?;
 
         let mut rng = MyRng::from_seed(seed);
-        round_secret.xor_mut_nosgx(&DcRoundMessage::rand_from_csprng(&mut rng));
+        round_secret.xor_mut(&DcRoundMessage::rand_from_csprng(&mut rng));
     }
 
     Ok(round_secret)

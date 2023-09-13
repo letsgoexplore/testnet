@@ -2,9 +2,9 @@ use crate::util::Result;
 
 use interface::{
     EntityId,
-    RoundOutputUpdated,
-    UserRegistrationBlobNew,
-    ServerPubKeyPackageNoSGX,
+    RoundOutput,
+    UserRegistrationBlob,
+    ServerPubKeyPackage,
 };
 
 use log::info;
@@ -15,11 +15,11 @@ use ed25519_dalek::SecretKey;
 use common::types_nosgx::{
     AggregatedMessage,
     SharedSecretsDbServer,
-    SignedPubKeyDbNoSGX,
-    RoundSubmissionBlobNoSGX,
-    UnblindedAggregateShareBlobNoSGX,
-    AggRegistrationBlobNoSGX,
-    ServerRegistrationBlobNoSGX,
+    SignedPubKeyDb,
+    RoundSubmissionBlob,
+    UnblindedAggregateShareBlob,
+    AggRegistrationBlob,
+    ServerRegistrationBlob,
 };
 
 use crate::server_nosgx::{
@@ -40,19 +40,19 @@ pub struct ServerState {
     /// This server's KEM decapsulation key.
     pub decap_key: SecretKey,
     /// The KEM and signing public keys of this server
-    pub pubkey_pkg: ServerPubKeyPackageNoSGX,
+    pub pubkey_pkg: ServerPubKeyPackage,
     /// A partial aggregate of received user messages
     pub partial_agg: Option<AggregatedMessage>,
     /// A sealed database of secrets shared with users. Maps entity ID to shared secret.
     pub shared_secrets: SharedSecretsDbServer,
     /// A map of EntityIds to the corresponding public key
-    pub pubkeys: SignedPubKeyDbNoSGX,
+    pub pubkeys: SignedPubKeyDb,
     /// The size of this anytrust group, including this node
     pub anytrust_group_size: usize,
 }
 
 impl ServerState {
-    pub fn new() -> Result<(ServerState, ServerPubKeyPackageNoSGX)> {
+    pub fn new() -> Result<(ServerState, ServerPubKeyPackage)> {
         let (ssk, ksk, server_id, reg_blob) = new_server()?;
         // Group size starts out as 1. This will increment every time an anytrust node is
         // registered with this node.
@@ -67,7 +67,7 @@ impl ServerState {
             pubkey_pkg,
             partial_agg: None,
             shared_secrets: SharedSecretsDbServer::default(),
-            pubkeys: SignedPubKeyDbNoSGX::default(),
+            pubkeys: SignedPubKeyDb::default(),
             anytrust_group_size,
         };
 
@@ -78,8 +78,8 @@ impl ServerState {
     /// unblinded aggregate as well as the ratcheted shared secrets
     pub fn unblind_aggregate(
         &mut self,
-        toplevel_agg: &RoundSubmissionBlobNoSGX,
-    ) -> Result<UnblindedAggregateShareBlobNoSGX> {
+        toplevel_agg: &RoundSubmissionBlob,
+    ) -> Result<UnblindedAggregateShareBlob> {
         let (share, ratcheted_secrets) =
             unblind_aggregate(toplevel_agg, &self.signing_key, &self.shared_secrets)?;
 
@@ -92,15 +92,15 @@ impl ServerState {
     /// Derives the final round output given all the shares of the unblinded aggregates
     pub fn derive_round_output(
         &self,
-        server_aggs: &[UnblindedAggregateShareBlobNoSGX],
-    ) -> Result<RoundOutputUpdated> {
+        server_aggs: &[UnblindedAggregateShareBlob],
+    ) -> Result<RoundOutput> {
         derive_round_output(&self.signing_key, server_aggs)
     }
 
     /// Registers a user with this server
     pub fn recv_user_registrations(
         &mut self,
-        input_blobs: &[UserRegistrationBlobNew],
+        input_blobs: &[UserRegistrationBlob],
     ) -> Result<()> {
         recv_user_registration_batch(
             &mut self.pubkeys,
@@ -115,7 +115,7 @@ impl ServerState {
     /// Registers an aggregator with this server
     pub fn recv_aggregator_registration(
         &mut self,
-        input_blob: &AggRegistrationBlobNoSGX,
+        input_blob: &AggRegistrationBlob,
     ) -> Result<()> {
         recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
 
@@ -126,7 +126,7 @@ impl ServerState {
     /// anytrust group
     pub fn recv_server_registration(
         &mut self,
-        input_blob: &ServerRegistrationBlobNoSGX,
+        input_blob: &ServerRegistrationBlob,
     ) -> Result<()> {
         // Input the registration and increment the size of the group
         recv_server_registration(&mut self.pubkeys, input_blob)?;

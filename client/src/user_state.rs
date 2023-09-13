@@ -6,13 +6,13 @@ use serde::{Deserialize, Serialize};
 use interface::{
     EntityId,
     UserMsg,
-    SealedSigPrivKeyNoSGX,
+    SealedSigPrivKey,
     SealedSharedSecretsDbClient,
-    ServerPubKeyPackageNoSGX,
-    UserRegistrationBlobNew, 
+    ServerPubKeyPackage,
+    UserRegistrationBlob, 
     NoSgxProtectedKeyPub,
-    UserSubmissionReqUpdated,
-    UserSubmissionBlobUpdated,
+    UserSubmissionReq,
+    UserSubmissionBlob,
     DC_NET_ROUNDS_PER_WINDOW,
     compute_anytrust_group_id_spk,
 };
@@ -24,12 +24,12 @@ pub struct UserState {
     /// A unique for the set anytrust servers that this client is registered with
     anytrust_group_id: EntityId,
     /// This client's signing key. Can only be accessed from within the enclave.
-    signing_key: SealedSigPrivKeyNoSGX,
+    signing_key: SealedSigPrivKey,
     /// The secrets that this client shares with the anytrust servers. Maps entity ID to shared
     /// secret. Can only be accessed from within the enclave.
     shared_secrets: SealedSharedSecretsDbClient,
     /// The anytrust servers' KEM and signing pubkeys
-    anytrust_group_keys: Vec<ServerPubKeyPackageNoSGX>,
+    anytrust_group_keys: Vec<ServerPubKeyPackage>,
     /// Times talked or reserved so far in this window
     times_participated: u32,
 }
@@ -39,9 +39,9 @@ impl UserState {
     pub fn new_multi(
         enclave: &DcNetEnclave,
         n: usize,
-        pubkeys: Vec<ServerPubKeyPackageNoSGX>,
-    ) -> Result<Vec<(UserState, UserRegistrationBlobNew)>> {
-        let vec = enclave.new_user_batch_updated(&pubkeys, n)?;
+        pubkeys: Vec<ServerPubKeyPackage>,
+    ) -> Result<Vec<(UserState, UserRegistrationBlob)>> {
+        let vec = enclave.new_user_batch(&pubkeys, n)?;
 
         let users_and_reg_blobs = vec
             .into_iter()
@@ -74,9 +74,9 @@ impl UserState {
         enclave: &DcNetEnclave,
         round: u32,
         msg: UserMsg,
-    ) -> Result<UserSubmissionBlobUpdated> {
+    ) -> Result<UserSubmissionBlob> {
         let msg_is_cover = msg.is_cover();
-        let req = UserSubmissionReqUpdated {
+        let req = UserSubmissionReq {
             user_id: self.user_id,
             anytrust_group_id: self.anytrust_group_id,
             round,
@@ -91,7 +91,7 @@ impl UserState {
         }
 
         // Submit the message
-        let (blob, ratcheted_secrets) = enclave.user_submit_round_msg_updated(&req, &self.signing_key)?;
+        let (blob, ratcheted_secrets) = enclave.user_submit_round_msg(&req, &self.signing_key)?;
 
         // Ratchet the secrets forward
         self.shared_secrets = ratcheted_secrets;

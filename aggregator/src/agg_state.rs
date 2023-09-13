@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 
 use interface::{
     compute_group_id, EntityId, RateLimitNonce,
-    DC_NET_ROUNDS_PER_WINDOW, ServerPubKeyPackageNoSGX,
+    DC_NET_ROUNDS_PER_WINDOW, ServerPubKeyPackage,
 };
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +12,7 @@ extern crate ed25519_dalek;
 use ed25519_dalek::SecretKey;
 
 use common::types_nosgx::{
-    AggRegistrationBlobNoSGX,
+    AggRegistrationBlob,
     AggregatedMessage,
     SubmissionMessage,
 };
@@ -43,9 +43,9 @@ impl AggregatorState {
     /// Makes a new aggregate given the pubkeys of the servers. leaf_node = true iff this
     /// aggregator is a leaf-level aggregator
     pub(crate) fn new(
-        pubkeys: Vec<ServerPubKeyPackageNoSGX>,
+        pubkeys: Vec<ServerPubKeyPackage>,
         level: u32,
-    ) -> Result<(AggregatorState, AggRegistrationBlobNoSGX)> {
+    ) -> Result<(AggregatorState, AggRegistrationBlob)> {
         let (sk, agg_id, reg_data) = new_aggregator()?;
 
         let anytrust_ids: BTreeSet<EntityId> =

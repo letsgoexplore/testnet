@@ -7,15 +7,15 @@ use rand::rngs::OsRng;
 use interface::{
     EntityId,
     RateLimitNonce,
-    UserSubmissionMessageUpdated,
+    UserSubmissionMessage,
+    Xor,
 
 };
 use common::types_nosgx::{
-    AggRegistrationBlobNoSGX,
+    AggRegistrationBlob,
     AggregatedMessage,
-    SignableNoSGX,
-    SignMutableNoSGX,
-    XorNoSGX,
+    Signable,
+    SignMutable,
     SubmissionMessage,
 };
 use common::funcs_nosgx::verify_user_submission_msg;
@@ -25,15 +25,15 @@ use std::iter::FromIterator;
 use log::{error, debug, warn};
 
 /// Create a new secret key for an aggregator.
-/// Returns secret key, entity id, and an AggRegistrationBlobNoSGX that contains the
+/// Returns secret key, entity id, and an AggRegistrationBlob that contains the
 /// information to send to anytrust nodes.
-pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlobNoSGX)> {
+pub fn new_aggregator() -> Result<(SecretKey, EntityId, AggRegistrationBlob)> {
     let mut csprng = OsRng{};
     let sk = SecretKey::generate(&mut csprng);
     // The standard hash function used for most ed25519 libraries is SHA-512
     let pk: PublicKey = (&sk).into();
 
-    let blob = AggRegistrationBlobNoSGX {
+    let blob = AggRegistrationBlob {
         pk,
         role: "agg".to_string(),
     };
@@ -180,7 +180,7 @@ fn add_to_agg(
         current_aggregation.user_ids.extend(&incoming_msg.user_ids);
         current_aggregation
             .aggregated_msg
-            .xor_mut_nosgx(&incoming_msg.aggregated_msg);
+            .xor_mut(&incoming_msg.aggregated_msg);
 
         // sign
         match current_aggregation.sign_mut(&sk){
@@ -199,7 +199,7 @@ fn add_to_agg(
 
 fn add_to_agg_user_submit(
     input: (
-        &UserSubmissionMessageUpdated,
+        &UserSubmissionMessage,
         &AggregatedMessage,
         &Option<BTreeSet<RateLimitNonce>>,
         &SecretKey,
@@ -298,7 +298,7 @@ fn add_to_agg_user_submit(
         current_aggregation.user_ids.insert(incoming_msg.user_id.clone());
         current_aggregation
             .aggregated_msg
-            .xor_mut_nosgx(&incoming_msg.aggregated_msg);
+            .xor_mut(&incoming_msg.aggregated_msg);
 
         // sign
         match current_aggregation.sign_mut(&sk) {

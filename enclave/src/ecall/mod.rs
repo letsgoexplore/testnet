@@ -1,13 +1,10 @@
-mod aggregation;
 mod keygen;
-mod server;
 mod submit;
 mod user;
 
 use interface::*;
 use sgx_status_t::{SGX_ERROR_INVALID_PARAMETER, SGX_SUCCESS};
 use sgx_types::{sgx_status_t, SgxResult};
-use unseal::{SealInto, UnsealableInto};
 
 use std::collections::BTreeSet;
 use std::slice;
@@ -23,8 +20,6 @@ macro_rules! match_ecall_ids {
     }
 }
 
-use std::convert::TryFrom;
-use std::string::String;
 use std::vec::Vec;
 
 #[no_mangle]
@@ -55,31 +50,11 @@ pub extern "C" fn ecall_entrypoint(
     let r = match_ecall_ids! {
         ecall_id, inp, inp_len, output, output_cap, output_used,
         (
-            EcallNewSgxKeypair,
-            String,
-            (Vec<u8>, AttestedPublicKey), // (sealed sk, public key)
-            |role: &String| {
-                let (sk, pk) = keygen::new_sgx_keypair_ext_internal(role)?;
-                let sealed_sk: SealedSigPrivKey = sk.seal_into()?;
-                Ok((sealed_sk.0, pk))
-            }
-        ),
-        (
-            EcallUnsealToPublicKey,
-           Vec<u8>, // sealed sk
-            SgxProtectedKeyPub,
-            |sealed_sk: &Vec<u8>| {
-                let sk: SgxPrivateKey = SealedSigPrivKey(sealed_sk.to_vec()).unseal_into()?;
-
-                SgxProtectedKeyPub::try_from(&sk)
-            }
-        ),
-        (
             EcallNewUser,
             // input
             Vec < ServerPubKeyPackage >,
             // output
-            (SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob),
+            (SealedSharedSecretsDbClient, SealedSigPrivKey, UserRegistrationBlob),
             user::new_user
         ),
         (
@@ -87,113 +62,14 @@ pub extern "C" fn ecall_entrypoint(
             // input
             (Vec < ServerPubKeyPackage >, usize),
             // output
-            Vec<(SealedSharedSecretDb, SealedSigPrivKey, UserRegistrationBlob)>,
+            Vec<(SealedSharedSecretsDbClient, SealedSigPrivKey, UserRegistrationBlob)>,
             user::new_user_batch
-        ),
-        (
-            EcallNewUserUpdated,
-            // input
-            Vec < ServerPubKeyPackageNoSGX >,
-            // output
-            (SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew),
-            user::new_user_updated
-        ),
-        (
-            EcallNewUserBatchUpdated,
-            // input
-            (Vec < ServerPubKeyPackageNoSGX >, usize),
-            // output
-            Vec<(SealedSharedSecretsDbClient, SealedSigPrivKeyNoSGX, UserRegistrationBlobNew)>,
-            user::new_user_batch_updated
-        ),
-        (
-            EcallNewServer,
-            // input
-            (),
-            // output
-            (SealedSigPrivKey, SealedKemPrivKey, ServerRegistrationBlob),
-            server::new_server
         ),
         (
             EcallUserSubmit,
             (UserSubmissionReq, SealedSigPrivKey),
-            (UserSubmissionBlob, SealedSharedSecretDb),
+            (UserSubmissionBlob, SealedSharedSecretsDbClient),
             submit::user_submit_internal
-        ),
-        (
-            EcallUserSubmitUpdated,
-            (UserSubmissionReqUpdated, SealedSigPrivKeyNoSGX),
-            (UserSubmissionBlobUpdated, SealedSharedSecretsDbClient),
-            submit::user_submit_internal_updated
-        ),
-        (
-            EcallAddToAggregate,
-            (
-                RoundSubmissionBlob,
-                SignedPartialAggregate,
-                Option<BTreeSet<RateLimitNonce>>,
-                SealedSigPrivKey
-            ),
-            (SignedPartialAggregate, Option<BTreeSet<RateLimitNonce>>),
-            aggregation::add_to_aggregate_internal
-        ),
-        (
-            EcallRecvUserRegistration,
-            // input:
-            (SignedPubKeyDb, SealedSharedSecretDb, SealedKemPrivKey, UserRegistrationBlob),
-            // output: updated SignedPubKeyDb, SealedSharedSecretDb
-            (SignedPubKeyDb, SealedSharedSecretDb),
-            server::recv_user_registration
-        ),
-        (
-            EcallRecvUserRegistrationBatch,
-            // input:
-            (SignedPubKeyDb, SealedKemPrivKey, Vec<UserRegistrationBlob>),
-            // output: updated SignedPubKeyDb, SealedSharedSecretDb
-            (SignedPubKeyDb, SealedSharedSecretDb),
-            server::recv_user_registration_batch
-        ),
-        (
-            EcallUnblindAggregate,
-            (RoundSubmissionBlob,SealedSigPrivKey,SealedSharedSecretDb),
-            (UnblindedAggregateShareBlob, SealedSharedSecretDb),
-            server::unblind_aggregate
-        ),
-        (
-            EcallUnblindAggregatePartial,
-            (u32,SealedSharedSecretDb,BTreeSet<EntityId>),
-            RoundSecret,
-            server::unblind_aggregate_partial
-        ),
-        (
-            EcallUnblindAggregateMerge,
-            (RoundSubmissionBlob,Vec<RoundSecret>, SealedSigPrivKey,SealedSharedSecretDb),
-            (UnblindedAggregateShareBlob, SealedSharedSecretDb),
-            server::unblind_aggregate_merge
-        ),
-        (
-            EcallDeriveRoundOutput,
-            (SealedSigPrivKey, Vec < UnblindedAggregateShareBlob >),
-            RoundOutput,
-            server::derive_round_output
-        ),
-        (
-            EcallRecvAggregatorRegistration,
-            (SignedPubKeyDb, AggRegistrationBlob),
-            SignedPubKeyDb,
-            server::recv_aggregator_registration
-        ),
-        (
-            EcallRecvServerRegistration,
-            (SignedPubKeyDb, ServerRegistrationBlob),
-            SignedPubKeyDb,
-            server::recv_server_registration
-        ),
-        (
-            EcallLeakDHSecrets,
-            SealedSharedSecretDb,
-            SealedSharedSecretDb,
-            server::leak_dh_secrets
         ),
     };
     //
@@ -214,7 +90,6 @@ macro_rules! unmarshal_or_abort {
     };
 }
 
-use crypto::SgxPrivateKey;
 use env_logger::{Builder, Env};
 use serde::Serialize;
 use sgx_types::SgxError;
