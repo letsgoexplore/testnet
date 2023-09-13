@@ -1,6 +1,9 @@
 name: Build
 on: push
-
+env:
+  LD_RUN_PATH: /usr/lib:/usr/local/lib
+  LD_LIBRARY_PATH: /usr/lib:/usr/local/lib:/opt/sgxsdk/sdk_libs
+  PATH: "/root/:cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/sgxsdk/bin:/opt/sgxsdk/bin/x64"
 jobs:
   build-everything:
     runs-on: ubuntu-20.04
