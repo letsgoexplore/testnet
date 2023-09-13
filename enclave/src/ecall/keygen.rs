@@ -24,7 +24,7 @@ pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(NoSgxPrivateKey, Attes
     let sk = rand.gen::<NoSgxPrivateKey>();
     let secret = StaticSecret::from(sk.r);
     let xpk = PublicKey::from(&secret);
-    let attested_key = AttestedPublicKeyNoSGX {
+    let attested_key = AttestedPublicKey {
         pk: NoSgxProtectedKeyPub(xpk.to_bytes()),
         xpk: NoSgxProtectedKeyPub(xpk.to_bytes()),
         role: role.to_string(),

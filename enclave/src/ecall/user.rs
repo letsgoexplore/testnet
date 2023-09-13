@@ -1,7 +1,6 @@
 use crate::attestation::Attested;
-use crate::crypto::{SharedSecretsDb, SharedSecretsDbClient};
+use crate::crypto::{SharedSecretsDbClient};
 use ecall::keygen::{
-    new_sgx_keypair_ext_internal,
     new_keypair_ext_internal,
 };
 
