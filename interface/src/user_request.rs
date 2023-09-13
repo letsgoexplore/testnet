@@ -1,12 +1,12 @@
 use std::prelude::v1::*;
 use std::{collections::BTreeSet, vec};
 
-use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected_keys::*, nosgx_protected_keys::*};
+use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected_keys::*};
 
 use sha2::{Digest, Sha256};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-use ed25519_dalek::PublicKey;
+use ed25519_dalek::{Signature,PublicKey,Verifier};
 
 // a wrapper around RawMessage so that we can impl traits. This stores DC_NET_MESSAGE_LENGTH bytes
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -162,28 +162,13 @@ impl From<[u8; USER_ID_LENGTH]> for EntityId {
     }
 }
 
-impl From<&NoSgxProtectedKeyPub> for EntityId {
-    fn from(pk: &NoSgxProtectedKeyPub) -> Self {
+impl From<&SgxProtectedKeyPub> for EntityId {
+    fn from(pk: &SgxProtectedKeyPub) -> Self {
         let mut hasher = Sha256::new();
         hasher.input("anytrust_group_id");
         hasher.input(pk.0);
 
         let digest = hasher.result();
-        let mut id = EntityId::default();
-        id.0.copy_from_slice(&digest);
-        id
-    }
-}
-
-impl From<&SgxProtectedKeyPub> for EntityId {
-    fn from(pk: &SgxProtectedKeyPub) -> Self {
-        let mut hasher = Sha256::new();
-        hasher.input("anytrust_group_id");
-        hasher.input(pk.gx);
-        hasher.input(pk.gy);
-
-        let digest = hasher.result();
-
         let mut id = EntityId::default();
         id.0.copy_from_slice(&digest);
         id
@@ -233,13 +218,9 @@ pub fn compute_group_id(ids: &BTreeSet<EntityId>) -> EntityId {
     id
 }
 
-/// An anytrust_group_id is computed from sig keys
-pub fn compute_anytrust_group_id(keys: &[SgxSigningPubKey]) -> EntityId {
-    compute_group_id(&keys.iter().map(|k| EntityId::from(k)).collect())
-}
 
 /// An anytrust_group_id is computed from server pub keys
-pub fn compute_anytrust_group_id_spk(keys: &[NoSgxProtectedKeyPub]) -> EntityId {
+pub fn compute_anytrust_group_id(keys: &[SgxProtectedKeyPub]) -> EntityId {
     compute_group_id(&keys.iter().map(|k| EntityId::from(k)).collect())
 }
 
@@ -329,8 +310,39 @@ pub struct UserSubmissionMessage {
     pub tee_pk: PublicKey,
 }
 
+
 impl UserSubmissionMessage {
     pub fn is_empty(&self) -> bool {
         false
+    }
+    pub fn digest(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.input(b"Begin UserSubmissionMessage");
+        hasher.input(&self.anytrust_group_id);
+        // for id in self.user_ids.iter() {
+        //     hasher.input(id);
+        // }
+        hasher.input(self.user_id);
+        hasher.input(&self.aggregated_msg.digest());
+        hasher.input(b"End UserSubmissionMessage");
+
+        hasher.result().to_vec()
+    }
+    pub fn verify_sig(&self) -> bool {
+        let pk: PublicKey = self.tee_pk;
+        let sig = match Signature::from_bytes(&self.tee_sig.0) {
+            Ok(sig) => sig,
+            Err(_e) => {
+                log::error!("failed to generate sig from bytes");
+                return false;
+            }};
+
+        match pk.verify(&self.digest(), &sig) {
+            Ok(_) => true,
+            Err(e) => {
+                log::error!("sig err {}", e);
+                false
+            },
+        }
     }
 }

@@ -10,7 +10,7 @@ use interface::{
     DcRoundMessage,
     OutputSignature,
     MultiSignable,
-    NoSgxProtectedKeyPub,
+    SgxProtectedKeyPub,
     Xor,
 };
 
@@ -75,7 +75,7 @@ pub fn new_server() -> Result<(SecretKey, SecretKey, EntityId, ServerPubKeyPacka
     let reg = ServerPubKeyPackage {
         sig: sig_key_pk,
         kem: kem_key_pk,
-        xkem: NoSgxProtectedKeyPub(kem_key_xpk.to_bytes()),
+        xkem: SgxProtectedKeyPub(kem_key_xpk.to_bytes()),
     };
 
     Ok((sig_key, kem_key, EntityId::from(&reg), reg))
@@ -121,7 +121,7 @@ fn recv_user_reg_batch(
 
     // Derive secrets
     // let mut others_kem_pks = vec![];
-    let mut others_kem_db: BTreeMap<NoSgxProtectedKeyPub, NoSgxProtectedKeyPub> = BTreeMap::new();
+    let mut others_kem_db: BTreeMap<SgxProtectedKeyPub, SgxProtectedKeyPub> = BTreeMap::new();
     for (_, k) in pk_db.users.iter() {
         // others_kem_pks.push(k.pk);
         others_kem_db.insert(k.xpk, k.pk);

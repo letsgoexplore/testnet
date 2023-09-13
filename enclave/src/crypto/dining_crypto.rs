@@ -31,7 +31,7 @@ pub struct SharedSecretsDbClient {
     pub round: u32,
     /// a dictionary of keys
     /// We use DiffieHellmanSharedSecret to store SharedSecret, since SharedSecret is ephemeral
-    pub db: BTreeMap<NoSgxProtectedKeyPub, DiffieHellmanSharedSecret>,
+    pub db: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret>,
 }
 
 impl Default for SharedSecretsDbClient {
@@ -45,18 +45,18 @@ impl Default for SharedSecretsDbClient {
 
 impl SharedSecretsDbClient {
     pub fn anytrust_group_id(&self) -> EntityId {
-        let keys: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
-        compute_anytrust_group_id_spk(&keys)
+        let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        compute_anytrust_group_id(&keys)
     }
 
     /// Derive shared secrets (using DH). Used at registration time
     pub fn derive_shared_secrets(
-        my_sk: &NoSgxPrivateKey,
-        pk_db: &BTreeMap<NoSgxProtectedKeyPub, PublicKey>,
+        my_sk: &SgxPrivateKey,
+        pk_db: &BTreeMap<SgxProtectedKeyPub, PublicKey>,
     ) -> SgxResult<Self> {
         // 1. Generate StaticSecret from client's secret key
         let my_secret = StaticSecret::from(my_sk.r);
-        let mut client_secrets: BTreeMap<NoSgxProtectedKeyPub, DiffieHellmanSharedSecret> = BTreeMap::new();
+        let mut client_secrets: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret> = BTreeMap::new();
 
         for (kem_xpk, kem_pk) in pk_db {
             // 2. Derive the exchange pk from x_pk
@@ -66,7 +66,7 @@ impl SharedSecretsDbClient {
             // 4. Save ephemeral SharedSecret into DiffieHellmanSharedSecret
         let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
             client_secrets.insert(
-                NoSgxProtectedKeyPub(kem_pk.to_bytes()),
+                SgxProtectedKeyPub(kem_pk.to_bytes()),
                 DiffieHellmanSharedSecret(shared_secret_bytes),
             );
         }
@@ -107,7 +107,7 @@ impl SharedSecretsDbClient {
 pub fn derive_round_nonce(
     anytrust_group_id: &EntityId,
     round: u32,
-    signing_sk: &NoSgxPrivateKey,
+    signing_sk: &SgxPrivateKey,
     msg: &UserMsg,
 ) -> SgxResult<RateLimitNonce> {
     // Extract the talking counter. If this is cover traffic, return a random nonce immediately

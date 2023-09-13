@@ -17,13 +17,13 @@ use interface::{
     EntityId,
     RateLimitNonce,
     DcRoundMessage,
-    NoSgxProtectedKeyPub,
+    SgxProtectedKeyPub,
     AttestedPublicKey,
     ServerPubKeyPackage,
     DiffieHellmanSharedSecret,
     UserSubmissionMessage,
     RoundSecret,
-    compute_anytrust_group_id_spk,
+    compute_anytrust_group_id,
 };
 
 use crate::funcs_nosgx::{
@@ -160,22 +160,22 @@ pub struct SharedSecretsDbServer {
     pub round: u32,
     /// a dictionary of keys
     /// We use DiffieHellmanSharedSecret to store SharedSecret, since SharedSecret is ephemeral
-    pub db: BTreeMap<NoSgxProtectedKeyPub, DiffieHellmanSharedSecret>,
+    pub db: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret>,
 }
 
 impl SharedSecretsDbServer {
     pub fn anytrust_group_id(&self) -> EntityId {
-        let keys: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
-        compute_anytrust_group_id_spk(&keys)
+        let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        compute_anytrust_group_id(&keys)
     }
 
     pub fn derive_shared_secrets(
         my_sk: &SecretKey,
-        other_pks: &BTreeMap<NoSgxProtectedKeyPub, NoSgxProtectedKeyPub>,
+        other_pks: &BTreeMap<SgxProtectedKeyPub, SgxProtectedKeyPub>,
     ) -> Result<Self, SignatureError> {
         // 1. Generate StaticSecret from server's secret key
         let my_secret = StaticSecret::from(my_sk.to_bytes());
-        let mut server_secrets: BTreeMap<NoSgxProtectedKeyPub, DiffieHellmanSharedSecret> = BTreeMap::new();
+        let mut server_secrets: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret> = BTreeMap::new();
 
         for (client_xpk, client_pk) in other_pks {
             // 2. Derive the exchange pk from the client_xpk

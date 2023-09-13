@@ -6,8 +6,7 @@ use crate::unseal::UnsealableInto;
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use crypto;
-use crypto::SignMutableSGX;
-use interface::MultiSignable;
+use crypto::{sign_submission,SgxPrivateKey};
 use log::debug;
 use sgx_types::sgx_status_t::{
     SGX_ERROR_SERVICE_UNAVAILABLE,
@@ -99,7 +98,7 @@ fn derive_msg_slot(cur_slot: usize, prev_round_output: &RoundOutput) -> SgxResul
 /// return (prev_slot_idx, prev_slot_val, next_slot_idx, next_slot_val)
 /// ```
 fn derive_reservation(
-    usk: &NoSgxPrivateKey,
+    usk: &SgxPrivateKey,
     anytrust_group_id: &EntityId,
     round: u32,
 ) -> (usize, interface::Footprint, usize, interface::Footprint) {
@@ -109,7 +108,7 @@ fn derive_reservation(
     const SCHED_SLOT_VAL: &[u8; 14] = b"sched-slot-val";
 
     // hash three things to u32
-    let h3_to_u32 = |label: &[u8; 14], usk: &NoSgxPrivateKey, anytrust_group_id: &EntityId| {
+    let h3_to_u32 = |label: &[u8; 14], usk: &SgxPrivateKey, anytrust_group_id: &EntityId| {
         let mut h = Sha256::new();
         h.input(label);
         h.input(usk);
@@ -122,7 +121,7 @@ fn derive_reservation(
 
      // hash three things to u32
     let h4_to_u32 =
-        |label: &[u8; 14], usk: &NoSgxPrivateKey, anytrust_group_id: &EntityId, round: u32| {
+        |label: &[u8; 14], usk: &SgxPrivateKey, anytrust_group_id: &EntityId, round: u32| {
             let mut h = Sha256::new();
             h.input(label);
             h.input(usk);
@@ -158,6 +157,8 @@ fn derive_reservation(
     )
 }
 
+use crypto::pk_from_sk;
+
 /// process user submission request
 /// returns a submission and the ratcheted shared secrets
 pub fn user_submit_internal(
@@ -173,27 +174,32 @@ pub fn user_submit_internal(
     } = send_request;
     let round = *round;
 
+    debug!("here");
+
     // unseal user's sk
     let signing_sk = signing_sk.unseal_into()?;
     //check user signing key matches user_id
-    if EntityId::from(&NoSgxProtectedKeyPub::try_from(&signing_sk).unwrap()) != *user_id {
+    if EntityId::from(&pk_from_sk(&signing_sk)?) != *user_id {
         error!("user id mismatch");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
+
+    debug!("here");
 
     let uid = &user_id;
     debug!("✅ user id {} matches user signing key", uid);
 
     let mut server_sig_pks: Vec<PublicKey> = Vec::new();
-    let mut server_kem_pks: Vec<NoSgxProtectedKeyPub> = Vec::new();
+    let mut server_kem_pks: Vec<SgxProtectedKeyPub> = Vec::new();
     // check anytrust group id matches server pubkeys
     for pk_pkg in server_pks.iter() {
         server_sig_pks.push(pk_pkg.sig);
-        server_kem_pks.push(NoSgxProtectedKeyPub(pk_pkg.kem.to_bytes()));
+        server_kem_pks.push(SgxProtectedKeyPub(pk_pkg.kem.to_bytes()));
     }
+    debug!("here");
 
     // check anytrust_group_id against the kem keys
-    if *anytrust_group_id != compute_anytrust_group_id_spk(server_kem_pks.as_slice()) {
+    if *anytrust_group_id != compute_anytrust_group_id(server_kem_pks.as_slice()) {
         error!("reserver_req.anytrust_group_id != EntityId::from(server_sig_pks");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
@@ -297,19 +303,19 @@ pub fn user_submit_internal(
         anytrust_group_id: *anytrust_group_id,
         round,
         rate_limit_nonce: Some(rate_limit_nonce),
-            tee_sig: Default::default(),
+        tee_sig: Default::default(),
         tee_pk: Default::default(),
         aggregated_msg: encrypted_msg,
     };
 
     // Sign
-    if agg_msg.sign_mut_sgx(&signing_sk).is_err() {
-        error!("can't sign");
-        return Err(SGX_ERROR_UNEXPECTED);
-    }
-
+    let (sig, pk) = sign_submission(&agg_msg, &signing_sk).map_err(|e| {
+        log::error!("crypto error {}", e);
+        SGX_ERROR_UNEXPECTED
+    })?;
+    agg_msg.tee_pk = pk;
+    agg_msg.tee_sig = sig;
 
     // If everything is fine, we are ready to ratchet
     Ok((agg_msg, shared_secrets.ratchet().seal_into()?))
-
 }

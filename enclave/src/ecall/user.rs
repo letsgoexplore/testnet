@@ -21,7 +21,7 @@ pub fn new_user(
     anytrust_server_pks: &Vec<ServerPubKeyPackage>,
 ) -> SgxResult<(SealedSharedSecretsDbClient, SealedSigPrivKey, UserRegistrationBlob)> {
     // 1. validate the input
-    let mut kem_db: BTreeMap<NoSgxProtectedKeyPub, PublicKey> = BTreeMap::new();
+    let mut kem_db: BTreeMap<SgxProtectedKeyPub, PublicKey> = BTreeMap::new();
     // let mut kem_pks = vec![];
     for k in anytrust_server_pks {
         // kem_pks.push(k.kem);

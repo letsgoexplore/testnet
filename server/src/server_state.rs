@@ -22,7 +22,7 @@ use common::types_nosgx::{
     ServerRegistrationBlob,
 };
 
-use crate::server_nosgx::{
+use crate::server::{
     new_server,
     recv_user_registration_batch,
     recv_aggregator_registration,

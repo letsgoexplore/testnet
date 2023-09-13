@@ -9,12 +9,12 @@ use interface::{
     SealedSigPrivKey,
     SealedSharedSecretsDbClient,
     ServerPubKeyPackage,
-    UserRegistrationBlob, 
-    NoSgxProtectedKeyPub,
+    UserRegistrationBlob,
+    SgxProtectedKeyPub,
     UserSubmissionReq,
     UserSubmissionBlob,
     DC_NET_ROUNDS_PER_WINDOW,
-    compute_anytrust_group_id_spk,
+    compute_anytrust_group_id,
 };
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -47,8 +47,8 @@ impl UserState {
             .into_iter()
             .map(|(sealed_shared_secrets, sealed_usk, reg_blob)| {
                 let user_id = EntityId::from(&reg_blob);
-                let kem_pubkeys: Vec<NoSgxProtectedKeyPub> = pubkeys.iter().map(|p| NoSgxProtectedKeyPub(p.kem.to_bytes())).collect();
-                let anytrust_group_id = compute_anytrust_group_id_spk(&kem_pubkeys);
+                let kem_pubkeys: Vec<SgxProtectedKeyPub> = pubkeys.iter().map(|p| SgxProtectedKeyPub(p.kem.to_bytes())).collect();
+                let anytrust_group_id = compute_anytrust_group_id(&kem_pubkeys);
 
                 let state = UserState {
                     user_id,
