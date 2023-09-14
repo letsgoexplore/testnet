@@ -4,7 +4,7 @@ use crate::{
 };
 use common::cli_util;
 
-use common::types_nosgx::{
+use common::types::{
     AggregatedMessage,
     SubmissionMessage,
 };

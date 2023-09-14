@@ -7,12 +7,15 @@ use std::prelude::v1::*;
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
 use sha2::Sha256;
+use sha2::Digest;
 
 use self::aes_rng::Aes128Rng;
 use super::*;
 use rand::SeedableRng;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
+use sgx_types::SgxResult;
+use crate::types::{CryptoError};
 
 use ed25519_dalek::PublicKey;
 use x25519_dalek::{

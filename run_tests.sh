@@ -383,6 +383,8 @@ decrypt_msgs() {
             > /dev/null
     done
 
+    echo "Done decrypting"
+
     cd ..
 }
 

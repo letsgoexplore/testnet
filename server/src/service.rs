@@ -5,7 +5,7 @@ use crate::{
 use common::cli_util;
 use interface::RoundOutput;
 
-use common::types_nosgx::{
+use common::types::{
     RoundSubmissionBlob,
     UnblindedAggregateShareBlob,
 };

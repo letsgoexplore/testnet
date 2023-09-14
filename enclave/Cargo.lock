@@ -141,7 +141,6 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde_cbor",
- "sgx_backtrace",
  "sgx_rand",
  "sgx_trts",
  "sgx_tse",
@@ -440,20 +439,6 @@ version = "1.1.6"
 source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.6#c3d82372dff81e5bafb07f71bc8ad532d06b504e"
 
 [[package]]
-name = "sgx_backtrace"
-version = "1.1.6"
-source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.6#c3d82372dff81e5bafb07f71bc8ad532d06b504e"
-dependencies = [
- "sgx_backtrace_sys",
- "sgx_demangle",
- "sgx_libc",
- "sgx_serialize_derive",
- "sgx_trts",
- "sgx_tstd",
- "sgx_types",
-]
-
-[[package]]
 name = "sgx_backtrace_sys"
 version = "1.1.6"
 source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.6#c3d82372dff81e5bafb07f71bc8ad532d06b504e"
@@ -497,24 +482,6 @@ version = "1.1.6"
 source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.6#c3d82372dff81e5bafb07f71bc8ad532d06b504e"
 dependencies = [
  "quote 0.3.15",
- "syn 0.11.11",
-]
-
-[[package]]
-name = "sgx_serialize_derive"
-version = "1.1.6"
-source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.6#c3d82372dff81e5bafb07f71bc8ad532d06b504e"
-dependencies = [
- "quote 0.3.15",
- "sgx_serialize_derive_internals",
- "syn 0.11.11",
-]
-
-[[package]]
-name = "sgx_serialize_derive_internals"
-version = "1.1.6"
-source = "git+https://github.com/apache/teaclave-sgx-sdk.git?rev=v1.1.6#c3d82372dff81e5bafb07f71bc8ad532d06b504e"
-dependencies = [
  "syn 0.11.11",
 ]
 

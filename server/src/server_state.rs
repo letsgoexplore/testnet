@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use ed25519_dalek::SecretKey;
 
-use common::types_nosgx::{
+use common::types::{
     AggregatedMessage,
     SharedSecretsDbServer,
     SignedPubKeyDb,

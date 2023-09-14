@@ -11,12 +11,12 @@ use serde::{Deserialize, Serialize};
 extern crate ed25519_dalek;
 use ed25519_dalek::SecretKey;
 
-use common::types_nosgx::{
+use common::types::{
     AggRegistrationBlob,
     AggregatedMessage,
     SubmissionMessage,
 };
-use crate::agg_nosgx::{
+use crate::agg::{
     new_aggregator,
     finalize_aggregate,
     add_to_aggregate,

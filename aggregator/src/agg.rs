@@ -11,7 +11,7 @@ use interface::{
     Xor,
 
 };
-use common::types_nosgx::{
+use common::types::{
     AggRegistrationBlob,
     AggregatedMessage,
     Signable,

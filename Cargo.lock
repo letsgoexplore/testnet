@@ -1700,6 +1700,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
+name = "pretty-hex"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6fa0831dd7cc608c38a5e323422a0077678fa5744aa2be4ad91c4ece8eec8d5"
+
+[[package]]
 name = "proc-macro-hack"
 version = "0.5.20+deprecated"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2366,18 +2372,25 @@ name = "sgxdcnet-server"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "aes",
  "base64",
+ "byteorder",
+ "cipher",
  "clap",
  "common",
+ "ctr",
  "dotenv",
  "ed25519-dalek",
  "env_logger 0.9.3",
+ "hkdf",
  "interface",
  "itertools 0.10.5",
  "log",
+ "pretty-hex",
  "rand 0.7.3",
+ "rand_core 0.6.4",
  "serde 1.0.164",
- "sha2 0.9.9",
+ "sha2 0.8.2",
  "thiserror",
  "x25519-dalek",
 ]

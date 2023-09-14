@@ -157,7 +157,7 @@ fn derive_reservation(
     )
 }
 
-use crypto::ed25519pk_from_sk;
+use crypto::ed25519pk_from_secret;
 
 /// process user submission request
 /// returns a submission and the ratcheted shared secrets
@@ -174,17 +174,13 @@ pub fn user_submit_internal(
     } = send_request;
     let round = *round;
 
-    debug!("here");
-
     // unseal user's sk
     let signing_sk = signing_sk.unseal_into()?;
     //check user signing key matches user_id
-    if EntityId::from(&ed25519pk_from_sk(&signing_sk)?) != *user_id {
+    if EntityId::from(&ed25519pk_from_secret(&signing_sk)?) != *user_id {
         error!("user id mismatch");
         return Err(SGX_ERROR_INVALID_PARAMETER);
     }
-
-    debug!("here");
 
     let uid = &user_id;
     debug!("✅ user id {} matches user signing key", uid);
@@ -196,7 +192,6 @@ pub fn user_submit_internal(
         server_sig_pks.push(pk_pkg.sig);
         server_kem_pks.push(SgxProtectedKeyPub(pk_pkg.kem.to_bytes()));
     }
-    debug!("here");
 
     // check anytrust_group_id against the kem keys
     if *anytrust_group_id != compute_anytrust_group_id(server_kem_pks.as_slice()) {

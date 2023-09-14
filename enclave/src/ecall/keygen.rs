@@ -14,7 +14,7 @@ use x25519_dalek::StaticSecret;
 use x25519_dalek::PublicKey as xPublicKey;
 use ed25519_dalek::SecretKey;
 use ed25519_dalek::{Keypair, SECRET_KEY_LENGTH};
-use crypto::ed25519pk_from_sk;
+use crypto::ed25519pk_from_secret;
 use crate::crypto::SgxPrivateKey;
 
 pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, AttestedPublicKey)> {
@@ -25,13 +25,15 @@ pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, Atteste
 
     // generate a random secret key
     let secret = SgxPrivateKey::rand(&mut rand);
-    log::debug!("secret {}, len={}", hex::encode(secret.r), secret.r.len());
 
     let x_secret = StaticSecret::from(secret.r);
     let xpk = xPublicKey::from(&x_secret);
+    let pk = ed25519pk_from_secret(&secret)?;
 
-    let pk = ed25519pk_from_sk(&secret)?;
-    log::debug!("sk to pk succeed");
+    log::debug!("new key pair created");
+    log::debug!("xpk {}", hex::encode(xpk.to_bytes()));
+    log::debug!(" pk {}", hex::encode(pk.to_bytes()));
+
     let attested_key = AttestedPublicKey {
         pk: SgxProtectedKeyPub(pk.to_bytes()),
         xpk: SgxProtectedKeyPub(xpk.to_bytes()),

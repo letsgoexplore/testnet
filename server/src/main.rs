@@ -5,6 +5,7 @@ mod server_state;
 mod service;
 mod util;
 mod server;
+mod aes_prng;
 
 use crate::{
     server_state::ServerState,
@@ -14,13 +15,9 @@ use crate::{
 
 use common::cli_util;
 use interface::UserRegistrationBlob;
+use pretty_hex;
 
-use common::types_nosgx::{
-    RoundSubmissionBlob,
-    UnblindedAggregateShareBlob,
-    ServerRegistrationBlob,
-    AggRegistrationBlob,
-};
+use common::types::{AggRegistrationBlob, ServerRegistrationBlob, RoundSubmissionBlob, UnblindedAggregateShareBlob};
 
 use std::{error::Error, fs::File};
 
@@ -226,8 +223,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Log the raw round result in base64
         let round = round_output.round;
         let round_msg = &round_output.dc_msg.aggregated_msg.as_row_major();
-        // info!("round {} output: {}", round, base64::encode(round_msg));
-        info!("round {} output: {:?}", round, round_msg);
+        info!("round {} output\n{}", round, pretty_hex::pretty_hex(round_msg));
     }
 
     if let Some(matches) = matches.subcommand_matches("start-service") {

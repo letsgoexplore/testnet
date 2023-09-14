@@ -29,7 +29,7 @@ use rand::rngs::OsRng;
 
 use std::time::Instant;
 
-use common::types_nosgx::{
+use common::types::{
     SignMutable,
     MarshallAs,
     UnmarshalledAs,
@@ -41,11 +41,6 @@ use common::types_nosgx::{
     UnblindedAggregateShareBlob,
     RoundSubmissionBlob,
     UnblindedAggregateShare,
-};
-
-use common::funcs_nosgx::{
-    verify_user_attestation,
-    derive_round_secret_server,
 };
 
 use log::{
@@ -235,6 +230,52 @@ pub fn unblind_aggregate_mt(
     result
 }
 
+use sha2::Sha256;
+use rand_core::SeedableRng;
+use hkdf::{Hkdf, InvalidLength};
+use byteorder::{ByteOrder, LittleEndian};
+use crate::aes_prng::{Aes128Rng};
+
+fn verify_user_attestation(_reg_blob: &UserRegistrationBlob) -> std::result::Result<(), ()> {
+    log::warn!("verify_user_attestation is not implemented"); // XXX
+    Ok(())
+}
+
+fn derive_round_secret_server(
+    round: u32,
+    shared_secrets: &SharedSecretsDbServer,
+    entity_ids_to_use: Option<&BTreeSet<EntityId>>,
+) -> std::result::Result<RoundSecret, InvalidLength> {
+    type MyRng = Aes128Rng;
+
+    let mut round_secret = RoundSecret::default();
+
+    for (pk, shared_secret) in shared_secrets.db.iter() {
+        // skip entries not in entity_ids_to_use
+        if let Some(eids) = entity_ids_to_use {
+            if !eids.contains(&EntityId::from(pk)) {
+                log::trace!("entity id of client {} is not in entity_ids_to_use", pk);
+                continue;
+            }
+        }
+
+
+        let hk = Hkdf::<Sha256>::new(None, &shared_secret.as_ref());
+        // For cryptographic RNG's a seed of 256 bits is recommended, [u8; 32].
+        let mut seed = <MyRng as SeedableRng>::Seed::default();
+
+        // info contains round and window
+        let mut info = [0; 32];
+        let cursor = &mut info;
+        LittleEndian::write_u32(cursor, round);
+        hk.expand(&info, &mut seed)?;
+
+        let mut rng = MyRng::from_seed(seed);
+        round_secret.xor_mut(&DcRoundMessage::rand_from_csprng(&mut rng));
+    }
+
+    Ok(round_secret)
+}
 
 pub fn unblind_aggregate_partial(
     input: &(u32, SharedSecretsDbServer, BTreeSet<EntityId>),
