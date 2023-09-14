@@ -5,7 +5,7 @@ env:
   LD_LIBRARY_PATH: /usr/lib:/usr/local/lib:/opt/sgxsdk/sdk_libs
   PATH: "/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/sgxsdk/bin:/opt/sgxsdk/bin/x64"
 jobs:
-  build-everything:
+  format-and-lint:
     runs-on: ubuntu-20.04
     container:
       image: bl4ck5un/sgx-rust-fork:2004-1.1.6
@@ -15,10 +15,24 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: fmt check
-        run: cargo fmt --check -q
+        run: cargo fmt --check
       - name: fmt check enclave
-        run: cargo fmt --check -q
+        run: cargo fmt --check
         working-directory: ./enclave
+      - name: clippy
+        run: cargo clippy
+      - name: clippy on enclave
+        run: cargo clippy
+        working-directory: ./enclave
+  build-everything:
+    runs-on: ubuntu-20.04
+    container:
+      image: bl4ck5un/sgx-rust-fork:2004-1.1.6
+      env:
+        SGX_MODE: SW
+        SGX_SDK: /opt/sgxsdk
+    steps:
+      - uses: actions/checkout@v2
       - name: Build enclave
         run: make
         working-directory: ./enclave

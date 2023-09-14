@@ -1,44 +1,25 @@
 use ed25519_dalek::{
-    SecretKey,
-    PublicKey,
-    Signature,
-    Keypair,
-    SignatureError,
-    Signer,
-    Verifier,
-    SECRET_KEY_LENGTH,
-    PUBLIC_KEY_LENGTH,
-    KEYPAIR_LENGTH,
-    SIGNATURE_LENGTH,
+    Keypair, PublicKey, SecretKey, Signature, SignatureError, Signer, Verifier, KEYPAIR_LENGTH,
+    PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH, SIGNATURE_LENGTH,
 };
 
-use sha2::{Digest, Sha256};
 use interface::{
-    EntityId,
-    RateLimitNonce,
-    DcRoundMessage,
-    SgxProtectedKeyPub,
-    AttestedPublicKey,
-    ServerPubKeyPackage,
-    DiffieHellmanSharedSecret,
+    compute_anytrust_group_id, AttestedPublicKey, DcRoundMessage, DiffieHellmanSharedSecret,
+    EntityId, RateLimitNonce, RoundSecret, ServerPubKeyPackage, SgxProtectedKeyPub,
     UserSubmissionMessage,
-    RoundSecret,
-    compute_anytrust_group_id,
 };
+use sha2::{Digest, Sha256};
 
-use std::prelude::v1::*;
-use std::collections::{BTreeSet, BTreeMap};
+use std::collections::{BTreeMap, BTreeSet};
 use std::convert::TryInto;
+use std::prelude::v1::*;
 
 use core::fmt::Debug;
 
-use x25519_dalek::{
-    StaticSecret,
-    PublicKey as xPublicKey,
-};
+use x25519_dalek::{PublicKey as xPublicKey, StaticSecret};
 
-use serde::{Serialize, Deserialize};
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use serde_cbor;
 
 #[derive(Clone, Serialize, Debug, Deserialize)]
@@ -67,12 +48,12 @@ impl Default for AggregatedMessage {
             user_ids: BTreeSet::new(),
             rate_limit_nonce: None,
             aggregated_msg: DcRoundMessage::default(),
-            sig: Signature::from_bytes(&[0u8;SIGNATURE_LENGTH]).expect("failed to generate Signature from bytes"),
+            sig: Signature::from_bytes(&[0u8; SIGNATURE_LENGTH])
+                .expect("failed to generate Signature from bytes"),
             pk: PublicKey::default(),
         }
     }
 }
-
 
 impl AggregatedMessage {
     pub fn is_empty(&self) -> bool {
@@ -84,7 +65,7 @@ pub trait Signable {
     fn digest(&self) -> Vec<u8>;
     fn get_sig(&self) -> Signature;
     fn get_pk(&self) -> PublicKey;
-    
+
     fn sign(&self, sk: &SecretKey) -> Result<(Signature, PublicKey), SignatureError> {
         let dig: Vec<u8> = self.digest();
         // The standard hash function used for most ed25519 libraries is SHA-512
@@ -174,7 +155,8 @@ impl SharedSecretsDbServer {
     ) -> Result<Self, SignatureError> {
         // 1. Generate StaticSecret from server's secret key
         let my_secret = StaticSecret::from(my_sk.to_bytes());
-        let mut server_secrets: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret> = BTreeMap::new();
+        let mut server_secrets: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret> =
+            BTreeMap::new();
 
         for (client_xpk, client_pk) in other_pks {
             // 2. Derive the exchange pk from the client_xpk
@@ -183,7 +165,10 @@ impl SharedSecretsDbServer {
             let shared_secret = my_secret.diffie_hellman(&xpk);
             // 4. Save the ephemeral SharedSecret into DiffieHellmanSharedSecret
             let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
-            server_secrets.insert(client_pk.to_owned(), DiffieHellmanSharedSecret(shared_secret_bytes));
+            server_secrets.insert(
+                client_pk.to_owned(),
+                DiffieHellmanSharedSecret(shared_secret_bytes),
+            );
         }
 
         Ok(SharedSecretsDbServer {
@@ -198,7 +183,9 @@ impl SharedSecretsDbServer {
             .iter()
             .map(|(&k, v)| {
                 let new_key = Sha256::digest(&v.0);
-                let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32");
+                let secret_bytes: [u8; 32] = new_key
+                    .try_into()
+                    .expect("cannot convert Sha256 digest to [u8; 32");
                 let new_sec = DiffieHellmanSharedSecret(secret_bytes);
 
                 (k, new_sec)
@@ -267,7 +254,7 @@ impl Signable for UnblindedAggregateShare {
 
 impl SignMutable for UnblindedAggregateShare {
     fn sign_mut(&mut self, ssk: &SecretKey) -> Result<(), SignatureError> {
-        let (sig, pk)  = self.sign(ssk)?;
+        let (sig, pk) = self.sign(ssk)?;
         self.sig = sig;
         self.pk = pk;
 
@@ -325,7 +312,7 @@ mod tests {
 
         let sk = SecretKey::generate(&mut csprng);
         let mut agg_msg = AggregatedMessage::default();
-        
+
         // sign the aggregated message using secret key
         agg_msg.sign_mut(&sk)?;
 

@@ -3,7 +3,7 @@ use crate::{
     UserState,
 };
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, RoundOutput, UserSubmissionBlob, UserMsg, DC_NET_MESSAGE_LENGTH};
+use interface::{DcMessage, RoundOutput, UserMsg, UserSubmissionBlob, DC_NET_MESSAGE_LENGTH};
 
 use core::ops::DerefMut;
 use std::{
@@ -120,10 +120,16 @@ async fn encrypt_msg(
     let duration_submit = start_submit.elapsed();
     debug!("[client] submit_round_msg: {:?}", duration_submit);
 
-
     debug!("round: {}", ciphertext.round);
-    debug!("scheduling_msg.len(): {}", ciphertext.aggregated_msg.scheduling_msg.len());
-    debug!("aggregated_msg.len(): {} * {}", ciphertext.aggregated_msg.aggregated_msg.num_rows(), ciphertext.aggregated_msg.aggregated_msg.num_columns());
+    debug!(
+        "scheduling_msg.len(): {}",
+        ciphertext.aggregated_msg.scheduling_msg.len()
+    );
+    debug!(
+        "aggregated_msg.len(): {} * {}",
+        ciphertext.aggregated_msg.aggregated_msg.num_rows(),
+        ciphertext.aggregated_msg.aggregated_msg.num_columns()
+    );
 
     send_ciphertext(&ciphertext, agg_url).await;
 

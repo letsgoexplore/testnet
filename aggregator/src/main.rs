@@ -1,10 +1,10 @@
 extern crate common;
 extern crate interface;
 
+mod agg;
 mod agg_state;
 mod service;
 mod util;
-mod agg;
 
 pub use crate::util::AggregatorError;
 use crate::{
@@ -88,7 +88,9 @@ fn main() -> Result<(), AggregatorError> {
         )
         .subcommand(
             SubCommand::with_name("input-agg")
-                .about("Adds the given aggregator round submission blob from STDIN to the aggregate")
+                .about(
+                    "Adds the given aggregator round submission blob from STDIN to the aggregate",
+                )
                 .arg(state_arg.clone()),
         )
         .subcommand(

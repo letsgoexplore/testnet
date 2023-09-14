@@ -4,10 +4,7 @@ use crate::{
 };
 use common::cli_util;
 
-use common::types::{
-    AggregatedMessage,
-    SubmissionMessage,
-};
+use common::types::{AggregatedMessage, SubmissionMessage};
 use interface::UserSubmissionMessage;
 
 use core::ops::DerefMut;
@@ -28,7 +25,7 @@ use actix_web::{
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError,
 };
 use futures::future::FutureExt;
-use log::{error, info, debug};
+use log::{debug, error, info};
 use thiserror::Error;
 
 // We take 5 seconds at the end of every round for the aggregates to propagate up the tree
@@ -69,8 +66,7 @@ async fn submit_agg(
     // Unpack state
     let mut handle = state.get_ref().lock().unwrap();
     let ServiceState {
-        ref mut agg_state,
-        ..
+        ref mut agg_state, ..
     } = handle.deref_mut();
 
     // Add to aggregate
@@ -98,8 +94,7 @@ async fn submit_agg_from_agg(
     // Unpack state
     let mut handle = state.get_ref().lock().unwrap();
     let ServiceState {
-        ref mut agg_state,
-        ..
+        ref mut agg_state, ..
     } = handle.deref_mut();
 
     // Add to aggregate
@@ -221,9 +216,7 @@ fn start_next_round(state: Arc<Mutex<ServiceState>>) {
 
     // Increment the round and clear the state
     *round += 1;
-    agg_state
-        .clear(*round)
-        .expect("could not start new round");
+    agg_state.clear(*round).expect("could not start new round");
 
     let duration = start.elapsed();
     debug!("[agg] start_next_round: {:?}", duration);

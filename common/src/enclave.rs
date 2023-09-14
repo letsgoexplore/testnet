@@ -118,11 +118,13 @@ impl DcNetEnclave {
         &self,
         server_pks: &[ServerPubKeyPackage],
         n_users: usize,
-    ) -> EnclaveResult<Vec<(
-        SealedSharedSecretsDbClient,
-        SealedSigPrivKey,
-        UserRegistrationBlob,
-    )>> {
+    ) -> EnclaveResult<
+        Vec<(
+            SealedSharedSecretsDbClient,
+            SealedSigPrivKey,
+            UserRegistrationBlob,
+        )>,
+    > {
         ecall_allowed::new_user_batch(self.enclave.geteid(), (server_pks, n_users))
     }
 

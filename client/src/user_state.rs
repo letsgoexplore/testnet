@@ -4,17 +4,9 @@ use common::enclave::DcNetEnclave;
 use serde::{Deserialize, Serialize};
 
 use interface::{
-    EntityId,
-    UserMsg,
-    SealedSigPrivKey,
-    SealedSharedSecretsDbClient,
-    ServerPubKeyPackage,
-    UserRegistrationBlob,
-    SgxProtectedKeyPub,
-    UserSubmissionReq,
-    UserSubmissionBlob,
-    DC_NET_ROUNDS_PER_WINDOW,
-    compute_anytrust_group_id,
+    compute_anytrust_group_id, EntityId, SealedSharedSecretsDbClient, SealedSigPrivKey,
+    ServerPubKeyPackage, SgxProtectedKeyPub, UserMsg, UserRegistrationBlob, UserSubmissionBlob,
+    UserSubmissionReq, DC_NET_ROUNDS_PER_WINDOW,
 };
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -47,7 +39,10 @@ impl UserState {
             .into_iter()
             .map(|(sealed_shared_secrets, sealed_usk, reg_blob)| {
                 let user_id = EntityId::from(&reg_blob);
-                let kem_pubkeys: Vec<SgxProtectedKeyPub> = pubkeys.iter().map(|p| SgxProtectedKeyPub(p.kem.to_bytes())).collect();
+                let kem_pubkeys: Vec<SgxProtectedKeyPub> = pubkeys
+                    .iter()
+                    .map(|p| SgxProtectedKeyPub(p.kem.to_bytes()))
+                    .collect();
                 let anytrust_group_id = compute_anytrust_group_id(&kem_pubkeys);
 
                 let state = UserState {

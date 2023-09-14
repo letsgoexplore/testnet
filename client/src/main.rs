@@ -12,7 +12,7 @@ use crate::{
 };
 
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, ServerPubKeyPackage, UserMsg, DC_NET_MESSAGE_LENGTH, RoundOutput};
+use interface::{DcMessage, RoundOutput, ServerPubKeyPackage, UserMsg, DC_NET_MESSAGE_LENGTH};
 use std::{ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -166,11 +166,12 @@ fn main() -> Result<(), UserError> {
         let empty_str = OsString::default();
         let ext = state_path.extension().unwrap_or(&empty_str);
         let file_stem = state_path.file_stem().unwrap_or(&empty_str);
-    
+
         // Make a new state and user registration. Save the state and and print the registration
         if num_regs == 1 {
             let (state, reg_blob) = UserState::new_multi(&enclave, 1, pubkeys)?.pop().unwrap();
-            let filename = format!("{}{}.{}",
+            let filename = format!(
+                "{}{}.{}",
                 file_stem.to_str().unwrap(),
                 1,
                 ext.to_str().unwrap()
