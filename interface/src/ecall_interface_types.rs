@@ -1,7 +1,7 @@
-use crate::sgx_protected_keys::{AttestedPublicKey, SgxProtectedKeyPub, OutputSignature};
-use crate::user_request::EntityId;
-use crate::user_request::DcRoundMessage;
 use crate::params::SHARED_SECRET_LENGTH;
+use crate::sgx_protected_keys::{AttestedPublicKey, OutputSignature, SgxProtectedKeyPub};
+use crate::user_request::DcRoundMessage;
+use crate::user_request::EntityId;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
 use std::vec::Vec;

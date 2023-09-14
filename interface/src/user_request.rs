@@ -7,7 +7,7 @@ use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected
 use sha2::{Digest, Sha256};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-use ed25519_dalek::{Signature,PublicKey,Verifier};
+use ed25519_dalek::{PublicKey, Signature, Verifier};
 
 // a wrapper around RawMessage so that we can impl traits. This stores DC_NET_MESSAGE_LENGTH bytes
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -245,7 +245,6 @@ pub fn compute_group_id(ids: &BTreeSet<EntityId>) -> EntityId {
     id
 }
 
-
 /// An anytrust_group_id is computed from server pub keys
 pub fn compute_anytrust_group_id(keys: &[SgxProtectedKeyPub]) -> EntityId {
     compute_group_id(&keys.iter().map(|k| EntityId::from(k)).collect())
@@ -337,7 +336,6 @@ pub struct UserSubmissionMessage {
     pub tee_pk: PublicKey,
 }
 
-
 impl UserSubmissionMessage {
     pub fn is_empty(&self) -> bool {
         false
@@ -362,14 +360,15 @@ impl UserSubmissionMessage {
             Err(_e) => {
                 log::error!("failed to generate sig from bytes");
                 return false;
-            }};
+            }
+        };
 
         match pk.verify(&self.digest(), &sig) {
             Ok(_) => true,
             Err(e) => {
                 log::error!("sig err {}", e);
                 false
-            },
+            }
         }
     }
 }

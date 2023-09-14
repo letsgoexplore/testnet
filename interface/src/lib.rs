@@ -3,8 +3,8 @@
 extern crate cfg_if;
 use cfg_if::cfg_if;
 extern crate hex;
-extern crate sha2;
 extern crate log;
+extern crate sha2;
 
 cfg_if! {
     if #[cfg(feature = "untrusted")] {
@@ -29,10 +29,10 @@ cfg_if! {
 mod array2d;
 mod ecall_interface_types;
 mod params;
-mod user_request;
 mod sgx_protected_keys;
+mod user_request;
 
 pub use ecall_interface_types::*;
 pub use params::*;
-pub use user_request::*;
 pub use sgx_protected_keys::*;
+pub use user_request::*;

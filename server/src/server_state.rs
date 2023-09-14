@@ -1,11 +1,6 @@
 use crate::util::Result;
 
-use interface::{
-    EntityId,
-    RoundOutput,
-    UserRegistrationBlob,
-    ServerPubKeyPackage,
-};
+use interface::{EntityId, RoundOutput, ServerPubKeyPackage, UserRegistrationBlob};
 
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -13,22 +8,13 @@ use serde::{Deserialize, Serialize};
 use ed25519_dalek::SecretKey;
 
 use common::types::{
-    AggregatedMessage,
-    SharedSecretsDbServer,
-    SignedPubKeyDb,
-    RoundSubmissionBlob,
-    UnblindedAggregateShareBlob,
-    AggRegistrationBlob,
-    ServerRegistrationBlob,
+    AggRegistrationBlob, AggregatedMessage, RoundSubmissionBlob, ServerRegistrationBlob,
+    SharedSecretsDbServer, SignedPubKeyDb, UnblindedAggregateShareBlob,
 };
 
 use crate::server::{
-    new_server,
-    recv_user_registration_batch,
-    recv_aggregator_registration,
-    recv_server_registration,
-    unblind_aggregate,
-    derive_round_output,
+    derive_round_output, new_server, recv_aggregator_registration, recv_server_registration,
+    recv_user_registration_batch, unblind_aggregate,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -98,10 +84,7 @@ impl ServerState {
     }
 
     /// Registers a user with this server
-    pub fn recv_user_registrations(
-        &mut self,
-        input_blobs: &[UserRegistrationBlob],
-    ) -> Result<()> {
+    pub fn recv_user_registrations(&mut self, input_blobs: &[UserRegistrationBlob]) -> Result<()> {
         recv_user_registration_batch(
             &mut self.pubkeys,
             &mut self.shared_secrets,
@@ -113,10 +96,7 @@ impl ServerState {
     }
 
     /// Registers an aggregator with this server
-    pub fn recv_aggregator_registration(
-        &mut self,
-        input_blob: &AggRegistrationBlob,
-    ) -> Result<()> {
+    pub fn recv_aggregator_registration(&mut self, input_blob: &AggRegistrationBlob) -> Result<()> {
         recv_aggregator_registration(&mut self.pubkeys, input_blob)?;
 
         Ok(())
@@ -124,10 +104,7 @@ impl ServerState {
 
     /// Registers another anytrust server with this server. This will be added to the server's
     /// anytrust group
-    pub fn recv_server_registration(
-        &mut self,
-        input_blob: &ServerRegistrationBlob,
-    ) -> Result<()> {
+    pub fn recv_server_registration(&mut self, input_blob: &ServerRegistrationBlob) -> Result<()> {
         // Input the registration and increment the size of the group
         recv_server_registration(&mut self.pubkeys, input_blob)?;
         self.anytrust_group_size += 1;

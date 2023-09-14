@@ -1,11 +1,11 @@
 extern crate common;
 extern crate interface;
 
+mod aes_prng;
+mod server;
 mod server_state;
 mod service;
 mod util;
-mod server;
-mod aes_prng;
 
 use crate::{
     server_state::ServerState,
@@ -17,7 +17,9 @@ use common::cli_util;
 use interface::UserRegistrationBlob;
 use pretty_hex;
 
-use common::types::{AggRegistrationBlob, ServerRegistrationBlob, RoundSubmissionBlob, UnblindedAggregateShareBlob};
+use common::types::{
+    AggRegistrationBlob, RoundSubmissionBlob, ServerRegistrationBlob, UnblindedAggregateShareBlob,
+};
 
 use std::{error::Error, fs::File};
 
@@ -223,7 +225,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Log the raw round result in base64
         let round = round_output.round;
         let round_msg = &round_output.dc_msg.aggregated_msg.as_row_major();
-        info!("round {} output\n{}", round, pretty_hex::pretty_hex(round_msg));
+        info!(
+            "round {} output\n{}",
+            round,
+            pretty_hex::pretty_hex(round_msg)
+        );
     }
 
     if let Some(matches) = matches.subcommand_matches("start-service") {
@@ -252,11 +258,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Some(state_path)
         };
 
-        let state = service::ServiceState::new(
-            server_state,
-            server_state_path,
-            leader_url,
-        );
+        let state = service::ServiceState::new(server_state, server_state_path, leader_url);
         start_service(bind_addr, state).unwrap();
     }
 

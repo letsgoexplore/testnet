@@ -110,4 +110,3 @@ fn new_user() {
 
     enc.destroy();
 }
-

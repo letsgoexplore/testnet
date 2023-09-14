@@ -8,8 +8,8 @@ use std::fs::File;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use std::convert::From;
 use ed25519_dalek::SignatureError;
+use std::convert::From;
 
 pub(crate) type Result<T> = core::result::Result<T, ServerError>;
 

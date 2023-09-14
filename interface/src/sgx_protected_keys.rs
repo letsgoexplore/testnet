@@ -1,25 +1,18 @@
 use ed25519_dalek::{
-    SecretKey,
-    PublicKey,
-    Signature,
-    Keypair,
-    Signer,
-    Verifier,
+    Keypair, PublicKey, SecretKey, Signature, Signer, Verifier, KEYPAIR_LENGTH, PUBLIC_KEY_LENGTH,
     SECRET_KEY_LENGTH,
-    PUBLIC_KEY_LENGTH,
-    KEYPAIR_LENGTH,
 };
 
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
+use log;
+use sha2::{Digest, Sha256};
 use std::convert::TryFrom;
 use std::vec::Vec;
 use std::{println, vec};
-use sha2::{Digest, Sha256};
-use log;
 
-use crate::user_request::{EntityId, UserSubmissionMessage, DcMessage, DcRoundMessage};
 use crate::ecall_interface_types::RoundOutput;
+use crate::user_request::{DcMessage, DcRoundMessage, EntityId, UserSubmissionMessage};
 
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
@@ -43,7 +36,6 @@ impl Display for SgxProtectedKeyPub {
     }
 }
 
-
 impl SgxProtectedKeyPub {
     /// Computes the entity ID corresponding to this KEM pubkey
     pub fn get_entity_id(&self) -> EntityId {
@@ -55,8 +47,8 @@ impl SgxProtectedKeyPub {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Serialize, Deserialize, Default)]
 pub struct AttestedPublicKey {
-    pub pk: SgxProtectedKeyPub,   // sig pub key
-    pub xpk: SgxProtectedKeyPub,  // kem pub key. todo: both keys are derived from the same secret.
+    pub pk: SgxProtectedKeyPub,  // sig pub key
+    pub xpk: SgxProtectedKeyPub, // kem pub key. todo: both keys are derived from the same secret.
     pub role: std::string::String,
     /// role denotes the intended use of this key e.g., "aggregator" "client" "anytrust server"
     pub tee_linkable_attestation: std::vec::Vec<u8>, // binds this key to an enclave
@@ -70,7 +62,7 @@ impl Debug for AttestedPublicKey {
             .field("role", &self.role)
             .field(
                 "tee_linkable_attestation",
-                &hex::encode(&self.tee_linkable_attestation)
+                &hex::encode(&self.tee_linkable_attestation),
             )
             .finish()
     }
@@ -82,7 +74,7 @@ impl Debug for AttestedPublicKey {
 pub struct ServerPubKeyPackage {
     pub sig: PublicKey,
     pub kem: PublicKey,
-    pub xkem: SgxProtectedKeyPub,  //todo: why is server key using SGX type?
+    pub xkem: SgxProtectedKeyPub, //todo: why is server key using SGX type?
 }
 
 /// Store the bytes of signatures
@@ -126,7 +118,8 @@ pub trait MultiSignable {
         keypair_bytes[..SECRET_KEY_LENGTH].copy_from_slice(&sk_bytes);
         keypair_bytes[SECRET_KEY_LENGTH..].copy_from_slice(&pk_bytes);
 
-        let keypair: Keypair = Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
+        let keypair: Keypair =
+            Keypair::from_bytes(&keypair_bytes).expect("Failed to generate keypair from bytes");
         let sig = SignatureBytes(keypair.sign(dig.as_slice()).to_bytes().to_vec());
 
         Ok((sig, pk))
@@ -153,8 +146,9 @@ impl MultiSignable for RoundOutput {
 
         let mut verified = vec![];
         for i in 0..self.server_sigs.len() {
-            let sig: Signature = Signature::from_bytes(self.server_sigs[i].sig.0.clone().as_slice())
-                .expect("failed to generate Signature from bytes");
+            let sig: Signature =
+                Signature::from_bytes(self.server_sigs[i].sig.0.clone().as_slice())
+                    .expect("failed to generate Signature from bytes");
             let pk: PublicKey = self.server_sigs[i].pk;
 
             // verify the signature

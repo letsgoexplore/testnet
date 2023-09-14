@@ -1,14 +1,11 @@
 use crate::{
-    util::{save_state, save_output, ServerError},
+    util::{save_output, save_state, ServerError},
     ServerState,
 };
 use common::{cli_util, log_time::{log_detailed_duration, log_time}};
 use interface::RoundOutput;
 
-use common::types::{
-    RoundSubmissionBlob,
-    UnblindedAggregateShareBlob,
-};
+use common::types::{RoundSubmissionBlob, UnblindedAggregateShareBlob};
 
 use core::ops::DerefMut;
 use std::{
@@ -82,13 +79,11 @@ fn leader_finish_round(state: &mut ServiceState) {
     // Derive the round output and save it to the state. This can be queries in the round_result
     // function. If this fails, use the default value. The last thing we want to do is get stuck in
     // a state that cannot progress
-    let output = server_state
-        .derive_round_output(&round_shares)
-        .unwrap();
+    let output = server_state.derive_round_output(&round_shares).unwrap();
     let round = output.round;
 
     // debug!("output: {:?}", output);
-    
+
     let mut output_path = "../server/round_output.txt".to_owned();
     output_path.insert(22, std::char::from_digit(round, 10).unwrap());
     debug!("output path: {:?}", output_path);
@@ -96,7 +91,7 @@ fn leader_finish_round(state: &mut ServiceState) {
         Err(e) => error!("failed to save round output: {:?}", e),
         _ => (),
     };
-    
+
     round_outputs.insert(round, output);
     info!("Output of round {} now available", round);
 

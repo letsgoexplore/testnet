@@ -2,7 +2,7 @@ use crate::{
     util::{save_state, UserError},
     UserState,
 };
-use common::{cli_util, enclave::DcNetEnclave, log_time::{log_duration}};
+use common::{cli_util, enclave::DcNetEnclave, log_time::log_duration};
 use interface::{DcMessage, RoundOutput, UserSubmissionBlob, UserMsg, DC_NET_MESSAGE_LENGTH, PARAMETER_FLAG};
 
 use core::ops::DerefMut;
@@ -129,8 +129,15 @@ async fn encrypt_msg(
     log_duration(duration_submit.as_nanos());
 
     debug!("round: {}", ciphertext.round);
-    debug!("scheduling_msg.len(): {}", ciphertext.aggregated_msg.scheduling_msg.len());
-    debug!("aggregated_msg.len(): {} * {}", ciphertext.aggregated_msg.aggregated_msg.num_rows(), ciphertext.aggregated_msg.aggregated_msg.num_columns());
+    debug!(
+        "scheduling_msg.len(): {}",
+        ciphertext.aggregated_msg.scheduling_msg.len()
+    );
+    debug!(
+        "aggregated_msg.len(): {} * {}",
+        ciphertext.aggregated_msg.aggregated_msg.num_rows(),
+        ciphertext.aggregated_msg.aggregated_msg.num_columns()
+    );
 
     send_ciphertext(&ciphertext, agg_url).await;
     // Increment the round and save the user state

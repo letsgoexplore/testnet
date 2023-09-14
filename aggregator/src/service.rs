@@ -44,11 +44,6 @@ enum ApiError {
     Ser(#[from] cli_util::SerializationError),
 }
 impl ResponseError for ApiError {}
-impl From<std::io::Error> for ApiError {
-    fn from(error: std::io::Error) -> Self {
-        ApiError::Internal(AggregatorError::Io(error))
-    }
-}
 
 // #[derive(Clone)]
 pub(crate) struct ServiceState {
@@ -525,9 +520,7 @@ fn start_next_round(state: &Mutex<ServiceState>) {
 
     // Increment the round and clear the state
     *round += 1;
-    agg_state
-        .clear(*round)
-        .expect("could not start new round");
+    agg_state.clear(*round).expect("could not start new round");
 
     let duration = start.elapsed();
     debug!("[agg] start_next_round: {:?}", duration);
