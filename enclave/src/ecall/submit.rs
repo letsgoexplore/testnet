@@ -6,12 +6,10 @@ use crate::unseal::UnsealableInto;
 use byteorder::ByteOrder;
 use byteorder::LittleEndian;
 use crypto;
-use crypto::{sign_submission,SgxPrivateKey};
+use crypto::{sign_submission, SgxPrivateKey};
 use log::debug;
 use sgx_types::sgx_status_t::{
-    SGX_ERROR_SERVICE_UNAVAILABLE,
-    SGX_ERROR_INVALID_PARAMETER,
-    SGX_ERROR_UNEXPECTED,
+    SGX_ERROR_INVALID_PARAMETER, SGX_ERROR_SERVICE_UNAVAILABLE, SGX_ERROR_UNEXPECTED,
 };
 use sgx_types::SgxResult;
 use sha2::Digest;
@@ -37,7 +35,8 @@ fn check_reservation(
     }
 
     // verify server's signatures on previous output
-    let verified_index = prev_round_output.verify_multisig(server_sig_pks)
+    let verified_index = prev_round_output
+        .verify_multisig(server_sig_pks)
         .expect("verify server's signature failed");
 
     if verified_index.is_empty() {
@@ -126,7 +125,7 @@ fn derive_reservation(
         LittleEndian::read_u32(&hash)
     };
 
-     // hash three things to u32
+    // hash three things to u32
     let h4_to_u32 =
         |label: &[u8; 14], usk: &SgxPrivateKey, anytrust_group_id: &EntityId, round: u32| {
             let mut h = Sha256::new();
@@ -223,7 +222,7 @@ pub fn user_submit_internal(
     // Derive the pseudorandom rate-limit nonce
     let rate_limit_nonce = crypto::derive_round_nonce(anytrust_group_id, round, &signing_sk, msg)?;
 
-    // Get the last footprint and make a new one. If this message is cover traffic, this info won't 
+    // Get the last footprint and make a new one. If this message is cover traffic, this info won't
     // be used at all
     let (cur_slot, cur_fp, next_slot, next_fp) =
         derive_reservation(&signing_sk, anytrust_group_id, round);
@@ -269,7 +268,7 @@ pub fn user_submit_internal(
         } => {
             let msg_slot = derive_msg_slot(cur_slot, prev_round_output)?;
             debug!("✅ slot {} will include msg {:?}", msg_slot, msg,);
-            
+
             round_msg.scheduling_msg[next_slot] = next_fp;
             // Copy the message into the 2d array
             for (i, b) in msg.0.iter().enumerate() {

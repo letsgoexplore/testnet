@@ -6,22 +6,19 @@ use std::prelude::v1::*;
 
 use byteorder::{ByteOrder, LittleEndian};
 use hkdf::Hkdf;
-use sha2::Sha256;
 use sha2::Digest;
+use sha2::Sha256;
 
 use self::aes_rng::Aes128Rng;
 use super::*;
+use crate::types::CryptoError;
 use rand::SeedableRng;
+use sgx_types::SgxResult;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
-use sgx_types::SgxResult;
-use crate::types::{CryptoError};
 
 use ed25519_dalek::PublicKey;
-use x25519_dalek::{
-    StaticSecret,
-    PublicKey as xPublicKey,
-};
+use x25519_dalek::{PublicKey as xPublicKey, StaticSecret};
 
 use std::convert::TryInto;
 
@@ -59,7 +56,8 @@ impl SharedSecretsDbClient {
     ) -> SgxResult<Self> {
         // 1. Generate StaticSecret from client's secret key
         let my_secret = StaticSecret::from(my_sk.r);
-        let mut client_secrets: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret> = BTreeMap::new();
+        let mut client_secrets: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret> =
+            BTreeMap::new();
 
         for (kem_xpk, kem_pk) in pk_db {
             // 2. Derive the exchange pk from x_pk
@@ -67,7 +65,7 @@ impl SharedSecretsDbClient {
             // 3. Compute the DH shared secret from the exchange pk and static secret
             let shared_secret = my_secret.diffie_hellman(&xpk);
             // 4. Save ephemeral SharedSecret into DiffieHellmanSharedSecret
-        let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
+            let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
             client_secrets.insert(
                 SgxProtectedKeyPub(kem_pk.to_bytes()),
                 DiffieHellmanSharedSecret(shared_secret_bytes),
@@ -87,7 +85,9 @@ impl SharedSecretsDbClient {
             .iter()
             .map(|(&k, v)| {
                 let new_key = Sha256::digest(&v.0);
-                let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32]");
+                let secret_bytes: [u8; 32] = new_key
+                    .try_into()
+                    .expect("cannot convert Sha256 digest to [u8; 32]");
                 let new_sec = DiffieHellmanSharedSecret(secret_bytes);
 
                 (k, new_sec)
@@ -179,10 +179,8 @@ pub fn derive_round_secret_client(
         hk.expand(&info, &mut seed)?;
 
         let mut rng = MyRng::from_seed(seed);
-        round_secret.xor_mut(&DcRoundMessage::rand_from_csprng(&mut  rng));
+        round_secret.xor_mut(&DcRoundMessage::rand_from_csprng(&mut rng));
     }
 
     Ok(round_secret)
-
 }
-

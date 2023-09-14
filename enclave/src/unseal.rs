@@ -1,4 +1,4 @@
-use crypto::{SharedSecretsDbClient,SgxPrivateKey};
+use crypto::{SgxPrivateKey, SharedSecretsDbClient};
 use interface::*;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -124,7 +124,7 @@ impl UnsealableInto<SgxPrivateKey> for SealedSigPrivKey {
     }
 }
 
-impl  SealInto<SealedSharedSecretsDbClient> for SharedSecretsDbClient {
+impl SealInto<SealedSharedSecretsDbClient> for SharedSecretsDbClient {
     fn seal_into(&self) -> SgxResult<SealedSharedSecretsDbClient> {
         let mut sealed_shared_secrets = SealedSharedSecretsDbClient::default();
         sealed_shared_secrets.round = self.round;
@@ -139,7 +139,7 @@ impl  SealInto<SealedSharedSecretsDbClient> for SharedSecretsDbClient {
                 .db
                 .insert(k.to_owned(), s.seal(Some(&ad))?);
         }
-        
+
         Ok(sealed_shared_secrets)
     }
 }
@@ -164,7 +164,7 @@ impl UnsealableInto<SharedSecretsDbClient> for SealedSharedSecretsDbClient {
 
             db.db.insert(k.to_owned(), secret);
         }
-        
+
         Ok(db)
     }
 }

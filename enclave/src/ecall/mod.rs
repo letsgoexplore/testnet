@@ -137,9 +137,9 @@ fn generic_ecall<I, O>(
     output_used: *mut usize,
     internal_fn: fn(&I) -> SgxResult<O>,
 ) -> sgx_status_t
-    where
-        I: serde::de::DeserializeOwned,
-        O: serde::Serialize,
+where
+    I: serde::de::DeserializeOwned,
+    O: serde::Serialize,
 {
     let start_time = std::time::Instant::now();
 
@@ -148,8 +148,6 @@ fn generic_ecall<I, O>(
     let input: I = unmarshal_or_abort!(I, inp, inp_len);
 
     debug!("input unmarshalled. {} bytes", inp_len);
-
-
 
     let result = match internal_fn(&input) {
         Ok(o) => o,
