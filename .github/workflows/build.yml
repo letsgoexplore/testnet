@@ -14,6 +14,11 @@ jobs:
         SGX_SDK: /opt/sgxsdk
     steps:
       - uses: actions/checkout@v2
+      - name: fmt check
+        run: cargo fmt --check -q
+      - name: fmt check enclave
+        run: cargo fmt --check -q
+        working-directory: ./enclave
       - name: Build enclave
         run: make
         working-directory: ./enclave
