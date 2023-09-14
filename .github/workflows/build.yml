@@ -19,6 +19,15 @@ jobs:
       - name: fmt check enclave
         run: cargo fmt --check
         working-directory: ./enclave
+  linter:
+    runs-on: ubuntu-20.04
+    container:
+      image: bl4ck5un/sgx-rust-fork:2004-1.1.6
+      env:
+        SGX_MODE: SW
+        SGX_SDK: /opt/sgxsdk
+    steps:
+      - uses: actions/checkout@v2
       - name: clippy
         run: cargo clippy
       - name: clippy on enclave
@@ -36,9 +45,5 @@ jobs:
       - name: Build enclave
         run: make
         working-directory: ./enclave
-      - name: Build client
-        run: cargo b
-        working-directory: ./enclave
       - name: Run test
         run: bash ./run_tests.sh
-        working-directory: .
