@@ -3,7 +3,7 @@ use crate::{
     UserState,
 };
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, RoundOutputUpdated, UserSubmissionBlobUpdated, UserMsg, DC_NET_MESSAGE_LENGTH};
+use interface::{DcMessage, RoundOutput, UserMsg, UserSubmissionBlob, DC_NET_MESSAGE_LENGTH};
 
 use core::ops::DerefMut;
 use std::{
@@ -98,14 +98,14 @@ async fn encrypt_msg(
     // debug!("dc_msg: {:?}", dc_msg.0);
 
     let encoded_round_output = payload_it.next();
-    let prev_round_output: RoundOutputUpdated = match encoded_round_output {
+    let prev_round_output: RoundOutput = match encoded_round_output {
         Some(s) => cli_util::load(s.trim().as_bytes())?,
-        None => RoundOutputUpdated::default(),
+        None => RoundOutput::default(),
     };
 
     // debug!("prev_round_output: {:?}", prev_round_output);
 
-    let msg = UserMsg::TalkAndReserveUpdated {
+    let msg = UserMsg::TalkAndReserve {
         msg: dc_msg,
         prev_round_output,
         times_participated: user_state.get_times_participated(),
@@ -120,10 +120,16 @@ async fn encrypt_msg(
     let duration_submit = start_submit.elapsed();
     debug!("[client] submit_round_msg: {:?}", duration_submit);
 
-
     debug!("round: {}", ciphertext.round);
-    debug!("scheduling_msg.len(): {}", ciphertext.aggregated_msg.scheduling_msg.len());
-    debug!("aggregated_msg.len(): {} * {}", ciphertext.aggregated_msg.aggregated_msg.num_rows(), ciphertext.aggregated_msg.aggregated_msg.num_columns());
+    debug!(
+        "scheduling_msg.len(): {}",
+        ciphertext.aggregated_msg.scheduling_msg.len()
+    );
+    debug!(
+        "aggregated_msg.len(): {} * {}",
+        ciphertext.aggregated_msg.aggregated_msg.num_rows(),
+        ciphertext.aggregated_msg.aggregated_msg.num_columns()
+    );
 
     send_ciphertext(&ciphertext, agg_url).await;
 
@@ -211,7 +217,7 @@ async fn send_cover(state: web::Data<Arc<Mutex<ServiceState>>>) -> Result<HttpRe
 }
 
 /// Sends a ciphertext to base_url/submit-agg
-async fn send_ciphertext(ciphertext: &UserSubmissionBlobUpdated, base_url: &str) {
+async fn send_ciphertext(ciphertext: &UserSubmissionBlob, base_url: &str) {
     let start = Instant::now();
 
     // Serialize the ciphertext

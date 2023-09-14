@@ -17,7 +17,6 @@ sgx_types = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.
 sgx_tstd = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_tse = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_trts = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_tcrypto = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_tunittest = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_tseal = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_rand = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
@@ -38,3 +37,8 @@ rand_core = "0.6.3"
 
 x25519-dalek = { version = "1.2.0", default-features = false, features = ["u64_backend", "serde_sgx"] }
 ed25519-dalek = { version = "1", default-features = false, features = ["u64_backend", "serde_sgx"] }
+
+[patch.crates-io]
+ed25519-dalek = {path = "../third_party/ed25519-dalek-1.0.1"}
+curve25519-dalek = {path = "../third_party/curve25519-dalek-3.2.1"}
+x25519-dalek = {path = "../third_party/x25519-dalek-1.2.0"}

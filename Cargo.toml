@@ -1,7 +1,7 @@
 [workspace]
 
-members = ["common", "client", "interface", "aggregator", "server", "enclave" ]
-#exclude = ["enclave"]
+members = ["common", "client", "interface", "aggregator", "server"]
+exclude = ["enclave"]
 
 [profile.release]
 lto = true

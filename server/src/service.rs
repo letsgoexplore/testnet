@@ -1,14 +1,11 @@
 use crate::{
-    util::{save_state, save_output, ServerError},
+    util::{save_output, save_state, ServerError},
     ServerState,
 };
 use common::cli_util;
-use interface::RoundOutputUpdated;
+use interface::RoundOutput;
 
-use common::types_nosgx::{
-    RoundSubmissionBlobNoSGX,
-    UnblindedAggregateShareBlobNoSGX,
-};
+use common::types::{RoundSubmissionBlob, UnblindedAggregateShareBlob};
 
 use core::ops::DerefMut;
 use std::{
@@ -41,11 +38,11 @@ impl ResponseError for ApiError {}
 // #[derive(Clone)]
 pub(crate) struct ServiceState {
     pub(crate) server_state: ServerState,
-    pub(crate) round_shares: Vec<UnblindedAggregateShareBlobNoSGX>,
+    pub(crate) round_shares: Vec<UnblindedAggregateShareBlob>,
     /// Contains the URL of the anytrust leader. If `None`, it's you.
     pub(crate) leader_url: Option<String>,
     /// A map from round to the round's output
-    pub(crate) round_outputs: BTreeMap<u32, RoundOutputUpdated>,
+    pub(crate) round_outputs: BTreeMap<u32, RoundOutput>,
     /// The path to this server's state file. If `None`, state is not persisted to disk
     pub(crate) server_state_path: Option<String>,
 }
@@ -81,13 +78,11 @@ fn leader_finish_round(state: &mut ServiceState) {
     // Derive the round output and save it to the state. This can be queries in the round_result
     // function. If this fails, use the default value. The last thing we want to do is get stuck in
     // a state that cannot progress
-    let output = server_state
-        .derive_round_output(&round_shares)
-        .unwrap();
+    let output = server_state.derive_round_output(&round_shares).unwrap();
     let round = output.round;
 
     // debug!("output: {:?}", output);
-    
+
     let mut output_path = "../server/round_output.txt".to_owned();
     output_path.insert(22, std::char::from_digit(round, 10).unwrap());
     debug!("output path: {:?}", output_path);
@@ -95,7 +90,7 @@ fn leader_finish_round(state: &mut ServiceState) {
         Err(e) => error!("failed to save round output: {:?}", e),
         _ => (),
     };
-    
+
     round_outputs.insert(round, output);
     info!("Output of round {} now available", round);
 
@@ -107,7 +102,7 @@ fn leader_finish_round(state: &mut ServiceState) {
 }
 
 /// Sends the given unblinded share to `base_url/submit-share`
-async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlobNoSGX) {
+async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlob) {
     // Serialize the share
     let mut body = Vec::new();
     cli_util::save(&mut body, &share).expect("could not serialize share");
@@ -147,7 +142,7 @@ async fn submit_agg(
     // Strip whitespace from the payload
     let payload = payload.split_whitespace().next().unwrap_or("");
     // Parse aggregation
-    let agg_data: RoundSubmissionBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
+    let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
 
     // Do the processing step. Unblind the input, add the share, and if we're the leader we finish
     // the round by combining the shares
@@ -166,7 +161,6 @@ async fn submit_agg(
         let share = server_state.unblind_aggregate(&agg_data)?;
         let unblind_duration = unblind_start.elapsed();
         debug!("[server] unblind_aggregate: {:?}", unblind_duration);
-
 
         // debug!("unblinded share: {:?}", share);
 
@@ -234,7 +228,7 @@ async fn submit_share(
     }
 
     // Parse the share and add it to our shares
-    let share: UnblindedAggregateShareBlobNoSGX = cli_util::load(&mut payload.as_bytes())?;
+    let share: UnblindedAggregateShareBlob = cli_util::load(&mut payload.as_bytes())?;
     round_shares.push(share);
     info!("Got share. Number of shares is now {}", round_shares.len());
 

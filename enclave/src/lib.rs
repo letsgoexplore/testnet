@@ -4,7 +4,6 @@ extern crate sgx_types;
 #[macro_use]
 extern crate sgx_tstd as std;
 extern crate interface;
-extern crate sgx_tcrypto;
 extern crate sgx_tse;
 extern crate sgx_tunittest;
 
@@ -19,8 +18,8 @@ extern crate rand;
 extern crate rand_core;
 extern crate sha2;
 
-extern crate x25519_dalek;
 extern crate ed25519_dalek;
+extern crate x25519_dalek;
 
 #[macro_use]
 extern crate serde;
@@ -39,7 +38,6 @@ extern crate sgx_tseal;
 mod attestation;
 mod crypto;
 mod ecall;
-mod messages_types;
 mod tests;
 mod types;
 mod unseal;

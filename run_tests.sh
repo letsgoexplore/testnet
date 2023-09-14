@@ -19,9 +19,9 @@ AGG_SERVICE_ADDR="localhost:8785"
 SERVER_SERVICE_ADDR="localhost:8122"
 
 NUM_SERVERS=1
-NUM_USERS=50
+NUM_USERS=5
 NUM_AGGREGATORS=1
-NUM_USERS_PER_AGGREGATOR=50
+NUM_USERS_PER_AGGREGATOR=5
 
 NUM_TEST_ROUNDS=2
 
@@ -306,7 +306,7 @@ encrypt_msgs() {
         fi
         STATE="${AGG_STATE%.txt}$CURRENT_AGG.txt"
 
-        echo "$CIPHERTEXT" | RUST_LOG=debug $CMD_PREFIX input --agg-state "../$STATE"
+        echo "$CIPHERTEXT" | RUST_LOG=debug $CMD_PREFIX input-user --agg-state "../$STATE"
 
         i=$(($i + 1))
     done
@@ -338,7 +338,7 @@ propagate_aggregates() {
 
     # Input all the aggregates into the root aggregator
     for AGG in "${AGGS[@]}"; do
-        echo "$AGG" | $CMD_PREFIX input --agg-state "../$AGG_ROOTSTATE"
+        echo "$AGG" | $CMD_PREFIX input-agg --agg-state "../$AGG_ROOTSTATE"
     done
 
     # Get the final aggregate
@@ -382,6 +382,8 @@ decrypt_msgs() {
         $CMD_PREFIX combine-shares --server-state "../$STATE" --shares "../$SERVER_SHARES" \
             > /dev/null
     done
+
+    echo "Done decrypting"
 
     cd ..
 }

@@ -3,6 +3,7 @@
 extern crate cfg_if;
 use cfg_if::cfg_if;
 extern crate hex;
+extern crate log;
 extern crate sha2;
 
 cfg_if! {
@@ -29,14 +30,9 @@ mod array2d;
 mod ecall_interface_types;
 mod params;
 mod sgx_protected_keys;
-mod sgx_signature;
 mod user_request;
-mod nosgx_protected_keys;
 
 pub use ecall_interface_types::*;
 pub use params::*;
-#[allow(dead_code)]
 pub use sgx_protected_keys::*;
-pub use sgx_signature::*;
 pub use user_request::*;
-pub use nosgx_protected_keys::*;

@@ -1,10 +1,11 @@
 extern crate common;
 extern crate interface;
 
+mod aes_prng;
+mod server;
 mod server_state;
 mod service;
 mod util;
-mod server_nosgx;
 
 use crate::{
     server_state::ServerState,
@@ -13,13 +14,11 @@ use crate::{
 };
 
 use common::cli_util;
-use interface::UserRegistrationBlobNew;
+use interface::UserRegistrationBlob;
+use pretty_hex;
 
-use common::types_nosgx::{
-    RoundSubmissionBlobNoSGX,
-    UnblindedAggregateShareBlobNoSGX,
-    ServerRegistrationBlobNoSGX,
-    AggRegistrationBlobNoSGX,
+use common::types::{
+    AggRegistrationBlob, RoundSubmissionBlob, ServerRegistrationBlob, UnblindedAggregateShareBlob,
 };
 
 use std::{error::Error, fs::File};
@@ -159,7 +158,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-user") {
         // Parse user registration blobs from stdin
-        let reg_blobs: Vec<UserRegistrationBlobNew> = load_multi_from_stdin()?;
+        let reg_blobs: Vec<UserRegistrationBlob> = load_multi_from_stdin()?;
 
         // Feed them to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
@@ -173,7 +172,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-aggregator") {
         // Parse an aggregator registration blob from stdin
-        let reg_blob: AggRegistrationBlobNoSGX = load_from_stdin()?;
+        let reg_blob: AggRegistrationBlob = load_from_stdin()?;
 
         // Feed it to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
@@ -186,7 +185,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("register-server") {
         // Parse an aggregator registration blob from stdin
-        let reg_blob: ServerRegistrationBlobNoSGX = load_from_stdin()?;
+        let reg_blob: ServerRegistrationBlob = load_from_stdin()?;
 
         // Feed it to the state and save the new state
         let state_path = matches.value_of("server-state").unwrap();
@@ -199,7 +198,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     if let Some(matches) = matches.subcommand_matches("unblind-aggregate") {
         // Load the aggregation blob
-        let agg_blob: RoundSubmissionBlobNoSGX = load_from_stdin()?;
+        let agg_blob: RoundSubmissionBlob = load_from_stdin()?;
 
         // Feed it to the state and print the result
         let state_path = matches.value_of("server-state").unwrap();
@@ -215,7 +214,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Parse each server's unblinded inputs
         let shares_filename = matches.value_of("shares").unwrap();
         let sharefile = File::open(shares_filename)?;
-        let shares: Vec<UnblindedAggregateShareBlobNoSGX> = cli_util::load_multi(sharefile)?;
+        let shares: Vec<UnblindedAggregateShareBlob> = cli_util::load_multi(sharefile)?;
 
         // Feed it to the state and output the result
         let state_path = matches.value_of("server-state").unwrap();
@@ -226,8 +225,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Log the raw round result in base64
         let round = round_output.round;
         let round_msg = &round_output.dc_msg.aggregated_msg.as_row_major();
-        // info!("round {} output: {}", round, base64::encode(round_msg));
-        info!("round {} output: {:?}", round, round_msg);
+        info!(
+            "round {} output\n{}",
+            round,
+            pretty_hex::pretty_hex(round_msg)
+        );
     }
 
     if let Some(matches) = matches.subcommand_matches("start-service") {
@@ -256,11 +258,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Some(state_path)
         };
 
-        let state = service::ServiceState::new(
-            server_state,
-            server_state_path,
-            leader_url,
-        );
+        let state = service::ServiceState::new(server_state, server_state_path, leader_url);
         start_service(bind_addr, state).unwrap();
     }
 

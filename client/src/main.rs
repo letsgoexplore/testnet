@@ -12,12 +12,10 @@ use crate::{
 };
 
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, ServerPubKeyPackageNoSGX, UserMsg, DC_NET_MESSAGE_LENGTH, RoundOutputUpdated};
+use interface::{DcMessage, RoundOutput, ServerPubKeyPackage, UserMsg, DC_NET_MESSAGE_LENGTH};
 use std::{ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};
-
-use log::debug;
 
 fn main() -> Result<(), UserError> {
     // Do setup
@@ -161,18 +159,19 @@ fn main() -> Result<(), UserError> {
         // Load up the KEM keys
         let pubkeys_filename = matches.value_of("server-keys").unwrap();
         let keysfile = File::open(pubkeys_filename)?;
-        let pubkeys: Vec<ServerPubKeyPackageNoSGX> = cli_util::load_multi(keysfile)?;
+        let pubkeys: Vec<ServerPubKeyPackage> = cli_util::load_multi(keysfile)?;
         let num_regs = cli_util::parse_u32(matches.value_of("num-regs").unwrap())?;
         let state_path = Path::new(matches.value_of("user-state").unwrap());
 
         let empty_str = OsString::default();
         let ext = state_path.extension().unwrap_or(&empty_str);
         let file_stem = state_path.file_stem().unwrap_or(&empty_str);
-    
+
         // Make a new state and user registration. Save the state and and print the registration
         if num_regs == 1 {
             let (state, reg_blob) = UserState::new_multi(&enclave, 1, pubkeys)?.pop().unwrap();
-            let filename = format!("{}{}.{}",
+            let filename = format!(
+                "{}{}.{}",
                 file_stem.to_str().unwrap(),
                 1,
                 ext.to_str().unwrap()
@@ -245,12 +244,12 @@ fn main() -> Result<(), UserError> {
 
         // Load the previous round output. Load a placeholder output if this is the first round of
         // the first window
-        let prev_round_output: RoundOutputUpdated = if round > 0 {
+        let prev_round_output: RoundOutput = if round > 0 {
             let round_output_filename = matches.value_of("prev-round-output").unwrap();
             let round_file = File::open(round_output_filename)?;
             cli_util::load(round_file)?
         } else {
-            RoundOutputUpdated::default()
+            RoundOutput::default()
         };
 
         // Get the state
@@ -258,7 +257,7 @@ fn main() -> Result<(), UserError> {
         let mut state = load_state(&state_path)?;
 
         // Make the message for this round
-        let msg = UserMsg::TalkAndReserveUpdated {
+        let msg = UserMsg::TalkAndReserve {
             msg: dc_msg,
             prev_round_output,
             times_participated: state.get_times_participated(),

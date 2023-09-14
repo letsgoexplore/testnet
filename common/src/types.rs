@@ -1,49 +1,29 @@
 use ed25519_dalek::{
-    SecretKey,
-    PublicKey,
-    Signature,
-    Keypair,
-    SignatureError,
-    Signer,
-    Verifier,
-    SECRET_KEY_LENGTH,
-    PUBLIC_KEY_LENGTH,
-    KEYPAIR_LENGTH,
-    SIGNATURE_LENGTH,
+    Keypair, PublicKey, SecretKey, Signature, SignatureError, Signer, Verifier, KEYPAIR_LENGTH,
+    PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH, SIGNATURE_LENGTH,
 };
-use serde::{Serialize, Deserialize};
-use sha2::{Digest, Sha256};
+
 use interface::{
-    EntityId,
-    RateLimitNonce,
-    DcRoundMessage,
-    NoSgxProtectedKeyPub,
-    AttestedPublicKeyNoSGX,
-    ServerPubKeyPackageNoSGX,
-    NewDiffieHellmanSharedSecret,
-    UserSubmissionMessageUpdated,
-    RoundSecret,
-    compute_anytrust_group_id_spk,
+    compute_anytrust_group_id, AttestedPublicKey, DcRoundMessage, DiffieHellmanSharedSecret,
+    EntityId, RateLimitNonce, RoundSecret, ServerPubKeyPackage, SgxProtectedKeyPub,
+    UserSubmissionMessage,
 };
+use sha2::{Digest, Sha256};
 
-use crate::funcs_nosgx::{
-    serialize_to_vec,
-    deserialize_from_vec,
-};
-
-use std::prelude::v1::*;
-use std::collections::{BTreeSet, BTreeMap};
+use std::collections::{BTreeMap, BTreeSet};
 use std::convert::TryInto;
+use std::prelude::v1::*;
 
-use core::fmt::{Debug, Formatter};
+use core::fmt::Debug;
 
-use x25519_dalek::{
-    StaticSecret,
-    PublicKey as xPublicKey,
-};
+use x25519_dalek::{PublicKey as xPublicKey, StaticSecret};
+
+use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
+use serde_cbor;
 
 #[derive(Clone, Serialize, Debug, Deserialize)]
-pub struct AggRegistrationBlobNoSGX {
+pub struct AggRegistrationBlob {
     pub pk: PublicKey,
     pub role: std::string::String,
 }
@@ -68,12 +48,12 @@ impl Default for AggregatedMessage {
             user_ids: BTreeSet::new(),
             rate_limit_nonce: None,
             aggregated_msg: DcRoundMessage::default(),
-            sig: Signature::from_bytes(&[0u8;SIGNATURE_LENGTH]).expect("failed to generate Signature from bytes"),
+            sig: Signature::from_bytes(&[0u8; SIGNATURE_LENGTH])
+                .expect("failed to generate Signature from bytes"),
             pk: PublicKey::default(),
         }
     }
 }
-
 
 impl AggregatedMessage {
     pub fn is_empty(&self) -> bool {
@@ -81,11 +61,11 @@ impl AggregatedMessage {
     }
 }
 
-pub trait SignableNoSGX {
+pub trait Signable {
     fn digest(&self) -> Vec<u8>;
     fn get_sig(&self) -> Signature;
     fn get_pk(&self) -> PublicKey;
-    
+
     fn sign(&self, sk: &SecretKey) -> Result<(Signature, PublicKey), SignatureError> {
         let dig: Vec<u8> = self.digest();
         // The standard hash function used for most ed25519 libraries is SHA-512
@@ -110,7 +90,7 @@ pub trait SignableNoSGX {
     }
 }
 
-impl SignableNoSGX for AggregatedMessage {
+impl Signable for AggregatedMessage {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
         hasher.input(b"Begin AggregatedMessage");
@@ -133,11 +113,11 @@ impl SignableNoSGX for AggregatedMessage {
     }
 }
 
-pub trait SignMutableNoSGX {
+pub trait SignMutable {
     fn sign_mut(&mut self, _: &SecretKey) -> Result<(), SignatureError>;
 }
 
-impl SignMutableNoSGX for AggregatedMessage {
+impl SignMutable for AggregatedMessage {
     fn sign_mut(&mut self, sk: &SecretKey) -> Result<(), SignatureError> {
         let (sig, pk) = self.sign(sk)?;
         self.pk = pk;
@@ -147,55 +127,8 @@ impl SignMutableNoSGX for AggregatedMessage {
     }
 }
 
-pub trait XorNoSGX: Clone {
-    // xor_mut_nosgx computes and sets self = xor(self, other)
-    fn xor_mut_nosgx(&mut self, other: &Self)
-    where
-        Self: Sized;
-
-    // xor_nosgx returns xor(self, other)
-    fn xor_nosgx(&self, other: &Self) -> Self {
-        let mut copy = self.clone();
-        copy.xor_mut_nosgx(other);
-        copy
-    }
-}
-
-impl XorNoSGX for DcRoundMessage {
-    fn xor_mut_nosgx(&mut self, other: &Self) {
-        assert_eq!(
-            self.aggregated_msg.num_rows(),
-            other.aggregated_msg.num_rows()
-        );
-        assert_eq!(
-            self.aggregated_msg.num_columns(),
-            other.aggregated_msg.num_columns()
-        );
-
-        // XOR the scheduling messages
-        for (lhs, rhs) in self
-            .scheduling_msg
-            .as_mut_slice()
-            .iter_mut()
-            .zip(other.scheduling_msg.as_slice().iter())
-        {
-            *lhs ^= rhs;
-        }
-
-        // XOR the round messages
-        for (lhs, rhs) in self
-            .aggregated_msg
-            .as_mut_slice()
-            .iter_mut()
-            .zip(other.aggregated_msg.as_slice().iter())
-        {
-            *lhs ^= rhs;
-        }
-    }
-}
-
 pub enum SubmissionMessage {
-    UserSubmission(UserSubmissionMessageUpdated),
+    UserSubmission(UserSubmissionMessage),
     AggSubmission(AggregatedMessage),
 }
 
@@ -206,32 +139,36 @@ pub enum SubmissionMessage {
 pub struct SharedSecretsDbServer {
     pub round: u32,
     /// a dictionary of keys
-    /// We use NewDiffieHellmanSharedSecret to store SharedSecret, since SharedSecret is ephemeral
-    pub db: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret>,
+    /// We use DiffieHellmanSharedSecret to store SharedSecret, since SharedSecret is ephemeral
+    pub db: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret>,
 }
 
 impl SharedSecretsDbServer {
     pub fn anytrust_group_id(&self) -> EntityId {
-        let keys: Vec<NoSgxProtectedKeyPub> = self.db.keys().cloned().collect();
-        compute_anytrust_group_id_spk(&keys)
+        let keys: Vec<SgxProtectedKeyPub> = self.db.keys().cloned().collect();
+        compute_anytrust_group_id(&keys)
     }
 
     pub fn derive_shared_secrets(
         my_sk: &SecretKey,
-        other_pks: &BTreeMap<NoSgxProtectedKeyPub, NoSgxProtectedKeyPub>,
+        other_pks: &BTreeMap<SgxProtectedKeyPub, SgxProtectedKeyPub>, // todo: what is the first and second SgxProtectedKeyPub?
     ) -> Result<Self, SignatureError> {
         // 1. Generate StaticSecret from server's secret key
         let my_secret = StaticSecret::from(my_sk.to_bytes());
-        let mut server_secrets: BTreeMap<NoSgxProtectedKeyPub, NewDiffieHellmanSharedSecret> = BTreeMap::new();
+        let mut server_secrets: BTreeMap<SgxProtectedKeyPub, DiffieHellmanSharedSecret> =
+            BTreeMap::new();
 
         for (client_xpk, client_pk) in other_pks {
             // 2. Derive the exchange pk from the client_xpk
             let xpk = xPublicKey::from(client_xpk.0);
             // 3. Compute the DH shared secret from client exchange pk and server secret
             let shared_secret = my_secret.diffie_hellman(&xpk);
-            // 4. Save the ephemeral SharedSecret into NewDiffieHellmanSharedSecret
+            // 4. Save the ephemeral SharedSecret into DiffieHellmanSharedSecret
             let shared_secret_bytes: [u8; 32] = shared_secret.to_bytes();
-            server_secrets.insert(client_pk.to_owned(), NewDiffieHellmanSharedSecret(shared_secret_bytes));
+            server_secrets.insert(
+                client_pk.to_owned(),
+                DiffieHellmanSharedSecret(shared_secret_bytes),
+            );
         }
 
         Ok(SharedSecretsDbServer {
@@ -246,8 +183,10 @@ impl SharedSecretsDbServer {
             .iter()
             .map(|(&k, v)| {
                 let new_key = Sha256::digest(&v.0);
-                let secret_bytes: [u8; 32] = new_key.try_into().expect("cannot convert Sha256 digest to [u8; 32");
-                let new_sec = NewDiffieHellmanSharedSecret(secret_bytes);
+                let secret_bytes: [u8; 32] = new_key
+                    .try_into()
+                    .expect("cannot convert Sha256 digest to [u8; 32");
+                let new_sec = DiffieHellmanSharedSecret(secret_bytes);
 
                 (k, new_sec)
             })
@@ -269,37 +208,37 @@ impl Default for SharedSecretsDbServer {
     }
 }
 
-pub type AggPublicKey = AggRegistrationBlobNoSGX;
+pub type AggPublicKey = AggRegistrationBlob;
 
-/// SignedPubKeyDbNoSGX is a signed mapping between entity id and public key
+/// SignedPubKeyDb is a signed mapping between entity id and public key
 #[derive(Clone, Default, Serialize, Debug, Deserialize)]
-pub struct SignedPubKeyDbNoSGX {
-    pub users: BTreeMap<EntityId, AttestedPublicKeyNoSGX>,
-    pub servers: BTreeMap<EntityId, ServerPubKeyPackageNoSGX>,
+pub struct SignedPubKeyDb {
+    pub users: BTreeMap<EntityId, AttestedPublicKey>,
+    pub servers: BTreeMap<EntityId, ServerPubKeyPackage>,
     pub aggregators: BTreeMap<EntityId, AggPublicKey>,
 }
 
 /// Contains a set of entity IDs along with the XOR of their round submissions. This is passed to anytrust nodes.
-pub type RoundSubmissionBlobNoSGX = AggregatedMessage;
+pub type RoundSubmissionBlob = AggregatedMessage;
 
 /// Describes anytrust server registration information. This contains sig key and kem key.
-pub type ServerRegistrationBlobNoSGX = ServerPubKeyPackageNoSGX;
+pub type ServerRegistrationBlob = ServerPubKeyPackage;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct UnblindedAggregateSharedNoSGX {
+pub struct UnblindedAggregateShare {
     pub encrypted_msg: AggregatedMessage,
     pub key_share: RoundSecret,
     pub sig: Signature,
     pub pk: PublicKey,
 }
 
-impl SignableNoSGX for UnblindedAggregateSharedNoSGX {
+impl Signable for UnblindedAggregateShare {
     fn digest(&self) -> Vec<u8> {
         let mut hasher = Sha256::new();
-        hasher.input(b"Begin UnblindedAggregateShareNoSGX");
+        hasher.input(b"Begin UnblindedAggregateShare");
         hasher.input(self.encrypted_msg.digest());
         hasher.input(self.key_share.digest());
-        hasher.input(b"End UnblindedAggregateShareNoSGX");
+        hasher.input(b"End UnblindedAggregateShare");
 
         hasher.result().to_vec()
     }
@@ -313,9 +252,9 @@ impl SignableNoSGX for UnblindedAggregateSharedNoSGX {
     }
 }
 
-impl SignMutableNoSGX for UnblindedAggregateSharedNoSGX {
+impl SignMutable for UnblindedAggregateShare {
     fn sign_mut(&mut self, ssk: &SecretKey) -> Result<(), SignatureError> {
-        let (sig, pk)  = self.sign(ssk)?;
+        let (sig, pk) = self.sign(ssk)?;
         self.sig = sig;
         self.pk = pk;
 
@@ -323,26 +262,40 @@ impl SignMutableNoSGX for UnblindedAggregateSharedNoSGX {
     }
 }
 
+pub fn serialize_to_vec<T: Serialize>(v: &T) -> Result<Vec<u8>, serde_cbor::Error> {
+    serde_cbor::to_vec(v).map_err(|e| {
+        println!("can't serialize to vec {}", e);
+        e
+    })
+}
+
+pub fn deserialize_from_vec<T: DeserializeOwned>(bin: &[u8]) -> Result<T, serde_cbor::Error> {
+    serde_cbor::from_slice::<T>(bin).map_err(|e| {
+        println!("can't deserialize from vec {}", e);
+        e
+    })
+}
+
 /// The unblinded aggregate output by a single anytrust node
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct UnblindedAggregateShareBlobNoSGX(pub Vec<u8>);
+pub struct UnblindedAggregateShareBlob(pub Vec<u8>);
 
-pub trait MarshallAsNoSGX<T> {
-    fn marshal_nosgx(&self) -> Result<T, serde_cbor::Error>;
+pub trait MarshallAs<T> {
+    fn marshal(&self) -> Result<T, serde_cbor::Error>;
 }
 
-pub trait UnmarshalledAsNoSGX<T> {
-    fn unmarshal_nosgx(&self) -> Result<T, serde_cbor::Error>;
+pub trait UnmarshalledAs<T> {
+    fn unmarshal(&self) -> Result<T, serde_cbor::Error>;
 }
 
-impl MarshallAsNoSGX<UnblindedAggregateShareBlobNoSGX> for UnblindedAggregateSharedNoSGX {
-    fn marshal_nosgx(&self) -> Result<UnblindedAggregateShareBlobNoSGX, serde_cbor::Error> {
-        Ok(UnblindedAggregateShareBlobNoSGX(serialize_to_vec(&self)?))
+impl MarshallAs<UnblindedAggregateShareBlob> for UnblindedAggregateShare {
+    fn marshal(&self) -> Result<UnblindedAggregateShareBlob, serde_cbor::Error> {
+        Ok(UnblindedAggregateShareBlob(serialize_to_vec(&self)?))
     }
 }
 
-impl UnmarshalledAsNoSGX<UnblindedAggregateSharedNoSGX> for UnblindedAggregateShareBlobNoSGX {
-    fn unmarshal_nosgx(&self) -> Result<UnblindedAggregateSharedNoSGX, serde_cbor::Error> {
+impl UnmarshalledAs<UnblindedAggregateShare> for UnblindedAggregateShareBlob {
+    fn unmarshal(&self) -> Result<UnblindedAggregateShare, serde_cbor::Error> {
         deserialize_from_vec(&self.0)
     }
 }
@@ -359,7 +312,7 @@ mod tests {
 
         let sk = SecretKey::generate(&mut csprng);
         let mut agg_msg = AggregatedMessage::default();
-        
+
         // sign the aggregated message using secret key
         agg_msg.sign_mut(&sk)?;
 

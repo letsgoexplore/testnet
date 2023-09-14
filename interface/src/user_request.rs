@@ -1,12 +1,12 @@
 use std::prelude::v1::*;
 use std::{collections::BTreeSet, vec};
 
-use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected_keys::*, nosgx_protected_keys::*};
+use crate::{array2d::Array2D, ecall_interface_types::*, params::*, sgx_protected_keys::*};
 
 use sha2::{Digest, Sha256};
 use std::fmt::{Debug, Display, Formatter, Result as FmtResult};
 
-use ed25519_dalek::PublicKey;
+use ed25519_dalek::{PublicKey, Signature, Verifier};
 
 // a wrapper around RawMessage so that we can impl traits. This stores DC_NET_MESSAGE_LENGTH bytes
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
@@ -162,28 +162,13 @@ impl From<[u8; USER_ID_LENGTH]> for EntityId {
     }
 }
 
-impl From<&NoSgxProtectedKeyPub> for EntityId {
-    fn from(pk: &NoSgxProtectedKeyPub) -> Self {
+impl From<&SgxProtectedKeyPub> for EntityId {
+    fn from(pk: &SgxProtectedKeyPub) -> Self {
         let mut hasher = Sha256::new();
         hasher.input("anytrust_group_id");
         hasher.input(pk.0);
 
         let digest = hasher.result();
-        let mut id = EntityId::default();
-        id.0.copy_from_slice(&digest);
-        id
-    }
-}
-
-impl From<&SgxProtectedKeyPub> for EntityId {
-    fn from(pk: &SgxProtectedKeyPub) -> Self {
-        let mut hasher = Sha256::new();
-        hasher.input("anytrust_group_id");
-        hasher.input(pk.gx);
-        hasher.input(pk.gy);
-
-        let digest = hasher.result();
-
         let mut id = EntityId::default();
         id.0.copy_from_slice(&digest);
         id
@@ -210,22 +195,9 @@ impl From<&AttestedPublicKey> for EntityId {
     }
 }
 
-impl From<&AttestedPublicKeyNoSGX> for EntityId {
-    fn from(pk: &AttestedPublicKeyNoSGX) -> Self {
-        EntityId::from(&pk.pk)
-    }
-}
-
 impl From<&ServerPubKeyPackage> for EntityId {
     // server's entity id is computed from the signing key
-    fn from(spk: &ServerPubKeyPackage) -> Self {
-        EntityId::from(&spk.sig)
-    }
-}
-
-impl From<&ServerPubKeyPackageNoSGX> for EntityId {
-    // server's entity id is computed from the signing key
-    fn from(pk: &ServerPubKeyPackageNoSGX) -> Self {
+    fn from(pk: &ServerPubKeyPackage) -> Self {
         EntityId::from(&pk.sig)
     }
 }
@@ -246,13 +218,8 @@ pub fn compute_group_id(ids: &BTreeSet<EntityId>) -> EntityId {
     id
 }
 
-/// An anytrust_group_id is computed from sig keys
-pub fn compute_anytrust_group_id(keys: &[SgxSigningPubKey]) -> EntityId {
-    compute_group_id(&keys.iter().map(|k| EntityId::from(k)).collect())
-}
-
 /// An anytrust_group_id is computed from server pub keys
-pub fn compute_anytrust_group_id_spk(keys: &[NoSgxProtectedKeyPub]) -> EntityId {
+pub fn compute_anytrust_group_id(keys: &[SgxProtectedKeyPub]) -> EntityId {
     compute_group_id(&keys.iter().map(|k| EntityId::from(k)).collect())
 }
 
@@ -292,13 +259,6 @@ impl Debug for RateLimitNonce {
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum UserMsg {
-    TalkAndReserveUpdated {
-        msg: DcMessage,
-        /// Output of previous round signed by one or more anytrust server
-        prev_round_output: RoundOutputUpdated,
-        /// The number of times the user has already talked or reserved this window
-        times_participated: u32,
-    },
     TalkAndReserve {
         msg: DcMessage,
         /// Output of previous round signed by one or more anytrust server
@@ -330,52 +290,14 @@ pub struct UserSubmissionReq {
     pub round: u32,
     pub msg: UserMsg,
     /// A map from server KEM public key to sealed shared secret
-    pub shared_secrets: SealedSharedSecretDb,
+    pub shared_secrets: SealedSharedSecretsDbClient,
     /// A list of server public keys (can be verified using the included attestation)
     pub server_pks: Vec<ServerPubKeyPackage>,
 }
 
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct UserSubmissionReqUpdated {
-    pub user_id: EntityId,
-    pub anytrust_group_id: EntityId,
-    pub round: u32,
-    pub msg: UserMsg,
-    /// A map from server KEM public key to sealed shared secret
-    pub shared_secrets: SealedSharedSecretsDbClient,
-    /// A list of server public keys (can be verified using the included attestation)
-    pub server_pks: Vec<ServerPubKeyPackageNoSGX>,
-}
-
-use crate::SgxSignature;
-
-/// A (potentially aggregated) message that's produced by an enclave
-/// Not used anymore.
-/// Clients use UserSubmissionMessage
-/// Aggregators and servers use AggregatedMessage
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct AggregatedMessageObsolete {
-    pub round: u32,
-    pub anytrust_group_id: EntityId,
-    pub user_ids: BTreeSet<EntityId>,
-    /// This is only Some for user-submitted messages
-    pub rate_limit_nonce: Option<RateLimitNonce>,
-    pub aggregated_msg: DcRoundMessage,
-    pub tee_sig: SgxSignature,
-    pub tee_pk: SgxSigningPubKey,
-}
-
-impl AggregatedMessageObsolete {
-    pub fn is_empty(&self) -> bool {
-        self.user_ids.is_empty()
-    }
-}
-
 /// A user submitted message that's produced by an enclave
 #[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct UserSubmissionMessage {
     pub round: u32,
     pub anytrust_group_id: EntityId,
@@ -383,32 +305,43 @@ pub struct UserSubmissionMessage {
     /// This is only Some for user-submitted messages
     pub rate_limit_nonce: Option<RateLimitNonce>,
     pub aggregated_msg: DcRoundMessage,
-    pub tee_sig: SgxSignature,
-    pub tee_pk: SgxSigningPubKey,
+    pub tee_sig: SignatureBytes,
+    pub tee_pk: PublicKey,
 }
 
 impl UserSubmissionMessage {
     pub fn is_empty(&self) -> bool {
         false
     }
-}
+    pub fn digest(&self) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.input(b"Begin UserSubmissionMessage");
+        hasher.input(&self.anytrust_group_id);
+        // for id in self.user_ids.iter() {
+        //     hasher.input(id);
+        // }
+        hasher.input(self.user_id);
+        hasher.input(&self.aggregated_msg.digest());
+        hasher.input(b"End UserSubmissionMessage");
 
-/// A user submitted message that's produced by an enclave
-#[cfg_attr(feature = "trusted", serde(crate = "serde_sgx"))]
-#[derive(Serialize, Deserialize, Clone, Default)]
-pub struct UserSubmissionMessageUpdated {
-    pub round: u32,
-    pub anytrust_group_id: EntityId,
-    pub user_id: EntityId,
-    /// This is only Some for user-submitted messages
-    pub rate_limit_nonce: Option<RateLimitNonce>,
-    pub aggregated_msg: DcRoundMessage,
-    pub tee_sig: NoSgxSignature,
-    pub tee_pk: PublicKey,
-}
+        hasher.result().to_vec()
+    }
+    pub fn verify_sig(&self) -> bool {
+        let pk: PublicKey = self.tee_pk;
+        let sig = match Signature::from_bytes(&self.tee_sig.0) {
+            Ok(sig) => sig,
+            Err(_e) => {
+                log::error!("failed to generate sig from bytes");
+                return false;
+            }
+        };
 
-impl UserSubmissionMessageUpdated {
-    pub fn is_empty(&self) -> bool {
-        false
+        match pk.verify(&self.digest(), &sig) {
+            Ok(_) => true,
+            Err(e) => {
+                log::error!("sig err {}", e);
+                false
+            }
+        }
     }
 }
