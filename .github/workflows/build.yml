@@ -5,7 +5,7 @@ env:
   LD_LIBRARY_PATH: /usr/lib:/usr/local/lib:/opt/sgxsdk/sdk_libs
   PATH: "/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/sgxsdk/bin:/opt/sgxsdk/bin/x64"
 jobs:
-  format-and-lint:
+  format:
     runs-on: ubuntu-20.04
     container:
       image: bl4ck5un/sgx-rust-fork:2004-1.1.6
