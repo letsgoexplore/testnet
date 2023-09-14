@@ -254,8 +254,13 @@ dependencies = [
  "actix-macros",
  "actix-rt 1.1.1",
  "actix-server",
+<<<<<<< HEAD
  "actix-service 1.0.6",
  "log 0.4.19",
+=======
+ "actix-service",
+ "log",
+>>>>>>> 7cefa8e (Merge pull request #20 from bl4ck5un/fix-a-few-things)
  "socket2 0.3.19",
 ]
 
@@ -405,6 +410,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "aes-ctr"
 version = "0.3.0"
 source = "git+https://github.com/mesalock-linux/rustcrypto-stream-ciphers-sgx#2586d36ca27f35ede675cf60639677ab66671b61"
@@ -436,6 +442,8 @@ dependencies = [
 ]
 
 [[package]]
+=======
+>>>>>>> 7cefa8e (Merge pull request #20 from bl4ck5un/fix-a-few-things)
 name = "aho-corasick"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

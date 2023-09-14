@@ -103,9 +103,8 @@ fn leader_finish_round(state: &mut ServiceState) {
 }
 
 /// Sends the given unblinded share to `base_url/submit-share`
-async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlob, state: web::Data<Arc<Mutex<ServiceState>>>) {
+async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlob) {
     // Serialize the share
-    let _state = state.get_ref().lock().unwrap();
     let mut body = Vec::new();
     println!("send_share_to_leader share:{}", share.0.len());
     cli_util::save(&mut body, &share).expect("could not serialize share");
