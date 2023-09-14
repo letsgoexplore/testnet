@@ -11,7 +11,7 @@ use ed25519_dalek::{
     KEYPAIR_LENGTH,
     SIGNATURE_LENGTH,
 };
-use serde::{Serialize, Deserialize};
+
 use sha2::{Digest, Sha256};
 use interface::{
     EntityId,
@@ -26,11 +26,6 @@ use interface::{
     compute_anytrust_group_id,
 };
 
-use crate::funcs_nosgx::{
-    serialize_to_vec,
-    deserialize_from_vec,
-};
-
 use std::prelude::v1::*;
 use std::collections::{BTreeSet, BTreeMap};
 use std::convert::TryInto;
@@ -41,6 +36,10 @@ use x25519_dalek::{
     StaticSecret,
     PublicKey as xPublicKey,
 };
+
+use serde::{Serialize, Deserialize};
+use serde::de::DeserializeOwned;
+use serde_cbor;
 
 #[derive(Clone, Serialize, Debug, Deserialize)]
 pub struct AggRegistrationBlob {
@@ -171,7 +170,7 @@ impl SharedSecretsDbServer {
 
     pub fn derive_shared_secrets(
         my_sk: &SecretKey,
-        other_pks: &BTreeMap<SgxProtectedKeyPub, SgxProtectedKeyPub>,
+        other_pks: &BTreeMap<SgxProtectedKeyPub, SgxProtectedKeyPub>, // todo: what is the first and second SgxProtectedKeyPub?
     ) -> Result<Self, SignatureError> {
         // 1. Generate StaticSecret from server's secret key
         let my_secret = StaticSecret::from(my_sk.to_bytes());
@@ -274,6 +273,20 @@ impl SignMutable for UnblindedAggregateShare {
 
         Ok(())
     }
+}
+
+pub fn serialize_to_vec<T: Serialize>(v: &T) -> Result<Vec<u8>, serde_cbor::Error> {
+    serde_cbor::to_vec(v).map_err(|e| {
+        println!("can't serialize to vec {}", e);
+        e
+    })
+}
+
+pub fn deserialize_from_vec<T: DeserializeOwned>(bin: &[u8]) -> Result<T, serde_cbor::Error> {
+    serde_cbor::from_slice::<T>(bin).map_err(|e| {
+        println!("can't deserialize from vec {}", e);
+        e
+    })
 }
 
 /// The unblinded aggregate output by a single anytrust node

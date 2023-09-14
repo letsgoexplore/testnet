@@ -42,14 +42,12 @@ use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;
 use sgx_types::SgxResult;
 use interface::UserSubmissionMessage;
 
-pub fn ed25519pk_from_sk(sk: &SgxPrivateKey) -> SgxResult<PublicKey> {
-    log::debug!("pk_from_sk");
+pub fn ed25519pk_from_secret(sk: &SgxPrivateKey) -> SgxResult<PublicKey> {
     let sk = SecretKey::from_bytes(&sk.r).map_err(|e|{
         SGX_ERROR_UNEXPECTED
     })?;
 
     let pk = PublicKey::from(&sk);
-    log::debug!("done pk_from_sk");
     Ok(pk)
 }
 

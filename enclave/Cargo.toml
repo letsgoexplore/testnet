@@ -20,7 +20,6 @@ sgx_trts = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.g
 sgx_tunittest = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_tseal = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 sgx_rand = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
-sgx_backtrace = { rev = "v1.1.6", git = "https://github.com/apache/teaclave-sgx-sdk.git" }
 
 hex = { version = "0.4", default-features = false, features = ["alloc"] }
 serde = { git = "https://github.com/bl4ck5un/serde-sgx", features = ["derive"] }

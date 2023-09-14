@@ -127,7 +127,6 @@ fn serialize_to_ptr<T: Serialize>(
 }
 
 use std::untrusted::time::InstantEx; // get time for perf test
-use sgx_backtrace::Backtrace;
 
 fn generic_ecall<I, O>(
     ecall_id: EcallId,

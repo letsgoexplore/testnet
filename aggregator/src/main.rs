@@ -4,7 +4,7 @@ extern crate interface;
 mod agg_state;
 mod service;
 mod util;
-mod agg_nosgx;
+mod agg;
 
 pub use crate::util::AggregatorError;
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
 };
 
 use common::cli_util;
-use common::types_nosgx::{AggregatedMessage, SubmissionMessage};
+use common::types::{AggregatedMessage, SubmissionMessage};
 use interface::{ServerPubKeyPackage, UserSubmissionMessage};
 use std::{fs::File, time::SystemTime};
 

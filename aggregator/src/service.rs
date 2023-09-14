@@ -4,7 +4,7 @@ use crate::{
 };
 use common::cli_util;
 use common::log_time::{log_time, log_detailed_time};
-use common::types_nosgx::{
+use common::types::{
     AggregatedMessage,
     SubmissionMessage,
 };
