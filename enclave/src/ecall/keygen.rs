@@ -3,19 +3,19 @@ use interface::*;
 use sgx_rand::{Rand, Rng};
 use sgx_types::sgx_status_t::SGX_ERROR_UNEXPECTED;
 use sgx_types::SgxResult;
-use std::string::ToString;
-use std::vec;
+use std::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
-use std::fmt;
+use std::string::ToString;
+use std::vec;
 
-use x25519_dalek::StaticSecret;
-use x25519_dalek::PublicKey as xPublicKey;
+use crate::crypto::SgxPrivateKey;
+use crypto::ed25519pk_from_secret;
 use ed25519_dalek::SecretKey;
 use ed25519_dalek::{Keypair, SECRET_KEY_LENGTH};
-use crypto::ed25519pk_from_secret;
-use crate::crypto::SgxPrivateKey;
+use x25519_dalek::PublicKey as xPublicKey;
+use x25519_dalek::StaticSecret;
 
 pub fn new_keypair_ext_internal(role: &str) -> SgxResult<(SgxPrivateKey, AttestedPublicKey)> {
     let mut rand = sgx_rand::SgxRng::new().map_err(|e| {
