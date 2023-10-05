@@ -162,7 +162,6 @@ async fn submit_agg(
     let payload = payload.split_whitespace().next().unwrap_or("");
     println!("payload len after:{}", payload.len());
     // Parse aggregation
-    println!("payload as bytes:{:?}", payload.clone().as_bytes().len());
     let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
     println!("aggregated_msg.scheduling_msg.len:{}",agg_data.aggregated_msg.scheduling_msg.len());
     println!("aggregated_msg.aggregated_msg[0].num_rows:{}",agg_data.aggregated_msg.aggregated_msg.num_rows());

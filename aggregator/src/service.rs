@@ -397,7 +397,7 @@ async fn force_round_end(
 async fn force_round_output(state: &Mutex<ServiceState>){
     debug!("start round output!");
     let send_timeout = Duration::from_secs(20);
-    let (agg_payload, forward_urls) = get_agg_payload(state.clone());
+    let (agg_payload, forward_urls) = get_agg_payload(<&std::sync::Mutex<ServiceState>>::clone(&state));
     debug!("forward_urls is {:?}", forward_urls);
     spawn(
         actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(|r| {
@@ -410,7 +410,7 @@ async fn force_round_output(state: &Mutex<ServiceState>){
     // [onlyevaluation]Start the next round immediately
     // as we will only do evaluation, we will not actually start nextround
     if !EVALUATION_FLAG {
-       start_next_round(state.clone()); 
+       start_next_round(<&std::sync::Mutex<ServiceState>>::clone(&state)); 
     }
 }
 

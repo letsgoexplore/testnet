@@ -87,7 +87,7 @@ where
 
         // Write a newline between entries
         if i < num_vals - 1 {
-            f.write(b"\n")?;
+            f.write_all(b"\n")?;
         }
     }
 
