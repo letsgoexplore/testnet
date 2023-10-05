@@ -10,7 +10,6 @@ TIME_LOG_ALL="server/time_recorder_all.txt"
 GIT_REPO="https://github.com/letsgoexplore/testnet"
 WORKING_ADDR="./testnet"
 TIME_LOG="server/time_recorder.txt"
-TIME_LOG_ALL="server/time_recorder_all.txt"
 AGG_DATA="aggregator/data_collection.txt"
 ERROR_LOG="aggregator/error.txt"
 SUCCESS_LOG="aggregator/success.txt"
@@ -79,17 +78,13 @@ start_working(){
 
 # [onlyevaluation] this is for client_evaluation
 client_eval(){
-    su ubuntu ./dc-net-control.sh rm-leader-time-log
-    rm -f $TIME_LOG_ALL || true
-    rm -f $AGG_DATA || true
-    # num_users=("30" "60" "90" "120" "150" "180" "210")
-    num_user=1024
     num_server=5
     # num_servers=("1" "5" "8" "10" "16" "32" "64" "128" "256" "512" "1024")
-    num_leaf_aggregator=32
+    num_leaf_aggregator=16
+    num_user=1024
     dc_net_n_slot=1024
-    # dc_net_message_lengths=("160" "250" "500" "1000" "2000")
-    dc_net_message_lengths=("160")
+    dc_net_message_lengths=("160" "252" "500" "1000" "2000")
+    # dc_net_message_lengths=("160")
     # dc_net_message_length=160
     
     for dc_net_message_length in "${dc_net_message_lengths[@]}"; do

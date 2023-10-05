@@ -20,7 +20,6 @@ use actix_web::{
     http::{StatusCode, Uri},
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError, Result,
 };
-use actix::clock::sleep;
 // use futures_util::future::ok;
 use log::{debug, error, info};
 use thiserror::Error;
@@ -219,8 +218,8 @@ async fn submit_agg(
             // We're a follower. Send the unblinded aggregate to the leader
             Some(url) => {
                 // This might take a while so do it in a separate thread
-                let state_for_spawn = state.clone();
-                actix_rt::spawn(send_share_to_leader(url.clone(), share, state_for_spawn));
+                // let state_for_spawn = state.clone();
+                actix_rt::spawn(send_share_to_leader(url.clone(), share));
             }
         }
     }

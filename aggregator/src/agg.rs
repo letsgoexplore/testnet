@@ -9,6 +9,7 @@ use common::types::{
 };
 use interface::{EntityId, RateLimitNonce, UserSubmissionMessage, Xor};
 use std::collections::BTreeSet;
+use std::iter::FromIterator;
 
 use log::{debug, error, warn};
 
@@ -55,7 +56,10 @@ pub fn add_to_aggregate(
             *observed_nonces = res.1;
         }
         SubmissionMessage::AggSubmission(new_input) => {
-            add_to_agg((new_input, agg, observed_nonces, signing_key))?;
+            let res = add_to_agg((new_input, agg, observed_nonces, signing_key))?;
+            // Update the agg and nonces
+            *agg = res.0;
+            *observed_nonces = res.1;
         }
     }
 
@@ -65,11 +69,11 @@ pub fn add_to_aggregate(
 fn add_to_agg(
     input: (
         &AggregatedMessage,
-        &mut AggregatedMessage,
-        &mut Option<BTreeSet<RateLimitNonce>>,
+        &AggregatedMessage,
+        &Option<BTreeSet<RateLimitNonce>>,
         &SecretKey,
     ),
-) -> Result<()> {
+) -> Result<(AggregatedMessage, Option<BTreeSet<RateLimitNonce>>)> {
     let (incoming_msg, current_aggregation, observed_nonces, sk) = input;
 
     // Error if asked to add an empty msg to an empty aggregation
@@ -81,7 +85,7 @@ fn add_to_agg(
     // if incoming_msg is empty we just return the current aggregation as is. No op.
     if incoming_msg.is_empty() {
         warn!("empty incoming_msg. not changing the aggregation");
-        return Ok(());
+        return Ok((current_aggregation.clone(), observed_nonces.clone()));
     }
 
     // now we are sure incoming_msg is not empty we treat it as untrusted input and verify signature
@@ -97,7 +101,7 @@ fn add_to_agg(
 
     // If the set of rate-limit nonces is Some, see if the given nonce appears in it. If so, this
     // message is dropped. If not, add the nonce to the set. If no nonce is provided, error.
-    if let Some(observed_nonces) = observed_nonces {
+    let new_observed_nonces = if let Some(observed_nonces) = observed_nonces {
         if let Some(ref nonce) = incoming_msg.rate_limit_nonce {
             // We reject messages whose nonces have been seen before
             if observed_nonces.contains(nonce) {
@@ -106,33 +110,33 @@ fn add_to_agg(
             }
 
             // No duplicate was found. Add this nonce to the set
-            observed_nonces.insert(nonce.clone());
+            let mut new_set = observed_nonces.clone();
+            new_set.insert(nonce.clone());
+            Some(new_set)
         } else {
             error!("no rate limit nonce provided");
             return Err(AggregatorError::InvalidParameter);
         }
-    }
+    } else {
+        None
+    };
 
     // if the current aggregation is empty we create a single-msg aggregation
     if current_aggregation.is_empty() {
         debug!("current aggregation is emtpy");
-        let incoming_msg_clone = incoming_msg.clone();
-        current_aggregation.round = incoming_msg_clone.round;
-        current_aggregation.anytrust_group_id = incoming_msg_clone.anytrust_group_id;
-        current_aggregation.user_ids=incoming_msg_clone.user_ids.clone();
-        current_aggregation.rate_limit_nonce = incoming_msg_clone.rate_limit_nonce;
-        current_aggregation.aggregated_msg = incoming_msg_clone.aggregated_msg;
-        current_aggregation.sig = incoming_msg_clone.sig;
-        current_aggregation.pk = incoming_msg_clone.pk;
-
-        current_aggregation.sign_mut(&sk).map_err(|e| {
-            error!("can't sign on aggregation: {:?}", e);
-            AggregatorError::InvalidParameter
-        })?;
-        return Ok(());
+        let mut agg = incoming_msg.clone();
+        match agg.sign_mut(&sk) {
+            Ok(()) => (),
+            Err(e) => {
+                error!("can't sign on aggregation: {:?}", e);
+                return Err(AggregatorError::InvalidParameter);
+            }
+        };
+        return Ok((incoming_msg.clone(), new_observed_nonces));
     } else {
         // now that we know both current_aggregation and incoming_msg are not empty
         // we first validate they match
+        let mut current_aggregation = current_aggregation.clone();
         if current_aggregation.round != incoming_msg.round {
             error!("current_aggregation.round != incoming_msg.round");
             return Err(AggregatorError::InvalidParameter);
@@ -151,7 +155,7 @@ fn add_to_agg(
             return Err(AggregatorError::InvalidParameter);
         }
 
-        // debug!("✅ various checks passed now we can aggregate");
+        debug!("✅ various checks passed now we can aggregate");
         // debug!("incoming msg: {:?}", incoming_msg);
         // debug!("current agg: {:?}", current_aggregation);
 
@@ -172,18 +176,18 @@ fn add_to_agg(
 
         debug!("✅ new agg with users {:?}", current_aggregation.user_ids);
 
-        Ok(())
+        Ok((current_aggregation, new_observed_nonces))
     }
 }
 
 fn add_to_agg_user_submit(
     input: (
         &UserSubmissionMessage,
-        &mut AggregatedMessage,
-        &mut Option<BTreeSet<RateLimitNonce>>,
+        &AggregatedMessage,
+        &Option<BTreeSet<RateLimitNonce>>,
         &SecretKey,
     ),
-) -> Result<()> {
+) -> Result<(AggregatedMessage, Option<BTreeSet<RateLimitNonce>>)> {
     let (incoming_msg, current_aggregation, observed_nonces, sk) = input;
 
     // Error if asked to add an empty msg to an empty aggregation
@@ -195,7 +199,7 @@ fn add_to_agg_user_submit(
     // If incoming_msg is empty we just return the current aggregation as is. No op.
     if incoming_msg.is_empty() {
         warn!("empty incoming_msg. not changing the aggregation");
-        return Ok(());
+        return Ok((current_aggregation.clone(), observed_nonces.clone()));
     }
 
     // now we are sure incoming_msg is not empty we treat it as untrusted input and verify signature
@@ -208,7 +212,7 @@ fn add_to_agg_user_submit(
 
     // If the set of rate-limit nonces is Some, see if the given nonce appears in it. If so, this
     // message is dropped. If not, add the nonce to the set. If no nonce is provided, error.
-    if let Some(observed_nonces) = observed_nonces {
+    let new_observed_nonces = if let Some(observed_nonces) = observed_nonces {
         if let Some(ref nonce) = incoming_msg.rate_limit_nonce {
             // We reject messages whose nonces have been seen before
             if observed_nonces.contains(nonce) {
@@ -216,29 +220,38 @@ fn add_to_agg_user_submit(
                 return Err(AggregatorError::InvalidParameter);
             }
             // No duplicate was found. Add this nonce to the set
-            observed_nonces.insert(nonce.clone());
+            let mut new_set = observed_nonces.clone();
+            new_set.insert(nonce.clone());
+            Some(new_set)
         } else {
             error!("no rate limit nonce provided");
             return Err(AggregatorError::InvalidParameter);
         }
-    }
+    } else {
+        None
+    };
 
     // if the current aggregation is empty we create a single-msg aggregation
     if current_aggregation.is_empty() {
+        let mut agg = AggregatedMessage::default();
         let incoming_msg_clone = incoming_msg.clone();
-        current_aggregation.round = incoming_msg_clone.round;
-        current_aggregation.anytrust_group_id = incoming_msg_clone.anytrust_group_id;
-        current_aggregation.user_ids.insert(incoming_msg_clone.user_id.clone());
-        current_aggregation.rate_limit_nonce = incoming_msg_clone.rate_limit_nonce;
-        current_aggregation.aggregated_msg = incoming_msg_clone.aggregated_msg;
-        current_aggregation.sign_mut(&sk).map_err(|e| {
-            error!("can't sign on aggregation: {:?}", e);
-            AggregatorError::InvalidParameter
-        })?;
-        return Ok(());
+        agg.round = incoming_msg_clone.round;
+        agg.anytrust_group_id = incoming_msg_clone.anytrust_group_id;
+        agg.user_ids = BTreeSet::from_iter(vec![incoming_msg_clone.user_id.clone()].into_iter());
+        agg.rate_limit_nonce = incoming_msg_clone.rate_limit_nonce;
+        agg.aggregated_msg = incoming_msg_clone.aggregated_msg;
+        match agg.sign_mut(&sk) {
+            Ok(()) => (),
+            Err(e) => {
+                error!("can't sign on aggregation: {:?}", e);
+                return Err(AggregatorError::InvalidParameter);
+            }
+        };
+        return Ok((agg.clone(), new_observed_nonces));
     } else {
         // now that we know both current_aggregation and incoming_msg are not empty
         // we first validate they match
+        let mut current_aggregation = current_aggregation.clone();
         if current_aggregation.round != incoming_msg.round {
             error!("current_aggregation.round_info != incoming_msg.round_info");
             return Err(AggregatorError::InvalidParameter);
@@ -254,7 +267,7 @@ fn add_to_agg_user_submit(
             return Err(AggregatorError::InvalidParameter);
         }
 
-        // debug!("✅ various checks passed now we can aggregate");
+        debug!("✅ various checks passed now we can aggregate");
         // debug!("incoming msg: {:?}", incoming_msg);
         // debug!("current agg: {:?}", current_aggregation);
 

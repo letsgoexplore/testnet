@@ -44,6 +44,11 @@ enum ApiError {
     Ser(#[from] cli_util::SerializationError),
 }
 impl ResponseError for ApiError {}
+impl From<std::io::Error> for ApiError {
+    fn from(error: std::io::Error) -> Self {
+        ApiError::Internal(AggregatorError::Io(error))
+    }
+}
 
 // #[derive(Clone)]
 pub(crate) struct ServiceState {

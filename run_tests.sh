@@ -150,7 +150,7 @@ setup_aggregators() {
     for i in $(seq 1 $NUM_AGGREGATORS); do
         STATE="${AGG_STATE%.txt}$i.txt"
         AGG_REG=$(
-            $CMD_PREFIX new --level 0 --agg-state "../$STATE" --server-keys "../$AGG_SERVERKEYS"
+            $CMD_PREFIX new --agg-number $i --level 1 --agg-state "../$STATE" --server-keys "../$AGG_SERVERKEYS"
         )
 
         # Append
@@ -163,7 +163,7 @@ setup_aggregators() {
 
     # Make a new root aggregator and capture the registration data
     AGG_REG=$(
-        $CMD_PREFIX new --level 1 --agg-state "../$AGG_ROOTSTATE" --server-keys "../$AGG_SERVERKEYS"
+        $CMD_PREFIX new --agg-number 0 --level 0 --agg-state "../$AGG_ROOTSTATE" --server-keys "../$AGG_SERVERKEYS"
     )
     AGG_REGS="$AGG_REGS;$AGG_REG"
 
@@ -216,6 +216,14 @@ setup_clients() {
 
     echo "Set up clients"
     cd ..
+}
+
+setup_env(){
+    footprint_n_slots=$(expr 4 \* $NUM_USERS)
+    export DC_NET_MESSAGE_LENGTH=160
+    export DC_NET_N_SLOTS=$NUM_USERS
+    export FOOTPRINT_N_SLOTS=$footprint_n_slots
+    export DC_NUM_USER=$NUM_USERS
 }
 
 # Starts round $ROUND with all the aggregators
@@ -318,13 +326,11 @@ encrypt_msgs() {
 # Propagates the base-level aggregates to the root aggregator
 propagate_aggregates() {
     cd aggregator
-
     # Collect the second-to-top aggregates. Currently we only support two layers
     AGGS=""
     for i in $(seq 1 $NUM_AGGREGATORS); do
         STATE="${AGG_STATE%.txt}$i.txt"
         AGG=$($CMD_PREFIX finalize --agg-state "../$STATE")
-
         # Append
         if [[ i -eq 1 ]]; then
             AGGS="$AGG"
@@ -400,6 +406,7 @@ setup_servers
 #exit 0
 setup_aggregators
 setup_clients
+setup_env
 
 for ROUND in $(seq 0 $(($NUM_TEST_ROUNDS - 1))); do
     start_round

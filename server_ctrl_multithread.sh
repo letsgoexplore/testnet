@@ -27,9 +27,10 @@ SERVER_PORT="28942"
 SERVER_IP=("3.137.191.31" "13.38.37.45" "54.176.5.119" "43.207.114.246" "34.221.6.203")
 
 # -q to reduce clutter
-# CMD_PREFIX="cargo run --release -- "
+CMD_PREFIX="cargo run --release -- "
 # [onlytest]
-CMD_PREFIX="cargo run -- "
+# CMD_PREFIX="cargo run -- "
+
 SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
 ROUND=0
@@ -351,7 +352,8 @@ single_client_send() {
     # Do the operation
     cd client
     echo "$PAYLOAD" > $FILENAME
-            
+    sleep 10
+
     sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
     -X POST \
     -H "Content-Type: text/plain" \
