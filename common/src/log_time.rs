@@ -2,7 +2,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub fn log_detailed_duration(event:&str, duration: u128) {
+pub fn log_detailed_duration(event: &str, duration: u128) {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
@@ -14,16 +14,15 @@ pub fn log_detailed_duration(event:&str, duration: u128) {
     } else {
         println!("[log_time] ✅already log!");
     }
-
 }
 
-pub fn log_detailed_time(event:String) {
+pub fn log_detailed_time(event: String) {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
         .open("time_recorder_detailed_timestamp.txt")
         .expect("[log_time] cannot open the file");
-    
+
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("[log_time] time error")
@@ -34,7 +33,6 @@ pub fn log_detailed_time(event:String) {
     } else {
         println!("[log_time] ✅already log!");
     }
-
 }
 
 pub fn log_time() {
@@ -54,7 +52,6 @@ pub fn log_time() {
     } else {
         println!("[log_time] ✅already log!");
     }
-
 }
 
 pub fn log_duration(duration: u128) {
@@ -71,7 +68,7 @@ pub fn log_duration(duration: u128) {
     }
 }
 
-pub fn log_server_time(event:&str) {
+pub fn log_server_time(event: &str) {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
@@ -88,7 +85,6 @@ pub fn log_server_time(event:&str) {
     } else {
         println!("[log_time] ✅already log!");
     }
-
 }
 
 pub fn log_client_encrypt_time(duration: u128) {
@@ -103,7 +99,6 @@ pub fn log_client_encrypt_time(duration: u128) {
     } else {
         println!("[log_time] ✅already log!");
     }
-
 }
 
 pub fn log_agg_encrypt_time(duration: u128) {
@@ -118,9 +113,7 @@ pub fn log_agg_encrypt_time(duration: u128) {
     } else {
         println!("[log_time] ✅already log!");
     }
-
 }
-
 
 pub fn log_client_time() {
     let mut file = OpenOptions::new()
@@ -139,5 +132,4 @@ pub fn log_client_time() {
     } else {
         println!("[log_time] ✅client time already log!");
     }
-
 }

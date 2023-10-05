@@ -2,7 +2,10 @@ use crate::{
     util::{save_output, save_state, ServerError},
     ServerState,
 };
-use common::{cli_util, log_time::{log_detailed_duration, log_time}};
+use common::{
+    cli_util,
+    log_time::{log_detailed_duration, log_time},
+};
 use interface::RoundOutput;
 
 use common::types::{RoundSubmissionBlob, UnblindedAggregateShareBlob};
@@ -136,7 +139,7 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
             }
             Err(e) => {
                 error!("Could not send share No.2: {:?}", e);
-            },
+            }
         }
 
         retries -= 1;
@@ -163,10 +166,19 @@ async fn submit_agg(
     println!("payload len after:{}", payload.len());
     // Parse aggregation
     let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
-    println!("aggregated_msg.scheduling_msg.len:{}",agg_data.aggregated_msg.scheduling_msg.len());
-    println!("aggregated_msg.aggregated_msg[0].num_rows:{}",agg_data.aggregated_msg.aggregated_msg.num_rows());
-    println!("aggregated_msg.aggregated_msg[0].num_columns:{}",agg_data.aggregated_msg.aggregated_msg.num_columns());
-    println!("Btree length:{}",agg_data.user_ids.len());
+    println!(
+        "aggregated_msg.scheduling_msg.len:{}",
+        agg_data.aggregated_msg.scheduling_msg.len()
+    );
+    println!(
+        "aggregated_msg.aggregated_msg[0].num_rows:{}",
+        agg_data.aggregated_msg.aggregated_msg.num_rows()
+    );
+    println!(
+        "aggregated_msg.aggregated_msg[0].num_columns:{}",
+        agg_data.aggregated_msg.aggregated_msg.num_columns()
+    );
+    println!("Btree length:{}", agg_data.user_ids.len());
 
     // Do the processing step. Unblind the input, add the share, and if we're the leader we finish
     // the round by combining the shares
@@ -179,7 +191,7 @@ async fn submit_agg(
             ..
         } = state_handle.deref_mut();
         let group_size = server_state.anytrust_group_size;
-        
+
         // log input time
         let input_duration = input_start.elapsed();
         debug!("[server] uinput: {:?}", input_duration);
@@ -273,7 +285,7 @@ async fn submit_share(
     let duration = start.elapsed();
     debug!("[server] aggregate_share: {:?}", duration);
     log_detailed_duration("aggregate_share", duration.as_nanos());
-    
+
     // log_server_time("after merging");
     // If all the shares are in, that's the end of the round
     if round_shares.len() == group_size {
@@ -395,17 +407,18 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
     // };
 
     info!("Making new server on {}", bind_addr);
-    
+
     // Start the web server
     HttpServer::new(move || {
-        App::new().data(state.clone())
-        .data(web::PayloadConfig::new(10 << 21))
-        .configure(|cfg| {
-            cfg.service(submit_agg)
-                .service(submit_share)
-                .service(round_result)
-                .service(round_msg);
-        })
+        App::new()
+            .data(state.clone())
+            .data(web::PayloadConfig::new(10 << 21))
+            .configure(|cfg| {
+                cfg.service(submit_agg)
+                    .service(submit_share)
+                    .service(round_result)
+                    .service(round_msg);
+            })
     })
     .workers(1)
     .bind(bind_addr)

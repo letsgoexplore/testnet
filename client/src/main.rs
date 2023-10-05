@@ -12,8 +12,10 @@ use crate::{
 };
 
 use common::{cli_util, enclave::DcNetEnclave};
-use interface::{DcMessage, ServerPubKeyPackage, UserMsg, RoundOutput, DC_NET_MESSAGE_LENGTH, PARAMETER_FLAG};
-use std::{ffi::OsString, fs::File, path::Path, env};
+use interface::{
+    DcMessage, RoundOutput, ServerPubKeyPackage, UserMsg, DC_NET_MESSAGE_LENGTH, PARAMETER_FLAG,
+};
+use std::{env, ffi::OsString, fs::File, path::Path};
 
 use clap::{App, AppSettings, Arg, SubCommand};
 
@@ -24,10 +26,12 @@ fn main() -> Result<(), UserError> {
 
     let dc_net_message_length = if PARAMETER_FLAG {
         env::var("DC_NET_MESSAGE_LENGTH")
-        .unwrap_or_else(|_| "160".to_string())
-        .parse::<usize>()
-        .expect("Invalid DC_NET_MESSAGE_LENGTH value")}
-    else{DC_NET_MESSAGE_LENGTH};
+            .unwrap_or_else(|_| "160".to_string())
+            .parse::<usize>()
+            .expect("Invalid DC_NET_MESSAGE_LENGTH value")
+    } else {
+        DC_NET_MESSAGE_LENGTH
+    };
 
     let state_arg = Arg::with_name("user-state")
         .short("s")

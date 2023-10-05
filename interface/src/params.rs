@@ -1,8 +1,8 @@
-/// whether or not DC_NET_N_SLOTS,DC_NET_MESSAGE_LENGTH, FOOTPRINT_N_SLOTS are read from env, or from 
+/// whether or not DC_NET_N_SLOTS,DC_NET_MESSAGE_LENGTH, FOOTPRINT_N_SLOTS are read from env, or from
 pub const PARAMETER_FLAG: bool = true;
 
 /// Whether this is evaluation mode, or this is normal running mode.
-/// When turning to evaluation mode, aggregator will first save all msg from client to file, 
+/// When turning to evaluation mode, aggregator will first save all msg from client to file,
 /// and the the state of Aggregator and Server will not be renewed,
 /// this is for the convenience of repeated experiment.
 pub const EVALUATION_FLAG: bool = false;

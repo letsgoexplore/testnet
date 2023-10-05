@@ -3,13 +3,15 @@ use crate::{
     UserState,
 };
 use common::{cli_util, enclave::DcNetEnclave, log_time::log_duration};
-use interface::{DcMessage, RoundOutput, UserSubmissionBlob, UserMsg, DC_NET_MESSAGE_LENGTH, PARAMETER_FLAG};
+use interface::{
+    DcMessage, RoundOutput, UserMsg, UserSubmissionBlob, DC_NET_MESSAGE_LENGTH, PARAMETER_FLAG,
+};
 
 use core::ops::DerefMut;
 use std::{
+    env,
     sync::{Arc, Mutex},
     time::{Duration, Instant},
-    env,
 };
 
 use actix_web::{
@@ -65,7 +67,7 @@ async fn encrypt_msg(
     // debug!("payload: {:?}", payload);
     // The payload is msg COMMA prev_rount_output
     let mut payload_it = payload.split(',');
-    *round=0;
+    *round = 0;
     // debug!("payload_it: {:?}", payload_it);
 
     // Load the message first. It's just a base64 string of length <= DC_NET_MESSAGE_LENGTH
@@ -82,10 +84,12 @@ async fn encrypt_msg(
 
         let dc_net_message_length = if PARAMETER_FLAG {
             env::var("DC_NET_MESSAGE_LENGTH")
-            .unwrap_or_else(|_| "160".to_string())
-            .parse::<usize>()
-            .expect("Invalid DC_NET_MESSAGE_LENGTH value")}
-        else{DC_NET_MESSAGE_LENGTH};
+                .unwrap_or_else(|_| "160".to_string())
+                .parse::<usize>()
+                .expect("Invalid DC_NET_MESSAGE_LENGTH value")
+        } else {
+            DC_NET_MESSAGE_LENGTH
+        };
 
         // Check the length
         if msg_bytes.len() > dc_net_message_length {
@@ -263,11 +267,14 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
 
     // Start the web server
     HttpServer::new(move || {
-        App::new().data(state.clone()).data(web::PayloadConfig::new(10 << 21)).configure(|cfg| {
-            cfg.service(encrypt_msg);
-            cfg.service(reserve_slot);
-            cfg.service(send_cover);
-        })
+        App::new()
+            .data(state.clone())
+            .data(web::PayloadConfig::new(10 << 21))
+            .configure(|cfg| {
+                cfg.service(encrypt_msg);
+                cfg.service(reserve_slot);
+                cfg.service(send_cover);
+            })
     })
     .workers(1)
     .bind(bind_addr)

@@ -284,7 +284,7 @@ fn main() -> Result<(), AggregatorError> {
             .collect();
         // Check that the forward-to URLs are well-formed
         for url in forward_urls.iter() {
-            info!("url:{}",url);
+            info!("url:{}", url);
             let _: actix_web::http::Uri =
                 url.parse().expect(&format!("{} is not a valid URL", url));
         }
@@ -303,12 +303,7 @@ fn main() -> Result<(), AggregatorError> {
         };
 
         let level = agg_state.level;
-        let state = service::ServiceState::new(
-            agg_state,
-            forward_urls,
-            round,
-            agg_state_path,
-        );
+        let state = service::ServiceState::new(agg_state, forward_urls, round, agg_state_path);
         start_service(bind_addr, state, round_dur, start_time, level).unwrap();
     }
 
@@ -319,7 +314,6 @@ fn main() -> Result<(), AggregatorError> {
 
         // split the dataset
         split_data_collection(user_num, thread_num);
-        
     }
 
     Ok(())

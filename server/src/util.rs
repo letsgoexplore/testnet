@@ -1,7 +1,7 @@
 use crate::server_state::ServerState;
 use interface::RoundOutput;
 
-use common::{cli_util};
+use common::cli_util;
 
 use std::fs::File;
 

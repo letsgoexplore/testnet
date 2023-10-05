@@ -3,19 +3,12 @@ use crate::{
     AggregatorState,
 };
 use common::cli_util;
-use common::log_time::{log_time, log_detailed_time};
-use common::types::{
-    AggregatedMessage,
-    SubmissionMessage,
+use common::log_time::{log_detailed_time, log_time};
+use common::types::{AggregatedMessage, SubmissionMessage};
+use interface::{
+    UserSubmissionMessage, AGGREGATOR_THREAD_NUMBER, DC_NUM_USER, EVALUATION_FLAG, PARAMETER_FLAG,
 };
-use interface::{UserSubmissionMessage, PARAMETER_FLAG, EVALUATION_FLAG, AGGREGATOR_THREAD_NUMBER, DC_NUM_USER};
 
-use core::ops::DerefMut;
-use std::{
-    sync::{Arc, Mutex},
-    time::{Duration, SystemTime},
-    fs::File, env,
-};
 use actix_rt::{
     spawn,
     time::{delay_until, Instant},
@@ -27,8 +20,15 @@ use actix_web::{
     http::{StatusCode, Uri},
     post, rt as actix_rt, web, App, HttpResponse, HttpServer, ResponseError,
 };
-use futures::future::{FutureExt, join_all};
-use log::{error, info, debug};
+use core::ops::DerefMut;
+use futures::future::{join_all, FutureExt};
+use log::{debug, error, info};
+use std::{
+    env,
+    fs::File,
+    sync::{Arc, Mutex},
+    time::{Duration, SystemTime},
+};
 use thiserror::Error;
 
 // We take 5 seconds at the end of every round for the aggregates to propagate up the tree
@@ -68,7 +68,7 @@ impl ServiceState {
         forward_urls: Vec<String>,
         round: u32,
         agg_state_path: Option<String>,
-    ) -> ServiceState{
+    ) -> ServiceState {
         ServiceState {
             agg_state,
             forward_urls,
@@ -79,9 +79,9 @@ impl ServiceState {
     }
 }
 
-struct CombinedData{
+struct CombinedData {
     state: Arc<Mutex<ServiceState>>,
-    data_collection: Arc<Mutex<Vec<UserSubmissionMessage>>>
+    data_collection: Arc<Mutex<Vec<UserSubmissionMessage>>>,
 }
 
 /// Receives a partial aggregate from user, for evaluation purpose
@@ -91,11 +91,11 @@ async fn submit_agg(
 ) -> Result<HttpResponse, ApiError> {
     // let start = std::time::Instant::now();
     // step 1: unwrap input data
-    let combined_data=combined_data.get_ref();
+    let combined_data = combined_data.get_ref();
     let state = &combined_data.state;
     let data_collection = &combined_data.data_collection;
     let payload = payload.split_whitespace().next().unwrap_or("");
-    
+
     // step 2: get the aggregator number and level
     let mut handle = state.lock().unwrap();
     let ServiceState {
@@ -113,45 +113,49 @@ async fn submit_agg(
 
     let num_user = if PARAMETER_FLAG {
         env::var("DC_NUM_USER")
-        .unwrap_or_else(|_| "100".to_string())
-        .parse::<usize>()
-        .expect("Invalid DC_NUM_USER value")}
-    else{DC_NUM_USER};
-    
+            .unwrap_or_else(|_| "100".to_string())
+            .parse::<usize>()
+            .expect("Invalid DC_NUM_USER value")
+    } else {
+        DC_NUM_USER
+    };
+
     // evaluation mode
-    if EVALUATION_FLAG==true{
+    if EVALUATION_FLAG == true {
         //step 4: judging whether all msg is sent; if so, save it to file.
-        info!("now aggregator No.{} have {}/{}", agg_number, data_collection_handle.len(), num_user/AGGREGATOR_THREAD_NUMBER);
-        if data_collection_handle.len() == num_user/AGGREGATOR_THREAD_NUMBER {
+        info!(
+            "now aggregator No.{} have {}/{}",
+            agg_number,
+            data_collection_handle.len(),
+            num_user / AGGREGATOR_THREAD_NUMBER
+        );
+        if data_collection_handle.len() == num_user / AGGREGATOR_THREAD_NUMBER {
             info!("User finish sending all msg!");
             // Save data_collection to a file
             let save_path_prefix = "data_collection_";
             let save_path_postfix = ".txt";
-            let save_path =  format!("{}{}{}", save_path_prefix, agg_number, save_path_postfix);
+            let save_path = format!("{}{}{}", save_path_prefix, agg_number, save_path_postfix);
             let file = std::fs::File::create(save_path.clone())?;
             let data_vec = data_collection_handle.clone();
             cli_util::save(file, &data_vec)?;
             info!("Data saved to {}", save_path);
         }
-    }
-    else {
+    } else {
         if AGGREGATOR_THREAD_NUMBER == 1 {
             let agg_data = SubmissionMessage::UserSubmission(data);
             agg_state.add_to_aggregate(&agg_data)?;
-            if data_collection_handle.len() == num_user/AGGREGATOR_THREAD_NUMBER{
+            if data_collection_handle.len() == num_user / AGGREGATOR_THREAD_NUMBER {
                 force_round_output(&*state).await;
             }
-        }
-        else if level == 0 {
+        } else if level == 0 {
             error!("the root aggregator doesn't receive msg from client");
-        }
-        else {
+        } else {
             let agg_data = SubmissionMessage::UserSubmission(data);
             agg_state.add_to_aggregate(&agg_data)?;
-            if data_collection_handle.len() == num_user/AGGREGATOR_THREAD_NUMBER{
-                let share:AggregatedMessage = agg_state
-                .finalize_aggregate()
-                .expect("could not finalize aggregate");
+            if data_collection_handle.len() == num_user / AGGREGATOR_THREAD_NUMBER {
+                let share: AggregatedMessage = agg_state
+                    .finalize_aggregate()
+                    .expect("could not finalize aggregate");
                 actix_rt::spawn(send_share_to_root(forward_urls.clone(), share));
             }
         }
@@ -162,25 +166,22 @@ async fn submit_agg(
 /// [onlyevaluation] This is for the case when the Httpserver stop saving. This can manually resaving.
 #[get("/save-data")]
 async fn save_data_collection(
-    combined_data : web::Data<CombinedData>
-)-> Result<HttpResponse, ApiError> {
-    let combined_data=combined_data.get_ref();
+    combined_data: web::Data<CombinedData>,
+) -> Result<HttpResponse, ApiError> {
+    let combined_data = combined_data.get_ref();
 
     //step 1: get agg_number
     let state = &combined_data.state;
     let handle = state.lock().unwrap();
-    let ServiceState {
-        ref agg_state,
-        ..
-    } = *handle;
+    let ServiceState { ref agg_state, .. } = *handle;
     let agg_number = agg_state.agg_number.unwrap();
-    
+
     //step 2: open data_collection
     let data_collection = &combined_data.data_collection;
     let data_collection_handle = data_collection.lock().unwrap();
     let save_path_prefix = "data_collection_";
     let save_path_postfix = ".txt";
-    let save_path =  format!("{}{}{}", save_path_prefix, agg_number, save_path_postfix);
+    let save_path = format!("{}{}{}", save_path_prefix, agg_number, save_path_postfix);
     let file = std::fs::File::create(save_path.clone())?;
     let data_vec = data_collection_handle.clone();
     cli_util::save(file, &data_vec)?;
@@ -190,11 +191,9 @@ async fn save_data_collection(
 
 /// [onlyevaluation] This is for aggregator reading data from file, and do the aggrgagtion
 #[get("/aggregate-eval")]
-async fn aggregate_eval(
-    combined_data : web::Data<CombinedData>,
-) -> Result<HttpResponse, ApiError> {
+async fn aggregate_eval(combined_data: web::Data<CombinedData>) -> Result<HttpResponse, ApiError> {
     // step 1: unwrap input
-    let combined_data=combined_data.get_ref();
+    let combined_data = combined_data.get_ref();
     let state = &combined_data.state;
     let mut handle = state.lock().unwrap();
     let ServiceState {
@@ -208,7 +207,7 @@ async fn aggregate_eval(
     let agg_number = agg_state.agg_number.unwrap();
     let save_path_prefix = "data_collection_";
     let save_path_postfix = ".txt";
-    let save_path =  format!("{}{}{}", save_path_prefix, agg_number, save_path_postfix);
+    let save_path = format!("{}{}{}", save_path_prefix, agg_number, save_path_postfix);
     let file = File::open(save_path.clone())?;
     let data_collection_loaded: Vec<UserSubmissionMessage> = cli_util::load(file)?;
     info!("Data loaded from {}", save_path);
@@ -217,38 +216,38 @@ async fn aggregate_eval(
     // let data_collection_loaded_2: Vec<UserSubmissionMessage> = cli_util::load(file_2)?;
 
     // step 3: aggregate
-    let logflag:bool = false;
+    let logflag: bool = false;
     log_time();
     if logflag {
         let log_msg = format!("leaf-agg{} start aggregate", agg_number);
         log_detailed_time(log_msg);
-    }    
+    }
 
-    for data in data_collection_loaded{
+    for data in data_collection_loaded {
         let agg_data = SubmissionMessage::UserSubmission(data);
         agg_state.add_to_aggregate(&agg_data)?;
     }
-    
+
     // for data in data_collection_loaded_2{
     //     let agg_data = SubmissionMessage::UserSubmission(data);
     //     agg_state.add_to_aggregate(&agg_data)?;
     // }
 
     // step 4: send to root
-    if logflag{
+    if logflag {
         let log_msg = format!("leaf-agg{} before finalize", agg_number);
         log_detailed_time(log_msg);
     }
 
-    let share:AggregatedMessage = agg_state
-    .finalize_aggregate()
-    .expect("could not finalize aggregate");
+    let share: AggregatedMessage = agg_state
+        .finalize_aggregate()
+        .expect("could not finalize aggregate");
     // debug!("{}'s share is:{:?}, forward-url is {:?}",agg_number, share, forward_urls.clone());
-    if logflag{
+    if logflag {
         let log_msg = format!("leaf-agg{} before sending to root", agg_number);
         log_detailed_time(log_msg);
     }
-    
+
     actix_rt::spawn(send_share_to_root(forward_urls.clone(), share));
 
     // debug!("[agg] aggregating log time: {:?}", load_duration);
@@ -258,7 +257,7 @@ async fn aggregate_eval(
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
-async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage){
+async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage) {
     // step 1: serialize the share
     let mut body = Vec::new();
     cli_util::save(&mut body, &share).expect("could not serialize share");
@@ -292,7 +291,7 @@ async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage){
             }
             Err(e) => {
                 error!("Could not send share network error: {:?}", e);
-            },
+            }
         }
 
         retries -= 1;
@@ -311,7 +310,7 @@ async fn submit_agg_from_agg(
     (payload, combined_data): (String, web::Data<CombinedData>),
 ) -> Result<HttpResponse, ApiError> {
     //step 1: unwrap payload
-    let logflag:bool = false;
+    let logflag: bool = false;
 
     if logflag {
         let log_msg = format!("receiving leaf share");
@@ -326,11 +325,10 @@ async fn submit_agg_from_agg(
     }
 
     // step 2: unwrap input
-    let mut flag:bool =false;
-    let combined_data_ref=combined_data.get_ref();
+    let mut flag: bool = false;
+    let combined_data_ref = combined_data.get_ref();
     let state = &combined_data_ref.state;
     {
-        
         let mut handle = state.lock().unwrap();
         let ServiceState {
             ref mut agg_state,
@@ -352,12 +350,12 @@ async fn submit_agg_from_agg(
             let log_msg = format!("root finish aggregating");
             log_detailed_time(log_msg);
         }
-        
+
         //step 4: judge whether all shares are collected
         if root_data_collection.len() == AGGREGATOR_THREAD_NUMBER {
             flag = true;
         }
-    }   
+    }
     if flag {
         info!("collecting all shares!");
         if logflag {
@@ -376,13 +374,11 @@ async fn submit_agg_from_agg(
 
 /// Forces the current round to end. Only for debugging purposes
 #[get("/force-round-end")]
-async fn force_round_end(
-    combined_data: web::Data<CombinedData>,
-) -> Result<HttpResponse, ApiError> {
+async fn force_round_end(combined_data: web::Data<CombinedData>) -> Result<HttpResponse, ApiError> {
     let start = std::time::Instant::now();
 
     // step 1: unwrap input
-    let combined_data_ref=combined_data.get_ref();
+    let combined_data_ref = combined_data.get_ref();
     let state = &combined_data_ref.state;
 
     // step 2: force round output
@@ -394,10 +390,11 @@ async fn force_round_end(
 }
 
 /// root will trigger this function to send msg to server
-async fn force_round_output(state: &Mutex<ServiceState>){
+async fn force_round_output(state: &Mutex<ServiceState>) {
     debug!("start round output!");
     let send_timeout = Duration::from_secs(20);
-    let (agg_payload, forward_urls) = get_agg_payload(<&std::sync::Mutex<ServiceState>>::clone(&state));
+    let (agg_payload, forward_urls) =
+        get_agg_payload(<&std::sync::Mutex<ServiceState>>::clone(&state));
     debug!("forward_urls is {:?}", forward_urls);
     spawn(
         actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(|r| {
@@ -410,26 +407,20 @@ async fn force_round_output(state: &Mutex<ServiceState>){
     // [onlyevaluation]Start the next round immediately
     // as we will only do evaluation, we will not actually start nextround
     if !EVALUATION_FLAG {
-       start_next_round(<&std::sync::Mutex<ServiceState>>::clone(&state)); 
+        start_next_round(<&std::sync::Mutex<ServiceState>>::clone(&state));
     }
 }
 
 #[get("/round-num")]
-async fn round_num(
-    combined_data: web::Data<CombinedData>,
-) -> Result<HttpResponse, ApiError>  {
+async fn round_num(combined_data: web::Data<CombinedData>) -> Result<HttpResponse, ApiError> {
     // Unwrap the round and make it a struct
     let state = &combined_data.get_ref().state;
     // Unpack state
     let handle = state.lock().unwrap();
-    let ServiceState {
-        ref round,
-        ..
-    } = *handle;
+    let ServiceState { ref round, .. } = *handle;
     info!("[agg] round: {:?}", &round);
     let body = round.to_string();
     Ok(HttpResponse::Ok().body(body))
-
 }
 
 /// Finalizes and serializes the current aggregator state. Returns the pyaload nad all the
@@ -501,7 +492,6 @@ async fn send_to_url(base_url: String, payload: Vec<u8>) {
     }
 }
 
-
 // Saves the state and start the next round
 fn start_next_round(state: &Mutex<ServiceState>) {
     let start = std::time::Instant::now();
@@ -551,7 +541,7 @@ async fn round_finalization_loop(
     round_dur: Duration,
     mut start_time: SystemTime,
     level: u32,
-) { 
+) {
     let one_sec = Duration::from_secs(100);
     let send_timeout = one_sec;
     let propagation_dur = Duration::from_secs(PROPAGATION_SECS);
@@ -610,35 +600,45 @@ pub(crate) async fn start_service(
         state_copy, round_dur, start_time, level,
     ));
 
-
     // Start the web server
-    if level==0 {
+    if level == 0 {
         HttpServer::new(move || {
-            App::new().data(CombinedData {
-                state: state.clone(),
-                data_collection: data_collection.clone(),
-            })
-            .data(web::PayloadConfig::new(10 << 21))
-            .configure(|cfg| {
-                cfg.service(submit_agg).service(force_round_end).service(round_num).service(aggregate_eval).service(save_data_collection).service(submit_agg_from_agg);
-            })
+            App::new()
+                .data(CombinedData {
+                    state: state.clone(),
+                    data_collection: data_collection.clone(),
+                })
+                .data(web::PayloadConfig::new(10 << 21))
+                .configure(|cfg| {
+                    cfg.service(submit_agg)
+                        .service(force_round_end)
+                        .service(round_num)
+                        .service(aggregate_eval)
+                        .service(save_data_collection)
+                        .service(submit_agg_from_agg);
+                })
         })
         .workers(16)
         .bind(bind_addr)
         .expect("could not bind")
         .run()
         .await
-    }
-    else {
+    } else {
         HttpServer::new(move || {
-            App::new().data(CombinedData {
-                state: state.clone(),
-                data_collection: data_collection.clone(),
-            })
-            .data(web::PayloadConfig::new(10 << 21))
-            .configure(|cfg| {
-                cfg.service(submit_agg).service(force_round_end).service(round_num).service(aggregate_eval).service(save_data_collection).service(submit_agg_from_agg);
-            })
+            App::new()
+                .data(CombinedData {
+                    state: state.clone(),
+                    data_collection: data_collection.clone(),
+                })
+                .data(web::PayloadConfig::new(10 << 21))
+                .configure(|cfg| {
+                    cfg.service(submit_agg)
+                        .service(force_round_end)
+                        .service(round_num)
+                        .service(aggregate_eval)
+                        .service(save_data_collection)
+                        .service(submit_agg_from_agg);
+                })
         })
         .workers(1)
         .bind(bind_addr)
@@ -646,5 +646,4 @@ pub(crate) async fn start_service(
         .run()
         .await
     }
-
 }

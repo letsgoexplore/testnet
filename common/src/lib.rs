@@ -7,8 +7,8 @@ extern crate sgx_urts;
 extern crate tonic;
 
 pub mod cli_util;
-pub mod log_time;
 pub mod enclave;
+pub mod log_time;
 pub mod types;
 
 mod ecall_wrapper;

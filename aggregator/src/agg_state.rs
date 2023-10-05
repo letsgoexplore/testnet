@@ -25,7 +25,7 @@ pub struct AggregatorState {
     partial_agg: Option<AggregatedMessage>,
     /// The level in the aggregation tree of this aggregator. 0 means this is a leaf aggregator.
     pub(crate) level: u32,
-    /// The sequence number of aggregator. 
+    /// The sequence number of aggregator.
     /// Note: [onlyevaluation] this is only for evaluation use.
     /// This is for aggregator knowing which file to save or read the msg.
     pub(crate) agg_number: Option<u32>,

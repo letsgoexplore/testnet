@@ -299,7 +299,7 @@ pub fn unblind_aggregate_merge(
     // sign
     unblind_agg.sign_mut(sig_key).map_err(|e| {
         error!("sign the unblind aggregate message failed: {}", e);
-        return ServerError::UnexpectedError
+        return ServerError::UnexpectedError;
     });
 
     Ok((
