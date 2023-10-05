@@ -1,4 +1,6 @@
 #!/bin/bash
+
+# SSH Info
 SERVER_IPS=("3.137.191.31" "13.38.37.45" "54.176.5.119" "43.207.114.246" "34.221.6.203")
 SERVER_AWS_COMMANDS=("ec2-3-137-191-31.us-east-2.compute.amazonaws.com" "ec2-13-38-37-45.eu-west-3.compute.amazonaws.com" "ec2-54-176-5-119.us-west-1.compute.amazonaws.com" "ec2-43-207-114-246.ap-northeast-1.compute.amazonaws.com" "ec2-34-221-6-203.us-west-2.compute.amazonaws.com")
 AGG_AWS_COMMAND="ec2-18-218-37-219.us-east-2.compute.amazonaws.com"
@@ -6,18 +8,22 @@ SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="./dc-net-test.pem"
 REMOTE_SERVER_KEY_PREFIX="./pem_key/ss"
 REMOTE_SERVER_KEY_POSTFIX=".pem"
-TIME_LOG_ALL="server/time_recorder_all.txt"
-GIT_REPO="https://github.com/letsgoexplore/testnet"
+
+# Working File
 WORKING_ADDR="./testnet"
-TIME_LOG="server/time_recorder.txt"
 AGG_DATA="aggregator/data_collection.txt"
 ERROR_LOG="aggregator/error.txt"
 SUCCESS_LOG="aggregator/success.txt"
+
+# Log
+TIME_LOG_ALL="server/time_recorder_all.txt"
+TIME_LOG="server/time_recorder.txt"
 CLINET_TIME_LOG="client/time_recorder.txt"
+
+# Settings
 THREAD_NUM=16
 is_WAN=1
 is_EVALUATION=1
-
 num_leader=1
 num_follower=4
 num_server=$((num_leader + num_follower))

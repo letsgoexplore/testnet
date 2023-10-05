@@ -11,22 +11,23 @@ SERVER_SHARES_PARTIAL="server/partial_shares.txt"
 USER_SERVERKEYS="client/server-keys.txt"
 AGG_SERVERKEYS="aggregator/server-keys.txt"
 
-SERVER_ROUNDOUTPUT="server/round_output.txt"
-TIME_LOG="server/time_recorder.txt"
-TIME_LOG_ALL="server/time_recorder_all.txt"
 CLIENT_MESSAGE="client/src/message/clientmessage.txt"
-CLINET_TIME_LOG="client/time_recorder.txt"
-CLINET_ENCRYPT_TIME_LOG="client/client_encrypt_time_recorder.txt"
-AGG_ENCRYPT_TIME_LOG="aggregator/agg_encrypt_time_recorder.txt"
 AGG_DATA="aggregator/data_collection.txt"
 ERROR_LOG="aggregator/error.txt"
 SUCCESS_LOG="aggregator/success.txt"
+SERVER_ROUNDOUTPUT="server/round_output.txt"
+
+CLINET_TIME_LOG="client/time_recorder.txt"
+AGG_TIME_LOG="./aggregator/time_recorder.txt"
+AGG_DETAILED_LOG="./aggregator/time_recorder_detailed_timestamp.txt"
+SERVER_TIME_LOG="server/time_recorder.txt"
+RESULT_TIME="./server/result_time.txt"
+
 CLIENT_SERVICE_PORT="9330"
 AGGREGATOR_PORT="18300"
 SERVER_PORT="28942"
 SERVER_IP=("3.137.191.31" "13.38.37.45" "54.176.5.119" "43.207.114.246" "34.221.6.203")
 
-# -q to reduce clutter
 CMD_PREFIX="cargo run --release -- "
 # [onlytest]
 # CMD_PREFIX="cargo run -- "
@@ -36,11 +37,11 @@ SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 ROUND=0
 ROUND_DURATION=100000
 THREAD_NUM=16
-LOG_TYPE=off
+LOG_TYPE=debug
 
 log_time() {
     timestamp=$(date +%s%N)
-    echo "$timestamp" >> $TIME_LOG
+    echo "$timestamp" >> $SERVER_TIME_LOG
 }
 
 clean() {
@@ -56,16 +57,14 @@ clean() {
     rm -f $SERVER_SHARES_PARTIAL || true
     rm -f ${SERVER_ROUNDOUTPUT%.txt}*.txt || true
     rm -f ${CLIENT_MESSAGE%.txt}*.txt || true
-    rm -f $TIME_LOG || true
-    rm -f $CLINET_ENCRYPT_TIME_LOG || true
-    rm -f $AGG_ENCRYPT_TIME_LOG || true
+    rm -f $SERVER_TIME_LOG || true
     rm -f $ERROR_LOG || true
     rm -f $SUCCESS_LOG || true
     rm -f $AGG_STATE_PREFIX*.txt || true
     rm -f ${AGG_DATA%.txt}*.txt || true
-    rm -f ./aggregator/time_recorder.txt || true
-    rm -f ./server/result_time.txt || true
-    rm -f ./aggregator/time_recorder_detailed_timestamp.txt || true
+    rm -f $AGG_TIME_LOG || true
+    rm -f $RESULT_TIME || true
+    rm -f $AGG_DETAILED_LOG || true
     echo "Cleaned"
 }
 
