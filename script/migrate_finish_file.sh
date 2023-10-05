@@ -1,4 +1,4 @@
-FOLDER_PREFIX="./data_saving"
+FOLDER_PREFIX="../data_saving"
 WORKING_ADDR="./testnet1"
 KEY_ADDRESS="./.ssh/dc-net-test.pem"
 

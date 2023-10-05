@@ -10,7 +10,7 @@ def generate_random_hex(length):
 def generate_round_multiple_message(user, length):
     for i in range(user):  
         random_message_hex = generate_random_hex(length)
-        filename = "./client/message/clientmessage_" + str(i) + ".txt"
+        filename = "../client/message/clientmessage_" + str(i) + ".txt"
         with open(filename, "w") as file:
             file.write(random_message_hex)
         print("already saved in {}".format(filename))

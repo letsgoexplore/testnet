@@ -1,7 +1,7 @@
 #!/bin/bash
 
 USER_STATE="client/user-state.txt"
-AGG_FINALAGG="aggregator/final-agg.txt"
+AGG_FINALAGG="../aggregator/final-agg.txt"
 AGG_ROOTSTATE="aggregator/agg-root-state.txt"
 AGG_STATE_PREFIX="aggregator/agg_state_"
 SERVER_STATE="server/server-state.txt"
@@ -11,17 +11,17 @@ SERVER_SHARES_PARTIAL="server/partial_shares.txt"
 USER_SERVERKEYS="client/server-keys.txt"
 AGG_SERVERKEYS="aggregator/server-keys.txt"
 
-CLIENT_MESSAGE="client/src/message/clientmessage.txt"
-AGG_DATA="aggregator/data_collection.txt"
-ERROR_LOG="aggregator/error.txt"
-SUCCESS_LOG="aggregator/success.txt"
-SERVER_ROUNDOUTPUT="server/round_output.txt"
+CLIENT_MESSAGE="../client/src/message/clientmessage.txt"
+AGG_DATA="../aggregator/data_collection.txt"
+ERROR_LOG="../aggregator/error.txt"
+SUCCESS_LOG="../aggregator/success.txt"
+SERVER_ROUNDOUTPUT="../server/round_output.txt"
 
-CLINET_TIME_LOG="client/time_recorder.txt"
-AGG_TIME_LOG="./aggregator/time_recorder.txt"
-AGG_DETAILED_LOG="./aggregator/time_recorder_detailed_timestamp.txt"
-SERVER_TIME_LOG="server/time_recorder.txt"
-RESULT_TIME="./server/result_time.txt"
+CLINET_TIME_LOG="../client/time_recorder.txt"
+AGG_TIME_LOG="../aggregator/time_recorder.txt"
+AGG_DETAILED_LOG="../aggregator/time_recorder_detailed_timestamp.txt"
+SERVER_TIME_LOG="../server/time_recorder.txt"
+RESULT_TIME="../server/result_time.txt"
 
 CLIENT_SERVICE_PORT="9330"
 AGGREGATOR_PORT="18300"
@@ -78,7 +78,7 @@ clean() {
 # Creates new servers and records their KEM pubkeys
 setup_server() {
     touch $USER_SERVERKEYS
-    cd server
+    cd ../server
 
     # Accumulate the server registration data in this variable. The separator we use is ';'
     SERVER_REGS=""
@@ -127,13 +127,13 @@ setup_server() {
     done
 
     echo "Set up server"
-    cd ..
+    cd ../script
 }
 
 # Creates new aggregators wrt the server KEM pubkeys
 setup_aggregator() {
     # step 1: setup root-aggregator
-    cd aggregator
+    cd ../aggregator
     NUM_SERVERS=$1
     NUM_LEAF_AGGREGATORS=$THREAD_NUM
     # Make a new root aggregator and capture the registration data
@@ -147,7 +147,7 @@ setup_aggregator() {
         echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
     done
     echo "Set up root aggregator"
-    cd ..
+    cd ../script
 
     # step 2: setup aggregator
     if [[ $NUM_LEAF_AGGREGATORS -gt 0 ]]; then
@@ -162,7 +162,7 @@ setup_aggregator() {
                 echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
             done
             echo "Set up aggregator $i"
-            cd ..
+            cd ../script
         done
     fi
     
@@ -170,7 +170,7 @@ setup_aggregator() {
 
 
 setup_client() {
-    cd client
+    cd ../client
     NUM_SERVERS=$1
     NUM_USERS=$2
     # Make new clients and capture the registration data
@@ -189,7 +189,7 @@ setup_client() {
     done
     sleep 5
     echo "Set up clients"
-    cd ..
+    cd ../script
 }
 
 setup_parameter() {
@@ -216,7 +216,7 @@ client_eval(){
     
     #setup server
     touch $USER_SERVERKEYS
-    cd server
+    cd ../server
 
     # Accumulate the server registration data in this variable. The separator we use is ';'
     SERVER_REGS=""
@@ -254,7 +254,7 @@ client_eval(){
             --user-state "../$USER_STATE" \
             --server-keys "../$USER_SERVERKEYS"
     )
-    cd ..
+    cd ../script
 
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message(10,$DC_NET_MESSAGE_LENGTH)"
     for i in {1..10}
@@ -274,7 +274,7 @@ setup_env() {
 
 # Starts the first client
 start_client() {
-    cd client
+    cd ../client
     NUM_USERS=$1
     for i in $(seq 1 $NUM_USERS); do
         STATE="${USER_STATE%.txt}$i.txt"
@@ -287,7 +287,7 @@ start_client() {
             # --no-persist \
     done
     sleep 10
-    cd ..
+    cd ../script
 }
 
 # all groups of clients sending message to aggregator one by one
@@ -329,7 +329,7 @@ single_client_send() {
     USER_SEQ=$1
     echo "client $USER_SEQ begins to send msg"
     # start one client at a time
-    cd client
+    cd ../client
     FILENAME="message/clientmessage_$(($USER_SEQ-1)).txt"
     STATE="${USER_STATE%.txt}$USER_SEQ.txt"
     PAYLOAD=$(cat $FILENAME)
@@ -341,7 +341,7 @@ single_client_send() {
         --bind "localhost:$USER_PORT" \
         --agg-url "http://localhost:$aggre_port" &
 
-    cd ..
+    cd ../script
     
     if [[ $ROUND -gt 0 ]]; then
         PREV_ROUND_OUTPUT=$(<"${SERVER_ROUNDOUTPUT%.txt}$(($ROUND-1)).txt")
@@ -349,7 +349,7 @@ single_client_send() {
     fi
 
     # Do the operation
-    cd client
+    cd ../client
     echo "$PAYLOAD" > $FILENAME
     sleep 10
 
@@ -359,11 +359,11 @@ single_client_send() {
     --data-binary "@$FILENAME"
     if [[ $? -ne 0 ]]; then
         # log error
-        echo $USER_SEQ >> "../$ERROR_LOG"
+        echo $USER_SEQ >> "$ERROR_LOG"
     else
-        echo $USER_SEQ >> "../$SUCCESS_LOG"
+        echo $USER_SEQ >> "$SUCCESS_LOG"
     fi)
-    cd ..
+    cd ../script
     sleep 2.4 && kill_clients
 }
 
@@ -383,7 +383,7 @@ single_client_send_cover() {
     USER_SEQ=$1
     echo "client $USER_SEQ begins to send cover"
         # start one client at a time
-        cd client
+        cd ../client
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
         STATE="${USER_STATE%.txt}$USER_SEQ.txt"
         aggre_port=$((AGGREGATOR_PORT + USER_SEQ % THREAD_NUM + 1))
@@ -393,10 +393,10 @@ single_client_send_cover() {
             --bind "localhost:$USER_PORT" \
             --agg-url "http://localhost:$aggre_port" &
 
-        cd ..
+        cd ../script
 
         # Do the operation
-        cd client
+        cd ../client
         sleep 2 && (curl -X POST "http://localhost:$USER_PORT/send-cover"
         if [[ $? -ne 0 ]]; then
             # log error
@@ -404,7 +404,7 @@ single_client_send_cover() {
         else
             echo $USER_SEQ >> "../$SUCCESS_LOG"
         fi)
-        cd ..
+        cd ../script
         sleep 2.4 && kill_clients
 }
 
@@ -444,7 +444,7 @@ start_agg() {
     NUM_SERVERS=$1
     NUM_LEAF_AGGREGATORS=$THREAD_NUM
     SERVER_IP=("$@")
-    cd aggregator
+    cd ../aggregator
     echo "starting aggregator..."
     # Build first so that build time doesn't get included in the start time
     # cargo build --release
@@ -493,7 +493,7 @@ start_agg() {
         done
     fi
     sleep 5
-    cd ..
+    cd ../script
 }
 
 # Starts the anytrust leader
@@ -502,7 +502,7 @@ start_leader() {
     NUM_SLOT=$2
     NUM_USERS=$3
     setup_parameter $MESSAGE_LENGTH $NUM_SLOT $NUM_USERS
-    cd server
+    cd ../server
     echo "starting leader..."
     STATE="${SERVER_STATE%.txt}1.txt"
     leader_ip=${SERVER_IP[0]}
@@ -513,7 +513,7 @@ start_leader() {
         --bind $leader_addr &
         # --no-persist \
     sleep 1
-    cd ..
+    cd ../script
 }
 
 # Starts the anytrust followers
@@ -522,7 +522,7 @@ start_follower() {
     NUM_SLOT=$3
     NUM_USERS=$4
     setup_parameter $MESSAGE_LENGTH $NUM_SLOT $NUM_USERS
-    cd server
+    cd ../server
     STATE="${SERVER_STATE%.txt}$1.txt"
     leader_ip=${SERVER_IP[0]}
     leader_addr="http://$leader_ip:$SERVER_PORT"
@@ -534,7 +534,7 @@ start_follower() {
         --bind $follower_addr \
         --leader-url $leader_addr &
 
-    cd ..
+    cd ../script
 }
 
 encrypt_msg() {
@@ -544,11 +544,11 @@ encrypt_msg() {
     python -c "from generate_message import generate_round_multiple_message; generate_round_multiple_message($NUM_USERS,$MESSAGE_LENGTH)"
     for i in $(seq 1 $dc_net_n_slot); do
         # Base64-encode the given message
-        cd client
+        cd ../client
         FILENAME="message/clientmessage_$(($i-1)).txt"
         PAYLOAD=$(cat $FILENAME)
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
-        cd ..
+        cd ../script
         # If this isn't the first round, append the previous round output to the payload. Separate with
         # a comma.
         if [[ $ROUND -gt 0 ]]; then
@@ -571,13 +571,13 @@ encrypt_msg() {
         # -H "Content-Type: text/plain" \
         # --data-binary "@payload.txt"
     # done
-        cd client
+        cd ../client
         (curl "http://localhost:$USER_PORT/encrypt-msg" \
             -X POST \
             -H "Content-Type: text/plain" \
             --data-binary "@$FILENAME" \
             2>/dev/null) &
-        cd ..
+        cd ../script
     done
     sleep 2
 }
@@ -647,7 +647,7 @@ re_setup_aggregator(){
 
     # step 1: regenerate server-keys.txt
     touch $USER_SERVERKEYS
-    cd server
+    cd ../server
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
         # Save the server pubkeys
@@ -655,12 +655,12 @@ re_setup_aggregator(){
     done
     # Copy the pubkeys file to the aggregators
     cp "../$USER_SERVERKEYS" "../$AGG_SERVERKEYS"
-    cd ..
+    cd ../script
 
     # step 2: generate the aggregator
     if [[ $NUM_LEAF_AGGREGATORS -gt 0 ]]; then
         for i in $(seq 1 $NUM_LEAF_AGGREGATORS); do
-            cd aggregator
+            cd ../aggregator
             file_name="$AGG_STATE_PREFIX$i.txt"
             AGG_REG=$(
                 $CMD_PREFIX new --level 1 --agg-number $i --agg-state "../$file_name" --server-keys "../$AGG_SERVERKEYS")
@@ -670,7 +670,7 @@ re_setup_aggregator(){
             #     echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
             # done
             echo "Set up aggregator $i"
-            cd ..
+            cd ../script
         done
     fi
 }
@@ -679,9 +679,9 @@ re_setup_aggregator(){
 seperate_dataset(){
     user_num=$1
     thread_num=$THREAD_NUM
-    cd aggregator
+    cd ../aggregator
     $CMD_PREFIX split-dataset --user-number $user_num --thread-number $thread_num
-    cd ..
+    cd ../script
 }
 
 # Commands with parameters:
