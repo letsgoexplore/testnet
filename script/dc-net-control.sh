@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # SSH Info
-SERVER_IPS=("3.137.191.31" "13.38.37.45" "54.176.5.119" "43.207.114.246" "34.221.6.203")
-SERVER_AWS_COMMANDS=("ec2-3-137-191-31.us-east-2.compute.amazonaws.com" "ec2-13-38-37-45.eu-west-3.compute.amazonaws.com" "ec2-54-176-5-119.us-west-1.compute.amazonaws.com" "ec2-43-207-114-246.ap-northeast-1.compute.amazonaws.com" "ec2-34-221-6-203.us-west-2.compute.amazonaws.com")
+SERVER_IPS=("3.140.248.195" "13.38.37.45" "54.176.5.119" "43.207.114.246" "34.221.6.203")
+SERVER_AWS_COMMANDS=("ec2-3-140-248-195.us-east-2.compute.amazonaws.com" "ec2-13-38-37-45.eu-west-3.compute.amazonaws.com" "ec2-54-176-5-119.us-west-1.compute.amazonaws.com" "ec2-43-207-114-246.ap-northeast-1.compute.amazonaws.com" "ec2-34-221-6-203.us-west-2.compute.amazonaws.com")
 AGG_AWS_COMMAND="ec2-18-218-37-219.us-east-2.compute.amazonaws.com"
 SSH_PREFIX="ssh -t -i"
 KEY_ADDRESS="../dc-net-test.pem"
@@ -10,14 +10,14 @@ REMOTE_SERVER_KEY_PREFIX="../pem_key/ss"
 REMOTE_SERVER_KEY_POSTFIX=".pem"
 
 # Working File
-WORKING_ADDR="./testnet/script"
+WORKING_ADDR="./testnet"
 AGG_DATA="../aggregator/data_collection.txt"
 ERROR_LOG="../aggregator/error.txt"
 SUCCESS_LOG="../aggregator/success.txt"
 
 # Log
 TIME_LOG_ALL="../server/time_recorder_all.txt"
-TIME_LOG="../server/time_recorder.txt"
+TIME_LOG="server/time_recorder.txt"
 CLINET_TIME_LOG="../client/time_recorder.txt"
 
 # Settings
@@ -121,12 +121,12 @@ clean_remote(){
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         SERVER_IP=${SERVER_IPS[$((i-1))]}
         if [ $is_WAN -eq 1 ]; then 
-            KEY_ADDRESS="pem_key/ss$i.pem"
+            KEY_ADDRESS="../pem_key/ss$i.pem"
         fi
         # ssh-keygen -R $SERVER_IP
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-            chmod +x '$WORKING_ADDR/server_ctrl_multithread.sh'
-            cd $WORKING_ADDR
+            cd $WORKING_ADDR/script
+            chmod +x './server_ctrl_multithread.sh'
             ./server_ctrl_multithread.sh clean
             cd
             exit
@@ -140,7 +140,7 @@ update_code(){
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         if [ $is_WAN -eq 1 ]; then 
-            KEY_ADDRESS="pem_key/ss$i.pem"
+            KEY_ADDRESS="../pem_key/ss$i.pem"
         fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd $WORKING_ADDR
@@ -158,12 +158,12 @@ update_code(){
 migrate_server_state(){
     NUM_SERVERS="${1:-$num_server}"
     for i in $(seq 1 $NUM_SERVERS); do 
-        LOCAL_ADDR="./server/server-state$i.txt"
+        LOCAL_ADDR="../server/server-state$i.txt"
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         TARGET_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/server-state$i.txt"
-        chmod 400 "pem_key/ss$i.pem"
         if [ $is_WAN -eq 1 ]; then 
-            KEY_ADDRESS="pem_key/ss$i.pem"
+            chmod 400 "../pem_key/ss$i.pem"
+            KEY_ADDRESS="../pem_key/ss$i.pem"
         fi
         scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$TARGET_ADDR"
         echo "success! address:$TARGET_ADDR"
@@ -176,15 +176,15 @@ start_leader(){
     num_users=$3
     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[0]}
     if [ $is_WAN -eq 1 ]; then 
-            KEY_ADDRESS="pem_key/ss1.pem"
+        KEY_ADDRESS="../pem_key/ss1.pem"
     fi
     $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
         source ~/.bashrc
-        cd testnet
+        cd $WORKING_ADDR
         docker start dcnet-5
         docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx; \
-        ./server_ctrl_multithread.sh stop-all;\
-        nohup ./server_ctrl_multithread.sh start-leader $dc_net_message_length $dc_net_n_slot $num_users > /dev/null 2>&1 &\"
+        ./script/server_ctrl_multithread.sh stop-all;\
+        nohup ./script/server_ctrl_multithread.sh start-leader $dc_net_message_length $dc_net_n_slot $num_users > /dev/null 2>&1 &\"
         cd
         echo \"start leader\"
     "
@@ -199,15 +199,15 @@ start_follower(){
     for i in $(seq 1 $num_follower); do
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$i]}
         if [ $is_WAN -eq 1 ]; then 
-            KEY_ADDRESS="pem_key/ss$((i+1)).pem"
+            KEY_ADDRESS="../pem_key/ss$((i+1)).pem"
         fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             source ~/.bashrc
-            cd testnet
+            cd $WORKING_ADDR
             docker start dcnet-5
             docker exec -di dcnet-5 /bin/bash -c \"export PATH=/root/.cargo/bin:$PATH; cd sgx; \
-            ./server_ctrl_multithread.sh stop-all;\
-            nohup ./server_ctrl_multithread.sh start-follower $((i+1)) $dc_net_message_length $dc_net_n_slot $num_users > /dev/null 2>&1 &\"
+            ./script/server_ctrl_multithread.sh stop-all;\
+            nohup ./script/server_ctrl_multithread.sh start-follower $((i+1)) $dc_net_message_length $dc_net_n_slot $num_users > /dev/null 2>&1 &\"
             cd
             echo \"start follower $((i+1))\"
         "
@@ -245,7 +245,7 @@ cal_time(){
     dc_net_message_length="${4:-$dc_net_message_length}"
     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[0]}
     $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
-        cd $WORKING_ADDR
+        cd $WORKING_ADDR/script
         echo '[settings]: aggregator: $num_aggregator, servers: $num_server, num_user: $num_user, dc_net_message_length: $dc_net_message_length' >> $TIME_LOG_ALL
         python3 -c 'from time_cal import time_cal; time_cal()'
         cd
@@ -256,7 +256,7 @@ cal_time(){
 # [onlyevaluation] send back leader's time_log
 send_back(){
     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[0]}
-    TARGET_ADDR=$TIME_LOG
+    TARGET_ADDR=../$TIME_LOG
     SOURCE_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/$TIME_LOG"
     scp -i $KEY_ADDRESS "$SOURCE_ADDR" "$TARGET_ADDR"
     echo "success! address:$TARGET_ADDR"
@@ -286,7 +286,7 @@ stop_remote(){
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         if [ $is_WAN -eq 1 ]; then 
-            KEY_ADDRESS="pem_key/ss$i.pem"
+            KEY_ADDRESS="../pem_key/ss$i.pem"
         fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd $WORKING_ADDR
@@ -301,7 +301,7 @@ stop_remote(){
 authorize_key(){
     num_server="${1:-$num_server}"
     for i in $(seq 1 $num_server); do
-        KEY_ADDRESS="pem_key/ss$i.pem"
+        KEY_ADDRESS="../pem_key/ss$i.pem"
         chmod 400 $KEY_ADDRESS
     done 
 }
@@ -315,8 +315,8 @@ eval_all(){
 
     $SSH_PREFIX $KEY_ADDRESS $AGG_AWS_COMMAND "
         source ~/.bashrc
-        cd testnet1
-        ./server_ctrl_multithread.sh clean;
+        cd $WORKING_ADDR
+        ./script/server_ctrl_multithread.sh clean;
     "
 
     echo "sending from database/m-$num_server-$dc_net_n_slot-$num_users-$dc_net_message_length"

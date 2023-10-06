@@ -1,6 +1,6 @@
 FOLDER_PREFIX="../data_saving"
 WORKING_ADDR="./testnet1"
-KEY_ADDRESS="./.ssh/dc-net-test.pem"
+KEY_ADDRESS="../.ssh/dc-net-test.pem"
 
 
 migrate_to_database(){

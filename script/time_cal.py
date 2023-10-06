@@ -19,14 +19,14 @@ def read_timestamps_from_file(filepath):
 
 def time_cal(agg_thread_num):
     # Read timestamps from aggregator and server files
-    agg_timestamps = read_timestamps_from_file("aggregator/time_recorder.txt")
-    server_timestamps = read_timestamps_from_file("server/time_recorder.txt")
+    agg_timestamps = read_timestamps_from_file("../aggregator/time_recorder.txt")
+    server_timestamps = read_timestamps_from_file("../server/time_recorder.txt")
     
     group_num = len(server_timestamps) // 2
     agg_runtimes=[]
     server_runtimes=[]
     end2end_times=[]
-    with open("server/result_time.txt", "a") as file:
+    with open("../server/result_time.txt", "a") as file:
         for i in range(group_num):
             ts1 = agg_timestamps[(agg_thread_num+1)*i]
             ts2 = agg_timestamps[(agg_thread_num+1)*i+agg_thread_num]
@@ -61,11 +61,11 @@ def time_cal(agg_thread_num):
 
 def time_cal_agg(agg_thread_num):
     # Read timestamps from aggregator and server files
-    agg_timestamps = read_timestamps_from_file("aggregator/time_recorder.txt")
+    agg_timestamps = read_timestamps_from_file("../aggregator/time_recorder.txt")
     group_len = agg_thread_num+1
     group_num = len(agg_timestamps) // group_len
     agg_runtimes=[]
-    with open("aggregator/result_time.txt", "a") as file:
+    with open("../aggregator/result_time.txt", "a") as file:
         for i in range(group_num):
             ts1 = agg_timestamps[group_len*i]
             ts2 = agg_timestamps[group_len*(i+1)-1]

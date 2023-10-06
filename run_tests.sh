@@ -6,7 +6,7 @@ set -eu
 
 USER_STATE="client/user-state.txt"
 USER_SERVERKEYS="client/server-keys.txt"
-AGG_STATE="aggregator/agg-state.txt"
+AGG_STATE="aggregator/agg_state_.txt"
 AGG_ROOTSTATE="aggregator/agg-root-state.txt"
 AGG_SERVERKEYS="aggregator/server-keys.txt"
 AGG_FINALAGG="aggregator/final-agg.txt"

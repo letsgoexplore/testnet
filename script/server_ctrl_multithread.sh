@@ -1,15 +1,15 @@
 #!/bin/bash
 
-USER_STATE="client/user-state.txt"
+USER_STATE="../client/user-state.txt"
 AGG_FINALAGG="../aggregator/final-agg.txt"
-AGG_ROOTSTATE="aggregator/agg-root-state.txt"
-AGG_STATE_PREFIX="aggregator/agg_state_"
-SERVER_STATE="server/server-state.txt"
-SERVER_SHARES="server/shares.txt"
-SERVER_SHARES_PARTIAL="server/partial_shares.txt"
+AGG_ROOTSTATE="../aggregator/agg-root-state.txt"
+AGG_STATE_PREFIX="../aggregator/agg_state_"
+SERVER_STATE="../server/server-state.txt"
+SERVER_SHARES="../server/shares.txt"
+SERVER_SHARES_PARTIAL="../server/partial_shares.txt"
 
-USER_SERVERKEYS="client/server-keys.txt"
-AGG_SERVERKEYS="aggregator/server-keys.txt"
+USER_SERVERKEYS="../client/server-keys.txt"
+AGG_SERVERKEYS="../aggregator/server-keys.txt"
 
 CLIENT_MESSAGE="../client/src/message/clientmessage.txt"
 AGG_DATA="../aggregator/data_collection.txt"
@@ -28,9 +28,9 @@ AGGREGATOR_PORT="18300"
 SERVER_PORT="28942"
 SERVER_IP=("3.137.191.31" "13.38.37.45" "54.176.5.119" "43.207.114.246" "34.221.6.203")
 
-CMD_PREFIX="cargo run --release -- "
+# CMD_PREFIX="cargo run --release -- "
 # [onlytest]
-# CMD_PREFIX="cargo run -- "
+CMD_PREFIX="cargo run -- "
 
 SERVER_CMD_PREFIX="/home/ubuntu/.cargo/bin/cargo cargo run -- "
 # Assume wlog that the leading anytrust node is the first one
@@ -90,7 +90,7 @@ setup_server() {
 
         # Make a new server and save the registration data
         SERVER_REG=$(
-            $CMD_PREFIX new --server-state "../$STATE"
+            $CMD_PREFIX new --server-state "$STATE"
         )
         # Append
         if [[ i -eq 1 ]]; then
@@ -100,11 +100,11 @@ setup_server() {
         fi
 
         # Save the server pubkeys
-        $CMD_PREFIX get-pubkeys --server-state "../$STATE" >> "../$USER_SERVERKEYS"
+        $CMD_PREFIX get-pubkeys --server-state "$STATE" >> "$USER_SERVERKEYS"
     done
 
     # Copy the pubkeys file to the aggregators
-    cp "../$USER_SERVERKEYS" "../$AGG_SERVERKEYS"
+    cp "$USER_SERVERKEYS" "$AGG_SERVERKEYS"
 
     # Read the regs into a variable
     IFS=';' read -ra SERVER_REGS <<< "$SERVER_REGS"
@@ -120,7 +120,7 @@ setup_server() {
 
             # Register server i with server j
             STATE="${SERVER_STATE%.txt}$j.txt"
-            echo $SERVER_REG | $CMD_PREFIX register-server --server-state "../$STATE"
+            echo $SERVER_REG | $CMD_PREFIX register-server --server-state "$STATE"
         done
 
         i=$(($i + 1))
@@ -138,13 +138,13 @@ setup_aggregator() {
     NUM_LEAF_AGGREGATORS=$THREAD_NUM
     # Make a new root aggregator and capture the registration data
     AGG_REG=$(
-        $CMD_PREFIX new --level 0 --agg-number 0 --agg-state "../$AGG_ROOTSTATE" --server-keys "../$AGG_SERVERKEYS"
+        $CMD_PREFIX new --level 0 --agg-number 0 --agg-state "$AGG_ROOTSTATE" --server-keys "$AGG_SERVERKEYS"
     )
      # Now do the registration
     cd ../server
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
-        echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
+        echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "$STATE"
     done
     echo "Set up root aggregator"
     cd ../script
@@ -152,14 +152,14 @@ setup_aggregator() {
     # step 2: setup aggregator
     if [[ $NUM_LEAF_AGGREGATORS -gt 0 ]]; then
         for i in $(seq 1 $NUM_LEAF_AGGREGATORS); do
-            cd aggregator
+            cd ../aggregator
             file_name="$AGG_STATE_PREFIX$i.txt"
             AGG_REG=$(
-                $CMD_PREFIX new --level 1 --agg-number $i --agg-state "../$file_name" --server-keys "../$AGG_SERVERKEYS")
+                $CMD_PREFIX new --level 1 --agg-number $i --agg-state "$file_name" --server-keys "$AGG_SERVERKEYS")
             cd ../server
             for i in $(seq 1 $NUM_SERVERS); do
                 STATE="${SERVER_STATE%.txt}$i.txt"
-                echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
+                echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "$STATE"
             done
             echo "Set up aggregator $i"
             cd ../script
@@ -177,15 +177,15 @@ setup_client() {
     USER_REG=$(
         $CMD_PREFIX new \
             --num-regs $NUM_USERS \
-            --user-state "../$USER_STATE" \
-            --server-keys "../$USER_SERVERKEYS"
+            --user-state "$USER_STATE" \
+            --server-keys "$USER_SERVERKEYS"
     )
 
     # Now do other registrations
     cd ../server
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
-        echo "$USER_REG" | $CMD_PREFIX register-user --server-state "../$STATE"
+        echo "$USER_REG" | $CMD_PREFIX register-user --server-state "$STATE"
     done
     sleep 5
     echo "Set up clients"
@@ -227,7 +227,7 @@ client_eval(){
 
         # Make a new server and save the registration data
         SERVER_REG=$(
-            $CMD_PREFIX new --server-state "../$STATE"
+            $CMD_PREFIX new --server-state "$STATE"
         )
         # Append
         if [[ i -eq 1 ]]; then
@@ -237,11 +237,11 @@ client_eval(){
         fi
 
         # Save the server pubkeys
-        $CMD_PREFIX get-pubkeys --server-state "../$STATE" >> "../$USER_SERVERKEYS"
+        $CMD_PREFIX get-pubkeys --server-state "$STATE" >> "$USER_SERVERKEYS"
     done
 
     # Copy the pubkeys file to the aggregators
-    cp "../$USER_SERVERKEYS" "../$AGG_SERVERKEYS"
+    cp "$USER_SERVERKEYS" "$AGG_SERVERKEYS"
 
     # Read the regs into a variable
     IFS=';' read -ra SERVER_REGS <<< "$SERVER_REGS"
@@ -251,8 +251,8 @@ client_eval(){
     USER_REG=$(
         $CMD_PREFIX new \
             --num-regs 10 \
-            --user-state "../$USER_STATE" \
-            --server-keys "../$USER_SERVERKEYS"
+            --user-state "$USER_STATE" \
+            --server-keys "$USER_SERVERKEYS"
     )
     cd ../script
 
@@ -280,7 +280,7 @@ start_client() {
         STATE="${USER_STATE%.txt}$i.txt"
         USER_PORT="$(($CLIENT_SERVICE_PORT + $(($i-1))))"
         RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
-            --user-state ../$STATE \
+            --user-state $STATE \
             --round $ROUND \
             --bind localhost:$USER_PORT \
             --agg-url http://localhost:$AGGREGATOR_PORT &
@@ -336,7 +336,7 @@ single_client_send() {
     USER_PORT="$(($CLIENT_SERVICE_PORT + $(($USER_SEQ-1))))"
     aggre_port=$((AGGREGATOR_PORT + USER_SEQ % THREAD_NUM + 1))
     RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
-        --user-state "../$STATE" \
+        --user-state "$STATE" \
         --round $ROUND \
         --bind "localhost:$USER_PORT" \
         --agg-url "http://localhost:$aggre_port" &
@@ -388,7 +388,7 @@ single_client_send_cover() {
         STATE="${USER_STATE%.txt}$USER_SEQ.txt"
         aggre_port=$((AGGREGATOR_PORT + USER_SEQ % THREAD_NUM + 1))
         RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
-            --user-state "../$STATE" \
+            --user-state "$STATE" \
             --round $ROUND \
             --bind "localhost:$USER_PORT" \
             --agg-url "http://localhost:$aggre_port" &
@@ -400,9 +400,9 @@ single_client_send_cover() {
         sleep 2 && (curl -X POST "http://localhost:$USER_PORT/send-cover"
         if [[ $? -ne 0 ]]; then
             # log error
-            echo $USER_SEQ >> "../$ERROR_LOG"
+            echo $USER_SEQ >> "$ERROR_LOG"
         else
-            echo $USER_SEQ >> "../$SUCCESS_LOG"
+            echo $USER_SEQ >> "$SUCCESS_LOG"
         fi)
         cd ../script
         sleep 2.4 && kill_clients
@@ -463,7 +463,7 @@ start_agg() {
     done
     echo "Aggregator Forward-to:$FORWARD_TO"
     RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
-        --agg-state "../$AGG_ROOTSTATE" \
+        --agg-state "$AGG_ROOTSTATE" \
         --round $ROUND \
         --bind "localhost:$AGGREGATOR_PORT" \
         --start-time $START_TIME \
@@ -482,7 +482,7 @@ start_agg() {
             forward_url="http://localhost:$AGGREGATOR_PORT"
             
             RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
-                --agg-state "../$file_name" \
+                --agg-state "$file_name" \
                 --round $ROUND \
                 --bind "localhost:$port" \
                 --start-time $START_TIME \
@@ -509,7 +509,7 @@ start_leader() {
     leader_addr="0.0.0.0:$SERVER_PORT"
     echo "leader addr: $leader_addr"
     RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
-        --server-state "../$STATE" \
+        --server-state "$STATE" \
         --bind $leader_addr &
         # --no-persist \
     sleep 1
@@ -530,7 +530,7 @@ start_follower() {
     follower_ip=${SERVER_IP[$index]}
     follower_addr="0.0.0.0:$SERVER_PORT"
     RUST_LOG=$LOG_TYPE $CMD_PREFIX start-service \
-        --server-state "../$STATE" \
+        --server-state "$STATE" \
         --bind $follower_addr \
         --leader-url $leader_addr &
 
@@ -651,10 +651,10 @@ re_setup_aggregator(){
     for i in $(seq 1 $NUM_SERVERS); do
         STATE="${SERVER_STATE%.txt}$i.txt"
         # Save the server pubkeys
-        $CMD_PREFIX get-pubkeys --server-state "../$STATE" >> "../$USER_SERVERKEYS"
+        $CMD_PREFIX get-pubkeys --server-state "$STATE" >> "$USER_SERVERKEYS"
     done
     # Copy the pubkeys file to the aggregators
-    cp "../$USER_SERVERKEYS" "../$AGG_SERVERKEYS"
+    cp "$USER_SERVERKEYS" "$AGG_SERVERKEYS"
     cd ../script
 
     # step 2: generate the aggregator
@@ -663,11 +663,11 @@ re_setup_aggregator(){
             cd ../aggregator
             file_name="$AGG_STATE_PREFIX$i.txt"
             AGG_REG=$(
-                $CMD_PREFIX new --level 1 --agg-number $i --agg-state "../$file_name" --server-keys "../$AGG_SERVERKEYS")
+                $CMD_PREFIX new --level 1 --agg-number $i --agg-state "$file_name" --server-keys "$AGG_SERVERKEYS")
             cd ../server
             # for i in $(seq 1 $NUM_SERVERS); do
             #     STATE="${SERVER_STATE%.txt}$i.txt"
-            #     echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "../$STATE"
+            #     echo $AGG_REG | $CMD_PREFIX register-aggregator --server-state "$STATE"
             # done
             echo "Set up aggregator $i"
             cd ../script
