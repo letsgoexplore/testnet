@@ -11,7 +11,7 @@ SERVER_SHARES_PARTIAL="../server/partial_shares.txt"
 USER_SERVERKEYS="../client/server-keys.txt"
 AGG_SERVERKEYS="../aggregator/server-keys.txt"
 
-CLIENT_MESSAGE="../client/src/message/clientmessage.txt"
+CLIENT_MESSAGE="../client/message/clientmessage.txt"
 AGG_DATA="../aggregator/data_collection.txt"
 ERROR_LOG="../aggregator/error.txt"
 SUCCESS_LOG="../aggregator/success.txt"
