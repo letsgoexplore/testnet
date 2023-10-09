@@ -5,8 +5,8 @@ SERVER_IPS=("3.140.248.195" "13.38.37.45" "54.176.5.119" "43.207.114.246" "34.22
 SERVER_AWS_COMMANDS=("ec2-3-140-248-195.us-east-2.compute.amazonaws.com" "ec2-13-38-37-45.eu-west-3.compute.amazonaws.com" "ec2-54-176-5-119.us-west-1.compute.amazonaws.com" "ec2-43-207-114-246.ap-northeast-1.compute.amazonaws.com" "ec2-34-221-6-203.us-west-2.compute.amazonaws.com")
 AGG_AWS_COMMAND="ec2-18-218-37-219.us-east-2.compute.amazonaws.com"
 SSH_PREFIX="ssh -t -i"
-KEY_ADDRESS="../dc-net-test.pem"
-REMOTE_SERVER_KEY_PREFIX="../pem_key/ss"
+KEY_ADDRESS="./pem_key/dc-net-test.pem"
+REMOTE_SERVER_KEY_PREFIX="./pem_key/ss"
 REMOTE_SERVER_KEY_POSTFIX=".pem"
 
 # Working File
@@ -121,7 +121,7 @@ clean_remote(){
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         SERVER_IP=${SERVER_IPS[$((i-1))]}
         if [ $is_WAN -eq 1 ]; then 
-            KEY_ADDRESS="../pem_key/ss$i.pem"
+            KEY_ADDRESS="./pem_key/ss$i.pem"
         fi
         # ssh-keygen -R $SERVER_IP
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
@@ -140,7 +140,7 @@ update_code(){
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         if [ $is_WAN -eq 1 ]; then 
-            KEY_ADDRESS="../pem_key/ss$i.pem"
+            KEY_ADDRESS="./pem_key/ss$i.pem"
         fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd $WORKING_ADDR
@@ -162,8 +162,8 @@ migrate_server_state(){
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         TARGET_ADDR="$SERVER_AWS_COMMAND:$WORKING_ADDR/server/server-state$i.txt"
         if [ $is_WAN -eq 1 ]; then 
-            chmod 400 "../pem_key/ss$i.pem"
-            KEY_ADDRESS="../pem_key/ss$i.pem"
+            chmod 400 "./pem_key/ss$i.pem"
+            KEY_ADDRESS="./pem_key/ss$i.pem"
         fi
         scp -i $KEY_ADDRESS "$LOCAL_ADDR" "$TARGET_ADDR"
         echo "success! address:$TARGET_ADDR"
@@ -176,7 +176,7 @@ start_leader(){
     num_users=$3
     SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[0]}
     if [ $is_WAN -eq 1 ]; then 
-        KEY_ADDRESS="../pem_key/ss1.pem"
+        KEY_ADDRESS="./pem_key/ss1.pem"
     fi
     $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
         source ~/.bashrc
@@ -199,7 +199,7 @@ start_follower(){
     for i in $(seq 1 $num_follower); do
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$i]}
         if [ $is_WAN -eq 1 ]; then 
-            KEY_ADDRESS="../pem_key/ss$((i+1)).pem"
+            KEY_ADDRESS="./pem_key/ss$((i+1)).pem"
         fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             source ~/.bashrc
@@ -286,7 +286,7 @@ stop_remote(){
     for i in $(seq 1 $NUM_SERVERS); do 
         SERVER_AWS_COMMAND=${SERVER_AWS_COMMANDS[$((i-1))]}
         if [ $is_WAN -eq 1 ]; then 
-            KEY_ADDRESS="../pem_key/ss$i.pem"
+            KEY_ADDRESS="./pem_key/ss$i.pem"
         fi
         $SSH_PREFIX $KEY_ADDRESS $SERVER_AWS_COMMAND "
             cd $WORKING_ADDR
@@ -301,7 +301,7 @@ stop_remote(){
 authorize_key(){
     num_server="${1:-$num_server}"
     for i in $(seq 1 $num_server); do
-        KEY_ADDRESS="../pem_key/ss$i.pem"
+        KEY_ADDRESS="./pem_key/ss$i.pem"
         chmod 400 $KEY_ADDRESS
     done 
 }
