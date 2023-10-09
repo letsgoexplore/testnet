@@ -6,11 +6,11 @@ AWS only accept `ubuntu` account for accessing.
 useradd -ms /bin/bash ubuntu
 ```
 ### Creating Instances
-Currently, each instance's pem key is named with `ssi.pem` and saved in the ./pem_key. We also recommend you doing so to simiplify other procedure. You can also changed the code in [script/dc-net-control.sh](../../script/dc-net-control.sh) to satisfy your need.
+Currently, each instance's pem key is named with `ssi.pem` and saved in the ./script/pem_key. We also recommend you doing so to simiplify other procedure. You can also changed the code in [script/dc-net-control.sh](../../dc-net-control.sh) to satisfy your need.
 
 ### After Starting Instances
 ![AWS_instance image](../img/AWS_instance.png)
-After starting instances, please update all `Public IPv4 address`(for instance, 3.142.82.8) and `Public IPv4 DNS`(for instance, ec2-3-142-82-8.us-east-2.compute.amazonaws.com) to `SERVER_IP` and `SERVER_AWS_COMMANDS` in [script/dc-net-control.sh](../../script/dc-net-control.sh) and [script/server_ctrl_multithread.sh](../../script/server_ctrl_multithread.sh).
+After starting instances, please update all `Public IPv4 address`(for instance, 3.142.82.8) and `Public IPv4 DNS`(for instance, ec2-3-142-82-8.us-east-2.compute.amazonaws.com) to `SERVER_IP` and `SERVER_AWS_COMMANDS` in [script/dc-net-control.sh](../../dc-net-control.sh) and [script/server_ctrl_multithread.sh](../../server_ctrl_multithread.sh).
 
 For example,
 ```shell

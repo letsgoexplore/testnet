@@ -3,7 +3,7 @@ In this part we will talk about several evaluation procedure:
 2. [how to evaluate aggregator and server runtime?](#how-to-evaluate-aggregator-and-server-runtime)
 3. [how to evaluate bandwidth?](#how-to-evaluate-bandwidth)
 
-## How to evaluate client runtime
+## 1 How to evaluate client runtime
 Firstly, make sure code is working in Hardware(HW) mode, which simulate the real SGX environment. Run the following script in the terminal:
 ```shell
 ./start-docker-real-sgx.sh
@@ -15,7 +15,7 @@ then open the [script/dc-net-control.sh](../script/dc-net-control.sh) and find t
 ```
 The client runtime will be recorded in `client/time-recorder.txt`.
 
-## How to evaluate aggregator and server runtime
+## 2 How to evaluate aggregator and server runtime
 Now, if we want to evaluate 1024 talking and 8000 clients in total, 5 servers in WAN, we will talk about how to conduct step by step.
 
 ### Setting Parameter
@@ -114,7 +114,7 @@ it will take long time for client to generate message.
 | 4000 | 2.5h | 6min | 6.4G |
 | 8000 | 4h | 15min | 25.9G |
 
-## how to evaluate bandwidth?
+## 3 how to evaluate bandwidth?
 ### Evaluating the Physical Bandwidth
 Using `ping` and `iperf` tools:
 ```shell

@@ -11,4 +11,4 @@ Build instructions
 > Make is not smart enough to rebuild the enclave image. So always do Step 3 whenever you change the `interface` and `enclave` crates. Remember to `make clean` first.
 
 ### Tutorial
-> [Tutorial](./tutorial/ReadMe.md) is waiting for you! 
+> [Tutorial](./script/tutorial/ReadMe.md) is waiting for you! 
