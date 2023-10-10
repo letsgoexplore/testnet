@@ -1,5 +1,6 @@
 import random
 import binascii
+import os
 
 def generate_random_hex(length):
     num_bytes = (length + 1) // 2
@@ -8,6 +9,10 @@ def generate_random_hex(length):
     return random_hex
 
 def generate_round_multiple_message(user, length):
+    folder_name = '../client/message'
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+        
     for i in range(user):  
         random_message_hex = generate_random_hex(length)
         filename = "../client/message/clientmessage_" + str(i) + ".txt"
