@@ -6,8 +6,8 @@
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @         WARNING: UNPROTECTED PRIVATE KEY FILE!          @
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-Permissions 0664 for '../pem_key/ss1.pem' are too open.
+Permissions 0664 for './pem_key/ss1.pem' are too open.
 
 # solution
-chmod 400 ../pem_key/ss1.pem
+chmod 400 ./pem_key/ss1.pem
 ```

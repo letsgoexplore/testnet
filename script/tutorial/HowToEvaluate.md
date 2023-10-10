@@ -9,7 +9,7 @@ Firstly, make sure code is working in Hardware(HW) mode, which simulate the real
 ./start-docker-real-sgx.sh
 ```
 
-then open the [script/dc-net-control.sh](../script/dc-net-control.sh) and find the function `client_eval()`, setting the parameter you want. After setting, you can run the instruction and the evaluation will begin:
+then open the [script/dc-net-control.sh](../dc-net-control.sh) and find the function `client_eval()`, setting the parameter you want. After setting, you can run the instruction and the evaluation will begin:
 ```shell
 ./dc-net-control.sh eval-c
 ```
@@ -22,9 +22,9 @@ Now, if we want to evaluate 1024 talking and 8000 clients in total, 5 servers in
 **DO**
 1. setting server information as illucidated in [./technique/DeployingAWS.md](./technique/DeployingAWS.md)
 
-2. set the `EVALUATION_FLAG = true` in [interface/src/params.rs](../interface/src/params.rs) and `is_EVALUATION=1` in [script/dc-net-control.sh](../script/dc-net-control.sh).
+2. set the `EVALUATION_FLAG = true` in [interface/src/params.rs](../../interface/src/params.rs) and `is_EVALUATION=1` in [script/dc-net-control.sh](../dc-net-control.sh).
 
-3. set the value in [script/dc-net-control.sh](../script/dc-net-control.sh). For example:
+3. set the value in [script/dc-net-control.sh](../dc-net-control.sh). For example:
 ```shell
 num_leader=1
 num_follower=4
