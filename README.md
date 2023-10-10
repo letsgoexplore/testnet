@@ -12,3 +12,11 @@ Build instructions
 
 ### Tutorial
 > [Tutorial](./script/tutorial/ReadMe.md) is waiting for you! 
+
+### Code structure
+- `client`, `aggregator`, `server` contain the running logic of each role.
+    ![the logic within each crate goes below](./script/tutorial/img/general%20structure%20of%20each%20role's%20code.png)
+- `enclave` provide the function of client within the enclave.
+- `common` contains the general function for all roles
+- `interface` contains the parameter settings, and the interface between in-enclave and out-enclave.
+- `third-party` comprises the third-party encryption library.
