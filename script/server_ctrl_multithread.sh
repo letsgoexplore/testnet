@@ -351,7 +351,10 @@ single_client_send() {
     # Do the operation
     cd ../client
     echo "$PAYLOAD" > $FILENAME
-    sleep 10
+
+    # if working in HW mode, then sleep is necessary. Because the client_sgx need time to setup
+    # but if in SW mode, then this part can be neglect, to save time.
+    # sleep 10
 
     sleep 2 && (curl "http://localhost:$USER_PORT/encrypt-msg" \
     -X POST \

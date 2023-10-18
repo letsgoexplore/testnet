@@ -9,7 +9,15 @@ Firstly, make sure code is working in Hardware(HW) mode, which simulate the real
 ./start-docker-real-sgx.sh
 ```
 
-then open the [script/dc-net-control.sh](../dc-net-control.sh) and find the function `client_eval()`, setting the parameter you want. After setting, you can run the instruction and the evaluation will begin:
+Then, adding `sleep 10` at following place, in the `single_client_send()` function in [script/server_ctrl_multithread.sh](../server_ctrl_multithread.sh), probably at Line 357. This is necessary is because the `client_sgx` need some time to setup, if working in HW mode. 
+```shell
+    # if working in HW mode, then sleep is necessary. Because the client_sgx need time to setup
+    # but if in SW mode, then this part can be neglect, to save time.
+    sleep 10
+```
+
+then open the [script/dc-net-control.sh](../dc-net-control.sh) and find the function `client_eval()`, setting the parameter you want. And 
+After setting, you can run the instruction and the evaluation will begin:
 ```shell
 ./dc-net-control.sh eval-c
 ```
