@@ -454,7 +454,7 @@ async fn send_aggregate(payload: Vec<u8>, forward_urls: Vec<String>) {
     let mut forward_urls_reverse = forward_urls.clone();
     forward_urls_reverse.reverse();
     info!("Forwarding aggregate to {:?}", forward_urls_reverse);
-    println!("payload len in send_aggregate:{}", payload.len());
+    info!("payload len in send_aggregate:{}", payload.len());
     // Create a vector to store all the futures
     let mut futures = Vec::new();
 
@@ -479,7 +479,7 @@ async fn send_to_url(base_url: String, payload: Vec<u8>) {
         "Couldn't not append '/submit-agg' to forward URL {}",
         base_url
     ));
-    println!("payload len in send_to_url:{}", payload.len());
+    info!("payload len in send_to_url:{}", payload.len());
     match client.post(post_path).send_body(payload).await {
         Ok(res) => {
             if res.status() == StatusCode::OK {

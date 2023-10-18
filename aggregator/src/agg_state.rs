@@ -107,13 +107,6 @@ impl AggregatorState {
             .as_ref()
             .ok_or(AggregatorError::Uninitialized)?;
         let blob = finalize_aggregate(partial_agg)?;
-        // println!("aggregated_msg.scheduling_msg.len:{}",blob.aggregated_msg.scheduling_msg.len());
-        // println!("aggregated_msg.aggregated_msg.len:{}",blob.aggregated_msg.aggregated_msg.len());
-        // println!("aggregated_msg.aggregated_msg[0].array.len:{}",blob.aggregated_msg.aggregated_msg[0].array.len());
-        // println!("aggregated_msg.aggregated_msg[0].num_rows:{}",blob.aggregated_msg.aggregated_msg.num_rows());
-        // println!("aggregated_msg.aggregated_msg[0].num_columns:{}",blob.aggregated_msg.aggregated_msg.num_columns());
-        // println!("Btree length:{}",blob.user_ids.len());
-
         Ok(blob)
     }
 }

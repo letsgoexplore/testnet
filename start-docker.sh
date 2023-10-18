@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-CONTAINER_NAME=dcnet-8
+CONTAINER_NAME=dcnet-1.1.6
 DOCKER_IMAGE=bl4ck5un/sgx-rust-fork:2004-1.1.6
 
 if docker container inspect $CONTAINER_NAME > /dev/null 2>&1; then

@@ -4,7 +4,7 @@ use crate::{
 };
 use common::{
     cli_util,
-    log_time::{log_detailed_duration, log_time},
+    log_time::{log_time},
 };
 use interface::RoundOutput;
 
@@ -108,9 +108,7 @@ fn leader_finish_round(state: &mut ServiceState) {
 async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBlob) {
     // Serialize the share
     let mut body = Vec::new();
-    println!("send_share_to_leader share:{}", share.0.len());
     cli_util::save(&mut body, &share).expect("could not serialize share");
-    println!("send_share_to_leader body:{}", body.len());
 
     // Send the serialized contents as an HTTP POST to leader/submit-share
     let timeout_sec = 100;
@@ -161,24 +159,9 @@ async fn submit_agg(
     let input_start = Instant::now();
     log_time();
     // Strip whitespace from the payload
-    println!("payload len before:{}", payload.len());
     let payload = payload.split_whitespace().next().unwrap_or("");
-    println!("payload len after:{}", payload.len());
     // Parse aggregation
     let agg_data: RoundSubmissionBlob = cli_util::load(&mut payload.as_bytes())?;
-    println!(
-        "aggregated_msg.scheduling_msg.len:{}",
-        agg_data.aggregated_msg.scheduling_msg.len()
-    );
-    println!(
-        "aggregated_msg.aggregated_msg[0].num_rows:{}",
-        agg_data.aggregated_msg.aggregated_msg.num_rows()
-    );
-    println!(
-        "aggregated_msg.aggregated_msg[0].num_columns:{}",
-        agg_data.aggregated_msg.aggregated_msg.num_columns()
-    );
-    println!("Btree length:{}", agg_data.user_ids.len());
 
     // Do the processing step. Unblind the input, add the share, and if we're the leader we finish
     // the round by combining the shares
@@ -195,16 +178,12 @@ async fn submit_agg(
         // log input time
         let input_duration = input_start.elapsed();
         debug!("[server] uinput: {:?}", input_duration);
-        log_detailed_duration("input", input_duration.as_nanos());
 
         let unblind_start = Instant::now();
         // Unblind the input
         let share = server_state.unblind_aggregate(&agg_data)?;
-        println!("submit-agg share:{}", share.0.len());
         let unblind_duration = unblind_start.elapsed();
         debug!("[server] unblind_aggregate: {:?}", unblind_duration);
-        log_detailed_duration("unblind_aggregate", unblind_duration.as_nanos());
-        // log_server_time("finish unblind");
         debug!("unblinded share: {:?}", share);
 
         match leader_url {
@@ -223,7 +202,6 @@ async fn submit_agg(
                     info!("Finishing round");
                     leader_finish_round(state_handle.deref_mut());
                     log_time();
-                    // log_server_time("finish round");
                 }
             }
             // We're a follower. Send the unblinded aggregate to the leader
@@ -238,7 +216,7 @@ async fn submit_agg(
     // Save the state if a path is specified
     let server_state = &state_handle.server_state;
     let server_state_path = &state_handle.server_state_path;
-    // log_server_time("begin to save");
+
     server_state_path.as_ref().map(|path| {
         info!("Saving state");
         match save_state(path, server_state) {
@@ -246,10 +224,9 @@ async fn submit_agg(
             _ => (),
         }
     });
-    // log_server_time("AFTER save");
+
     let duration = start.elapsed();
     debug!("[server] submit_agg: {:?}", duration);
-    log_detailed_duration("submit_agg", duration.as_nanos());
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
@@ -259,7 +236,6 @@ async fn submit_share(
     (payload, state): (String, web::Data<Arc<Mutex<ServiceState>>>),
 ) -> Result<HttpResponse, ApiError> {
     // Unpack state
-    // log_server_time("start unpacking");
     let start = Instant::now();
     let mut handle = state.get_ref().lock().unwrap();
     let group_size = handle.server_state.anytrust_group_size;
@@ -277,22 +253,19 @@ async fn submit_share(
     }
 
     // Parse the share and add it to our shares
-    println!("payload len:{}", payload.len());
+    debug!("payload len:{}", payload.len());
     let share: UnblindedAggregateShareBlob = cli_util::load(&mut payload.as_bytes())?;
     round_shares.push(share);
     info!("Got share. Number of shares is now {}", round_shares.len());
 
     let duration = start.elapsed();
     debug!("[server] aggregate_share: {:?}", duration);
-    log_detailed_duration("aggregate_share", duration.as_nanos());
 
-    // log_server_time("after merging");
     // If all the shares are in, that's the end of the round
     if round_shares.len() == group_size {
         info!("Finishing round");
         leader_finish_round(handle.deref_mut());
         log_time();
-        // log_server_time("finish round");
     }
 
     Ok(HttpResponse::Ok().body("OK\n"))
@@ -400,11 +373,6 @@ pub(crate) async fn start_service(bind_addr: String, state: ServiceState) -> std
         state.server_state.anytrust_group_size
     );
     let state = Arc::new(Mutex::new(state));
-
-    // Create the AppConfig with the desired max_payload_size (e.g., 10 MB)
-    // let config = AppConfig {
-    //     max_payload_size: 1024 * 1024 * 10,
-    // };
 
     info!("Making new server on {}", bind_addr);
 
