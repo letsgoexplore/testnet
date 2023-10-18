@@ -7,6 +7,7 @@ use common::log_time::{log_detailed_time, log_time};
 use common::types::{AggregatedMessage, SubmissionMessage};
 use interface::{
     UserSubmissionMessage, AGGREGATOR_THREAD_NUMBER, DC_NUM_USER, EVALUATION_FLAG, PARAMETER_FLAG,
+    RETRIES, TIMEOUT_SEC,
 };
 
 use actix_rt::{
@@ -241,14 +242,18 @@ async fn aggregate_eval(combined_data: web::Data<CombinedData>) -> Result<HttpRe
     let share: AggregatedMessage = agg_state
         .finalize_aggregate()
         .expect("could not finalize aggregate");
-    debug!("{}'s share is:{:?}, forward-url is {:?}",agg_number, share, forward_urls.clone());
+    debug!(
+        "{}'s share is:{:?}, forward-url is {:?}",
+        agg_number,
+        share,
+        forward_urls.clone()
+    );
     if logflag {
         let log_msg = format!("leaf-agg{} before sending to root", agg_number);
         log_detailed_time(log_msg);
     }
 
     actix_rt::spawn(send_share_to_root(forward_urls.clone(), share));
-
 
     Ok(HttpResponse::Ok().body("OK\n"))
 }
@@ -259,17 +264,16 @@ async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage) {
     cli_util::save(&mut body, &share).expect("could not serialize share");
 
     // step 2: Send the serialized contents as an HTTP POST to leader/submit-share
-    let timeout_sec = 20;
     let base_url = &base_url[0];
     let client = Client::builder()
-        .timeout(Duration::from_secs(timeout_sec))
+        .timeout(Duration::from_secs(TIMEOUT_SEC))
         .finish();
     let post_path: Uri = [&base_url, "/submit-agg-from-agg"]
         .concat()
         .parse()
         .expect("Couldn't not append '/submit-agg-from-agg' to forward URL");
 
-    let mut retries = 20;
+    let mut retries = RETRIES;
 
     loop {
         match client.post(post_path.clone()).send_body(body.clone()).await {
@@ -541,7 +545,10 @@ async fn round_finalization_loop(
         // We send our aggregate `level` seconds after the official end of the round
         let end_time = start_time + round_dur + level * one_sec;
 
-        debug!("systime_to_instant(end_time): {:?}", systime_to_instant(end_time));
+        debug!(
+            "systime_to_instant(end_time): {:?}",
+            systime_to_instant(end_time)
+        );
 
         // Wait
         delay_until(systime_to_instant(end_time)).await;

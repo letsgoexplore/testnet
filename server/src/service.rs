@@ -2,11 +2,8 @@ use crate::{
     util::{save_output, save_state, ServerError},
     ServerState,
 };
-use common::{
-    cli_util,
-    log_time::{log_time},
-};
-use interface::RoundOutput;
+use common::{cli_util, log_time::log_time};
+use interface::{RoundOutput, RETRIES, TIMEOUT_SEC};
 
 use common::types::{RoundSubmissionBlob, UnblindedAggregateShareBlob};
 
@@ -111,20 +108,19 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
     cli_util::save(&mut body, &share).expect("could not serialize share");
 
     // Send the serialized contents as an HTTP POST to leader/submit-share
-    let timeout_sec = 100;
     debug!(
         "Sending share to {} with timeout {}s",
-        base_url, timeout_sec
+        base_url, TIMEOUT_SEC
     );
     let client = Client::builder()
-        .timeout(Duration::from_secs(timeout_sec))
+        .timeout(Duration::from_secs(TIMEOUT_SEC))
         .finish();
     let post_path: Uri = [&base_url, "/submit-share"]
         .concat()
         .parse()
         .expect("Couldn't not append '/submit-share' to forward URL");
 
-    let mut retries = 10;
+    let mut retries = RETRIES;
     loop {
         match client.post(post_path.clone()).send_body(body.clone()).await {
             Ok(res) => {

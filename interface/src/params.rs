@@ -53,3 +53,9 @@ pub const ENCLAVE_LOG_LEVEL: &str = "off"; // "debug" or "info"
 
 /// Number of threads for deriving round secrets
 pub const N_THREADS_DERIVE_ROUND_SECRET: usize = 10;
+
+/// Network communication settings
+/// timeout time
+pub const TIMEOUT_SEC: u64 = 20;
+/// how many retries it will take before termination
+pub const RETRIES: usize = 10;
