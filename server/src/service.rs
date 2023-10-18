@@ -137,7 +137,7 @@ async fn send_share_to_leader(base_url: String, share: UnblindedAggregateShareBl
         }
 
         retries -= 1;
-        if retries <= 0 {
+        if retries == 0 {
             error!("Failed to send share after multiple attempts");
             break;
         }
