@@ -323,8 +323,6 @@ fn main() -> Result<(), UserError> {
             Some(state_path)
         };
 
-        // debug!("user_state_path: {:?}", user_state_path);
-
         let state = service::ServiceState {
             user_state,
             enclave: enclave.clone(),

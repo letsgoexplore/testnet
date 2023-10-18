@@ -89,7 +89,6 @@ struct CombinedData {
 async fn submit_agg(
     (payload, combined_data): (String, web::Data<CombinedData>),
 ) -> Result<HttpResponse, ApiError> {
-    // let start = std::time::Instant::now();
     // step 1: unwrap input data
     let combined_data = combined_data.get_ref();
     let state = &combined_data.state;
@@ -242,7 +241,7 @@ async fn aggregate_eval(combined_data: web::Data<CombinedData>) -> Result<HttpRe
     let share: AggregatedMessage = agg_state
         .finalize_aggregate()
         .expect("could not finalize aggregate");
-    // debug!("{}'s share is:{:?}, forward-url is {:?}",agg_number, share, forward_urls.clone());
+    debug!("{}'s share is:{:?}, forward-url is {:?}",agg_number, share, forward_urls.clone());
     if logflag {
         let log_msg = format!("leaf-agg{} before sending to root", agg_number);
         log_detailed_time(log_msg);
@@ -250,9 +249,6 @@ async fn aggregate_eval(combined_data: web::Data<CombinedData>) -> Result<HttpRe
 
     actix_rt::spawn(send_share_to_root(forward_urls.clone(), share));
 
-    // debug!("[agg] aggregating log time: {:?}", load_duration);
-    // debug!("[agg] aggregating time: {:?}", duration);
-    // log_agg_encrypt_time(duration.as_nanos());
 
     Ok(HttpResponse::Ok().body("OK\n"))
 }
@@ -265,10 +261,6 @@ async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage) {
     // step 2: Send the serialized contents as an HTTP POST to leader/submit-share
     let timeout_sec = 20;
     let base_url = &base_url[0];
-    // debug!(
-    //     "Sending share to {} with timeout {}s, content is {:?}",
-    //     base_url, timeout_sec, body.clone()
-    // );
     let client = Client::builder()
         .timeout(Duration::from_secs(timeout_sec))
         .finish();
@@ -299,8 +291,6 @@ async fn send_share_to_root(base_url: Vec<String>, share: AggregatedMessage) {
             error!("Failed to send share after multiple attempts");
             break;
         }
-        // Wait for 50ms before retrying
-        // actix::clock::sleep(Duration::from_millis(50)).await;
     }
 }
 
@@ -366,9 +356,6 @@ async fn submit_agg_from_agg(
         force_round_output(&*state).await;
         info!("root-agg successfully send msg to server");
     }
-    // debug!("[agg] submit-agg-from-agg success");
-    // let duration = start.elapsed();
-    // debug!("[agg] submit_agg_from_agg: {:?}", duration);
     Ok(HttpResponse::Ok().body("OK\n"))
 }
 
@@ -546,7 +533,7 @@ async fn round_finalization_loop(
     let send_timeout = one_sec;
     let propagation_dur = Duration::from_secs(PROPAGATION_SECS);
 
-    // debug!("start round_finalization_loop");
+    debug!("start round_finalization_loop");
 
     // Wait until the start time, then start the round loop
     delay_until(systime_to_instant(start_time)).await;
@@ -554,7 +541,7 @@ async fn round_finalization_loop(
         // We send our aggregate `level` seconds after the official end of the round
         let end_time = start_time + round_dur + level * one_sec;
 
-        // debug!("systime_to_instant(end_time): {:?}", systime_to_instant(end_time));
+        debug!("systime_to_instant(end_time): {:?}", systime_to_instant(end_time));
 
         // Wait
         delay_until(systime_to_instant(end_time)).await;
@@ -562,8 +549,8 @@ async fn round_finalization_loop(
         // The round has ended. Serialize the aggregate and forward it in the background. Time out
         // after 1 second
         let (agg_payload, forward_urls) = get_agg_payload(&state);
-        // debug!("agg_payload.len: {}", agg_payload.len());
-        // debug!("forward_urls: {:?}", forward_urls);
+        debug!("agg_payload.len: {}", agg_payload.len());
+        debug!("forward_urls: {:?}", forward_urls);
 
         spawn(
             actix_rt::time::timeout(send_timeout, send_aggregate(agg_payload, forward_urls)).map(

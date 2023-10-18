@@ -106,8 +106,6 @@ fn serialize_to_ptr<T: Serialize>(
         SGX_ERROR_INVALID_PARAMETER
     })?;
 
-    // debug!("output serialized to {} bytes", serialized.len());
-
     if serialized.len() > outbuf_cap {
         error!(
             "not enough output to write serialized message. need {} got {}",

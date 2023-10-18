@@ -64,11 +64,9 @@ async fn encrypt_msg(
         ..
     } = handle.deref_mut();
 
-    // debug!("payload: {:?}", payload);
     // The payload is msg COMMA prev_rount_output
     let mut payload_it = payload.split(',');
     *round = 0;
-    // debug!("payload_it: {:?}", payload_it);
 
     // Load the message first. It's just a base64 string of length <= DC_NET_MESSAGE_LENGTH
     let dc_msg: DcMessage = {
@@ -107,15 +105,11 @@ async fn encrypt_msg(
         buf
     };
 
-    // debug!("dc_msg: {:?}", dc_msg.0);
-
     let encoded_round_output = payload_it.next();
     let prev_round_output: RoundOutput = match encoded_round_output {
         Some(s) => cli_util::load(s.trim().as_bytes())?,
         None => RoundOutput::default(),
     };
-
-    // debug!("prev_round_output: {:?}", prev_round_output);
 
     let msg = UserMsg::TalkAndReserve {
         msg: dc_msg,

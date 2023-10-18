@@ -156,8 +156,6 @@ fn add_to_agg(
         }
 
         debug!("✅ various checks passed now we can aggregate");
-        // debug!("incoming msg: {:?}", incoming_msg);
-        // debug!("current agg: {:?}", current_aggregation);
 
         // aggregate in the new message
         current_aggregation.user_ids.extend(&incoming_msg.user_ids);
@@ -268,8 +266,6 @@ fn add_to_agg_user_submit(
         }
 
         debug!("✅ various checks passed now we can aggregate");
-        // debug!("incoming msg: {:?}", incoming_msg);
-        // debug!("current agg: {:?}", current_aggregation);
 
         // aggregate in the new message
         current_aggregation
